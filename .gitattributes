@@ -1,0 +1,12 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Binary files
+*.a binary
+*.dylib binary
+*.xcframework binary
+*.icns binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
