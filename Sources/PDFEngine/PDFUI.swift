@@ -664,33 +664,9 @@ public struct PDFViewerMainView: View {
                                                             DisclosureGroup("Sources (\(turn.passages.count))") {
                                                                 VStack(alignment: .leading, spacing: 6) {
                                                                     ForEach(turn.passages) { passage in
-                                                                        Button {
+                                                                        AgentSourcePassageView(passage: passage) {
                                                                             viewModel.jumpToPage(passage.pageIndex)
-                                                                        } label: {
-                                                                            VStack(alignment: .leading, spacing: 2) {
-                                                                                Text("Page \(passage.pageIndex + 1)")
-                                                                                    .font(.caption.bold())
-                                                                                // Trimmed rather than shown in full — this is meant as a quick
-                                                                                // reminder of what the source covers, not a substitute for reading
-                                                                                // it; tapping jumps straight to the actual page for that.
-                                                                                Text(passage.text)
-                                                                                    .font(.caption)
-                                                                                    .foregroundStyle(.secondary)
-                                                                                    .lineLimit(3)
-                                                                                    .truncationMode(.tail)
-                                                                            }
-                                                                             .frame(maxWidth: .infinity, alignment: .leading)
                                                                         }
-                                                                        .buttonStyle(.plain)
-                                                                        .padding(6)
-                                                                        .background(
-                                                                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                                                                .fill(Color.primary.opacity(0.04))
-                                                                                .overlay(
-                                                                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                                                                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
-                                                                                )
-                                                                        )
                                                                     }
                                                                 }
                                                                 .padding(.top, 4)
@@ -733,7 +709,7 @@ public struct PDFViewerMainView: View {
                         VStack(alignment: .trailing, spacing: 6) {
                             ZStack(alignment: .topLeading) {
                                 if viewModel.agentQuestion.isEmpty {
-                                    Text("Ask a question about this document…")
+                                    Text("Ask anything…")
                                         .font(.body)
                                         .foregroundStyle(Color(nsColor: .placeholderTextColor))
                                         .padding(.horizontal, 10)
@@ -748,6 +724,14 @@ public struct PDFViewerMainView: View {
                                     .focused($isAgentInputFocused)
                                     .frame(height: 72)
                                     .padding(4)
+                                    .onKeyPress(phases: .down) { keyPress in
+                                        guard keyPress.key == .return else { return .ignored }
+                                        if keyPress.modifiers.contains(.shift) || keyPress.modifiers.contains(.option) {
+                                            return .ignored
+                                        }
+                                        submitAgentQuestionIfPossible()
+                                        return .handled
+                                    }
                             }
                             .background(
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -768,11 +752,9 @@ public struct PDFViewerMainView: View {
                                 }
                                 Spacer()
                                 Button("Ask") {
-                                    viewModel.askAgentQuestion()
+                                    submitAgentQuestionIfPossible()
                                 }
-                                // Return alone inserts a newline in the multi-line box above (the
-                                // normal, expected behavior for a text editor); Cmd+Return submits.
-                                .keyboardShortcut(.return, modifiers: .command)
+                                .help("Send (Return, Shift+Return for newline)")
                                 .disabled(
                                     viewModel.agentQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                     || viewModel.agentIndexState != .ready
@@ -947,6 +929,13 @@ public struct PDFViewerMainView: View {
             }
     }
 
+    private func submitAgentQuestionIfPossible() {
+        guard !viewModel.agentQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              viewModel.agentIndexState == .ready,
+              !viewModel.agentIsAnswering else { return }
+        viewModel.askAgentQuestion()
+    }
+
     private func handleFileDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
@@ -1001,5 +990,35 @@ private struct SearchResultRowView: View {
                 )
         )
         .contentShape(Rectangle())
+    }
+}
+
+private struct AgentSourcePassageView: View {
+    let passage: AgentPassage
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Page \(passage.pageIndex + 1)")
+                    .font(.caption.bold())
+                Text(passage.text)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                )
+        )
     }
 }

@@ -442,6 +442,7 @@ struct SnapshotCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header: Page badge + close button
+            // Header: Page label + close button (matching SearchResultRowView styling)
             HStack {
                 Text("Page \(snap.targetPage + 1)")
                     .font(.caption2.weight(.semibold))
@@ -450,6 +451,8 @@ struct SnapshotCardView: View {
                     .background(isSelected ? Color.accentColor : Color.accentColor.opacity(0.12))
                     .foregroundStyle(isSelected ? Color.white : Color.accentColor)
                     .clipShape(Capsule())
+                    .font(.caption.bold())
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 
                 Spacer()
                 
@@ -517,8 +520,10 @@ struct SnapshotCardView: View {
             if snap.thumbnailImage == nil, !snap.snippet.isEmpty {
                 Text(snap.snippet)
                     .font(.system(size: 11))
+                    .font(.caption)
                     .lineLimit(3)
                     .foregroundStyle(.primary)
+                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
             }
 
             // Action Buttons: Open/Close Window, Copy.
@@ -573,17 +578,13 @@ struct SnapshotCardView: View {
             .controlSize(.small)
             .tint(.accentColor)
         }
-        .padding(10)
+        .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.14) : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : (isHovered ? Color.primary.opacity(0.06) : Color.primary.opacity(0.03)))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(
-                            isSelected ? Color.accentColor.opacity(0.5) : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)),
-                            lineWidth: isSelected ? 1.5 : 0.5
-                        )
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(isSelected ? Color.accentColor.opacity(0.3) : (isHovered ? Color.primary.opacity(0.08) : Color.primary.opacity(0.04)), lineWidth: 0.5)
                 )
         )
         .contentShape(Rectangle())
