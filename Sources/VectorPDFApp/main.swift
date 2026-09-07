@@ -9,6 +9,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         for window in NSApp.windows {
             window.makeKeyAndOrderFront(nil)
+            if window.tabbingMode != .disallowed {
+                window.tabbingMode = .preferred
+                if window.tabGroup?.isTabBarVisible != true {
+                    window.toggleTabBar(nil)
+                }
+            }
         }
     }
     
@@ -138,6 +144,13 @@ struct VectorPDFApp: App {
             }
         }
         CommandGroup(replacing: .newItem) {
+            Button("New Tab") {
+                if let keyWindow = NSApp.keyWindow {
+                    DocumentWindowing.addEmptyTab(to: keyWindow)
+                }
+            }
+            .keyboardShortcut("t", modifiers: .command)
+
             Button("Open PDF...") {
                 resolvedViewModel?.promptOpenFile()
             }

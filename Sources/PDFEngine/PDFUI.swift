@@ -218,7 +218,14 @@ public struct PDFViewerMainView: View {
         .background(
             WindowAccessor { window in
                 viewModel.currentWindow = window
-                window.tabbingMode = .preferred
+                if !isSnapshotWindow {
+                    window.tabbingMode = .preferred
+                    if window.tabGroup?.isTabBarVisible != true {
+                        window.toggleTabBar(nil)
+                    }
+                } else {
+                    window.tabbingMode = .disallowed
+                }
                 if window.isKeyWindow {
                     PDFViewerViewModel.active = viewModel
                     PDFViewerAppCoordinator.shared.registerActive(viewModel)
@@ -269,6 +276,7 @@ public struct PDFViewerMainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .focusSearchCommand)) { _ in
             guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
+            sidebarVisibility = .all
             selectedSidebarTab = 1
         }
         .task {
@@ -352,7 +360,7 @@ public struct PDFViewerMainView: View {
                                     viewModel.performSearch()
                                 },
                                 onNext: {
-                                    viewModel.nextSearchMatch()
+                                    viewModel.submitSearch()
                                 },
                                 onPrevious: {
                                     viewModel.previousSearchMatch()
@@ -590,6 +598,10 @@ public struct PDFViewerMainView: View {
                                                             Text("No relevant passages found.")
                                                                 .font(.caption)
                                                                 .foregroundStyle(.secondary)
+                                                        } else if let error = turn.errorMessage {
+                                                            Text(error)
+                                                                .font(.caption)
+                                                                .foregroundStyle(.orange)
                                                         } else {
                                                             // Passages came back but synthesis produced nothing — most
                                                             // often the conversation has grown too long for the model's
@@ -599,6 +611,12 @@ public struct PDFViewerMainView: View {
                                                             Text("Unable to respond; the conversational length limit might be reached. Try starting a new conversation or check the sources below.")
                                                                 .font(.caption)
                                                                 .foregroundStyle(.orange)
+                                                        }
+
+                                                        if let note = turn.statusNote {
+                                                            Text(note)
+                                                                .font(.caption2)
+                                                                .foregroundStyle(.secondary)
                                                         }
 
                                                         if let provider = turn.providerUsed {

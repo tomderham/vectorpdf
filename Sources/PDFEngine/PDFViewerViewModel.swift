@@ -172,6 +172,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeSearchMatchId: UUID? = nil
     @Published public var searchScrollRevision: Int = 0
     @Published public var activeScrollTargetId: String? = nil
+    @Published public var hasNavigatedToActiveSearchMatch: Bool = false
+    public var autoNavigateOnSearchResults: Bool = false
     
     // Cross References & Snapshots
     @Published public var activeSnapshots: [SnapshotTarget] = []
@@ -286,6 +288,9 @@ public final class PDFViewerViewModel: ObservableObject {
             if let window = currentWindow ?? NSApplication.shared.keyWindow {
                 window.representedURL = fileURL
                 window.isDocumentEdited = false
+                if !isTransientWindow && window.tabGroup?.isTabBarVisible != true {
+                    window.toggleTabBar(nil)
+                }
             }
 
             self.isDocumentEdited = false
@@ -296,6 +301,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.activeSearchMatchIndex = 0
             self.activeSearchMatchId = nil
             self.searchScrollRevision = 0
+            self.hasNavigatedToActiveSearchMatch = false
+            self.autoNavigateOnSearchResults = false
             self.activeSnapshots = []
             self.pageLinks = [:]
             self.pageStructuredData = [:]
@@ -517,8 +524,23 @@ public final class PDFViewerViewModel: ObservableObject {
         return searchResults[activeSearchMatchIndex].id == match.id
     }
     
+    public func submitSearch() {
+        if searchResults.isEmpty && isSearching {
+            // User pressed Return while search is streaming: navigate as soon as results arrive
+            autoNavigateOnSearchResults = true
+        } else if !searchResults.isEmpty {
+            nextSearchMatch()
+        } else {
+            performSearch(autoNavigate: true)
+        }
+    }
+
     public func nextSearchMatch() {
         guard !searchResults.isEmpty else { return }
+        if !hasNavigatedToActiveSearchMatch {
+            navigateToMatch(at: activeSearchMatchIndex, shouldScrollList: false)
+            return
+        }
         activeSearchMatchIndex = (activeSearchMatchIndex + 1) % searchResults.count
         let match = searchResults[activeSearchMatchIndex]
         self.activeSearchMatchId = match.id
@@ -533,6 +555,10 @@ public final class PDFViewerViewModel: ObservableObject {
     
     public func previousSearchMatch() {
         guard !searchResults.isEmpty else { return }
+        if !hasNavigatedToActiveSearchMatch {
+            navigateToMatch(at: activeSearchMatchIndex, shouldScrollList: false)
+            return
+        }
         activeSearchMatchIndex = (activeSearchMatchIndex - 1 + searchResults.count) % searchResults.count
         let match = searchResults[activeSearchMatchIndex]
         self.activeSearchMatchId = match.id
@@ -547,6 +573,7 @@ public final class PDFViewerViewModel: ObservableObject {
     
     public func navigateToMatch(at index: Int, shouldScrollList: Bool = false) {
         guard index >= 0 && index < searchResults.count else { return }
+        hasNavigatedToActiveSearchMatch = true
         activeSearchMatchIndex = index
         let match = searchResults[index]
         self.activeSearchMatchId = match.id
@@ -561,7 +588,7 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
     
-    public func performSearch() {
+    public func performSearch(autoNavigate: Bool = false) {
         searchTask?.cancel()
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
@@ -572,6 +599,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.activeSearchMatchId = nil
             self.searchScrollRevision = 0
             self.activeScrollTargetId = nil
+            self.hasNavigatedToActiveSearchMatch = false
+            self.autoNavigateOnSearchResults = false
             return
         }
         
@@ -582,6 +611,8 @@ public final class PDFViewerViewModel: ObservableObject {
         self.activeSearchMatchId = nil
         self.searchScrollRevision = 0
         self.activeScrollTargetId = nil
+        self.hasNavigatedToActiveSearchMatch = false
+        self.autoNavigateOnSearchResults = autoNavigate
         
         let currentNear = self.currentPageIndex
         let localStart = max(0, currentNear - 50)
@@ -620,7 +651,28 @@ public final class PDFViewerViewModel: ObservableObject {
             }
             if !Task.isCancelled {
                 self.isSearching = false
+                if !hasSetInitialMatch && !self.searchResults.isEmpty {
+                    hasSetInitialMatch = true
+                    let idx = self.selectInitialMatchIndex(nearPage: currentNear)
+                    self.activeSearchMatchIndex = idx
+                    self.activeSearchMatchId = self.searchResults[idx].id
+                    self.searchScrollRevision += 1
+                    if self.autoNavigateOnSearchResults {
+                        self.navigateToMatch(at: idx, shouldScrollList: true)
+                    }
+                }
             }
+        }
+    }
+
+    private func selectInitialMatchIndex(nearPage: Int) -> Int {
+        guard !self.searchResults.isEmpty else { return 0 }
+        if let firstAtOrAfter = self.searchResults.firstIndex(where: { $0.pageIndex >= nearPage }) {
+            return firstAtOrAfter
+        } else if let lastBefore = self.searchResults.lastIndex(where: { $0.pageIndex <= nearPage }) {
+            return lastBefore
+        } else {
+            return 0
         }
     }
     
@@ -652,10 +704,13 @@ public final class PDFViewerViewModel: ObservableObject {
         if !hasSetInitialMatch {
             // Check if we have discovered a match at or after nearPage
             if let idx = self.searchResults.firstIndex(where: { $0.pageIndex >= nearPage }) {
+                hasSetInitialMatch = true
                 self.activeSearchMatchIndex = idx
                 self.activeSearchMatchId = self.searchResults[idx].id
                 self.searchScrollRevision += 1
-                hasSetInitialMatch = true
+                if self.autoNavigateOnSearchResults {
+                    self.navigateToMatch(at: idx, shouldScrollList: true)
+                }
             } else if currentActiveId == nil, !self.searchResults.isEmpty {
                 // Temporarily point to the closest match discovered so far until nearPage is reached
                 self.activeSearchMatchIndex = self.searchResults.count - 1
@@ -696,22 +751,22 @@ public final class PDFViewerViewModel: ObservableObject {
             return ya < yb
         }
         
-        if let activeId = currentActiveId, let newIdx = self.searchResults.firstIndex(where: { $0.id == activeId }) {
-            self.activeSearchMatchIndex = newIdx
-            self.activeSearchMatchId = activeId
-            // Re-center active match once at completion now that early results were prepended
-            self.searchScrollRevision += 1
-        } else if !hasSetInitialMatch && !self.searchResults.isEmpty {
-            // No local/forward matches existed: select closest match before nearPage
-            if let idx = self.searchResults.firstIndex(where: { $0.pageIndex >= nearPage }) {
-                self.activeSearchMatchIndex = idx
-            } else {
-                self.activeSearchMatchIndex = self.searchResults.count - 1
+        if hasSetInitialMatch {
+            if let activeId = currentActiveId, let newIdx = self.searchResults.firstIndex(where: { $0.id == activeId }) {
+                self.activeSearchMatchIndex = newIdx
+                self.activeSearchMatchId = activeId
+                // Re-center active match once at completion now that early results were prepended
+                self.searchScrollRevision += 1
             }
-            let initialId = self.searchResults[self.activeSearchMatchIndex].id
-            self.activeSearchMatchId = initialId
-            self.searchScrollRevision += 1
+        } else if !self.searchResults.isEmpty {
             hasSetInitialMatch = true
+            let idx = self.selectInitialMatchIndex(nearPage: nearPage)
+            self.activeSearchMatchIndex = idx
+            self.activeSearchMatchId = self.searchResults[idx].id
+            self.searchScrollRevision += 1
+            if self.autoNavigateOnSearchResults {
+                self.navigateToMatch(at: idx, shouldScrollList: true)
+            }
         }
     }
     
@@ -1500,15 +1555,22 @@ public final class PDFViewerViewModel: ObservableObject {
             let passages = ranked.map {
                 AgentPassage(pageIndex: $0.embedded.chunk.pageIndex, text: $0.embedded.chunk.text, score: $0.score)
             }
+            let initialProvider = self.agentConversationEngine.activeSynthesisProvider()
             self.updateAgentTurn(id: turnId) {
                 $0.passages = passages
-                $0.providerUsed = self.agentConversationEngine.activeSynthesisProvider()
+                $0.providerUsed = initialProvider
             }
 
-            let finalText = await self.agentConversationEngine.streamAnswer(question: question, passages: passages) { [weak self] partial in
+            let result = await self.agentConversationEngine.streamAnswer(question: question, passages: passages) { [weak self] partial in
                 self?.updateAgentTurn(id: turnId) { $0.answerText = partial }
             }
-            self.finishAgentTurn(id: turnId, text: finalText ?? "")
+            self.finishAgentTurn(
+                id: turnId,
+                text: result.text ?? "",
+                provider: result.providerUsed,
+                statusNote: result.statusNote,
+                errorMessage: result.errorMessage
+            )
         }
     }
 
@@ -1517,10 +1579,21 @@ public final class PDFViewerViewModel: ObservableObject {
         mutate(&agentConversation[index])
     }
 
-    private func finishAgentTurn(id: UUID, text: String) {
+    private func finishAgentTurn(
+        id: UUID,
+        text: String,
+        provider: AgentSynthesisProvider? = nil,
+        statusNote: String? = nil,
+        errorMessage: String? = nil
+    ) {
         updateAgentTurn(id: id) {
             $0.answerText = text
             $0.isStreaming = false
+            if let provider {
+                $0.providerUsed = provider
+            }
+            $0.statusNote = statusNote
+            $0.errorMessage = errorMessage
         }
         agentIsAnswering = false
     }

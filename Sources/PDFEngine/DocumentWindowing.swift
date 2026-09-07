@@ -44,7 +44,7 @@ public enum DocumentWindowing {
         // isTabBarVisible itself is get-only; toggleTabBar(_:) is the actual way to change it, so
         // this only calls it when the bar isn't already showing (never fights a state where it's
         // already visible for some other reason).
-        if window.tabGroup?.isTabBarVisible == false {
+        if window.tabGroup?.isTabBarVisible != true {
             window.toggleTabBar(nil)
         }
         return window

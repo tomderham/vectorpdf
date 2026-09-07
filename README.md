@@ -90,10 +90,15 @@ swift test
 To assemble a signed `.app` bundle with application icon and metadata:
 
 ```bash
+# Builds with macOS 27 SDK and Private Cloud Compute agent capabilities enabled by default:
 ./Scripts/build_app_bundle.sh release
+
+# Or to build against the standard SDK:
+./Scripts/build_app_bundle.sh release default
 ```
 
 The output bundle will be generated at `./VectorPDF.app`.
+
 
 ---
 

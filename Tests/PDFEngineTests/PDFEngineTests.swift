@@ -611,6 +611,89 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     #expect(activeIdx == 90)
     let expectedId = await viewModel.searchResults[90].id
     #expect(activeId == expectedId)
+    let scrollTargetBeforeSubmit = await viewModel.activeScrollTargetId
+    #expect(scrollTargetBeforeSubmit == nil)
+    
+    await MainActor.run {
+        viewModel.submitSearch()
+    }
+    let scrollTargetId = await viewModel.activeScrollTargetId
+    #expect(scrollTargetId == expectedId.uuidString)
+}
+
+@Test func testSearchFindsNearestHitAndNavigatesOnSubmit() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_search_nav_\(UUID().uuidString).pdf")
+    createMultiPagePDF(at: pdfURL, pages: 120)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+    
+    let viewModel = await PDFViewerViewModel()
+    await viewModel.loadDocument(from: pdfURL.path)
+    
+    // 1. Live search from page 10 for a term that appears forward on page 45
+    await MainActor.run {
+        viewModel.currentPageIndex = 10
+        viewModel.searchQuery = "Page 45"
+        viewModel.performSearch()
+    }
+    
+    for _ in 0..<100 {
+        let isSearching = await viewModel.isSearching
+        if !isSearching { break }
+        try await Task.sleep(nanoseconds: 30_000_000)
+    }
+    
+    let resultsCount = await viewModel.searchResults.count
+    #expect(resultsCount == 1)
+    var curPage = await viewModel.currentPageIndex
+    var targetId = await viewModel.activeScrollTargetId
+    let matchId = await viewModel.searchResults.first?.id.uuidString
+    
+    // Quiet live search: canvas remains on page 10 without scrolling
+    #expect(curPage == 10)
+    #expect(targetId == nil)
+    
+    // Submitting search (e.g. pressing Return) navigates to the nearest match
+    await MainActor.run {
+        viewModel.submitSearch()
+    }
+    curPage = await viewModel.currentPageIndex
+    targetId = await viewModel.activeScrollTargetId
+    #expect(curPage == 45)
+    #expect(targetId != nil)
+    #expect(targetId == matchId)
+    
+    // 2. Live search from page 50 for a term that only appears backward on page 15
+    await MainActor.run {
+        viewModel.currentPageIndex = 50
+        viewModel.searchQuery = "Page 15"
+        viewModel.performSearch()
+    }
+    
+    for _ in 0..<100 {
+        let isSearching = await viewModel.isSearching
+        if !isSearching { break }
+        try await Task.sleep(nanoseconds: 30_000_000)
+    }
+    
+    let backResultsCount = await viewModel.searchResults.count
+    #expect(backResultsCount == 1)
+    var backCurPage = await viewModel.currentPageIndex
+    var backTargetId = await viewModel.activeScrollTargetId
+    let backMatchId = await viewModel.searchResults.first?.id.uuidString
+    
+    // Canvas remains at page 50 while typing
+    #expect(backCurPage == 50)
+    #expect(backTargetId == nil)
+    
+    // Submitting search navigates canvas to page 15
+    await MainActor.run {
+        viewModel.submitSearch()
+    }
+    backCurPage = await viewModel.currentPageIndex
+    backTargetId = await viewModel.activeScrollTargetId
+    #expect(backCurPage == 15)
+    #expect(backTargetId == backMatchId)
 }
 
 @Test func testNativeScreenshotExtractionAndClipboard() async throws {
@@ -1131,5 +1214,17 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(PDFFormButton.isValueChecked(appleCheck?.widgetStringValue ?? "") == true)
 }
 
+@Test func testWindowTabBarVisibilityOnCreation() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_tabbar_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    await MainActor.run {
+        let window = DocumentWindowing.makeWindow(for: pdfURL)
+        #expect(window.tabbingMode == .preferred)
+        #expect(window.tabGroup?.isTabBarVisible == true)
+    }
+}
 }
 

@@ -10,6 +10,21 @@ public enum PDFColorAppearance: String, CaseIterable, Codable, Sendable {
     case dark
 }
 
+/// Backend preference for Agent synthesis.
+public enum AgentSynthesisPreference: String, CaseIterable, Codable, Sendable {
+    case automatic
+    case onDevice
+    case privateCloudCompute
+
+    public var displayName: String {
+        switch self {
+        case .automatic: return "Automatic"
+        case .onDevice: return "On-Device"
+        case .privateCloudCompute: return "Private Cloud Compute"
+        }
+    }
+}
+
 /// Global coordinator that tracks the active PDF document and publishes updates to SwiftUI App menus.
 @MainActor
 public final class PDFViewerAppCoordinator: ObservableObject {
@@ -49,6 +64,14 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     }
     private static let showAgentTabKey = "com.vectorpdf.app.showAgentTab"
 
+    /// Backend synthesis preference for Agent questions.
+    @Published public var agentSynthesisPreference: AgentSynthesisPreference = .automatic {
+        didSet {
+            UserDefaults.standard.set(agentSynthesisPreference.rawValue, forKey: Self.agentSynthesisPreferenceKey)
+        }
+    }
+    private static let agentSynthesisPreferenceKey = "com.vectorpdf.app.agentSynthesisPreference"
+
     private var docCancellable: AnyCancellable?
 
     /// Set by AppDelegate when macOS asks the app to open a file (Finder double-click, Dock drop,
@@ -72,6 +95,10 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         }
         if UserDefaults.standard.object(forKey: Self.showAgentTabKey) != nil {
             showAgentTab = UserDefaults.standard.bool(forKey: Self.showAgentTabKey)
+        }
+        if let prefRaw = UserDefaults.standard.string(forKey: Self.agentSynthesisPreferenceKey),
+           let pref = AgentSynthesisPreference(rawValue: prefRaw) {
+            agentSynthesisPreference = pref
         }
     }
 
@@ -149,6 +176,16 @@ public final class PDFViewerAppCoordinator: ObservableObject {
             box.viewModel?.saveReadingStateIfNeeded()
         }
     }
+
+#if VECTORPDF_MACOS27_SDK
+    public var pccStatusDescription: String {
+        if DocumentAgentConversation.hasPrivateCloudComputeEntitlement() {
+            return "Private Cloud Compute entitlement is active."
+        } else {
+            return "Private Cloud Compute requires Apple's managed entitlement ('com.apple.developer.private-cloud-compute') with an Apple Developer provisioning profile. Automatic mode safely uses On-Device compute."
+        }
+    }
+#endif
 }
 
 /// The app's Settings window (⌘,).
@@ -162,6 +199,22 @@ public struct AppSettingsView: View {
             Toggle("Use Agent (macOS 26 or above)", isOn: $coordinator.showAgentTab)
                 .padding(.bottom, 12)
 
+#if VECTORPDF_MACOS27_SDK
+            if #available(macOS 27.0, *), coordinator.showAgentTab {
+                Picker("AI Synthesis Engine", selection: $coordinator.agentSynthesisPreference) {
+                    ForEach(AgentSynthesisPreference.allCases, id: \.self) { pref in
+                        Text(pref.displayName).tag(pref)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(coordinator.pccStatusDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+            }
+#endif
+
             // Independent of the app's own UI theme (which always follows the system) — lets
             // someone keep the app in Dark Mode for comfort while still seeing a document's true,
             // un-inverted colors when color accuracy matters, e.g. filling out a color-coded form.
@@ -173,6 +226,7 @@ public struct AppSettingsView: View {
         }
         .padding(20)
         .frame(width: 360)
+        .frame(width: 400)
     }
 }
 

@@ -80,15 +80,23 @@ public struct NativeSearchField: NSViewRepresentable {
     public func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField(frame: .zero)
         field.placeholderString = placeholder
+        field.stringValue = text
         field.target = context.coordinator
         field.action = #selector(Coordinator.action(_:))
         field.delegate = context.coordinator
         field.focusRingType = .exterior
         field.bezelStyle = .roundedBezel
+        field.sendsWholeSearchString = true
+        (field.cell as? NSSearchFieldCell)?.sendsWholeSearchString = true
+        field.sendsSearchStringImmediately = false
+        (field.cell as? NSSearchFieldCell)?.sendsSearchStringImmediately = false
+        context.coordinator.searchField = field
+        context.coordinator.focusAndSelectText()
         return field
     }
     
     public func updateNSView(_ nsView: NSSearchField, context: Context) {
+        context.coordinator.searchField = nsView
         if nsView.stringValue != text {
             nsView.stringValue = text
         }
@@ -104,14 +112,64 @@ public struct NativeSearchField: NSViewRepresentable {
     @MainActor
     public class Coordinator: NSObject, NSSearchFieldDelegate {
         var parent: NativeSearchField
+        weak var searchField: NSSearchField?
         
         init(_ parent: NativeSearchField) {
             self.parent = parent
+            super.init()
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleFocusSearch(_:)),
+                name: .focusSearchCommand,
+                object: nil
+            )
+        }
+        
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+        
+        @objc func handleFocusSearch(_ notification: Notification) {
+            focusAndSelectText()
+        }
+        
+        func focusAndSelectText() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let field = self.searchField else { return }
+                
+                @MainActor func performFocus(on targetField: NSSearchField) {
+                    guard let window = targetField.window else { return }
+                    guard window.isKeyWindow || NSApplication.shared.keyWindow == window else { return }
+                    window.makeFirstResponder(targetField)
+                    targetField.selectText(nil)
+                    (targetField.currentEditor() as? NSTextView)?.selectAll(nil)
+                }
+                
+                if let window = field.window, (window.isKeyWindow || NSApplication.shared.keyWindow == window) {
+                    performFocus(on: field)
+                } else {
+                    DispatchQueue.main.async {
+                        guard let field = self.searchField else { return }
+                        performFocus(on: field)
+                    }
+                }
+            }
         }
         
         @objc func action(_ sender: NSSearchField) {
             parent.text = sender.stringValue
             parent.onCommit()
+            
+            // In NSSearchField, pressing Return is intercepted by control(_:textView:doCommandBy:).
+            // This action selector is only invoked when clicking the search icon / search button
+            // or if an explicit Return/Enter key was pressed outside the standard editor.
+            // Ensure we NEVER navigate on an automatic typing pause timer.
+            guard let event = NSApplication.shared.currentEvent else { return }
+            let isMouseClick = (event.type == .leftMouseUp || event.type == .leftMouseDown)
+            let isReturnKey = (event.type == .keyDown && (event.keyCode == 36 || event.keyCode == 76))
+            if isMouseClick || isReturnKey {
+                parent.onNext?()
+            }
         }
         
         public func controlTextDidChange(_ obj: Notification) {
