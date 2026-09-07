@@ -514,6 +514,16 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
     
+    public func nextPage() {
+        guard let doc = document, currentPageIndex + 1 < doc.pageCount else { return }
+        jumpToPage(currentPageIndex + 1)
+    }
+    
+    public func previousPage() {
+        guard currentPageIndex > 0 else { return }
+        jumpToPage(currentPageIndex - 1)
+    }
+    
     // MARK: - Search Functionality
     public func matches(on pageIndex: Int) -> [SearchResult] {
         return searchResultsByPage[pageIndex] ?? []

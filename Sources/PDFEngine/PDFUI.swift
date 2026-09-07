@@ -111,6 +111,12 @@ public struct PDFViewerMainView: View {
                         viewModel.setZoom(clamped)
                     }
             )
+            .overlay(alignment: .bottom) {
+                if let doc = viewModel.document, doc.pageCount > 1 {
+                    FloatingReaderHUD(viewModel: viewModel, pageCount: doc.pageCount)
+                        .padding(.bottom, 16)
+                }
+            }
     }
 
     /// Shown in place of the sidebar+canvas whenever this window/tab has no document loaded —
@@ -380,28 +386,56 @@ public struct PDFViewerMainView: View {
                         if !viewModel.searchResults.isEmpty {
                             HStack {
                                 Text("\(viewModel.activeSearchMatchIndex + 1) of \(viewModel.searchResults.count)")
-                                    .font(.caption.monospacedDigit())
+                                    .font(.caption2.monospacedDigit().weight(.medium))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(
+                                        Capsule(style: .continuous)
+                                            .fill(.ultraThinMaterial)
+                                            .overlay(
+                                                Capsule(style: .continuous)
+                                                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                                            )
+                                    )
                                     .foregroundStyle(.secondary)
                                 
                                 Spacer()
                                 
-                                Button {
-                                    viewModel.previousSearchMatch()
-                                } label: {
-                                    Image(systemName: "chevron.up")
+                                HStack(spacing: 2) {
+                                    Button {
+                                        viewModel.previousSearchMatch()
+                                    } label: {
+                                        Image(systemName: "chevron.up")
+                                            .font(.caption2.weight(.semibold))
+                                            .frame(width: 20, height: 20)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Previous Match (Shift+Cmd+G)")
+                                    
+                                    Button {
+                                        viewModel.nextSearchMatch()
+                                    } label: {
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption2.weight(.semibold))
+                                            .frame(width: 20, height: 20)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Next Match (Cmd+G)")
                                 }
-                                .buttonStyle(.plain)
-                                .help("Previous Match (Shift+Cmd+G)")
-                                
-                                Button {
-                                    viewModel.nextSearchMatch()
-                                } label: {
-                                    Image(systemName: "chevron.down")
-                                }
-                                .buttonStyle(.plain)
-                                .help("Next Match (Cmd+G)")
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            Capsule(style: .continuous)
+                                                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                                        )
+                                )
                             }
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, 8)
                         }
                         
                         Divider()
@@ -644,9 +678,18 @@ public struct PDFViewerMainView: View {
                                                                                     .lineLimit(3)
                                                                                     .truncationMode(.tail)
                                                                             }
-                                                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                                             .frame(maxWidth: .infinity, alignment: .leading)
                                                                         }
                                                                         .buttonStyle(.plain)
+                                                                        .padding(6)
+                                                                        .background(
+                                                                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                                                .fill(Color.primary.opacity(0.04))
+                                                                                .overlay(
+                                                                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                                                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                                                                                )
+                                                                        )
                                                                     }
                                                                 }
                                                                 .padding(.top, 4)
@@ -691,9 +734,15 @@ public struct PDFViewerMainView: View {
                                 .font(.body)
                                 .scrollContentBackground(.hidden)
                                 .frame(height: 80)
-                                .padding(4)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(Color(nsColor: .textBackgroundColor)))
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.3)))
+                                .padding(6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                                )
 
                             HStack {
                                 if viewModel.agentIsAnswering {
@@ -828,25 +877,9 @@ public struct PDFViewerMainView: View {
                 }
             }
             
-            ToolbarItemGroup(placement: .automatic) {
-                Button {
-                    viewModel.zoomOut()
-                } label: {
-                    Image(systemName: "minus.magnifyingglass")
-                }
-                .disabled(viewModel.document == nil)
-                .help("Zoom Out (Cmd -)")
-                
+            ToolbarItem(placement: .automatic) {
                 EditableZoomField(viewModel: viewModel)
                     .disabled(viewModel.document == nil)
-                
-                Button {
-                    viewModel.zoomIn()
-                } label: {
-                    Image(systemName: "plus.magnifyingglass")
-                }
-                .disabled(viewModel.document == nil)
-                .help("Zoom In (Cmd +)")
             }
             
             ToolbarItem(placement: .automatic) {
@@ -941,9 +974,15 @@ private struct SearchResultRowView: View {
                 .lineLimit(2)
                 .foregroundStyle(isActive ? Color.primary : Color.secondary)
         }
-        .padding(6)
-        .background(isActive ? Color.orange.opacity(0.15) : Color.clear)
-        .cornerRadius(4)
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(isActive ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.03))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(isActive ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.04), lineWidth: 0.5)
+                )
+        )
         .contentShape(Rectangle())
     }
 }

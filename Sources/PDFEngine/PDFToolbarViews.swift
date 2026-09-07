@@ -41,11 +41,11 @@ struct StartScreenRow: View {
         }
         .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.ultraThinMaterial)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
                 )
         )
         .contentShape(Rectangle())
@@ -198,7 +198,7 @@ public struct NativeSearchField: NSViewRepresentable {
     }
 }
 
-/// Interactive zoom percentage field allowing click-to-edit with custom zoom levels
+/// Interactive zoom percentage field allowing click-to-edit with custom zoom levels in a continuous glass pill
 public struct EditableZoomField: View {
     @ObservedObject var viewModel: PDFViewerViewModel
     @State private var isEditing: Bool = false
@@ -210,21 +210,29 @@ public struct EditableZoomField: View {
     }
     
     public var body: some View {
-        Group {
+        HStack(spacing: 2) {
+            Button {
+                viewModel.zoomOut()
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Zoom Out (Cmd -)")
+            
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(width: 0.5, height: 12)
+            
             if isEditing {
                 TextField("", text: $editValue)
-                    .font(.caption.monospacedDigit())
+                    .font(.caption.monospacedDigit().bold())
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
-                    .frame(width: 50, height: 20)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(nsColor: .textBackgroundColor))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.accentColor, lineWidth: 1)
-                    )
+                    .frame(width: 48, height: 18)
                     .focused($isFocused)
                     .onSubmit {
                         commit()
@@ -246,23 +254,42 @@ public struct EditableZoomField: View {
                     }
                 } label: {
                     Text("\(Int(viewModel.zoomScale * 100))%")
-                        .font(.caption.monospacedDigit())
-                        .frame(width: 46, height: 20)
+                        .font(.caption.monospacedDigit().bold())
+                        .frame(minWidth: 42)
+                        .frame(height: 18)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.secondary.opacity(0.25), lineWidth: 0.5)
-                )
-                .help("Click to enter custom zoom percentage (e.g. 150%)")
+                .help("Click to enter custom zoom percentage")
             }
+            
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(width: 0.5, height: 12)
+            
+            Button {
+                viewModel.zoomIn()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Zoom In (Cmd +)")
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                )
+        )
+        .fixedSize()
     }
     
     private func commit() {
@@ -274,7 +301,7 @@ public struct EditableZoomField: View {
     }
 }
 
-/// Interactive Page X of Y pill allowing click-to-edit to jump directly to any page
+/// Interactive Page X of Y pill allowing click-to-edit to jump directly to any page, with stepping chevrons
 public struct EditablePagePill: View {
     @ObservedObject var viewModel: PDFViewerViewModel
     let pageCount: Int
@@ -288,33 +315,40 @@ public struct EditablePagePill: View {
     }
     
     public var body: some View {
-        // SwiftUI's Text(_:) applies locale-aware grouping to interpolated integers (e.g. "7,355",
-        // not "7355") — sized off that formatted string, not raw digit count, or a grouping comma
-        // silently didn't fit. Never sized down for a short document, so the pill doesn't need to
-        // resize itself later if a shorter document is replaced by a longer one.
         let formattedPageCount = pageCount.formatted()
-        let numberWidth = CGFloat(max(formattedPageCount.count, 5)) * 8 + 4
+        let numberWidth = CGFloat(max(formattedPageCount.count, 2)) * 8 + 4
 
-        HStack(spacing: 4) {
-            // A couple of points of leading breathing room — without it, "Page"'s leading glyph
-            // renders flush against the toolbar item's exact edge and its left edge visibly clips.
+        HStack(spacing: 3) {
+            Button {
+                viewModel.previousPage()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(viewModel.currentPageIndex > 0 ? Color.secondary : Color.secondary.opacity(0.3))
+                    .frame(width: 18, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.currentPageIndex <= 0)
+            .help("Previous Page")
+
             Text("Page")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .padding(.leading, 6)
+                .padding(.leading, 2)
 
             if isEditing {
                 TextField("", text: $editValue)
                     .font(.caption.monospacedDigit().bold())
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
-                    .frame(width: numberWidth + 12, height: 19)
+                    .frame(width: numberWidth + 8, height: 18)
                     .background(
-                        RoundedRectangle(cornerRadius: 4)
+                        Capsule(style: .continuous)
                             .fill(Color(nsColor: .textBackgroundColor))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 4)
+                        Capsule(style: .continuous)
                             .stroke(Color.accentColor, lineWidth: 1)
                     )
                     .focused($isFocused)
@@ -343,12 +377,8 @@ public struct EditablePagePill: View {
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
                         .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.secondary.opacity(0.25), lineWidth: 0.5)
+                            Capsule(style: .continuous)
+                                .fill(Color.primary.opacity(0.06))
                         )
                 }
                 .buttonStyle(.plain)
@@ -358,9 +388,31 @@ public struct EditablePagePill: View {
             Text("of \(pageCount)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(minWidth: numberWidth, alignment: .leading)
+                .padding(.trailing, 2)
+
+            Button {
+                viewModel.nextPage()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(viewModel.currentPageIndex + 1 < pageCount ? Color.secondary : Color.secondary.opacity(0.3))
+                    .frame(width: 18, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.currentPageIndex + 1 >= pageCount)
+            .help("Next Page")
         }
-        // Retain natural content width to prevent toolbar truncation.
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                )
+        )
         .fixedSize()
     }
     
@@ -415,10 +467,10 @@ struct SnapshotCardView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 110)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
                     )
                     .contentShape(Rectangle())
                     .onHover { hovering in
@@ -518,11 +570,11 @@ struct SnapshotCardView: View {
         }
         .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.ultraThinMaterial)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
                 )
         )
         .contentShape(Rectangle())
@@ -597,4 +649,68 @@ public struct SearchOptionsMenu: View {
         .help("Search Options")
     }
 }
+
+/// Floating glass HUD overlay providing quick page navigation over the document canvas
+public struct FloatingReaderHUD: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    let pageCount: Int
+    @State private var isHovered: Bool = false
+
+    public init(viewModel: PDFViewerViewModel, pageCount: Int) {
+        self.viewModel = viewModel
+        self.pageCount = pageCount
+    }
+
+    public var body: some View {
+        HStack(spacing: 6) {
+            Button {
+                viewModel.previousPage()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(viewModel.currentPageIndex > 0 ? Color.primary : Color.secondary.opacity(0.4))
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.currentPageIndex <= 0)
+            .help("Previous Page")
+
+            Text("Page \(viewModel.currentPageIndex + 1) of \(pageCount)")
+                .font(.caption.monospacedDigit().weight(.medium))
+                .foregroundStyle(.primary)
+
+            Button {
+                viewModel.nextPage()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(viewModel.currentPageIndex + 1 < pageCount ? Color.primary : Color.secondary.opacity(0.4))
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.currentPageIndex + 1 >= pageCount)
+            .help("Next Page")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                )
+        )
+        .opacity(isHovered ? 1.0 : 0.65)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .fixedSize()
+    }
+}
+
 

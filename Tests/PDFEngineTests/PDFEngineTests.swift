@@ -764,6 +764,12 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     await viewModel.jumpToPage(1)
     let curPage = await viewModel.currentPageIndex
     #expect(curPage == 1)
+    
+    // Test previousPage / nextPage convenience methods for modernized pill navigation
+    await viewModel.previousPage()
+    #expect(await viewModel.currentPageIndex == 0)
+    await viewModel.nextPage()
+    #expect(await viewModel.currentPageIndex == 1)
 }
 
 @Test func testRapidGeometryIndexingLargeDoc() async throws {
@@ -1224,6 +1230,9 @@ func createFormSamplePDF(at fileURL: URL) {
         let window = DocumentWindowing.makeWindow(for: pdfURL)
         #expect(window.tabbingMode == .preferred)
         #expect(window.tabGroup?.isTabBarVisible == true)
+        #expect(window.styleMask.contains(.fullSizeContentView))
+        #expect(window.titlebarAppearsTransparent == true)
+        #expect(window.toolbarStyle == .unified)
     }
 }
 }

@@ -25,7 +25,7 @@ public enum DocumentWindowing {
     private static func makeBareWindow(tabbingIdentifier: String?) -> NSWindow {
         let window = PDFViewerWindow(
             contentRect: NSRect(x: 0, y: 0, width: 960, height: 650),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -33,6 +33,8 @@ public enum DocumentWindowing {
         // manually constructed window under ARC — required for any NSWindow(...) created
         // directly like this, or closing it can crash later.
         window.isReleasedWhenClosed = false
+        window.titlebarAppearsTransparent = true
+        window.toolbarStyle = .unified
         window.tabbingMode = .preferred
         if let tabbingIdentifier {
             window.tabbingIdentifier = tabbingIdentifier
