@@ -25,3 +25,8 @@ DerivedData/
 Vendor/MuPDF.xcframework/
 Vendor/.build-tmp/
 
+# Packaging & Release
+prepare_publish.sh
+*.dmg
+dmg_staging/
+
