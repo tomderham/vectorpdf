@@ -526,6 +526,29 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     #expect(snap.thumbnailImage!.size.width > 0)
 }
 
+@MainActor
+@Test func testSnapshotSelectionLifecycle() async throws {
+    let vm = PDFViewerViewModel()
+    #expect(vm.selectedSnapshotId == nil)
+    
+    let snap = SnapshotTarget(
+        label: "Figure 1",
+        snippet: "Snippet text",
+        targetPage: 0,
+        targetPoint: CGPoint(x: 100, y: 100),
+        sourcePage: 0
+    )
+    
+    vm.addSnapshotTarget(snap)
+    #expect(vm.selectedSnapshotId == snap.id)
+    
+    vm.jumpToSnapshot(snap)
+    #expect(vm.selectedSnapshotId == snap.id)
+    
+    vm.removeSnapshotTarget(snap)
+    #expect(vm.selectedSnapshotId == nil)
+}
+
 @Test func testRapidToCNavigationAndBoundedCache() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_toc_nav_\(UUID().uuidString).pdf")

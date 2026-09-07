@@ -433,6 +433,11 @@ struct SnapshotCardView: View {
     @State private var isCopied: Bool = false
     @State private var showPreviewPopover: Bool = false
     @State private var hoverPreviewTask: Task<Void, Never>?
+    @State private var isHovered: Bool = false
+
+    private var isSelected: Bool {
+        viewModel.selectedSnapshotId == snap.id
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -442,8 +447,8 @@ struct SnapshotCardView: View {
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.12))
-                    .foregroundStyle(Color.accentColor)
+                    .background(isSelected ? Color.accentColor : Color.accentColor.opacity(0.12))
+                    .foregroundStyle(isSelected ? Color.white : Color.accentColor)
                     .clipShape(Capsule())
                 
                 Spacer()
@@ -571,16 +576,25 @@ struct SnapshotCardView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(isSelected ? Color.accentColor.opacity(0.14) : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                        .strokeBorder(
+                            isSelected ? Color.accentColor.opacity(0.5) : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)),
+                            lineWidth: isSelected ? 1.5 : 0.5
+                        )
                 )
         )
         .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovered = hovering
+        }
         .onTapGesture {
             viewModel.jumpToSnapshot(snap)
         }
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
     }
 
     private func flashCopied() {

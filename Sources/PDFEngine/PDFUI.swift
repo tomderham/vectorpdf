@@ -20,6 +20,7 @@ public struct PDFViewerMainView: View {
     @State private var selectedSidebarTab: Int = 0
     @State private var gestureBaseZoom: CGFloat = 1.0
     @State private var sidebarVisibility: NavigationSplitViewVisibility
+    @FocusState private var isAgentInputFocused: Bool
     public let initialFilePath: String?
     public let initialTarget: SnapshotTarget?
     public let onOpenNewTab: ((URL) -> Void)?
@@ -730,19 +731,35 @@ public struct PDFViewerMainView: View {
 
                         // Input bar, pinned to the bottom.
                         VStack(alignment: .trailing, spacing: 6) {
-                            TextEditor(text: $viewModel.agentQuestion)
-                                .font(.body)
-                                .scrollContentBackground(.hidden)
-                                .frame(height: 80)
-                                .padding(6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(.ultraThinMaterial)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
-                                )
+                            ZStack(alignment: .topLeading) {
+                                if viewModel.agentQuestion.isEmpty {
+                                    Text("Ask a question about this document…")
+                                        .font(.body)
+                                        .foregroundStyle(Color(nsColor: .placeholderTextColor))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 8)
+                                        .allowsHitTesting(false)
+                                }
+
+                                TextEditor(text: $viewModel.agentQuestion)
+                                    .font(.body)
+                                    .scrollContentBackground(.hidden)
+                                    .scrollIndicators(.hidden)
+                                    .focused($isAgentInputFocused)
+                                    .frame(height: 72)
+                                    .padding(4)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color(nsColor: .textBackgroundColor))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(
+                                        isAgentInputFocused ? Color.accentColor : Color.primary.opacity(0.15),
+                                        lineWidth: isAgentInputFocused ? 1.5 : 1.0
+                                    )
+                            )
 
                             HStack {
                                 if viewModel.agentIsAnswering {

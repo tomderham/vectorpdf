@@ -178,6 +178,7 @@ public final class PDFViewerViewModel: ObservableObject {
     // Cross References & Snapshots
     @Published public var activeSnapshots: [SnapshotTarget] = []
     @Published public var activeSnapshotTarget: SnapshotTarget? = nil
+    @Published public var selectedSnapshotId: UUID? = nil
 
     // Agent Tab: semantic search (always available on-device) plus optional on-device
     // synthesis (Apple Intelligence-gated) over the currently open document only — see
@@ -304,6 +305,7 @@ public final class PDFViewerViewModel: ObservableObject {
             self.hasNavigatedToActiveSearchMatch = false
             self.autoNavigateOnSearchResults = false
             self.activeSnapshots = []
+            self.selectedSnapshotId = nil
             self.pageLinks = [:]
             self.pageStructuredData = [:]
             self.activeSelection = nil
@@ -1070,6 +1072,7 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     public func jumpToSnapshot(_ snap: SnapshotTarget) {
+        self.selectedSnapshotId = snap.id
         self.activeSnapshotTarget = snap
         self.currentPageIndex = snap.targetPage
         pruneCaches(around: snap.targetPage)
@@ -1382,17 +1385,22 @@ public final class PDFViewerViewModel: ObservableObject {
     public func addSnapshotTarget(_ target: SnapshotTarget) {
         if !activeSnapshots.contains(where: { $0.id == target.id }) {
             activeSnapshots.append(target)
+            selectedSnapshotId = target.id
             saveReadingStateIfNeeded()
         }
     }
 
     public func removeSnapshotTarget(_ target: SnapshotTarget) {
+        if selectedSnapshotId == target.id {
+            selectedSnapshotId = nil
+        }
         activeSnapshots.removeAll(where: { $0.id == target.id })
         target.deleteThumbnailFile()
         saveReadingStateIfNeeded()
     }
 
     public func clearAllSnapshots() {
+        selectedSnapshotId = nil
         for target in activeSnapshots {
             target.deleteThumbnailFile()
         }
