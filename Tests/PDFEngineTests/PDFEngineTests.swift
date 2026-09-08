@@ -1258,5 +1258,141 @@ func createFormSamplePDF(at fileURL: URL) {
         #expect(window.toolbarStyle == .unified)
     }
 }
+
+@Test func testSemanticVersionComparison() throws {
+    // Basic core version comparisons
+    #expect(SemanticVersion.isNewerVersion(latestTag: "0.1.2", currentVersion: "0.1.1") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0", currentVersion: "0.9.9") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "0.1.1", currentVersion: "0.1.1") == false)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "0.1.0", currentVersion: "0.1.1") == false)
+
+    // Leading 'v' or 'V' and whitespace stripping
+    #expect(SemanticVersion.isNewerVersion(latestTag: "v0.1.2", currentVersion: "0.1.1") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "V1.0.0", currentVersion: "v0.9.9") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "  v0.1.1  ", currentVersion: "0.1.1") == false)
+
+    // Build metadata (ignored in SemVer precedence)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0+build123", currentVersion: "1.0.0") == false)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.1+build123", currentVersion: "1.0.0") == true)
+
+    // Normal release vs Pre-release precedence
+    // Normal release has higher precedence than a pre-release of the same core version
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0", currentVersion: "1.0.0-rc.1") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-rc.1", currentVersion: "1.0.0") == false)
+
+    // Pre-release vs Pre-release
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-beta.2", currentVersion: "1.0.0-beta.1") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-beta.1", currentVersion: "1.0.0-beta.2") == false)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-rc.1", currentVersion: "1.0.0-beta.2") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-alpha", currentVersion: "1.0.0-alpha.1") == false)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-alpha.1", currentVersion: "1.0.0-alpha") == true)
+
+    // Numeric vs Alphanumeric identifier precedence in pre-release
+    // Numeric identifiers always have lower precedence than alphanumeric identifiers
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-alpha.beta", currentVersion: "1.0.0-alpha.1") == true)
+    #expect(SemanticVersion.isNewerVersion(latestTag: "1.0.0-alpha.1", currentVersion: "1.0.0-alpha.beta") == false)
 }
+
+@Test func testGitHubReleaseJSONDecoding() throws {
+    let json = """
+    {
+        "tag_name": "v0.1.2",
+        "name": "VectorPDF 0.1.2",
+        "body": "Fixed update check and improved performance.",
+        "html_url": "https://github.com/tomderham/vectorpdf/releases/tag/v0.1.2",
+        "assets": [
+            {
+                "name": "VectorPDF-0.1.2.dmg",
+                "browser_download_url": "https://github.com/tomderham/vectorpdf/releases/download/v0.1.2/VectorPDF.dmg",
+                "size": 25165824
+            },
+            {
+                "name": "checksums.txt",
+                "browser_download_url": "https://github.com/tomderham/vectorpdf/releases/download/v0.1.2/checksums.txt",
+                "size": 128
+            }
+        ]
+    }
+    """.data(using: .utf8)!
+
+    let release = try JSONDecoder().decode(GitHubRelease.self, from: json)
+    #expect(release.tagName == "v0.1.2")
+    #expect(release.name == "VectorPDF 0.1.2")
+    #expect(release.assets.count == 2)
+
+    let dmgAsset = release.assets.first(where: { $0.name.lowercased().hasSuffix(".dmg") })
+    #expect(dmgAsset != nil)
+    #expect(dmgAsset?.browserDownloadUrl == "https://github.com/tomderham/vectorpdf/releases/download/v0.1.2/VectorPDF.dmg")
+    #expect(dmgAsset?.size == 25165824)
+}
+
+@Test @MainActor func testGitHubUpdaterSettingsPersistence() throws {
+    let updater = GitHubUpdater.shared
+
+    // Toggle automaticUpdateChecks
+    let initialValue = updater.automaticUpdateChecks
+    updater.automaticUpdateChecks = !initialValue
+    #expect(UserDefaults.standard.bool(forKey: GitHubUpdater.automaticUpdateChecksKey) == !initialValue)
+
+    // Restore initial value
+    updater.automaticUpdateChecks = initialValue
+    #expect(UserDefaults.standard.bool(forKey: GitHubUpdater.automaticUpdateChecksKey) == initialValue)
+
+    // Timestamp persistence
+    let testDate = Date(timeIntervalSince1970: 1700000000)
+    updater.lastUpdateCheckDate = testDate
+    let storedMs = UserDefaults.standard.double(forKey: GitHubUpdater.lastUpdateCheckKey)
+    #expect(abs(storedMs - testDate.timeIntervalSince1970 * 1000.0) < 1.0)
+}
+
+@Test @MainActor func testFavoritesManagerUndo() throws {
+    let manager = FavoritesManager.shared
+    let testPath = "/tmp/test_fav_undo_\(UUID().uuidString).pdf"
+    
+    // Clean up if already exists
+    manager.removeFavorite(path: testPath)
+    
+    manager.addFavorite(path: testPath, title: "Test Doc")
+    #expect(manager.isFavorite(path: testPath) == true)
+    
+    // Remove and check return tuple
+    let removed = manager.removeFavorite(path: testPath)
+    #expect(removed != nil)
+    #expect(removed?.document.path == testPath)
+    #expect(manager.isFavorite(path: testPath) == false)
+    
+    // Undo / re-insert
+    if let removed {
+        manager.insertFavorite(removed.document, at: removed.index)
+    }
+    #expect(manager.isFavorite(path: testPath) == true)
+    
+    // Clean up
+    manager.removeFavorite(path: testPath)
+    #expect(manager.isFavorite(path: testPath) == false)
+}
+
+@Test @MainActor func testTabGroupManagerUndo() throws {
+    let manager = TabGroupManager.shared
+    let group = manager.addGroup(name: "Test Group", documentPaths: ["/tmp/a.pdf", "/tmp/b.pdf"])
+    #expect(manager.group(withId: group.id) != nil)
+    
+    // Remove and check return tuple
+    let removed = manager.removeGroup(group.id)
+    #expect(removed != nil)
+    #expect(removed?.group.id == group.id)
+    #expect(manager.group(withId: group.id) == nil)
+    
+    // Undo / re-insert
+    if let removed {
+        manager.insertGroup(removed.group, at: removed.index)
+    }
+    #expect(manager.group(withId: group.id) != nil)
+    
+    // Clean up
+    manager.removeGroup(group.id)
+    #expect(manager.group(withId: group.id) == nil)
+}
+}
+
 

@@ -61,8 +61,18 @@ public final class TabGroupManager: ObservableObject {
         return group
     }
 
-    public func removeGroup(_ id: UUID) {
-        groups.removeAll { $0.id == id }
+    @discardableResult
+    public func removeGroup(_ id: UUID) -> (group: TabGroup, index: Int)? {
+        guard let idx = groups.firstIndex(where: { $0.id == id }) else { return nil }
+        let removed = groups.remove(at: idx)
+        saveGroups()
+        return (removed, idx)
+    }
+
+    public func insertGroup(_ group: TabGroup, at index: Int = 0) {
+        guard !groups.contains(where: { $0.id == group.id }) else { return }
+        let insertIdx = min(max(0, index), groups.count)
+        groups.insert(group, at: insertIdx)
         saveGroups()
     }
 

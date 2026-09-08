@@ -21,6 +21,8 @@ public struct PDFViewerMainView: View {
     @State private var gestureBaseZoom: CGFloat = 1.0
     @State private var sidebarVisibility: NavigationSplitViewVisibility
     @FocusState private var isAgentInputFocused: Bool
+    @State private var undoToastMessage: String? = nil
+    @State private var undoAction: (() -> Void)? = nil
     public let initialFilePath: String?
     public let initialTarget: SnapshotTarget?
     public let onOpenNewTab: ((URL) -> Void)?
@@ -120,68 +122,188 @@ public struct PDFViewerMainView: View {
             }
     }
 
+    private let maxVisibleFavorites = 5
+    private let maxVisibleTabGroups = 3
+
     /// Shown in place of the sidebar+canvas whenever this window/tab has no document loaded —
     /// Favorites and Tab Groups give an immediate way to get somewhere without going to the menu
     /// bar, rather than a blank page and an empty "No Outline" sidebar.
+    /// Features an interactive Hero Drop Zone, Tab Groups, Favorites, and space-adaptive Recents.
     @ViewBuilder
     private var startScreen: some View {
-        VStack(spacing: 20) {
-            Button {
-                viewModel.promptOpenFile()
-            } label: {
-                Label("Open PDF...", systemImage: "folder")
-                    .frame(maxWidth: 200)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .padding(.top, 40)
+        let visibleFavorites = Array(favoritesManager.favorites.prefix(maxVisibleFavorites))
+        let visibleTabGroups = Array(tabGroupManager.groups.prefix(maxVisibleTabGroups))
+        let totalItems = favoritesManager.favorites.count + tabGroupManager.groups.count
 
-            if favoritesManager.favorites.isEmpty && tabGroupManager.groups.isEmpty {
-                // Nothing saved yet — the lists below have nothing to show, and pointing at
-                // "the star icon above" would be actively wrong here anyway: with no document
-                // open, that menu has no "Add to Favorites" action at all (there's nothing to
-                // favorite yet). The Open PDF button above is the only path forward, so leave it
-                // at that rather than describing a menu item that doesn't apply.
-                Spacer()
-            } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        if !tabGroupManager.groups.isEmpty {
-                            startScreenSection("Tab Groups") {
-                                ForEach(tabGroupManager.groups) { group in
-                                    StartScreenRow(
-                                        title: group.name,
-                                        subtitle: "\(group.documentPaths.count) tab\(group.documentPaths.count == 1 ? "" : "s")",
-                                        systemImage: "square.grid.2x2",
-                                        onOpen: { tabGroupManager.open(group) },
-                                        onRemove: { tabGroupManager.removeGroup(group.id) }
-                                    )
+        // Show recents only if space permits (total items <= 4) and recents exist
+        let recentURLs: [URL] = {
+            guard totalItems <= 4 else { return [] }
+            let favPaths = Set(favoritesManager.favorites.map(\.path))
+            return NSDocumentController.shared.recentDocumentURLs
+                .filter { $0.pathExtension.lowercased() == "pdf" && !favPaths.contains($0.path) }
+                .prefix(3)
+                .map { $0 }
+        }()
+
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 24) {
+                    HeroDropZoneView(
+                        onChooseFile: {
+                            viewModel.promptOpenFile()
+                        },
+                        onDropURLs: { urls in
+                            guard let url = urls.first else { return }
+                            Task { @MainActor in
+                                await viewModel.loadDocument(from: url.path)
+                            }
+                        }
+                    )
+                    .padding(.top, 28)
+
+                    if totalItems == 0 && recentURLs.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "star")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.tertiary)
+                            Text("No Favorites Yet")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.secondary)
+                            Text("Open a PDF and click the star in the toolbar to pin it here for quick access.")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: 280)
+                        }
+                        .padding(.top, 16)
+                    } else {
+                        VStack(alignment: .leading, spacing: 20) {
+                            if !visibleTabGroups.isEmpty {
+                                startScreenSection("Tab Groups") {
+                                    ForEach(visibleTabGroups) { group in
+                                        StartScreenRow(
+                                            title: group.name,
+                                            subtitle: "\(group.documentPaths.count) tab\(group.documentPaths.count == 1 ? "" : "s")",
+                                            systemImage: "square.grid.2x2",
+                                            onOpen: { tabGroupManager.open(group) },
+                                            onRemove: {
+                                                if let removed = tabGroupManager.removeGroup(group.id) {
+                                                    triggerUndoToast("Deleted Tab Group \"\(group.name)\"") {
+                                                        tabGroupManager.insertGroup(removed.group, at: removed.index)
+                                                    }
+                                                }
+                                            },
+                                            removeLabel: "Delete Tab Group"
+                                        )
+                                    }
+                                    if tabGroupManager.groups.count > maxVisibleTabGroups {
+                                        Text("Showing \(maxVisibleTabGroups) of \(tabGroupManager.groups.count) tab groups • See all in File menu")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 4)
+                                    }
+                                }
+                            }
+
+                            if !visibleFavorites.isEmpty {
+                                startScreenSection("Favorites") {
+                                    ForEach(visibleFavorites) { fav in
+                                        let parentDir = URL(fileURLWithPath: fav.path).deletingLastPathComponent().lastPathComponent
+                                        StartScreenRow(
+                                            title: fav.title,
+                                            subtitle: parentDir.isEmpty ? nil : parentDir,
+                                            systemImage: "doc.text",
+                                            filePath: fav.path,
+                                            onOpen: { viewModel.openDocumentPreferringNewWindow(atPath: fav.path) },
+                                            onOpenInNewTab: {
+                                                if let onNewTab = viewModel.onOpenNewTab {
+                                                    onNewTab(URL(fileURLWithPath: fav.path))
+                                                }
+                                            },
+                                            onOpenInNewWindow: { viewModel.openDocumentPreferringNewWindow(atPath: fav.path) },
+                                            onRemove: {
+                                                if let removed = favoritesManager.removeFavorite(path: fav.path) {
+                                                    triggerUndoToast("Removed \"\(fav.title)\" from Favorites") {
+                                                        favoritesManager.insertFavorite(removed.document, at: removed.index)
+                                                    }
+                                                }
+                                            },
+                                            removeLabel: "Remove from Favorites"
+                                        )
+                                    }
+                                    if favoritesManager.favorites.count > maxVisibleFavorites {
+                                        Text("Showing \(maxVisibleFavorites) of \(favoritesManager.favorites.count) favorites • See all in File > Favorites")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 4)
+                                    }
+                                }
+                            }
+
+                            if !recentURLs.isEmpty {
+                                startScreenSection("Recent Documents") {
+                                    ForEach(recentURLs, id: \.self) { url in
+                                        let parentDir = url.deletingLastPathComponent().lastPathComponent
+                                        StartScreenRow(
+                                            title: url.lastPathComponent,
+                                            subtitle: parentDir.isEmpty ? nil : parentDir,
+                                            systemImage: "clock",
+                                            filePath: url.path,
+                                            onOpen: {
+                                                Task { await viewModel.loadDocument(from: url.path) }
+                                            },
+                                            onOpenInNewTab: {
+                                                if let onNewTab = viewModel.onOpenNewTab {
+                                                    onNewTab(url)
+                                                }
+                                            },
+                                            onOpenInNewWindow: {
+                                                viewModel.openDocumentPreferringNewWindow(atPath: url.path)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
-                        if !favoritesManager.favorites.isEmpty {
-                            startScreenSection("Favorites") {
-                                ForEach(favoritesManager.favorites) { fav in
-                                    StartScreenRow(
-                                        title: fav.title,
-                                        subtitle: nil,
-                                        systemImage: "doc.text",
-                                        onOpen: { viewModel.openDocumentPreferringNewWindow(atPath: fav.path) },
-                                        onRemove: { favoritesManager.removeFavorite(path: fav.path) }
-                                    )
-                                }
-                            }
-                        }
+                        .frame(maxWidth: 480)
                     }
-                    .padding(24)
-                    .frame(maxWidth: 480)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // No separate .onDrop here — body already applies one to the whole view (see below),
-        // which covers this screen too.
+        .overlay(alignment: .bottom) {
+            if let msg = undoToastMessage, let action = undoAction {
+                UndoToastView(message: msg) {
+                    action()
+                    withAnimation {
+                        undoToastMessage = nil
+                        undoAction = nil
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+    }
+
+    private func triggerUndoToast(_ message: String, undo: @escaping () -> Void) {
+        withAnimation {
+            undoToastMessage = message
+            undoAction = undo
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            await MainActor.run {
+                if undoToastMessage == message {
+                    withAnimation {
+                        undoToastMessage = nil
+                        undoAction = nil
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -192,6 +314,7 @@ public struct PDFViewerMainView: View {
                 .foregroundStyle(.secondary)
             content()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// User-facing label for which backend answered an Agent turn — see AgentSynthesisProvider.
@@ -384,9 +507,9 @@ public struct PDFViewerMainView: View {
                         .padding(.horizontal, 8)
                         .padding(.top, 4)
                         
-                        if !viewModel.searchResults.isEmpty {
+                        if !viewModel.searchResults.isEmpty || (!viewModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSearching) {
                             HStack {
-                                Text("\(viewModel.activeSearchMatchIndex + 1) of \(viewModel.searchResults.count)")
+                                Text(viewModel.searchResults.isEmpty ? "0 results" : "\(viewModel.activeSearchMatchIndex + 1) of \(viewModel.searchResults.count)")
                                     .font(.caption2.monospacedDigit().weight(.medium))
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
@@ -402,39 +525,40 @@ public struct PDFViewerMainView: View {
                                 
                                 Spacer()
                                 
-                                HStack(spacing: 2) {
-                                    Button {
-                                        viewModel.previousSearchMatch()
-                                    } label: {
-                                        Image(systemName: "chevron.up")
-                                            .font(.caption2.weight(.semibold))
-                                            .frame(width: 20, height: 20)
-                                            .contentShape(Rectangle())
+                                if !viewModel.searchResults.isEmpty {
+                                    HStack(spacing: 2) {
+                                        Button {
+                                            viewModel.previousSearchMatch()
+                                        } label: {
+                                            Image(systemName: "chevron.up")
+                                                .font(.caption2.weight(.semibold))
+                                                .frame(width: 20, height: 20)
+                                                .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Previous Match (Shift+Cmd+G)")
+                                        
+                                        Button {
+                                            viewModel.nextSearchMatch()
+                                        } label: {
+                                            Image(systemName: "chevron.down")
+                                                .font(.caption2.weight(.semibold))
+                                                .frame(width: 20, height: 20)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Next Match (Cmd+G)")
                                     }
-                                    .buttonStyle(.plain)
-                                    .help("Previous Match (Shift+Cmd+G)")
-                                    
-                                    Button {
-                                        viewModel.nextSearchMatch()
-                                    } label: {
-                                        Image(systemName: "chevron.down")
-                                            .font(.caption2.weight(.semibold))
-                                            .frame(width: 20, height: 20)
-                                            .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("Next Match (Cmd+G)")
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule(style: .continuous)
+                                            .fill(.ultraThinMaterial)
+                                            .overlay(
+                                                Capsule(style: .continuous)
+                                                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                                            )
+                                    )
                                 }
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(.ultraThinMaterial)
-                                        .overlay(
-                                            Capsule(style: .continuous)
-                                                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
-                                        )
-                                )
                             }
                             .padding(.horizontal, 8)
                         }
@@ -776,29 +900,12 @@ public struct PDFViewerMainView: View {
     @ToolbarContentBuilder
     private var documentToolbarContent: some ToolbarContent {
             ToolbarItem(placement: .navigation) {
-                HStack(spacing: 6) {
-                    Button {
-                        viewModel.promptOpenFile()
-                    } label: {
-                        Image(systemName: "folder")
-                    }
-                    .help("Open PDF File (Cmd+O)")
-                    
-                    Menu {
+                Menu {
                         // The two "save something for later" actions, paired together with
                         // scope stated explicitly in the label — "this PDF" vs. "all open tabs" —
                         // rather than one living up here and the other buried below the lists,
                         // which read as unrelated even though they're really two variants of the
                         // same idea.
-                        if let doc = viewModel.document {
-                            let isFav = favoritesManager.isFavorite(path: doc.filePath)
-                            Button {
-                                favoritesManager.toggleFavorite(path: doc.filePath, title: viewModel.documentTitle)
-                            } label: {
-                                Label(isFav ? "Remove This PDF from Favorites" : "Add This PDF to Favorites", systemImage: isFav ? "star.slash" : "star")
-                            }
-                        }
-
                         if let groupOrigin = viewModel.groupOrigin, let group = tabGroupManager.group(withId: groupOrigin) {
                             Button {
                                 viewModel.updateGroupFromCurrentTabs()
@@ -815,7 +922,38 @@ public struct PDFViewerMainView: View {
                             }
                         }
 
+                        if let doc = viewModel.document {
+                            let isFav = favoritesManager.isFavorite(path: doc.filePath)
+                            Button {
+                                favoritesManager.toggleFavorite(path: doc.filePath, title: viewModel.documentTitle)
+                            } label: {
+                                Label(isFav ? "Remove This PDF from Favorites" : "Add This PDF to Favorites", systemImage: isFav ? "star.slash" : "star")
+                            }
+                        }
+
                         Divider()
+
+                        if !tabGroupManager.groups.isEmpty {
+                            Section("Tab Groups") {
+                                ForEach(tabGroupManager.groups) { group in
+                                    Menu {
+                                        Button {
+                                            tabGroupManager.open(group)
+                                        } label: {
+                                            Label("Open", systemImage: "square.grid.2x2")
+                                        }
+                                        Button(role: .destructive) {
+                                            tabGroupManager.removeGroup(group.id)
+                                        } label: {
+                                            Label("Delete Tab Group", systemImage: "trash")
+                                        }
+                                    } label: {
+                                        Text("\(group.name) (\(group.documentPaths.count))")
+                                    }
+                                }
+                            }
+                            Divider()
+                        }
 
                         if favoritesManager.favorites.isEmpty {
                             Text("No Favorites Added")
@@ -844,28 +982,6 @@ public struct PDFViewerMainView: View {
                                 }
                             }
                         }
-
-                        if !tabGroupManager.groups.isEmpty {
-                            Divider()
-                            Section("Tab Groups") {
-                                ForEach(tabGroupManager.groups) { group in
-                                    Menu {
-                                        Button {
-                                            tabGroupManager.open(group)
-                                        } label: {
-                                            Label("Open", systemImage: "square.grid.2x2")
-                                        }
-                                        Button(role: .destructive) {
-                                            tabGroupManager.removeGroup(group.id)
-                                        } label: {
-                                            Label("Delete Group", systemImage: "trash")
-                                        }
-                                    } label: {
-                                        Text("\(group.name) (\(group.documentPaths.count))")
-                                    }
-                                }
-                            }
-                        }
                     } label: {
                         Image(systemName: (viewModel.document != nil && favoritesManager.isFavorite(path: viewModel.document!.filePath)) ? "star.fill" : "star")
                             .foregroundColor((viewModel.document != nil && favoritesManager.isFavorite(path: viewModel.document!.filePath)) ? .yellow : .secondary)
@@ -873,7 +989,16 @@ public struct PDFViewerMainView: View {
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
                     .help("Favorites & Tab Groups")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Picker("Selection Mode", selection: $viewModel.selectionMode) {
+                    Label("Text", systemImage: "text.cursor").tag(SelectionMode.readingOrder)
+                    Label("Area", systemImage: "rectangle.dashed").tag(SelectionMode.rectangularArea)
                 }
+                .pickerStyle(.segmented)
+                .disabled(viewModel.document == nil)
+                .help("Selection Tool: Text Flow or Rectangular Area (Hold Option while dragging for Area)")
             }
             
             ToolbarItem(placement: .automatic) {
@@ -910,16 +1035,6 @@ public struct PDFViewerMainView: View {
                 }
                 .disabled(viewModel.document == nil)
                 .help("Two-Page Mode — shows pages side by side for reading. Search, text selection, and form fields are unavailable while active.")
-            }
-
-            ToolbarItem(placement: .automatic) {
-                Picker("Selection Mode", selection: $viewModel.selectionMode) {
-                    Label("Text", systemImage: "text.cursor").tag(SelectionMode.readingOrder)
-                    Label("Area", systemImage: "rectangle.dashed").tag(SelectionMode.rectangularArea)
-                }
-                .pickerStyle(.segmented)
-                .disabled(viewModel.document == nil)
-                .help("Selection Tool: Text Flow or Rectangular Area (Hold Option while dragging for Area)")
             }
             
             if let doc = viewModel.document {

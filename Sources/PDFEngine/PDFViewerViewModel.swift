@@ -1137,6 +1137,20 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    /// Opens `path` directly into this window/tab if still empty, otherwise appends it as a new tab
+    /// in the current window's tab group.
+    public func openDocumentInNewTab(atPath path: String) {
+        Task { @MainActor in
+            if self.document == nil {
+                await self.loadDocument(from: path)
+            } else if let onOpenNewTab = self.onOpenNewTab {
+                onOpenNewTab(URL(fileURLWithPath: path))
+            } else {
+                await self.loadDocument(from: path)
+            }
+        }
+    }
+
     /// Total tabs in this window's tab group, including this one — 1 if it isn't tabbed with
     /// anything. Drives whether "Save All Open Tabs as a Group..." is offered at all (only makes
     /// sense once there's more than one tab to bundle up).
@@ -1191,17 +1205,21 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
-    public func promptOpenFile() {
+    public func promptOpenFile(inNewTab: Bool = false) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType.pdf]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.prompt = "Open PDF"
+        panel.prompt = inNewTab ? "Open PDF in New Tab" : "Open PDF"
 
         let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
-            self?.openDocumentPreferringNewWindow(atPath: url.path)
+            if inNewTab {
+                self?.openDocumentInNewTab(atPath: url.path)
+            } else {
+                self?.openDocumentPreferringNewWindow(atPath: url.path)
+            }
         }
         
         if let window = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow {
