@@ -209,8 +209,10 @@ public final class GitHubUpdater: ObservableObject {
         self.repo = gitHubRepo
         self.appName = applicationName
 
-        if let version = currentVersion ?? Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+        if let version = currentVersion ?? (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) {
             self.currentAppVersion = version
+        } else if let devVersion = try? String(contentsOfFile: "VERSION", encoding: .utf8) {
+            self.currentAppVersion = devVersion.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
         // Hourly check timer (3600 seconds)
