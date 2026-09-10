@@ -68,6 +68,18 @@ public struct PDFViewerMainView: View {
         self._viewModel = StateObject(wrappedValue: vm)
     }
 
+    private func bannerDetailText(for target: SnapshotTarget) -> String {
+        let pageLabel = "Page \(target.targetPage + 1)"
+        let cleanLabel = target.label.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanLabel.isEmpty || cleanLabel == pageLabel {
+            return "— \(pageLabel)"
+        } else if cleanLabel.hasPrefix(pageLabel) {
+            return "— \(cleanLabel)"
+        } else {
+            return "— \(pageLabel): \(cleanLabel)"
+        }
+    }
+
     /// Small persistent identifier bar for snapshot windows, replacing the sidebar's normal role
     /// of making a window's purpose obvious — visible regardless of window size or focus, unlike
     /// a title bar string that's easy to skim past. Clicking it jumps back to (and re-highlights)
@@ -75,29 +87,44 @@ public struct PDFViewerMainView: View {
     /// or zooming away from it while looking around.
     @ViewBuilder
     private var snapshotWindowBanner: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "macwindow.badge.plus")
-                .foregroundStyle(Color.accentColor)
-            Text("Snapshot Window")
-                .font(.caption.weight(.semibold))
-            if let target = initialTarget {
-                Text("— \(target.label)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+        let isSaved = initialTarget.map { target in
+            let path = viewModel.document?.filePath ?? initialFilePath ?? ""
+            let inState = ReadingStateManager.shared.state(for: path)?.snapshots.contains(where: { $0.id == target.id }) ?? false
+            return inState || viewModel.activeSnapshots.contains(where: { $0.id == target.id })
+        } ?? false
+        let bannerTitle = isSaved ? "Snapshot" : "Reference"
+
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: isSaved ? "camera.viewfinder" : "macwindow.badge.plus")
+                    .foregroundStyle(Color.accentColor)
+                Text(bannerTitle)
+                    .font(.caption.weight(.semibold))
+                if let target = initialTarget {
+                    Text(bannerDetailText(for: target))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if let target = initialTarget {
+                    viewModel.jumpToSnapshot(target)
+                }
+            }
+            .help(isSaved ? "Click to jump back to this snapshot" : "Click to jump back to this reference")
+
             Spacer()
+
+            SnapshotBannerCloseButton(action: {
+                let current = viewModel.currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow
+                SnapshotWindowManager.shared.closeChildrenOfCurrentParent(for: current)
+            })
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.accentColor.opacity(0.12))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if let target = initialTarget {
-                viewModel.jumpToSnapshot(target)
-            }
-        }
-        .help("Click to jump back to this snapshot")
         Divider()
     }
 
@@ -344,6 +371,7 @@ public struct PDFViewerMainView: View {
                     snapshotWindowBanner
                     documentCanvas
                 }
+                .frame(minWidth: 600, idealWidth: 960, minHeight: 450, idealHeight: 720)
                 .toolbar {
                     documentToolbarContent
                 }
@@ -605,6 +633,27 @@ public struct PDFViewerMainView: View {
                                                 viewModel.navigateToMatch(at: index, shouldScrollList: false)
                                             }
                                         }
+                                        .contextMenu {
+                                            Button {
+                                                viewModel.addSnapshot(from: match)
+                                            } label: {
+                                                Label("Create Snapshot", systemImage: "camera.viewfinder")
+                                            }
+
+                                            Button {
+                                                viewModel.addSnapshotAndOpenInNewWindow(from: match)
+                                            } label: {
+                                                Label("Create Snapshot and Open in New Window", systemImage: "camera.badge.ellipsis")
+                                            }
+
+                                            Divider()
+
+                                            Button {
+                                                viewModel.openSnapshotInNewWindow(from: match)
+                                            } label: {
+                                                Label("Open in New Window", systemImage: "macwindow.badge.plus")
+                                            }
+                                        }
                                         .id(match.id)
                                     }
                                 }
@@ -624,31 +673,6 @@ public struct PDFViewerMainView: View {
                 } else if selectedSidebarTab == 2 {
                     // Snapshots & Cross-References Tab
                     VStack(spacing: 0) {
-                        // Shown whenever any snapshot window is open, independent of whether
-                        // the Snapshots list itself is empty — a window can outlive its card
-                        // (e.g. the list was cleared, or the window came from a link/selection
-                        // that was never saved as a card at all), so this can't just live inside
-                        // the non-empty-list branch below.
-                        if snapshotWindowManager.hasOpenWindows {
-                            HStack {
-                                Image(systemName: "macwindow.on.rectangle")
-                                    .foregroundStyle(.secondary)
-                                Text("\(snapshotWindowManager.openWindowCount) Window\(snapshotWindowManager.openWindowCount == 1 ? "" : "s") Open")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Button("Close All Windows") {
-                                    snapshotWindowManager.closeAll()
-                                }
-                                .buttonStyle(.plain)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            Divider()
-                        }
-
                         if viewModel.activeSnapshots.isEmpty {
                             ContentUnavailableView(
                                 "No Snapshots",
@@ -1157,5 +1181,28 @@ private struct AgentSourcePassageView: View {
                         .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
                 )
         )
+    }
+}
+
+private struct SnapshotBannerCloseButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "xmark.rectangle")
+                Text("Close all Child Windows")
+            }
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(isHovered ? Color.primary : Color.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.primary.opacity(isHovered ? 0.12 : 0.06))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help("Close all snapshot and reference windows opened from the parent document")
     }
 }

@@ -693,21 +693,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         }
     }
     
-    /// Builds a plain "click here" target for a canvas point with no link or selection under
-    /// it — the fallback context-menu case, so "open in new window" is available anywhere on a
-    /// page, not just on the specific things (links, selections) that happen to have one.
+    /// Builds a target for a canvas point with no link or selection under
+    /// it — extracting the surrounding words/sentence text if near text, or a page target if in margin.
     private func pointTarget(at canvasPoint: CGPoint) -> SnapshotTarget? {
         guard let (pageIdx, _, pagePoint) = pageInfo(at: canvasPoint) else { return nil }
-        return SnapshotTarget(
-            label: "Page \(pageIdx + 1)",
-            targetPage: pageIdx,
-            targetPoint: pagePoint,
-            sourcePage: pageIdx
-        )
+        return viewModel.buildSnapshotTarget(at: pagePoint, pageIndex: pageIdx)
     }
 
     private func makeOpenInNewWindowItem(target: SnapshotTarget) -> NSMenuItem {
-        let item = NSMenuItem(title: "Open Here in New Window", action: #selector(openTargetInNewWindowAction(_:)), keyEquivalent: "")
+        let item = NSMenuItem(title: "Open in New Window", action: #selector(openTargetInNewWindowAction(_:)), keyEquivalent: "")
         item.image = NSImage(systemSymbolName: "macwindow.badge.plus", accessibilityDescription: nil)
         item.target = self
         item.representedObject = target
@@ -724,37 +718,55 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         let point = convert(event.locationInWindow, from: nil)
 
         // An active selection takes priority over a coincidental cross-reference link at the same
-        // point. Cross-references are just ordinary inline text (e.g. "27.3.20.2.2 Randomized
-        // LTF..."), so a dragged selection routinely overlaps one somewhere inside it — checking
-        // the link first would mean right-clicking anywhere your selection happened to cross a
-        // reference silently discarded the selection menu in favor of the link's own bare "Open in
-        // New Window," with no way to Copy or Create Snapshot from the selection at all. Gated on
-        // highlightQuads (is anything actually highlighted?)
-        // rather than extracted text, since a reading-order drag can produce visible highlight
-        // quads with an empty extracted string (e.g. landing entirely on whitespace). Also checks
-        // additionalSelectionPages: for a selection crossing a page boundary, the *starting*
-        // page's own slice could in principle be empty even though the selection as a whole
-        // clearly isn't.
+        // point.
         if let sel = viewModel.activeSelection, !sel.result.highlightQuads.isEmpty || !viewModel.additionalSelectionPages.isEmpty {
             return buildSelectionMenu(for: sel)
         }
 
-        // Right-clicking a cross-reference link (with no active selection) offers to open it —
-        // the primary, discoverable way to get to "Open in New Window" (Option-click is a
-        // secondary shortcut for the same action).
+        // Right-clicking a cross-reference link (with no active selection) offers snapshot & open actions.
         if let link = internalLinkInfo(at: point) {
-            // Just "Open Here in New Window" — a plain left-click already navigates in place,
-            // so there's no need to duplicate that as a menu item too.
             let menu = NSMenu(title: "Reference")
+
+            if !viewModel.isTransientWindow {
+                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                snapItem.target = self
+                snapItem.representedObject = link
+                menu.addItem(snapItem)
+
+                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                snapAndOpenItem.target = self
+                snapAndOpenItem.representedObject = link
+                menu.addItem(snapAndOpenItem)
+
+                menu.addItem(NSMenuItem.separator())
+            }
+
             menu.addItem(makeOpenInNewWindowItem(target: link))
             return menu
         }
 
-        // No link, no selection — still offer to open this exact spot in a new window, so the
-        // action is discoverable anywhere on the page, not just on the specific things (links,
-        // selections) that happen to already have a menu.
+        // No link, no selection — offer to create a snapshot from surrounding text or open here in a new window.
         if let target = pointTarget(at: point) {
             let menu = NSMenu(title: "Page")
+
+            if !viewModel.isTransientWindow {
+                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                snapItem.target = self
+                snapItem.representedObject = target
+                menu.addItem(snapItem)
+
+                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                snapAndOpenItem.target = self
+                snapAndOpenItem.representedObject = target
+                menu.addItem(snapAndOpenItem)
+
+                menu.addItem(NSMenuItem.separator())
+            }
+
             menu.addItem(makeOpenInNewWindowItem(target: target))
             return menu
         }
@@ -782,10 +794,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             saveScreenshotItem.target = self
             menu.addItem(saveScreenshotItem)
 
-            let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
-            snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
-            snapItem.target = self
-            menu.addItem(snapItem)
+            if !viewModel.isTransientWindow {
+                menu.addItem(NSMenuItem.separator())
+
+                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                snapItem.target = self
+                menu.addItem(snapItem)
+
+                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                snapAndOpenItem.target = self
+                menu.addItem(snapAndOpenItem)
+            }
         } else {
             // Only include Copy Text if extracted text is non-empty across all spanned pages.
             if !viewModel.activeSelectionCombinedText.isEmpty {
@@ -795,26 +816,48 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
                 menu.addItem(copyItem)
             }
 
-            let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
-            snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
-            snapItem.target = self
-            menu.addItem(snapItem)
+            if !viewModel.isTransientWindow {
+                if !viewModel.activeSelectionCombinedText.isEmpty {
+                    menu.addItem(NSMenuItem.separator())
+                }
+
+                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                snapItem.target = self
+                menu.addItem(snapItem)
+
+                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                snapAndOpenItem.target = self
+                menu.addItem(snapAndOpenItem)
+            }
         }
 
-        menu.addItem(NSMenuItem.separator())
+        if menu.numberOfItems > 0 {
+            menu.addItem(NSMenuItem.separator())
+        }
 
-        // Available for any selection (text or area), not just cross-reference links — the
-        // whole point is comparing whatever you've selected against what you're reading.
-        let openWindowItem = NSMenuItem(title: "Open Here in New Window", action: #selector(openSelectionInNewWindowAction(_:)), keyEquivalent: "")
+        // Available for any selection (text or area), not just cross-reference links
+        let openWindowItem = NSMenuItem(title: "Open in New Window", action: #selector(openSelectionInNewWindowAction(_:)), keyEquivalent: "")
         openWindowItem.image = NSImage(systemSymbolName: "macwindow.badge.plus", accessibilityDescription: nil)
         openWindowItem.target = self
         menu.addItem(openWindowItem)
 
-        // No "Clear Selection" item: clicking anywhere else (or starting a new selection)
-        // already clears the current one via mouseDown, so this would just be a second way to
-        // do something the user can already do by not right-clicking.
-
         return menu
+    }
+
+    @objc private func snapshotTargetAction(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? SnapshotTarget else { return }
+        viewModel.addSnapshotTarget(target)
+    }
+
+    @objc private func snapshotAndOpenTargetAction(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? SnapshotTarget else { return }
+        viewModel.addSnapshotAndOpen(target)
+    }
+
+    @objc private func snapshotAndOpenSelectionAction(_ sender: Any) {
+        viewModel.addSnapshotAndOpenFromSelection()
     }
 
     @objc private func openTargetInNewWindowAction(_ sender: NSMenuItem) {

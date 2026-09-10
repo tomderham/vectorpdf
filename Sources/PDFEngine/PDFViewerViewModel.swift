@@ -983,7 +983,9 @@ public final class PDFViewerViewModel: ObservableObject {
         let labelText: String
         if !combinedText.isEmpty {
             let firstLine = combinedText.components(separatedBy: .newlines).first ?? combinedText
-            labelText = String(firstLine.prefix(45))
+            let normalized = firstLine.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+            let truncated = normalized.truncatedAtWordBoundary(maxLength: 45)
+            labelText = truncated.isEmpty ? "Snapshot (Page \(pageIdx + 1))" : truncated
         } else if sel.result.mode == .rectangularArea {
             labelText = "Area Snapshot (Page \(pageIdx + 1))"
         } else {
@@ -1031,6 +1033,232 @@ public final class PDFViewerViewModel: ObservableObject {
         guard let target = buildSnapshotTargetFromSelection() else { return }
         openSnapshotInNewWindow(target)
     }
+
+    /// Builds a SnapshotTarget from a search result row, representing a text shortcut containing
+    /// the matched hit and its surrounding context words.
+    public func buildSnapshotTarget(from match: SearchResult) -> SnapshotTarget {
+        let unionRect = match.highlightQuads.reduce(into: CGRect.null) { rect, quad in
+            rect = rect.isNull ? quad.boundingRect : rect.union(quad.boundingRect)
+        }
+        let targetRect = unionRect.isNull ? nil : unionRect
+        let targetPoint = targetRect.map { CGPoint(x: $0.midX, y: $0.midY) }
+
+        let label = match.matchedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = label.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+        let truncated = normalized.truncatedAtWordBoundary(maxLength: 45)
+        let cleanLabel = truncated.isEmpty ? "Search Match (Page \(match.pageIndex + 1))" : truncated
+
+        return SnapshotTarget(
+            label: cleanLabel,
+            snippet: match.snippet,
+            targetPage: match.pageIndex,
+            targetPoint: targetPoint,
+            targetRect: targetRect,
+            sourceRect: targetRect,
+            sourcePage: match.pageIndex,
+            thumbnailData: nil
+        )
+    }
+
+    /// Saves a snapshot shortcut from a search result hit directly into the snapshots collection.
+    /// Skips duplicate creation if an identical snapshot (same page and snippet/rect) is already present,
+    /// without re-selecting any snapshot so the user's active search triage flow is not disrupted.
+    public func addSnapshot(from match: SearchResult) {
+        let isDuplicate = activeSnapshots.contains { snap in
+            guard snap.targetPage == match.pageIndex else { return false }
+            if snap.snippet == match.snippet { return true }
+            if let snapRect = snap.targetRect, !match.highlightQuads.isEmpty {
+                let matchRect = match.highlightQuads.reduce(into: CGRect.null) { $0 = $0.isNull ? $1.boundingRect : $0.union($1.boundingRect) }
+                if !matchRect.isNull && snapRect.intersects(matchRect) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        guard !isDuplicate else { return }
+
+        let target = buildSnapshotTarget(from: match)
+        activeSnapshots.append(target)
+        saveReadingStateIfNeeded()
+    }
+
+    /// Opens the search result in a separate snapshot window centered on the match coordinates.
+    public func openSnapshotInNewWindow(from match: SearchResult) {
+        let target = buildSnapshotTarget(from: match)
+        openSnapshotInNewWindow(target)
+    }
+
+    /// Saves a search result as a snapshot and opens it in a new window in one step.
+    public func addSnapshotAndOpenInNewWindow(from match: SearchResult) {
+        let target = buildSnapshotTarget(from: match)
+        addSnapshot(from: match)
+        let snapToOpen = activeSnapshots.first(where: { $0.id == target.id || ($0.targetPage == match.pageIndex && $0.snippet == match.snippet) }) ?? target
+        openSnapshotInNewWindow(snapToOpen)
+    }
+
+    /// Saves a snapshot target and opens it in a new window in one step.
+    public func addSnapshotAndOpen(_ target: SnapshotTarget) {
+        addSnapshotTarget(target)
+        openSnapshotInNewWindow(target)
+    }
+
+    /// Saves the current selection as a snapshot and opens it in a new window in one step.
+    public func addSnapshotAndOpenFromSelection() {
+        guard let target = buildSnapshotTargetFromSelection() else { return }
+        addSnapshotTarget(target)
+        openSnapshotInNewWindow(target)
+    }
+
+    /// Builds a SnapshotTarget at an arbitrary point on a page (e.g. from right-clicking with no active selection),
+    /// capturing the nearest text words/snippet around that point.
+    public func buildSnapshotTarget(at pagePoint: CGPoint, pageIndex: Int) -> SnapshotTarget {
+        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else {
+            return SnapshotTarget(
+                label: "Page \(pageIndex + 1)",
+                snippet: "Page \(pageIndex + 1)",
+                targetPage: pageIndex,
+                targetPoint: pagePoint,
+                targetRect: CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40),
+                sourceRect: CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40),
+                sourcePage: pageIndex,
+                thumbnailData: nil
+            )
+        }
+
+        let (indexedText, charQuads) = stext.searchableIndex
+        let nsIndexed = indexedText as NSString
+
+        if !indexedText.isEmpty && !charQuads.isEmpty {
+            var bestIdx: Int? = nil
+            var bestDist: CGFloat = .infinity
+
+            for i in 0..<min(charQuads.count, nsIndexed.length) {
+                guard let q = charQuads[i] else { continue }
+                let box = q.boundingRect
+                let dx = max(0, max(box.minX - pagePoint.x, pagePoint.x - box.maxX))
+                let dy = max(0, max(box.minY - pagePoint.y, pagePoint.y - box.maxY))
+                let dist = (dy * 3.0) + dx
+                if dist < bestDist {
+                    bestDist = dist
+                    bestIdx = i
+                }
+            }
+
+            if let hitIdx = bestIdx, bestDist < 120 {
+                let whitespaceChars = CharacterSet.whitespacesAndNewlines
+                var wordIdx = hitIdx
+
+                // If hitIdx is on whitespace, scan backward/forward to find the clicked or adjacent word
+                if let scalar = UnicodeScalar(nsIndexed.character(at: wordIdx)), whitespaceChars.contains(scalar) {
+                    if wordIdx > 0, let s = UnicodeScalar(nsIndexed.character(at: wordIdx - 1)), !whitespaceChars.contains(s) {
+                        wordIdx -= 1
+                    } else {
+                        while wordIdx < nsIndexed.length {
+                            if let s = UnicodeScalar(nsIndexed.character(at: wordIdx)), !whitespaceChars.contains(s) {
+                                break
+                            }
+                            wordIdx += 1
+                        }
+                    }
+                }
+
+                if wordIdx < nsIndexed.length {
+                    // Find the start of the clicked word
+                    var wordStart = wordIdx
+                    while wordStart > 0 {
+                        let prevChar = nsIndexed.character(at: wordStart - 1)
+                        if let scalar = UnicodeScalar(prevChar), whitespaceChars.contains(scalar) {
+                            break
+                        }
+                        wordStart -= 1
+                    }
+
+                    // Extract words starting right from the clicked word (not from the previous sentence!)
+                    let remaining = nsIndexed.substring(from: wordStart)
+                        .replacingOccurrences(of: "\n", with: " ")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let words = remaining.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+
+                    let candidateLabel = words.prefix(6).joined(separator: " ")
+                    let truncated = candidateLabel.truncatedAtWordBoundary(maxLength: 45)
+                    let cleanLabel = truncated.isEmpty ? "Page \(pageIndex + 1)" : truncated
+
+                    // Bounding rect for the clicked phrase
+                    let quadStart = wordStart
+                    let quadEnd = min(charQuads.count, wordStart + cleanLabel.utf16.count)
+                    var localQuads: [PDFQuad] = []
+                    for i in quadStart..<quadEnd {
+                        if let q = charQuads[i] {
+                            localQuads.append(q)
+                        }
+                    }
+                    let unionRect = localQuads.reduce(into: CGRect.null) { $0 = $0.isNull ? $1.boundingRect : $0.union($1.boundingRect) }
+                    let targetRect = unionRect.isNull ? CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40) : unionRect
+                    let targetPoint = CGPoint(x: targetRect.midX, y: targetRect.midY)
+
+                    // Clean snippet around the word with whole-word boundaries
+                    let rawStart = max(0, wordStart - 40)
+                    let rawEnd = min(nsIndexed.length, wordStart + 60)
+
+                    var cleanStart = rawStart
+                    if cleanStart > 0 {
+                        while cleanStart < wordStart {
+                            let ch = nsIndexed.character(at: cleanStart)
+                            if let s = UnicodeScalar(ch), whitespaceChars.contains(s) {
+                                cleanStart += 1
+                                break
+                            }
+                            cleanStart += 1
+                        }
+                    }
+
+                    var cleanEnd = rawEnd
+                    if cleanEnd < nsIndexed.length {
+                        while cleanEnd > wordStart {
+                            let ch = nsIndexed.character(at: cleanEnd - 1)
+                            if let s = UnicodeScalar(ch), whitespaceChars.contains(s) {
+                                cleanEnd -= 1
+                                break
+                            }
+                            cleanEnd -= 1
+                        }
+                    }
+
+                    let snippetSub = (cleanEnd > cleanStart)
+                        ? nsIndexed.substring(with: NSRange(location: cleanStart, length: cleanEnd - cleanStart))
+                            .replacingOccurrences(of: "\n", with: " ")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        : cleanLabel
+                    let prefix = cleanStart > 0 ? "... " : ""
+                    let suffix = cleanEnd < nsIndexed.length ? " ..." : ""
+                    let snippet = prefix + snippetSub + suffix
+
+                    return SnapshotTarget(
+                        label: cleanLabel,
+                        snippet: snippet,
+                        targetPage: pageIndex,
+                        targetPoint: targetPoint,
+                        targetRect: targetRect,
+                        sourceRect: targetRect,
+                        sourcePage: pageIndex,
+                        thumbnailData: nil
+                    )
+                }
+            }
+        }
+
+        return SnapshotTarget(
+            label: "Page \(pageIndex + 1)",
+            snippet: "Page \(pageIndex + 1)",
+            targetPage: pageIndex,
+            targetPoint: pagePoint,
+            targetRect: CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40),
+            sourceRect: CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40),
+            sourcePage: pageIndex,
+            thumbnailData: nil
+        )
+    }
     
     private func makeThumbnail(from image: NSImage, pageBounds: CGRect, targetRect: CGRect) -> Data? {
         guard targetRect.width > 5 && targetRect.height > 5 else { return nil }
@@ -1062,7 +1290,7 @@ public final class PDFViewerViewModel: ObservableObject {
     /// window closes first.
     public func openSnapshotInNewWindow(_ target: SnapshotTarget) {
         guard let doc = document else { return }
-        let source = currentWindow ?? NSApplication.shared.keyWindow
+        let source = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow
         SnapshotWindowManager.shared.open(url: URL(fileURLWithPath: doc.filePath), target: target, source: source)
     }
 
@@ -1402,11 +1630,17 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     
     public func addSnapshotTarget(_ target: SnapshotTarget) {
-        if !activeSnapshots.contains(where: { $0.id == target.id }) {
-            activeSnapshots.append(target)
-            selectedSnapshotId = target.id
-            saveReadingStateIfNeeded()
+        let isDuplicate = activeSnapshots.contains { existing in
+            if existing.id == target.id { return true }
+            if existing.targetPage == target.targetPage && !target.snippet.isEmpty && existing.snippet == target.snippet {
+                return true
+            }
+            return false
         }
+        guard !isDuplicate else { return }
+        activeSnapshots.append(target)
+        selectedSnapshotId = target.id
+        saveReadingStateIfNeeded()
     }
 
     public func removeSnapshotTarget(_ target: SnapshotTarget) {
@@ -1633,6 +1867,34 @@ public final class PDFViewerViewModel: ObservableObject {
             $0.errorMessage = errorMessage
         }
         agentIsAnswering = false
+    }
+}
+
+extension String {
+    /// Truncates string to at most `maxLength` characters without cutting off in the middle of a word.
+    /// If cutting at `maxLength` falls inside a word, that partial word is suppressed.
+    public func truncatedAtWordBoundary(maxLength: Int) -> String {
+        let trimmed = self.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > maxLength else { return trimmed }
+
+        let cutoffIndex = trimmed.index(trimmed.startIndex, offsetBy: maxLength)
+        let slice = trimmed[..<cutoffIndex]
+
+        // If character at cutoff is whitespace, the word ended cleanly right before cutoff.
+        if trimmed[cutoffIndex].isWhitespace {
+            return String(slice).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-")))
+        }
+
+        // Slice ends in the middle of a word. Find the last whitespace to drop the partial word.
+        if let lastSpace = slice.lastIndex(where: { $0.isWhitespace }) {
+            let clean = slice[..<lastSpace].trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;:-")))
+            if !clean.isEmpty {
+                return String(clean)
+            }
+        }
+
+        // Fallback for single long word: truncate directly
+        return String(slice)
     }
 }
 

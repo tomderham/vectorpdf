@@ -549,6 +549,81 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     #expect(vm.selectedSnapshotId == nil)
 }
 
+@Test @MainActor func testSnapshotFromSearchResultAndDuplicatePrevention() async throws {
+    let vm = PDFViewerViewModel()
+    #expect(vm.activeSnapshots.isEmpty)
+    #expect(vm.selectedSnapshotId == nil)
+    
+    let quad = PDFQuad(
+        ul: CGPoint(x: 50, y: 120),
+        ur: CGPoint(x: 150, y: 120),
+        ll: CGPoint(x: 50, y: 100),
+        lr: CGPoint(x: 150, y: 100)
+    )
+    let match = SearchResult(
+        pageIndex: 2,
+        matchedText: "transceiver architecture",
+        snippet: "...the transceiver architecture enables...",
+        highlightQuads: [quad]
+    )
+    
+    let target = vm.buildSnapshotTarget(from: match)
+    #expect(target.label == "transceiver architecture")
+    #expect(target.snippet == "...the transceiver architecture enables...")
+    #expect(target.targetPage == 2)
+    #expect(target.thumbnailFileName == nil)
+    #expect(target.targetRect == CGRect(x: 50, y: 100, width: 100, height: 20))
+    #expect(target.targetPoint == CGPoint(x: 100, y: 110))
+    
+    // Add snapshot from search result
+    vm.addSnapshot(from: match)
+    #expect(vm.activeSnapshots.count == 1)
+    #expect(vm.activeSnapshots.first?.label == "transceiver architecture")
+    // Should NOT arbitrarily mutate selectedSnapshotId to disrupt user flow
+    #expect(vm.selectedSnapshotId == nil)
+    
+    // Attempt duplicate addition of the exact same search match
+    vm.addSnapshot(from: match)
+    #expect(vm.activeSnapshots.count == 1)
+    #expect(vm.selectedSnapshotId == nil)
+    
+    // A different search match on a different page should be added
+    let match2 = SearchResult(
+        pageIndex: 5,
+        matchedText: "demodulation",
+        snippet: "...digital demodulation stage...",
+        highlightQuads: [quad]
+    )
+    vm.addSnapshot(from: match2)
+    #expect(vm.activeSnapshots.count == 2)
+}
+
+@Test @MainActor func testSnapshotAtPagePointAndAddAndOpen() async throws {
+    let vm = PDFViewerViewModel()
+    
+    // Test point target fallback when no structured text
+    let target = vm.buildSnapshotTarget(at: CGPoint(x: 200, y: 300), pageIndex: 3)
+    #expect(target.targetPage == 3)
+    #expect(target.label == "Page 4")
+    #expect(target.targetPoint == CGPoint(x: 200, y: 300))
+    #expect(target.thumbnailFileName == nil)
+    
+    // Test addSnapshotTarget duplicate prevention
+    vm.addSnapshotTarget(target)
+    #expect(vm.activeSnapshots.count == 1)
+    
+    // Exact duplicate target with same snippet/page should not duplicate
+    let duplicateTarget = SnapshotTarget(
+        label: "Page 4",
+        snippet: "Page 4",
+        targetPage: 3,
+        targetPoint: CGPoint(x: 200, y: 300),
+        sourcePage: 3
+    )
+    vm.addSnapshotTarget(duplicateTarget)
+    #expect(vm.activeSnapshots.count == 1)
+}
+
 @Test func testRapidToCNavigationAndBoundedCache() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_toc_nav_\(UUID().uuidString).pdf")
@@ -1553,6 +1628,92 @@ func createFormSamplePDF(at fileURL: URL) {
 
     #expect(opened.title == pdfURL.lastPathComponent)
     #expect(opened.contentViewController != nil)
+}
+
+@Test @MainActor func testSnapshotWindowManagerParentChildClose() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_snapshot_manager_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let parentWindow = NSWindow(
+        contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    parentWindow.isReleasedWhenClosed = false
+    defer { parentWindow.close() }
+
+    let target1 = SnapshotTarget(label: "Figure 1", targetPage: 0, sourcePage: 0)
+    let target2 = SnapshotTarget(label: "Table 1", targetPage: 1, sourcePage: 0)
+
+    SnapshotWindowManager.shared.open(url: pdfURL, target: target1, source: parentWindow)
+    SnapshotWindowManager.shared.open(url: pdfURL, target: target2, source: parentWindow)
+
+    #expect(SnapshotWindowManager.shared.isOpen(target1.id) == true)
+    #expect(SnapshotWindowManager.shared.isOpen(target2.id) == true)
+
+    // Closing all children from child window or parent window context
+    SnapshotWindowManager.shared.closeChildrenOfCurrentParent(for: parentWindow)
+
+    #expect(SnapshotWindowManager.shared.isOpen(target1.id) == false)
+    #expect(SnapshotWindowManager.shared.isOpen(target2.id) == false)
+}
+
+@Test @MainActor func testSnapshotWindowAutoClosesWhenParentCloses() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_snapshot_autoclose_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let parentWindow = NSWindow(
+        contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    parentWindow.isReleasedWhenClosed = false
+
+    let target = SnapshotTarget(label: "Section 1", targetPage: 0, sourcePage: 0)
+    SnapshotWindowManager.shared.open(url: pdfURL, target: target, source: parentWindow)
+
+    #expect(SnapshotWindowManager.shared.isOpen(target.id) == true)
+
+    parentWindow.close()
+
+    #expect(SnapshotWindowManager.shared.isOpen(target.id) == false)
+}
+
+@Test func testTruncatedAtWordBoundary() {
+    let text = "achieving ultra-high speed architecture rendering"
+    #expect(text.truncatedAtWordBoundary(maxLength: 20) == "achieving ultra-high")
+    #expect(text.truncatedAtWordBoundary(maxLength: 25) == "achieving ultra-high")
+
+    let textWithPunct = "first column text, discussing Figure 1"
+    #expect(textWithPunct.truncatedAtWordBoundary(maxLength: 18) == "first column text")
+}
+
+@Test @MainActor func testBuildSnapshotTargetAtPagePointStartsWithClickedWord() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_point_target_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    // Title "MuPDF Architecture Specification" is at y=720 (MuPDF y=72).
+    // Clicking at x=54 should start with "MuPDF"
+    let target1 = vm.buildSnapshotTarget(at: CGPoint(x: 54, y: 72), pageIndex: 0)
+    #expect(target1.label.hasPrefix("MuPDF"))
+    #expect(target1.targetPage == 0)
+
+    // Clicking at x=140 (on "Architecture") must start with "Architecture", NOT "MuPDF"
+    let target2 = vm.buildSnapshotTarget(at: CGPoint(x: 140, y: 72), pageIndex: 0)
+    #expect(target2.label.hasPrefix("Architecture"))
+    #expect(!target2.label.hasSuffix(" "))
+    #expect(target2.targetPage == 0)
 }
 }
 

@@ -36,6 +36,10 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
     private var childrenByParent: [ObjectIdentifier: [UUID]] = [:]
     private var watchedParents: Set<ObjectIdentifier> = []
 
+    // Maps a child window's identity to its root parent window's identity, so closing from any
+    // child window can locate and close all siblings (and itself) belonging to that document.
+    private var parentKeyByChild: [ObjectIdentifier: ObjectIdentifier] = [:]
+
     public func isOpen(_ id: UUID) -> Bool {
         openWindows[id] != nil
     }
@@ -49,11 +53,44 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
     }
 
     /// Closes every currently open snapshot window — however it was opened (a saved snapshot
-    /// card, a cross-reference link, a selection, or a plain page location). Offered from the
-    /// Snapshots panel so they don't have to be closed one at a time once several have piled up.
+    /// card, a cross-reference link, a selection, or a plain page location).
     public func closeAll() {
         for window in openWindows.values {
             window.close()
+        }
+    }
+
+    /// Closes all snapshot and reference windows that share the same root parent as `window`
+    /// (or are children of `window` if `window` is the parent). If `window` is nil or untracked,
+    /// falls back to closing all open snapshot windows.
+    public func closeChildrenOfCurrentParent(for window: NSWindow?) {
+        guard let window else {
+            closeAll()
+            return
+        }
+        let winKey = ObjectIdentifier(window)
+        if let parentKey = parentKeyByChild[winKey] {
+            // window is a child window: close all children belonging to this child's root parent
+            if let ids = childrenByParent[parentKey] {
+                for id in ids {
+                    openWindows[id]?.close()
+                }
+            } else {
+                window.close()
+            }
+            return
+        }
+        if let ids = childrenByParent[winKey] {
+            // window is the parent window
+            for id in ids {
+                openWindows[id]?.close()
+            }
+            return
+        }
+        if targetIdByWindow[winKey] != nil {
+            window.close()
+        } else {
+            closeAll()
         }
     }
 
@@ -67,11 +104,22 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
             return
         }
 
+        let resolvedSource = source ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow
+        let defaultWidth: CGFloat = 960
+        let defaultHeight: CGFloat = 720
+        let windowWidth: CGFloat
+        let windowHeight: CGFloat
+        if let resolvedSource {
+            let sf = resolvedSource.frame
+            windowWidth = max(defaultWidth, min(sf.width * 0.9, 1100))
+            windowHeight = max(defaultHeight, min(sf.height * 0.9, 850))
+        } else {
+            windowWidth = defaultWidth
+            windowHeight = defaultHeight
+        }
+
         let window = NSWindow(
-            // Smaller than a regular reading window/tab — visually signals "this is a quick
-            // snapshot, not another full reading session", and takes less screen space as
-            // these accumulate side by side.
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -98,31 +146,45 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
                 // documents — dropping a file here just isn't a supported action.
             }
         )
-        window.contentViewController = NSHostingController(rootView: view)
+        let hostingController = NSHostingController(rootView: view)
+        hostingController.view.setFrameSize(NSSize(width: windowWidth, height: windowHeight))
+        window.contentViewController = hostingController
 
-        if let source {
-            let sourceFrame = source.frame
-            window.setFrameOrigin(NSPoint(x: sourceFrame.origin.x + 40, y: sourceFrame.origin.y - 40))
+        window.setContentSize(NSSize(width: windowWidth, height: windowHeight))
+        window.minSize = NSSize(width: 500, height: 400)
+
+        if let resolvedSource {
+            let sourceFrame = resolvedSource.frame
+            let x = sourceFrame.minX + 40
+            let y = max(50, sourceFrame.maxY - windowHeight - 40)
+            window.setFrame(NSRect(x: x, y: y, width: windowWidth, height: windowHeight), display: true)
         } else {
             window.center()
         }
 
         openWindows[target.id] = window
-        targetIdByWindow[ObjectIdentifier(window)] = target.id
+        let childKey = ObjectIdentifier(window)
+        targetIdByWindow[childKey] = target.id
         NotificationCenter.default.addObserver(
             self, selector: #selector(snapshotWindowWillClose(_:)),
             name: NSWindow.willCloseNotification, object: window
         )
 
-        if let source {
-            childrenByParent[ObjectIdentifier(source), default: []].append(target.id)
-            // Only install one observer per source window no matter how many snapshot windows
-            // get opened from it — `watchedParents` guards against duplicates.
-            if watchedParents.insert(ObjectIdentifier(source)).inserted {
-                NotificationCenter.default.addObserver(
-                    self, selector: #selector(sourceWindowWillClose(_:)),
-                    name: NSWindow.willCloseNotification, object: source
-                )
+        if let resolvedSource {
+            let sourceKey = ObjectIdentifier(resolvedSource)
+            let rootParentKey = parentKeyByChild[sourceKey] ?? sourceKey
+            parentKeyByChild[childKey] = rootParentKey
+            childrenByParent[rootParentKey, default: []].append(target.id)
+
+            // If source is not already a child window, it's the root parent window.
+            // Observe it if not already observed.
+            if parentKeyByChild[sourceKey] == nil {
+                if watchedParents.insert(sourceKey).inserted {
+                    NotificationCenter.default.addObserver(
+                        self, selector: #selector(sourceWindowWillClose(_:)),
+                        name: NSWindow.willCloseNotification, object: resolvedSource
+                    )
+                }
             }
         }
 
@@ -136,12 +198,17 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
     }
 
     @objc private func snapshotWindowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow,
-              let id = targetIdByWindow.removeValue(forKey: ObjectIdentifier(window)) else { return }
+        guard let window = notification.object as? NSWindow else { return }
+        let winKey = ObjectIdentifier(window)
+        if let parentKey = parentKeyByChild.removeValue(forKey: winKey),
+           let id = targetIdByWindow[winKey] {
+            childrenByParent[parentKey]?.removeAll(where: { $0 == id })
+            if childrenByParent[parentKey]?.isEmpty == true {
+                childrenByParent.removeValue(forKey: parentKey)
+            }
+        }
+        guard let id = targetIdByWindow.removeValue(forKey: winKey) else { return }
         openWindows.removeValue(forKey: id)
-        // NotificationCenter does not retain the filter object, so registrations referencing
-        // an already-closed window are inert without requiring complex observer deregistration
-        // between parent and child snapshot windows.
     }
 
     @objc private func sourceWindowWillClose(_ notification: Notification) {
