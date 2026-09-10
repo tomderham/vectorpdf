@@ -15,6 +15,7 @@ SDK_MODE="${2:-macos27}"
 APP_NAME="VectorPDF"
 EXECUTABLE_NAME="VectorPDFApp"
 APP_BUNDLE="$APP_NAME.app"
+APP_VERSION="$(cat VERSION | tr -d '[:space:]')"
 
 BUILD_ARGS=(-c "$CONFIG")
 if [ "$SDK_MODE" = "macos27" ]; then
@@ -73,9 +74,9 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2</string>
+    <string>$APP_VERSION</string>
     <key>CFBundleVersion</key>
-    <string>0.2</string>
+    <string>$APP_VERSION</string>
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 Thomas Derham</string>
     <key>LSMinimumSystemVersion</key>

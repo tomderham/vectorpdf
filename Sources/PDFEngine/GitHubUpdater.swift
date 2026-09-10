@@ -174,7 +174,7 @@ public final class GitHubUpdater: ObservableObject {
     private var user: String = "tomderham"
     private var repo: String = "vectorpdf"
     private var appName: String = "VectorPDF"
-    public private(set) var currentAppVersion: String = "0.2"
+    public private(set) var currentAppVersion: String = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.0.0"
 
     private var timer: Timer?
     private var downloadTask: URLSessionDownloadTask?
