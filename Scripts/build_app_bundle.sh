@@ -2,40 +2,29 @@
 # Builds VectorPDF.app: compiles the executable with swift build and packages it into an
 # application bundle with Info.plist, icon, and ad-hoc code signature.
 #
-# Usage: Scripts/build_app_bundle.sh [debug|release] [macos27|default]
-#   Defaults to "macos27" mode (compiles against Xcode-beta.app with the
-#   Private Cloud Compute synthesis path enabled). Pass "default" as the second
-#   argument to compile against standard system Xcode without macos27 flags.
+# Usage: Scripts/build_app_bundle.sh [debug|release] [macos27|default|auto]
+#   Defaults to "release" and "auto". When the active macOS SDK is 27+ (Xcode 27),
+#   enables the Private Cloud Compute synthesis path (-DVECTORPDF_MACOS27_SDK).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
-SDK_MODE="${2:-macos27}"
+SDK_MODE="${2:-auto}"
 APP_NAME="VectorPDF"
 EXECUTABLE_NAME="VectorPDFApp"
 APP_BUNDLE="$APP_NAME.app"
 APP_VERSION="$(cat VERSION | tr -d '[:space:]')"
 
+SDK_VER="$(xcrun --show-sdk-version --sdk macosx 2>/dev/null || echo "0")"
+SDK_MAJOR="${SDK_VER%%.*}"
+
 BUILD_ARGS=(-c "$CONFIG")
-if [ "$SDK_MODE" = "macos27" ]; then
-    BETA_DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer"
-    if [ ! -d "$BETA_DEVELOPER_DIR" ]; then
-        if [ $# -ge 2 ]; then
-            echo "error: macos27 mode requires Xcode beta at $BETA_DEVELOPER_DIR, not found" >&2
-            exit 1
-        else
-            echo "warning: Xcode-beta not found at $BETA_DEVELOPER_DIR; falling back to standard SDK" >&2
-            SDK_MODE="default"
-        fi
-    else
-        export DEVELOPER_DIR="$BETA_DEVELOPER_DIR"
-        BUILD_ARGS+=(-Xswiftc -DVECTORPDF_MACOS27_SDK)
-        echo "Building $EXECUTABLE_NAME ($CONFIG, macOS 27 SDK via Xcode-beta)..."
-    fi
-fi
-if [ "$SDK_MODE" != "macos27" ]; then
-    echo "Building $EXECUTABLE_NAME ($CONFIG)..."
+if [ "$SDK_MODE" = "macos27" ] || { [ "$SDK_MODE" = "auto" ] && [ "$SDK_MAJOR" -ge 27 ]; }; then
+    BUILD_ARGS+=(-Xswiftc -DVECTORPDF_MACOS27_SDK)
+    echo "Building $EXECUTABLE_NAME ($CONFIG, macOS $SDK_VER SDK with VECTORPDF_MACOS27_SDK)..."
+else
+    echo "Building $EXECUTABLE_NAME ($CONFIG, macOS $SDK_VER SDK)..."
 fi
 swift build "${BUILD_ARGS[@]}"
 
