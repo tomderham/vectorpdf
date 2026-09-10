@@ -1507,6 +1507,53 @@ func createFormSamplePDF(at fileURL: URL) {
     // docWindow should still exist and not have been closed as replacement
     #expect(docWindow.representedURL == pdfURL1)
 }
+
+@Test @MainActor func testCloseStandaloneEmptyStartWindows() async throws {
+    let emptyWin1 = NSWindow(
+        contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    emptyWin1.isReleasedWhenClosed = false
+
+    let emptyWin2 = NSWindow(
+        contentRect: NSRect(x: 120, y: 120, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    emptyWin2.isReleasedWhenClosed = false
+
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(emptyWin1) == true)
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(emptyWin2) == true)
+
+    DocumentWindowing.closeStandaloneEmptyStartWindows(except: emptyWin1)
+
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(emptyWin1) == true)
+    emptyWin1.close()
+}
+
+@Test @MainActor func testOpenDocumentHandlingEmptyStart() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_handling_empty_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let emptyWindow = NSWindow(
+        contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    emptyWindow.isReleasedWhenClosed = false
+
+    let opened = DocumentWindowing.openDocumentHandlingEmptyStart(url: pdfURL, preferredWindow: emptyWindow)
+    defer { opened.close() }
+
+    #expect(opened.title == pdfURL.lastPathComponent)
+    #expect(opened.contentViewController != nil)
+}
 }
 
 

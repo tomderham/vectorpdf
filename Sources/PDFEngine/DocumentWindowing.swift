@@ -78,7 +78,8 @@ public enum DocumentWindowing {
                 DocumentWindowing.openNewWindow(url: nextUrl)
             }
         )
-        window.contentView = NSHostingView(rootView: view)
+        window.contentViewController = NSHostingController(rootView: view)
+        window.title = url.lastPathComponent
         return window
     }
 
@@ -105,7 +106,7 @@ public enum DocumentWindowing {
                 DocumentWindowing.openNewWindow(url: nextUrl)
             }
         )
-        window.contentView = NSHostingView(rootView: view)
+        window.contentViewController = NSHostingController(rootView: view)
         window.center()
         window.makeKeyAndOrderFront(nil)
     }
@@ -135,7 +136,7 @@ public enum DocumentWindowing {
                 DocumentWindowing.openNewWindow(url: nextUrl)
             }
         )
-        window.contentView = NSHostingView(rootView: view)
+        window.contentViewController = NSHostingController(rootView: view)
         sourceWindow.addTabbedWindow(window, ordered: .above)
         window.makeKeyAndOrderFront(nil)
     }
@@ -189,5 +190,49 @@ public enum DocumentWindowing {
         firstWindow?.makeKeyAndOrderFront(nil)
         windowToReplace?.close()
         return firstWindow
+    }
+
+    /// Closes any standalone empty Start Screen window currently open in NSApp.windows,
+    /// optionally preserving `exceptWindow`. Useful when opening a document from an external
+    /// trigger (such as double-clicking in Finder) to ensure no redundant blank windows remain.
+    public static func closeStandaloneEmptyStartWindows(except exceptWindow: NSWindow? = nil) {
+        for window in NSApp.windows {
+            if window !== exceptWindow && isStandaloneEmptyStartWindow(window) {
+                window.close()
+            }
+        }
+    }
+
+    /// Handles opening a document from an external system event (e.g. Finder double-click or CLI open).
+    /// If `preferredWindow` (or the key/main window) is a standalone empty Start Screen window,
+    /// this loads directly into it (or cleanly replaces it); otherwise it opens in a new window.
+    @discardableResult
+    public static func openDocumentHandlingEmptyStart(url: URL, preferredWindow: NSWindow? = nil) -> NSWindow {
+        let candidateWindow = preferredWindow ?? NSApp.keyWindow ?? NSApp.mainWindow ?? PDFViewerViewModel.active?.currentWindow
+        if let candidate = candidateWindow, isStandaloneEmptyStartWindow(candidate) {
+            if let activeVM = PDFViewerAppCoordinator.shared.activeViewModel ?? PDFViewerViewModel.active,
+               activeVM.currentWindow === candidate {
+                Task { @MainActor in
+                    await activeVM.loadDocument(from: url.path)
+                }
+                candidate.makeKeyAndOrderFront(nil)
+                return candidate
+            }
+
+            let window = makeWindow(for: url)
+            if !candidate.styleMask.contains(.fullScreen) {
+                window.setFrame(candidate.frame, display: false)
+            } else {
+                window.center()
+            }
+            window.makeKeyAndOrderFront(nil)
+            candidate.close()
+            return window
+        }
+
+        let window = makeWindow(for: url)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        return window
     }
 }

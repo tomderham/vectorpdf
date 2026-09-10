@@ -98,7 +98,7 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
                 // documents — dropping a file here just isn't a supported action.
             }
         )
-        window.contentView = NSHostingView(rootView: view)
+        window.contentViewController = NSHostingController(rootView: view)
 
         if let source {
             let sourceFrame = source.frame

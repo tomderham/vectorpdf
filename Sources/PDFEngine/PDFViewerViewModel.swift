@@ -285,8 +285,9 @@ public final class PDFViewerViewModel: ObservableObject {
             PDFViewerAppCoordinator.shared.registerActive(self)
             PDFViewerAppCoordinator.shared.noteRecentDocument(fileURL)
 
-            // Set representedURL only on this tab's window
+            // Set representedURL and window title on this tab's window
             if let window = currentWindow ?? NSApplication.shared.keyWindow {
+                window.title = fileName
                 window.representedURL = fileURL
                 window.isDocumentEdited = false
                 if !isTransientWindow && window.tabGroup?.isTabBarVisible != true {

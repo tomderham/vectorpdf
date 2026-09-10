@@ -17,6 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        DispatchQueue.main.async {
+            if NSApp.windows.contains(where: { !DocumentWindowing.isStandaloneEmptyStartWindow($0) }) {
+                DocumentWindowing.closeStandaloneEmptyStartWindows()
+            }
+        }
         GitHubUpdater.shared.start(
             gitHubUser: "tomderham",
             gitHubRepo: "vectorpdf",
@@ -24,19 +29,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
     
+    @MainActor
+    private func handleSystemOpenFile(url: URL) {
+        if NSApp.windows.isEmpty {
+            // Cold start before any windows are constructed: buffer path for initial WindowGroup task
+            PDFViewerAppCoordinator.shared.pendingOpenFilePath = url.path
+            NotificationCenter.default.post(name: .openFilePathCommand, object: url.path)
+        } else {
+            // Warm start: if current window has a single empty tab, open into that, else open in a new window
+            DocumentWindowing.openDocumentHandlingEmptyStart(url: url)
+        }
+    }
+
     func application(_ sender: NSApplication, openFile filename: String) -> Bool {
-        // Buffered as a fallback in addition to the notification — see
-        // PDFViewerAppCoordinator.pendingOpenFilePath for why the notification alone isn't
-        // reliable on a cold launch.
-        PDFViewerAppCoordinator.shared.pendingOpenFilePath = filename
-        NotificationCenter.default.post(name: .openFilePathCommand, object: filename)
+        let url = URL(fileURLWithPath: filename)
+        handleSystemOpenFile(url: url)
         return true
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        if let first = urls.first(where: { $0.pathExtension.lowercased() == "pdf" }) {
-            PDFViewerAppCoordinator.shared.pendingOpenFilePath = first.path
-            NotificationCenter.default.post(name: .openFilePathCommand, object: first.path)
+        for url in urls where url.pathExtension.lowercased() == "pdf" {
+            handleSystemOpenFile(url: url)
         }
     }
     

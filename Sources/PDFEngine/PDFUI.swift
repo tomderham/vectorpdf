@@ -12,7 +12,7 @@ extension Notification.Name {
 
 /// Standalone, reusable macOS SwiftUI PDF Document Viewer
 public struct PDFViewerMainView: View {
-    @StateObject public var viewModel = PDFViewerViewModel()
+    @StateObject public var viewModel: PDFViewerViewModel
     @ObservedObject private var favoritesManager = FavoritesManager.shared
     @ObservedObject private var appCoordinator = PDFViewerAppCoordinator.shared
     @ObservedObject private var tabGroupManager = TabGroupManager.shared
@@ -44,18 +44,28 @@ public struct PDFViewerMainView: View {
         onOpenNewTab: ((URL) -> Void)? = nil,
         onOpenNewWindow: ((URL) -> Void)? = nil
     ) {
-        self.initialFilePath = initialURL?.path ?? initialFilePath
+        let resolvedPath = initialURL?.path ?? initialFilePath
+        self.initialFilePath = resolvedPath
         self.initialTarget = initialTarget
         self.onOpenNewTab = onOpenNewTab
         self.onOpenNewWindow = onOpenNewWindow
         self.isSnapshotWindow = isSnapshotWindow
         self.groupOrigin = groupOrigin
-        // Every window/tab that ends up showing a real document starts with the sidebar open —
-        // ToC/Search/Snapshots are useful immediately, not just after manually revealing them.
-        // The one place this doesn't matter is the blank Start screen (no document loaded yet),
-        // which doesn't render a sidebar at all regardless of this value (see body below); once
-        // a document loads into that same window/tab, it inherits this same open default.
         self._sidebarVisibility = State(initialValue: .all)
+
+        let initialTitle: String = {
+            if let target = initialTarget {
+                let name = resolvedPath != nil ? URL(fileURLWithPath: resolvedPath!).lastPathComponent : "Document"
+                return "\(name) — \(target.label)"
+            }
+            if let path = resolvedPath {
+                return URL(fileURLWithPath: path).lastPathComponent
+            }
+            return "VectorPDF"
+        }()
+        let vm = PDFViewerViewModel()
+        vm.documentTitle = initialTitle
+        self._viewModel = StateObject(wrappedValue: vm)
     }
 
     /// Small persistent identifier bar for snapshot windows, replacing the sidebar's normal role
@@ -334,17 +344,21 @@ public struct PDFViewerMainView: View {
                     snapshotWindowBanner
                     documentCanvas
                 }
+                .toolbar {
+                    documentToolbarContent
+                }
+                .navigationTitle(viewModel.documentTitle)
             } else if viewModel.document == nil {
                 // Display Favorites and Tab Groups when no document is open
                 startScreen
+                    .toolbar {
+                        documentToolbarContent
+                    }
+                    .navigationTitle(viewModel.documentTitle)
             } else {
                 navigationSplitBody
             }
         }
-        .toolbar {
-            documentToolbarContent
-        }
-        .navigationTitle(viewModel.documentTitle)
         .background(
             WindowAccessor { window in
                 viewModel.currentWindow = window
@@ -361,6 +375,7 @@ public struct PDFViewerMainView: View {
                     PDFViewerAppCoordinator.shared.registerActive(viewModel)
                 }
                 if let doc = viewModel.document {
+                    window.title = viewModel.documentTitle
                     window.representedURL = URL(fileURLWithPath: doc.filePath)
                 }
             }
@@ -401,6 +416,7 @@ public struct PDFViewerMainView: View {
             if let path = notif.object as? String {
                 Task {
                     await viewModel.loadDocument(from: path)
+                    DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
                 }
             }
         }
@@ -419,6 +435,7 @@ public struct PDFViewerMainView: View {
                 if let target = initialTarget {
                     viewModel.jumpToSnapshot(target)
                 }
+                DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
             }
         }
     }
@@ -894,7 +911,12 @@ public struct PDFViewerMainView: View {
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
             documentCanvas
+                .navigationTitle(viewModel.documentTitle)
         }
+        .toolbar {
+            documentToolbarContent
+        }
+        .navigationTitle(viewModel.documentTitle)
     }
 
     @ToolbarContentBuilder
