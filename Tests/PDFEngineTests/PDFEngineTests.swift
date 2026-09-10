@@ -1393,6 +1393,120 @@ func createFormSamplePDF(at fileURL: URL) {
     manager.removeGroup(group.id)
     #expect(manager.group(withId: group.id) == nil)
 }
+@Test @MainActor func testIsStandaloneEmptyStartWindowDetection() async throws {
+    let window = NSWindow(
+        contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    window.isReleasedWhenClosed = false
+    defer { window.close() }
+
+    // Standalone window with no doc and no edits is eligible
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(window) == true)
+
+    // Window with a represented URL is not eligible
+    window.representedURL = URL(fileURLWithPath: "/path/to/doc.pdf")
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(window) == false)
+    window.representedURL = nil
+
+    // Edited window is not eligible
+    window.isDocumentEdited = true
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(window) == false)
+    window.isDocumentEdited = false
+
+    // Associated with view model that has no doc -> eligible
+    let vm = PDFViewerViewModel()
+    vm.currentWindow = window
+    PDFViewerAppCoordinator.shared.registerActive(vm)
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(window) == true)
+
+    // Associated with view model that has a doc -> not eligible
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_tabgroup_detect_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(DocumentWindowing.isStandaloneEmptyStartWindow(window) == false)
+
+    PDFViewerAppCoordinator.shared.registerActive(nil)
+}
+
+@Test @MainActor func testOpenGroupReplacesStandaloneEmptyStartWindow() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL1 = tempDir.appendingPathComponent("test_tg_1_\(UUID().uuidString).pdf")
+    let pdfURL2 = tempDir.appendingPathComponent("test_tg_2_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL1)
+    createSamplePDF(at: pdfURL2)
+    defer {
+        try? FileManager.default.removeItem(at: pdfURL1)
+        try? FileManager.default.removeItem(at: pdfURL2)
+    }
+
+    let initialFrame = NSRect(x: 150, y: 150, width: 900, height: 620)
+    let startWindow = NSWindow(
+        contentRect: initialFrame,
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    startWindow.isReleasedWhenClosed = false
+    startWindow.setFrame(initialFrame, display: false)
+
+    let group = TabGroup(name: "Test Group", documentPaths: [pdfURL1.path, pdfURL2.path])
+    let openedWindow = DocumentWindowing.openGroup(group, replacing: startWindow)
+    defer {
+        // Clean up opened windows
+        let tabs = openedWindow?.tabbedWindows ?? (openedWindow.map { [$0] } ?? [])
+        for tab in tabs {
+            tab.close()
+        }
+    }
+
+    #expect(openedWindow != nil)
+    if let opened = openedWindow {
+        #expect(opened.frame == initialFrame)
+        let tabCount = opened.tabbedWindows?.count ?? 1
+        #expect(tabCount == 2)
+    }
+}
+
+@Test @MainActor func testOpenGroupDoesNotReplaceWindowWithDocument() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL1 = tempDir.appendingPathComponent("test_tg_doc1_\(UUID().uuidString).pdf")
+    let pdfURL2 = tempDir.appendingPathComponent("test_tg_doc2_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL1)
+    createSamplePDF(at: pdfURL2)
+    defer {
+        try? FileManager.default.removeItem(at: pdfURL1)
+        try? FileManager.default.removeItem(at: pdfURL2)
+    }
+
+    let docWindow = NSWindow(
+        contentRect: NSRect(x: 200, y: 200, width: 800, height: 600),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: false
+    )
+    docWindow.isReleasedWhenClosed = false
+    docWindow.representedURL = pdfURL1
+    defer { docWindow.close() }
+
+    let group = TabGroup(name: "Test Group", documentPaths: [pdfURL1.path, pdfURL2.path])
+    let openedWindow = DocumentWindowing.openGroup(group, replacing: docWindow)
+    defer {
+        let tabs = openedWindow?.tabbedWindows ?? (openedWindow.map { [$0] } ?? [])
+        for tab in tabs {
+            tab.close()
+        }
+    }
+
+    #expect(openedWindow != nil)
+    #expect(openedWindow !== docWindow)
+    // docWindow should still exist and not have been closed as replacement
+    #expect(docWindow.representedURL == pdfURL1)
+}
 }
 
 

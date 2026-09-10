@@ -331,6 +331,7 @@ struct VectorPDFApp: App {
                         Menu("\(group.name) (\(group.documentPaths.count))") {
                             Button("Open") {
                                 TabGroupManager.shared.open(group)
+                                TabGroupManager.shared.open(group, replacing: resolvedViewModel?.currentWindow)
                             }
                             Button("Delete Group", role: .destructive) {
                                 TabGroupManager.shared.removeGroup(group.id)

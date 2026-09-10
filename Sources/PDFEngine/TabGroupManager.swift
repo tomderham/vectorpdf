@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// A named, ordered set of documents that open together as tabs in a single window — e.g. "the
 /// three specs I always need side by side for project X." Distinct from a plain Favorite (a
@@ -97,9 +98,12 @@ public final class TabGroupManager: ObservableObject {
         groups.first { $0.id == id }
     }
 
-    /// Opens every document in `group` as tabs of one new window. See DocumentWindowing.openGroup
-    /// for the actual window/tab creation (shared with the app's ordinary Open/Favorite flows).
-    public func open(_ group: TabGroup) {
-        DocumentWindowing.openGroup(group)
+
+    /// Opens every document in `group` as tabs of one window. If the current or specified window is
+    /// an empty Start Screen with no other tabs, it is replaced instead of opening a redundant window.
+    /// See DocumentWindowing.openGroup for the actual window/tab creation.
+    @discardableResult
+    public func open(_ group: TabGroup, replacing targetWindow: NSWindow? = nil) -> NSWindow? {
+        DocumentWindowing.openGroup(group, replacing: targetWindow)
     }
 }

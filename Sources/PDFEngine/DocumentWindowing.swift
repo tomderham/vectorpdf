@@ -140,10 +140,37 @@ public enum DocumentWindowing {
         window.makeKeyAndOrderFront(nil)
     }
 
-    /// Opens every document in `group` as tabs of one new window, under a tab-bar identity unique
+    /// Determines whether `window` is a standalone empty Start Screen window that can be cleanly
+    /// replaced when opening a Tab Group, rather than leaving an orphaned empty window behind.
+    public static func isStandaloneEmptyStartWindow(_ window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        // Must not be an auxiliary window, panel, sheet, or minimized
+        if window is NSPanel || window.attachedSheet != nil || window.isMiniaturized { return false }
+        // Must have only 1 tab (or no tabbed windows attached)
+        let tabCount = window.tabbedWindows?.count ?? 1
+        guard tabCount <= 1 else { return false }
+        // Must have no represented document URL and no unsaved edits
+        guard window.representedURL == nil, !window.isDocumentEdited else { return false }
+        // If the active view model is associated with this window, verify it has no document loaded
+        if let activeVM = PDFViewerAppCoordinator.shared.activeViewModel ?? PDFViewerViewModel.active,
+           activeVM.currentWindow === window {
+            guard activeVM.document == nil else { return false }
+        }
+        return true
+    }
+
+    /// Opens every document in `group` as tabs of a window, under a tab-bar identity unique
     /// to that group (so it never merges with unrelated tabs already open elsewhere).
-    public static func openGroup(_ group: TabGroup) {
-        guard !group.documentPaths.isEmpty else { return }
+    /// If `sourceWindow` (or the key window) is a standalone empty Start Screen window with
+    /// no other tabs and no document loaded, this seamlessly replaces that window at its current
+    /// frame instead of opening a redundant new window and leaving the blank one orphaned.
+    @discardableResult
+    public static func openGroup(_ group: TabGroup, replacing sourceWindow: NSWindow? = nil) -> NSWindow? {
+        guard !group.documentPaths.isEmpty else { return nil }
+
+        let candidateWindow = sourceWindow ?? NSApp.keyWindow ?? NSApp.mainWindow ?? PDFViewerViewModel.active?.currentWindow
+        let windowToReplace = isStandaloneEmptyStartWindow(candidateWindow) ? candidateWindow : nil
+
         let tabbingIdentifier = "PDFViewerTabGroup-\(group.id.uuidString)"
         var firstWindow: NSWindow?
         for path in group.documentPaths {
@@ -151,10 +178,16 @@ public enum DocumentWindowing {
             if let firstWindow {
                 firstWindow.addTabbedWindow(window, ordered: .above)
             } else {
-                window.center()
+                if let replaceWin = windowToReplace, !replaceWin.styleMask.contains(.fullScreen) {
+                    window.setFrame(replaceWin.frame, display: false)
+                } else {
+                    window.center()
+                }
                 firstWindow = window
             }
         }
         firstWindow?.makeKeyAndOrderFront(nil)
+        windowToReplace?.close()
+        return firstWindow
     }
 }

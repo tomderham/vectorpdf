@@ -185,7 +185,7 @@ public struct PDFViewerMainView: View {
                                             title: group.name,
                                             subtitle: "\(group.documentPaths.count) tab\(group.documentPaths.count == 1 ? "" : "s")",
                                             systemImage: "square.grid.2x2",
-                                            onOpen: { tabGroupManager.open(group) },
+                                            onOpen: { tabGroupManager.open(group, replacing: viewModel.currentWindow) },
                                             onRemove: {
                                                 if let removed = tabGroupManager.removeGroup(group.id) {
                                                     triggerUndoToast("Deleted Tab Group \"\(group.name)\"") {
@@ -938,7 +938,7 @@ public struct PDFViewerMainView: View {
                                 ForEach(tabGroupManager.groups) { group in
                                     Menu {
                                         Button {
-                                            tabGroupManager.open(group)
+                                            tabGroupManager.open(group, replacing: viewModel.currentWindow)
                                         } label: {
                                             Label("Open", systemImage: "square.grid.2x2")
                                         }
