@@ -191,6 +191,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
 /// The app's Settings window (⌘,).
 public struct AppSettingsView: View {
     @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
+    @ObservedObject private var updater = GitHubUpdater.shared
 
     public init() {}
 
@@ -223,10 +224,34 @@ public struct AppSettingsView: View {
                 Text("Light").tag(PDFColorAppearance.light)
                 Text("Dark").tag(PDFColorAppearance.dark)
             }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            Toggle("Automatically check for updates", isOn: $updater.automaticUpdateChecks)
+                .padding(.bottom, 6)
+
+            HStack {
+                if let lastCheck = updater.lastUpdateCheckDate {
+                    Text("Last checked: \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Last checked: Never")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button("Check Now") {
+                    updater.checkForUpdates(isManualCheck: true)
+                }
+                .disabled(updater.isChecking || updater.isDownloading)
+            }
         }
         .padding(20)
-        .frame(width: 360)
-        .frame(width: 400)
+        .frame(width: 420)
     }
 }
 
@@ -279,8 +304,18 @@ public final class FavoritesManager: ObservableObject {
         saveFavorites()
     }
     
-    public func removeFavorite(path: String) {
-        favorites.removeAll { $0.path == path }
+    @discardableResult
+    public func removeFavorite(path: String) -> (document: FavoriteDocument, index: Int)? {
+        guard let idx = favorites.firstIndex(where: { $0.path == path }) else { return nil }
+        let removed = favorites.remove(at: idx)
+        saveFavorites()
+        return (removed, idx)
+    }
+
+    public func insertFavorite(_ doc: FavoriteDocument, at index: Int = 0) {
+        guard !isFavorite(path: doc.path) else { return }
+        let insertIdx = min(max(0, index), favorites.count)
+        favorites.insert(doc, at: insertIdx)
         saveFavorites()
     }
     

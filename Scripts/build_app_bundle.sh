@@ -73,9 +73,9 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.1</string>
+    <string>0.2</string>
     <key>CFBundleVersion</key>
-    <string>0.1.1</string>
+    <string>0.2</string>
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 Thomas Derham</string>
     <key>LSMinimumSystemVersion</key>
@@ -99,7 +99,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "Signing (ad-hoc)..."
-codesign --force --deep -s - "$APP_BUNDLE"
+echo "Signing (ad-hoc with entitlements)..."
+codesign --force --deep --entitlements Resources/VectorPDF.entitlements -s - "$APP_BUNDLE"
 
 echo "Done: $(pwd)/$APP_BUNDLE"

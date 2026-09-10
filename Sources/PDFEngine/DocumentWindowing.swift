@@ -91,6 +91,25 @@ public enum DocumentWindowing {
         window.makeKeyAndOrderFront(nil)
     }
 
+    /// Opens a new, standalone empty window displaying the Start screen (Cmd+N).
+    public static func openNewEmptyWindow() {
+        let window = makeBareWindow(tabbingIdentifier: nil)
+        window.title = "VectorPDF"
+
+        let view = PDFViewerMainView(
+            onOpenNewTab: { [weak window] nextUrl in
+                guard let window else { return }
+                DocumentWindowing.addTab(url: nextUrl, to: window)
+            },
+            onOpenNewWindow: { nextUrl in
+                DocumentWindowing.openNewWindow(url: nextUrl)
+            }
+        )
+        window.contentView = NSHostingView(rootView: view)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+    }
+
     /// Adds `url` as a new tab attached to `sourceWindow`'s tab group — used by drag-and-drop
     /// onto a window that already has a document open ("add this here" reads as a tab, not a new
     /// window, matching direct-manipulation convention).

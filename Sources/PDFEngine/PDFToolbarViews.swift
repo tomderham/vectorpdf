@@ -1,57 +1,248 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
-/// A single Favorite or Tab Group entry on the empty-window "Start" screen — tap anywhere to
-/// open, or the trailing x to remove. Styled to match SnapshotCardView's cards for a consistent
-/// look across the app's list-of-things UI.
+/// Modern macOS hero drop zone replacing the solitary "Open PDF..." button.
+/// Users can drag PDF files directly into this area or click anywhere to choose a file.
+/// Typography and visual scale align with the sidebar pane for Agent and Snapshots.
+struct HeroDropZoneView: View {
+    let onChooseFile: () -> Void
+    let onDropURLs: ([URL]) -> Void
+
+    @State private var isTargeted = false
+    @State private var isHovered = false
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Color.accentColor.opacity(isTargeted ? 0.25 : 0.12))
+                    .frame(width: 56, height: 56)
+
+                Image(systemName: isTargeted ? "arrow.down.doc.fill" : "doc.badge.plus")
+                    .font(.system(size: 28))
+                    .foregroundStyle(Color.accentColor)
+                    .symbolEffect(.bounce, value: isTargeted)
+            }
+
+            VStack(spacing: 4) {
+                Text(isTargeted ? "Drop PDF to Open" : "Drop PDF here to open")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text("or click anywhere to choose a file")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 5) {
+                Text("Shortcut:")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                Text("⌘O")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.primary.opacity(0.06))
+                    )
+            }
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 24)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: 480)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isTargeted ? AnyShapeStyle(Color.accentColor.opacity(0.08)) : (isHovered ? AnyShapeStyle(Color.primary.opacity(0.03)) : AnyShapeStyle(.ultraThinMaterial)))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(
+                            isTargeted ? Color.accentColor : Color.primary.opacity(isHovered ? 0.20 : 0.10),
+                            style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: isTargeted ? [] : [6, 4])
+                        )
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture {
+            onChooseFile()
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in
+            for provider in providers {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                    let url: URL?
+                    if let u = item as? URL {
+                        url = u
+                    } else if let d = item as? Data {
+                        url = URL(dataRepresentation: d, relativeTo: nil)
+                    } else {
+                        url = nil
+                    }
+                    guard let fileURL = url, fileURL.pathExtension.lowercased() == "pdf" else { return }
+                    Task { @MainActor in
+                        onDropURLs([fileURL])
+                    }
+                }
+            }
+            return true
+        }
+    }
+}
+
+/// A single Favorite, Tab Group, or Recent entry on the empty-window "Start" screen.
+/// Tap anywhere to open, right-click for native context actions, or hover to reveal the safe action menu on the right.
 struct StartScreenRow: View {
     let title: String
     let subtitle: String?
     let systemImage: String
+    var filePath: String? = nil
     let onOpen: () -> Void
-    let onRemove: () -> Void
+    var onOpenInNewTab: (() -> Void)? = nil
+    var onOpenInNewWindow: (() -> Void)? = nil
+    var onRemove: (() -> Void)? = nil
+    var removeLabel: String = "Remove"
+
+    @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .foregroundStyle(Color.accentColor)
-                .frame(width: 20)
+                .font(.system(size: 14))
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.12))
+                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                 if let subtitle {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            Button(role: .destructive) {
-                onRemove()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.secondary)
+            // Trailing action menu: aligned on the far right of the tab, revealed on hover
+            if onRemove != nil || onOpenInNewTab != nil || onOpenInNewWindow != nil || filePath != nil {
+                Menu {
+                    Button("Open") { onOpen() }
+                    if let onOpenInNewTab {
+                        Button("Open in New Tab") { onOpenInNewTab() }
+                    }
+                    if let onOpenInNewWindow {
+                        Button("Open in New Window") { onOpenInNewWindow() }
+                    }
+                    if let path = filePath {
+                        Button("Show in Finder") {
+                            NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                        }
+                    }
+                    if let onRemove {
+                        Divider()
+                        Button(role: .destructive, action: onRemove) {
+                            Label(removeLabel, systemImage: "trash")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .frame(width: 24, height: 24)
+                .opacity(isHovered ? 1.0 : 0.0)
+                .allowsHitTesting(isHovered)
+                .help("Options")
             }
-            .buttonStyle(.plain)
-            .help("Remove")
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(isHovered ? AnyShapeStyle(Color.primary.opacity(0.04)) : AnyShapeStyle(.ultraThinMaterial))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                        .strokeBorder(Color.primary.opacity(isHovered ? 0.12 : 0.06), lineWidth: 0.5)
                 )
         )
         .contentShape(Rectangle())
         .onTapGesture {
             onOpen()
         }
+        .contextMenu {
+            Button("Open") { onOpen() }
+            if let onOpenInNewTab {
+                Button("Open in New Tab") { onOpenInNewTab() }
+            }
+            if let onOpenInNewWindow {
+                Button("Open in New Window") { onOpenInNewWindow() }
+            }
+            if let path = filePath {
+                Button("Show in Finder") {
+                    NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                }
+            }
+            if let onRemove {
+                Divider()
+                Button(role: .destructive, action: onRemove) {
+                    Label(removeLabel, systemImage: "trash")
+                }
+            }
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+/// Floating Undo Toast notification banner shown when an item is removed.
+struct UndoToastView: View {
+    let message: String
+    let onUndo: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(.primary)
+
+            Button("Undo") {
+                onUndo()
+            }
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Color.accentColor)
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(.regularMaterial)
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
+        )
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
@@ -451,8 +642,6 @@ struct SnapshotCardView: View {
                     .background(isSelected ? Color.accentColor : Color.accentColor.opacity(0.12))
                     .foregroundStyle(isSelected ? Color.white : Color.accentColor)
                     .clipShape(Capsule())
-                    .font(.caption.bold())
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 
                 Spacer()
                 
@@ -519,10 +708,8 @@ struct SnapshotCardView: View {
             // Snippet / Label Text — displayed when no thumbnail is present
             if snap.thumbnailImage == nil, !snap.snippet.isEmpty {
                 Text(snap.snippet)
-                    .font(.system(size: 11))
                     .font(.caption)
                     .lineLimit(3)
-                    .foregroundStyle(.primary)
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
             }
 

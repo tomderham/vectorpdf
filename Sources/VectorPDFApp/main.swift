@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 import PDFEngine
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -16,6 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        GitHubUpdater.shared.start(
+            gitHubUser: "tomderham",
+            gitHubRepo: "vectorpdf",
+            applicationName: "VectorPDF"
+        )
     }
     
     func application(_ sender: NSApplication, openFile filename: String) -> Bool {
@@ -43,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // loadDocument's save-on-switch nor PDFViewerMainView's save-on-window-close reaches,
         // and the single most common way people actually quit a PDF reader.
         PDFViewerAppCoordinator.shared.flushAllReadingStates()
+        GitHubUpdater.shared.stop()
     }
 }
 
@@ -58,6 +65,26 @@ func openDocumentInTabOrWindow(url: URL) {
     } else {
         DocumentWindowing.openNewWindow(url: url)
     }
+}
+
+@MainActor
+func promptOpenFileGlobal(inNewTab: Bool) {
+    let panel = NSOpenPanel()
+    panel.allowedContentTypes = [UTType.pdf]
+    panel.allowsMultipleSelection = false
+    panel.canChooseDirectories = false
+    panel.canChooseFiles = true
+    panel.prompt = inNewTab ? "Open PDF in New Tab" : "Open PDF"
+
+    let completion: (NSApplication.ModalResponse) -> Void = { response in
+        guard response == .OK, let url = panel.url else { return }
+        if inNewTab, let keyWindow = NSApp.keyWindow {
+            DocumentWindowing.addTab(url: url, to: keyWindow)
+        } else {
+            DocumentWindowing.openNewWindow(url: url)
+        }
+    }
+    panel.begin(completionHandler: completion)
 }
 
 // Snapshot windows ("Open in New Window" on a link, selection, page location, or snapshot
@@ -142,19 +169,44 @@ struct VectorPDFApp: App {
             Button("About VectorPDF") {
                 NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: VectorPDFApp.aboutCredits])
             }
+            Button("Check for Updates...") {
+                GitHubUpdater.shared.checkForUpdates(isManualCheck: true)
+            }
         }
         CommandGroup(replacing: .newItem) {
+            Button("New Window") {
+                DocumentWindowing.openNewEmptyWindow()
+            }
+            .keyboardShortcut("n", modifiers: .command)
+
             Button("New Tab") {
                 if let keyWindow = NSApp.keyWindow {
                     DocumentWindowing.addEmptyTab(to: keyWindow)
+                } else {
+                    DocumentWindowing.openNewEmptyWindow()
                 }
             }
             .keyboardShortcut("t", modifiers: .command)
 
+            Divider()
+
             Button("Open PDF...") {
-                resolvedViewModel?.promptOpenFile()
+                if let vm = resolvedViewModel {
+                    vm.promptOpenFile(inNewTab: false)
+                } else {
+                    promptOpenFileGlobal(inNewTab: false)
+                }
             }
             .keyboardShortcut("o", modifiers: .command)
+
+            Button("Open PDF in New Tab...") {
+                if let vm = resolvedViewModel {
+                    vm.promptOpenFile(inNewTab: true)
+                } else {
+                    promptOpenFileGlobal(inNewTab: true)
+                }
+            }
+            .keyboardShortcut("o", modifiers: [.command, .option])
 
             // Reads NSDocumentController's shared recent-documents list directly rather than
             // maintaining our own — its size already follows AppKit/system configuration, so
@@ -211,15 +263,8 @@ struct VectorPDFApp: App {
         CommandMenu("Favorites") {
             // Mirrors the toolbar's star-icon menu exactly (see PDFUI.swift) — the two "save
             // something for later" actions paired together with explicit scope in the label,
-            // then the read-only Favorites/Tab Groups lists below.
-            Button(hasDocument && FavoritesManager.shared.isFavorite(path: resolvedViewModel?.document?.filePath ?? "") ? "Remove This PDF from Favorites" : "Add This PDF to Favorites") {
-                if let vm = resolvedViewModel, let doc = vm.document {
-                    FavoritesManager.shared.toggleFavorite(path: doc.filePath, title: vm.documentTitle)
-                }
-            }
-            .keyboardShortcut("d", modifiers: .command)
-            .disabled(!hasDocument)
-
+            // then the read-only Favorites/Tab Groups lists below,
+            // with Tab Groups placed above Favorites to match the Start screen hierarchy.
             if let vm = resolvedViewModel, let groupOrigin = vm.groupOrigin, let group = TabGroupManager.shared.group(withId: groupOrigin) {
                 Button("Update Group “\(group.name)” with Open Tabs") {
                     vm.updateGroupFromCurrentTabs()
@@ -232,7 +277,31 @@ struct VectorPDFApp: App {
                 }
             }
 
+            Button(hasDocument && FavoritesManager.shared.isFavorite(path: resolvedViewModel?.document?.filePath ?? "") ? "Remove This PDF from Favorites" : "Add This PDF to Favorites") {
+                if let vm = resolvedViewModel, let doc = vm.document {
+                    FavoritesManager.shared.toggleFavorite(path: doc.filePath, title: vm.documentTitle)
+                }
+            }
+            .keyboardShortcut("d", modifiers: .command)
+            .disabled(!hasDocument)
+
             Divider()
+
+            if !TabGroupManager.shared.groups.isEmpty {
+                Section("Tab Groups") {
+                    ForEach(TabGroupManager.shared.groups) { group in
+                        Menu("\(group.name) (\(group.documentPaths.count))") {
+                            Button("Open") {
+                                TabGroupManager.shared.open(group)
+                            }
+                            Button("Delete Tab Group", role: .destructive) {
+                                TabGroupManager.shared.removeGroup(group.id)
+                            }
+                        }
+                    }
+                }
+                Divider()
+            }
 
             if FavoritesManager.shared.favorites.isEmpty {
                 Text("No Favorites Added")
