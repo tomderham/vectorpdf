@@ -1926,41 +1926,78 @@ public final class PDFViewerViewModel: ObservableObject {
         let chunksSnapshot = agentChunks
         Task { [weak self] in
             guard let self else { return }
-            let retrievalQuery = previousQuestion.map { "\($0)\n\(question)" } ?? question
-            guard let queryVector = await self.agentEmbedder.embed(retrievalQuery) else {
-                self.finishAgentTurn(id: turnId, text: "")
-                return
+            let activeProvider = self.agentConversationEngine.activeSynthesisProvider()
+
+            // Adaptive routing: for small documents under PCC's 32K context window, bypass chunked RAG
+            // and pass the entire document's prose directly. 100% recall with zero chunk-boundary severing.
+            let totalDocChars = chunksSnapshot.reduce(0) { $0 + $1.chunk.text.count }
+            let estimatedTokens = totalDocChars / 4
+            let isFullDocEligible = activeProvider == .privateCloudCompute && estimatedTokens <= DocumentAgentConversation.fullDocumentTokenThreshold
+
+            let passages: [AgentPassage]
+            let isFullDoc: Bool
+
+            if isFullDocEligible {
+                var pageMap: [Int: [String]] = [:]
+                for c in chunksSnapshot {
+                    pageMap[c.chunk.pageIndex, default: []].append(c.chunk.text)
+                }
+                let sortedPages = pageMap.keys.sorted()
+                passages = sortedPages.map { pageIdx in
+                    AgentPassage(pageIndex: pageIdx, text: pageMap[pageIdx]!.joined(separator: "\n\n"), score: 1.0)
+                }
+                isFullDoc = true
+            } else {
+                // Multi-turn query folding optimization: only fold previous question when current question
+                // appears to be an anaphoric follow-up (e.g. "why?", "tell me more about that") rather than a
+                // distinct topic, preventing irrelevant prior terms from polluting the search.
+                let retrievalQuery: String
+                if let prev = previousQuestion, self.shouldFoldPreviousQuestion(question) {
+                    retrievalQuery = "\(prev)\n\(question)"
+                } else {
+                    retrievalQuery = question
+                }
+                guard let queryVector = await self.agentEmbedder.embed(retrievalQuery) else {
+                    self.finishAgentTurn(id: turnId, text: "")
+                    return
+                }
+
+                // Two-signal retrieval: score every chunk on embedding similarity AND lexical relevance
+                // independently, then rerank the union of the top candidates from each list.
+                let embeddingScores = chunksSnapshot.map { cosineSimilarity(queryVector, $0.vector) }
+                let lexicalScores = chunksSnapshot.map { lexicalRelevanceScore(query: question, text: $0.chunk.text) }
+
+                let pools = self.agentConversationEngine.recommendedCandidatePoolSizes()
+                let topByEmbedding = chunksSnapshot.indices.sorted { embeddingScores[$0] > embeddingScores[$1] }.prefix(pools.embedding)
+                let topByLexical = chunksSnapshot.indices
+                    .filter { lexicalScores[$0] > 0 }
+                    .sorted { lexicalScores[$0] > lexicalScores[$1] }
+                    .prefix(pools.lexical)
+                let candidateIndices = Set(topByEmbedding).union(topByLexical)
+                let passageBudget = self.agentConversationEngine.recommendedPassageCount(onDeviceDefault: Self.maxPassagesForSynthesis)
+                let ranked = candidateIndices
+                    .map { i in (embedded: chunksSnapshot[i], score: hybridRelevanceScore(embeddingScore: embeddingScores[i], lexicalScore: lexicalScores[i])) }
+                    .sorted { $0.score > $1.score }
+                    .prefix(passageBudget)
+
+                // Passages retain their full, natural chunk content with zero truncation
+                passages = ranked.map { item in
+                    AgentPassage(pageIndex: item.embedded.chunk.pageIndex, text: item.embedded.chunk.text, score: item.score)
+                }
+                isFullDoc = false
             }
-            // Two-signal retrieval: score every chunk on embedding similarity AND lexical relevance
-            // independently, then rerank the *union* of the top candidates from each list — a chunk
-            // with an exact term match can rank outside the top embedding matches (a precise
-            // definition doesn't always embed close to a question about it) and lexical reranking
-            // within the embedding-only pool alone could never reach it. Lexical scoring uses the
-            // current question only (not the folded-in previous one used for the embedding step
-            // above), since it should reflect exactly what's being asked right now.
-            let embeddingScores = chunksSnapshot.map { cosineSimilarity(queryVector, $0.vector) }
-            let lexicalScores = chunksSnapshot.map { lexicalRelevanceScore(query: question, text: $0.chunk.text) }
-            let topByEmbedding = chunksSnapshot.indices.sorted { embeddingScores[$0] > embeddingScores[$1] }.prefix(Self.embeddingCandidatePoolSize)
-            let topByLexical = chunksSnapshot.indices
-                .filter { lexicalScores[$0] > 0 }
-                .sorted { lexicalScores[$0] > lexicalScores[$1] }
-                .prefix(Self.lexicalCandidatePoolSize)
-            let candidateIndices = Set(topByEmbedding).union(topByLexical)
-            let passageBudget = self.agentConversationEngine.recommendedPassageCount(onDeviceDefault: Self.maxPassagesForSynthesis)
-            let ranked = candidateIndices
-                .map { i in (embedded: chunksSnapshot[i], score: hybridRelevanceScore(embeddingScore: embeddingScores[i], lexicalScore: lexicalScores[i])) }
-                .sorted { $0.score > $1.score }
-                .prefix(passageBudget)
-            let passages = ranked.map {
-                AgentPassage(pageIndex: $0.embedded.chunk.pageIndex, text: $0.embedded.chunk.text, score: $0.score)
-            }
+
             let initialProvider = self.agentConversationEngine.activeSynthesisProvider()
             self.updateAgentTurn(id: turnId) {
                 $0.passages = passages
                 $0.providerUsed = initialProvider
             }
 
-            let result = await self.agentConversationEngine.streamAnswer(question: question, passages: passages) { [weak self] partial in
+            let result = await self.agentConversationEngine.streamAnswer(
+                question: question,
+                passages: passages,
+                isFullDocument: isFullDoc
+            ) { [weak self] partial in
                 self?.updateAgentTurn(id: turnId) { $0.answerText = partial }
             }
             self.finishAgentTurn(
@@ -1971,6 +2008,20 @@ public final class PDFViewerViewModel: ObservableObject {
                 errorMessage: result.errorMessage
             )
         }
+    }
+
+    /// Determines whether the question is an anaphoric follow-up referring to previous context,
+    /// so short follow-ups like "why?" or "elaborate on that" fold the previous question into retrieval,
+    /// while distinct questions keep their clean focus without keyword pollution.
+    public func shouldFoldPreviousQuestion(_ question: String) -> Bool {
+        let q = question.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let words = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        if words.count <= 4 { return true }
+        let followUpTriggers: Set<String> = [
+            "it", "this", "that", "these", "those", "they", "them", "he", "she",
+            "more", "why", "how", "details", "explain", "elaborate", "again", "also"
+        ]
+        return words.contains(where: { followUpTriggers.contains($0) })
     }
 
     private func updateAgentTurn(id: UUID, _ mutate: (inout AgentTurn) -> Void) {

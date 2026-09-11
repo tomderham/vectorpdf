@@ -806,9 +806,16 @@ public struct PDFViewerMainView: View {
                                                             ProgressView()
                                                                 .controlSize(.small)
                                                         } else if !turn.answerText.isEmpty {
-                                                            Text(turn.answerText)
+                                                            Text(LocalizedStringKey(formatAgentAnswerCitations(turn.answerText)))
                                                                 .font(.callout)
                                                                 .textSelection(.enabled)
+                                                                .environment(\.openURL, OpenURLAction { url in
+                                                                    if url.scheme == "pdfpage", let host = url.host, let pageNum = Int(host), pageNum > 0 {
+                                                                        viewModel.jumpToPage(pageNum - 1)
+                                                                        return .handled
+                                                                    }
+                                                                    return .systemAction
+                                                                })
                                                         } else if turn.passages.isEmpty {
                                                             Text("No relevant passages found.")
                                                                 .font(.caption)
@@ -841,10 +848,14 @@ public struct PDFViewerMainView: View {
                                                         }
 
                                                         if !turn.passages.isEmpty {
+                                                            let citedPages = extractCitedPageIndices(from: turn.answerText)
                                                             DisclosureGroup("Sources (\(turn.passages.count))") {
                                                                 VStack(alignment: .leading, spacing: 6) {
                                                                     ForEach(turn.passages) { passage in
-                                                                        AgentSourcePassageView(passage: passage) {
+                                                                        AgentSourcePassageView(
+                                                                            passage: passage,
+                                                                            isCited: citedPages.contains(passage.pageIndex)
+                                                                        ) {
                                                                             viewModel.jumpToPage(passage.pageIndex)
                                                                         }
                                                                     }
@@ -1169,15 +1180,51 @@ private struct SearchResultRowView: View {
     }
 }
 
+/// Converts citation references like `[Page 4]`, `[Pages 4-5]`, or `[p. 4]` into clickable markdown links `[Page 4](pdfpage://4)`.
+public func formatAgentAnswerCitations(_ text: String) -> String {
+    let pattern = #"(?i)\[(?:pages?|pp?\.)\s*(\d+)(?:[–-]\d+)?\]"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
+    let range = NSRange(text.startIndex..<text.endIndex, in: text)
+    return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "[Page $1](pdfpage://$1)")
+}
+
+/// Extracts the unique 0-indexed page indices cited in the text (e.g. "[Page 4]" -> 3).
+public func extractCitedPageIndices(from text: String) -> Set<Int> {
+    let pattern = #"(?i)\[(?:pages?|pp?\.)\s*(\d+)(?:[–-]\d+)?\]"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+    let range = NSRange(text.startIndex..<text.endIndex, in: text)
+    let matches = regex.matches(in: text, options: [], range: range)
+    var pages = Set<Int>()
+    for match in matches {
+        if match.numberOfRanges >= 2, let r = Range(match.range(at: 1), in: text), let p = Int(text[r]), p > 0 {
+            pages.insert(p - 1)
+        }
+    }
+    return pages
+}
+
 private struct AgentSourcePassageView: View {
     let passage: AgentPassage
+    var isCited: Bool = false
     let onSelect: () -> Void
 
     var body: some View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Page \(passage.pageIndex + 1)")
-                    .font(.caption.bold())
+                HStack(spacing: 6) {
+                    Text("Page \(passage.pageIndex + 1)")
+                        .font(.caption.bold())
+                    if isCited {
+                        Text("Cited")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.accentColor.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                    Spacer()
+                }
                 Text(passage.text)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1190,10 +1237,10 @@ private struct AgentSourcePassageView: View {
         .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.primary.opacity(0.04))
+                .fill(isCited ? Color.accentColor.opacity(0.06) : Color.primary.opacity(0.04))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                        .strokeBorder(isCited ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 0.5)
                 )
         )
     }

@@ -2024,6 +2024,61 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.isDocumentEdited == false)
     #expect(delegate.windowShouldClose(window) == true)
 }
+
+@Test @MainActor func testAgentModelContextConstantsAndInstructions() throws {
+    #expect(DocumentAgentConversation.onDeviceContextSize == 4096)
+    #expect(DocumentAgentConversation.pccContextSize == 32768)
+    #expect(DocumentAgentConversation.onDeviceMaxResponseTokens == 800)
+    #expect(DocumentAgentConversation.pccMaxResponseTokens == 4000)
+    #expect(DocumentAgentConversation.fullDocumentTokenThreshold == 20_000)
+
+    // Verify on-device instructions are ultra-compact (< 25 words) to preserve limited token context
+    let onDeviceWords = DocumentAgentConversation.onDeviceInstructions.split(whereSeparator: { $0.isWhitespace })
+    #expect(onDeviceWords.count < 25)
+
+    // Verify PCC instructions encourage thoroughness and citation tags
+    #expect(DocumentAgentConversation.pccInstructions.contains("[Page X]"))
+    #expect(DocumentAgentConversation.instructions == DocumentAgentConversation.onDeviceInstructions)
+
+    let engine = DocumentAgentConversation()
+    let pools = engine.recommendedCandidatePoolSizes()
+    let passageBudget = engine.recommendedPassageCount()
+    #expect(pools.embedding >= 24)
+    #expect(pools.lexical >= 10)
+    #expect(passageBudget >= 6)
+}
+
+@Test func testAgentCitationFormattingAndExtraction() throws {
+    let sampleText = "Gross revenue was $1.2M [Page 4]. Net profit increased [Pages 12-14], while debt fell [p. 8] and taxes rose [pp. 19-20]."
+    let formatted = formatAgentAnswerCitations(sampleText)
+
+    #expect(formatted.contains("[Page 4](pdfpage://4)"))
+    #expect(formatted.contains("[Page 12](pdfpage://12)"))
+    #expect(formatted.contains("[Page 8](pdfpage://8)"))
+    #expect(formatted.contains("[Page 19](pdfpage://19)"))
+
+    let cited = extractCitedPageIndices(from: sampleText)
+    // 0-indexed page indices
+    #expect(cited.contains(3))   // Page 4
+    #expect(cited.contains(11))  // Page 12
+    #expect(cited.contains(7))   // Page 8
+    #expect(cited.contains(18))  // Page 19
+    #expect(!cited.contains(0))
+}
+
+@Test @MainActor func testAgentMultiTurnQueryFoldingLogic() throws {
+    let vm = PDFViewerViewModel()
+
+    // Short follow-up queries should fold previous question
+    #expect(vm.shouldFoldPreviousQuestion("why?") == true)
+    #expect(vm.shouldFoldPreviousQuestion("tell me more") == true)
+    #expect(vm.shouldFoldPreviousQuestion("how does it work?") == true)
+    #expect(vm.shouldFoldPreviousQuestion("elaborate on that point") == true)
+
+    // Distinct long questions should not fold
+    #expect(vm.shouldFoldPreviousQuestion("What is the penalty for filing late under section 4?") == false)
+    #expect(vm.shouldFoldPreviousQuestion("Where does the document list standard deductions for joint filers?") == false)
+}
 }
 
 

@@ -76,13 +76,30 @@ public struct AgentStreamResult: Sendable {
 public final class DocumentAgentConversation {
     private var turnHistory: [(question: String, answer: String)] = []
 
-    private static let instructions = """
-    You are a research assistant answering questions about one PDF document, using only the \
-    provided excerpts. Answer in about 4 sentences with the relevant specific detail, not just a \
-    bare one-line fact, and without reproducing excerpt text verbatim. If nothing here answers the \
-    question, say so rather than guessing. Don't cite page numbers — they're already shown \
-    separately in the UI.
+    /// Context window limits in tokens for supported models.
+    public static let onDeviceContextSize = 4096
+    public static let pccContextSize = 32768
+
+    /// Response token limits: on-device is constrained to 800 tokens to preserve the 4,096-token context window; PCC can use up to 4,000.
+    public static let onDeviceMaxResponseTokens = 800
+    public static let pccMaxResponseTokens = 4000
+
+    /// Ultra-compact instructions for on-device generation to maximize available token space for excerpts.
+    public static let onDeviceInstructions = "Answer in 2-4 sentences using only the excerpts. Cite [Page X] for facts. Say if unsure."
+
+    /// Detailed instructions for Private Cloud Compute (32,768-token context window).
+    public static let pccInstructions = """
+    You are a research assistant answering questions about a PDF document using only the provided excerpts. \
+    Answer thoroughly with specific details without repeating excerpts verbatim. \
+    Always cite your sources with page tags like [Page X] directly after each factual claim. \
+    If the answer cannot be determined from the excerpts, state that clearly.
     """
+
+    /// Backward-compatible alias for default instructions.
+    public static var instructions: String { onDeviceInstructions }
+
+    /// Maximum estimated tokens across all document text to qualify for direct full-document synthesis under PCC without RAG chunking.
+    public static let fullDocumentTokenThreshold = 20_000
 
     public init() {}
 
@@ -132,12 +149,12 @@ public final class DocumentAgentConversation {
     }
 
     /// Recommended number of passages to include based on available model capacity.
-    public func recommendedPassageCount(onDeviceDefault: Int) -> Int {
+    public func recommendedPassageCount(onDeviceDefault: Int = 6) -> Int {
 #if canImport(FoundationModels)
 #if VECTORPDF_MACOS27_SDK
         if #available(macOS 27.0, *) {
             if activeSynthesisProvider() == .privateCloudCompute {
-                return onDeviceDefault * 4
+                return 45
             }
         }
 #endif
@@ -145,15 +162,30 @@ public final class DocumentAgentConversation {
         return onDeviceDefault
     }
 
+    /// Candidate pool sizes (embedding pool, lexical pool) for candidate union filtering.
+    public func recommendedCandidatePoolSizes() -> (embedding: Int, lexical: Int) {
+#if canImport(FoundationModels)
+#if VECTORPDF_MACOS27_SDK
+        if #available(macOS 27.0, *) {
+            if activeSynthesisProvider() == .privateCloudCompute {
+                return (embedding: 100, lexical: 40)
+            }
+        }
+#endif
+#endif
+        return (embedding: 24, lexical: 10)
+    }
+
     /// Streams an answer to `question` using `passages` as context.
     public func streamAnswer(
         question: String,
         passages: [AgentPassage],
+        isFullDocument: Bool = false,
         onPartial: @escaping (String) -> Void
     ) async -> AgentStreamResult {
 #if canImport(FoundationModels)
         if #available(macOS 26.0, *) {
-            return await streamAnswerImpl(question: question, passages: passages, onPartial: onPartial)
+            return await streamAnswerImpl(question: question, passages: passages, isFullDocument: isFullDocument, onPartial: onPartial)
         }
 #endif
         return AgentStreamResult(text: nil, providerUsed: nil, statusNote: nil, errorMessage: "Synthesis is unavailable on this macOS version.")
@@ -164,6 +196,7 @@ public final class DocumentAgentConversation {
     private func streamAnswerImpl(
         question: String,
         passages: [AgentPassage],
+        isFullDocument: Bool,
         onPartial: @escaping (String) -> Void
     ) async -> AgentStreamResult {
         guard isSynthesisAvailable(), !passages.isEmpty else {
@@ -186,9 +219,9 @@ public final class DocumentAgentConversation {
                 } else {
                     do {
                         let pcc = PrivateCloudComputeLanguageModel()
-                        let session = LanguageModelSession(model: pcc, instructions: Self.instructions)
-                        let prompt = buildPrompt(question: question, passages: passages)
-                        let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: 4000)
+                        let session = LanguageModelSession(model: pcc, instructions: Self.pccInstructions)
+                        let prompt = buildPrompt(question: question, passages: passages, isFullDocument: isFullDocument, provider: .privateCloudCompute)
+                        let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: Self.pccMaxResponseTokens)
                         let stream = session.streamResponse(to: prompt, options: options)
                         var last = ""
                         for try await partial in stream {
@@ -214,9 +247,9 @@ public final class DocumentAgentConversation {
         }
 
         let onDevicePassages = Array(passages.prefix(6))
-        let prompt = buildPrompt(question: question, passages: onDevicePassages)
-        let session = LanguageModelSession(instructions: Self.instructions)
-        let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: 4000)
+        let prompt = buildPrompt(question: question, passages: onDevicePassages, isFullDocument: false, provider: .onDevice)
+        let session = LanguageModelSession(instructions: Self.onDeviceInstructions)
+        let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: Self.onDeviceMaxResponseTokens)
 
         var last = ""
         do {
@@ -233,7 +266,11 @@ public final class DocumentAgentConversation {
 
         if !last.isEmpty {
             turnHistory.append((question: question, answer: last))
+#if VECTORPDF_MACOS27_SDK
             let note = attemptedPCC ? "PCC unavailable (\(pccFailureReason ?? "requires developer entitlement")); answered via on-device model" : nil
+#else
+            let note: String? = nil
+#endif
             return AgentStreamResult(text: last, providerUsed: .onDevice, statusNote: note, errorMessage: nil)
         }
 
@@ -241,14 +278,38 @@ public final class DocumentAgentConversation {
         return AgentStreamResult(text: nil, providerUsed: nil, statusNote: nil, errorMessage: finalError)
     }
 
-    private func buildPrompt(question: String, passages: [AgentPassage]) -> String {
-        let excerpts = passages.map { $0.text }.joined(separator: "\n\n---\n\n")
+    private func buildPrompt(
+        question: String,
+        passages: [AgentPassage],
+        isFullDocument: Bool,
+        provider: AgentSynthesisProvider
+    ) -> String {
+        let label = isFullDocument ? "Document Content" : "Excerpts"
+        let formattedExcerpts = passages.map { "[Page \($0.pageIndex + 1)]\n\($0.text)" }.joined(separator: "\n\n---\n\n")
         var promptSections: [String] = []
-        if !turnHistory.isEmpty {
-            let historyText = turnHistory.map { "Q: \($0.question)\nA: \($0.answer)" }.joined(separator: "\n\n")
-            promptSections.append("Previous conversation (for context only, not the current question):\n\(historyText)")
+
+        // History budgeting: on-device keeps only the immediate previous turn (trimmed to 400 chars)
+        // to stay comfortably within the 4,096-token limit. PCC keeps up to 4 turns.
+        let historyToInclude: [(question: String, answer: String)]
+        if provider == .onDevice {
+            historyToInclude = turnHistory.suffix(1).map {
+                let trimmedAnswer = $0.answer.count > 400 ? String($0.answer.prefix(400)) + "…" : $0.answer
+                return (question: $0.question, answer: trimmedAnswer)
+            }
+        } else {
+            historyToInclude = Array(turnHistory.suffix(4))
         }
-        promptSections.append("Excerpts:\n\(excerpts)")
+
+        if !historyToInclude.isEmpty {
+            let historyText = historyToInclude.map { "Q: \($0.question)\nA: \($0.answer)" }.joined(separator: "\n\n")
+            if provider == .onDevice {
+                promptSections.append("History:\n\(historyText)")
+            } else {
+                promptSections.append("Previous conversation (for context only, not the current question):\n\(historyText)")
+            }
+        }
+
+        promptSections.append("\(label):\n\(formattedExcerpts)")
         promptSections.append("Question: \(question)")
         return promptSections.joined(separator: "\n\n")
     }
