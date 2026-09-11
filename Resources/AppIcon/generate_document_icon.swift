@@ -13,8 +13,33 @@ guard CommandLine.arguments.count > 1 else {
 }
 
 let size: CGFloat = CommandLine.arguments.count > 2 ? (CGFloat(Double(CommandLine.arguments[2]) ?? 1024)) : 1024
-let image = NSImage(size: NSSize(width: size, height: size))
-image.lockFocus()
+let pixelSize = Int(size)
+guard let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil,
+    pixelsWide: pixelSize,
+    pixelsHigh: pixelSize,
+    bitsPerSample: 8,
+    samplesPerPixel: 4,
+    hasAlpha: true,
+    isPlanar: false,
+    colorSpaceName: .calibratedRGB,
+    bytesPerRow: pixelSize * 4,
+    bitsPerPixel: 32
+) else {
+    print("Failed to create bitmap rep")
+    exit(1)
+}
+if let data = rep.bitmapData {
+    memset(data, 0, pixelSize * pixelSize * 4)
+}
+rep.size = NSSize(width: size, height: size)
+
+NSGraphicsContext.saveGraphicsState()
+guard let context = NSGraphicsContext(bitmapImageRep: rep) else {
+    print("Failed to create graphics context")
+    exit(1)
+}
+NSGraphicsContext.current = context
 
 let isSmall = size <= 32
 let isTiny = size <= 16
@@ -173,11 +198,9 @@ if isTiny {
     }
 }
 
-image.unlockFocus()
+NSGraphicsContext.restoreGraphicsState()
 
-guard let tiff = image.tiffRepresentation,
-      let rep = NSBitmapImageRep(data: tiff),
-      let png = rep.representation(using: .png, properties: [:]) else {
+guard let png = rep.representation(using: .png, properties: [:]) else {
     print("Failed to render PNG")
     exit(1)
 }

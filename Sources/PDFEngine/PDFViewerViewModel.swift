@@ -1104,6 +1104,45 @@ public final class PDFViewerViewModel: ObservableObject {
         openSnapshotInNewWindow(snapToOpen)
     }
 
+    /// Builds a SnapshotTarget from a Table of Contents outline node.
+    public func buildSnapshotTarget(from node: PDFOutlineNode) -> SnapshotTarget? {
+        guard let page = node.targetPage else { return nil }
+        let label = node.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = label.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+        let cleanLabel = normalized.isEmpty ? "Page \(page + 1)" : normalized
+        return SnapshotTarget(
+            label: cleanLabel,
+            snippet: cleanLabel,
+            targetPage: page,
+            targetPoint: nil,
+            targetRect: nil,
+            sourceRect: nil,
+            sourcePage: page,
+            uri: node.uri,
+            thumbnailData: nil
+        )
+    }
+
+    /// Saves a snapshot shortcut from a Table of Contents outline node into the snapshots collection.
+    public func addSnapshot(from node: PDFOutlineNode) {
+        guard let target = buildSnapshotTarget(from: node) else { return }
+        addSnapshotTarget(target)
+    }
+
+    /// Opens the outline node in a separate snapshot window centered on the target page.
+    public func openSnapshotInNewWindow(from node: PDFOutlineNode) {
+        guard let target = buildSnapshotTarget(from: node) else { return }
+        openSnapshotInNewWindow(target)
+    }
+
+    /// Saves an outline node as a snapshot and opens it in a new window in one step.
+    public func addSnapshotAndOpenInNewWindow(from node: PDFOutlineNode) {
+        guard let target = buildSnapshotTarget(from: node) else { return }
+        addSnapshot(from: node)
+        let snapToOpen = activeSnapshots.first(where: { $0.id == target.id || ($0.targetPage == target.targetPage && $0.snippet == target.snippet) }) ?? target
+        openSnapshotInNewWindow(snapToOpen)
+    }
+
     /// Saves a snapshot target and opens it in a new window in one step.
     public func addSnapshotAndOpen(_ target: SnapshotTarget) {
         addSnapshotTarget(target)

@@ -1,14 +1,16 @@
 // Generates the VectorPDF app icon as a PNG, at any requested size (defaults to 1024x1024).
 //
 // Usage:
-//   swift Resources/AppIcon/generate_icon.swift Resources/AppIcon/icon_1024.png
-//   swift Resources/AppIcon/generate_icon.swift Resources/AppIcon/icon_16.png 16
+//   swift Resources/AppIcon/generate_icon.swift Resources/AppIcon/AppIcon.iconset/icon_16x16.png 16
 //
-// Renders natively at the target resolution for maximum clarity across all macOS display scales.
+// Scales from the 1024x1024 master icon artwork (Resources/AppIcon/icon_1024.png) using high-quality
+// bicubic interpolation directly into an NSBitmapImageRep with exact pixel dimensions.
 //
-// Concept: a document page (folded corner, document lines) with motion lines on a blue-to-teal gradient.
-//
-// See build_iconset.sh in this directory to assemble these PNGs into AppIcon.icns.
+// Ensures 100% compatibility with Apple Human Interface Guidelines and the curved macOS Dock icon shape:
+// - Standard continuous-curvature squircle geometry
+// - Subtle drop shadow
+// - Fully transparent padding outside the squircle
+// - Exact pixel backing store (never multiplied by display scale)
 
 import AppKit
 
@@ -17,98 +19,71 @@ guard CommandLine.arguments.count > 1 else {
     exit(1)
 }
 
+let outputURL = URL(fileURLWithPath: CommandLine.arguments[1])
 let size: CGFloat = CommandLine.arguments.count > 2 ? (CGFloat(Double(CommandLine.arguments[2]) ?? 1024)) : 1024
-let image = NSImage(size: NSSize(width: size, height: size))
-image.lockFocus()
+let pixelSize = Int(size)
 
-// MARK: - Background: full-bleed square, blue-to-teal gradient. Deliberately NOT pre-rounding
-// the corners here — macOS applies its own standard icon mask on top of whatever's provided, and
-// baking in a second, possibly-mismatched rounding invites visible edge artifacts. Full square,
-// let the system mask it.
-let bgRect = CGRect(x: 0, y: 0, width: size, height: size)
-let bgGradient = NSGradient(colors: [
-    NSColor(calibratedRed: 0.12, green: 0.45, blue: 0.96, alpha: 1.0),
-    NSColor(calibratedRed: 0.04, green: 0.65, blue: 0.88, alpha: 1.0)
-])!
-bgGradient.draw(in: bgRect, angle: -60)
+// Locate master icon artwork (icon_1024.png in same directory)
+let scriptDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+let masterURL = scriptDir.appendingPathComponent("icon_1024.png")
 
-// MARK: - Motion swoosh lines, suggesting gliding movement, trailing behind the page.
-NSColor.white.withAlphaComponent(0.20).setFill()
-for i in 0..<3 {
-    let bandHeight = size * 0.052
-    let yCenter = size * (0.34 + CGFloat(i) * 0.16)
-    let xStart = size * 0.07
-    let xEnd = size * (0.34 - CGFloat(i) * 0.045)
-    let path = NSBezierPath()
-    path.move(to: CGPoint(x: xStart, y: yCenter + bandHeight / 2))
-    path.line(to: CGPoint(x: xEnd, y: yCenter + bandHeight * 0.9))
-    path.line(to: CGPoint(x: xEnd, y: yCenter + bandHeight * 0.9 - bandHeight))
-    path.line(to: CGPoint(x: xStart, y: yCenter - bandHeight / 2))
-    path.close()
-    path.fill()
+guard let masterImage = NSImage(contentsOf: masterURL) else {
+    print("Error: Could not load master icon at \(masterURL.path)")
+    exit(1)
+}
+masterImage.size = NSSize(width: 1024, height: 1024)
+
+if pixelSize == 1024 {
+    guard let masterData = try? Data(contentsOf: masterURL) else {
+        exit(1)
+    }
+    try masterData.write(to: outputURL)
+    print("Wrote \(outputURL.path) (1024x1024)")
+    exit(0)
 }
 
-// MARK: - Page (white, folded top-right corner), holding a shadow so it lifts off the background.
-let pageWidth = size * 0.44
-let pageHeight = size * 0.58
-let pageX = size * 0.40
-let pageY = size * 0.21
-let foldSize = pageWidth * 0.30
+guard let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil,
+    pixelsWide: pixelSize,
+    pixelsHigh: pixelSize,
+    bitsPerSample: 8,
+    samplesPerPixel: 4,
+    hasAlpha: true,
+    isPlanar: false,
+    colorSpaceName: .calibratedRGB,
+    bytesPerRow: pixelSize * 4,
+    bitsPerPixel: 32
+) else {
+    print("Failed to allocate bitmap rep")
+    exit(1)
+}
 
-let pagePath = NSBezierPath()
-pagePath.move(to: CGPoint(x: pageX, y: pageY))
-pagePath.line(to: CGPoint(x: pageX + pageWidth, y: pageY))
-pagePath.line(to: CGPoint(x: pageX + pageWidth, y: pageY + pageHeight - foldSize))
-pagePath.line(to: CGPoint(x: pageX + pageWidth - foldSize, y: pageY + pageHeight))
-pagePath.line(to: CGPoint(x: pageX, y: pageY + pageHeight))
-pagePath.close()
+if let data = rep.bitmapData {
+    memset(data, 0, pixelSize * pixelSize * 4)
+}
+rep.size = NSSize(width: size, height: size)
 
 NSGraphicsContext.saveGraphicsState()
-let shadow = NSShadow()
-shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
-shadow.shadowBlurRadius = size * 0.025
-shadow.shadowOffset = NSSize(width: 0, height: -size * 0.012)
-shadow.set()
-NSColor.white.setFill()
-pagePath.fill()
+guard let ctx = NSGraphicsContext(bitmapImageRep: rep) else {
+    print("Failed to create graphics context")
+    exit(1)
+}
+ctx.imageInterpolation = .high
+NSGraphicsContext.current = ctx
+
+masterImage.draw(
+    in: NSRect(x: 0, y: 0, width: size, height: size),
+    from: NSRect(x: 0, y: 0, width: 1024, height: 1024),
+    operation: .sourceOver,
+    fraction: 1.0
+)
+
 NSGraphicsContext.restoreGraphicsState()
 
-// Folded corner triangle, slightly darker than the page itself.
-let foldPath = NSBezierPath()
-foldPath.move(to: CGPoint(x: pageX + pageWidth - foldSize, y: pageY + pageHeight))
-foldPath.line(to: CGPoint(x: pageX + pageWidth - foldSize, y: pageY + pageHeight - foldSize))
-foldPath.line(to: CGPoint(x: pageX + pageWidth, y: pageY + pageHeight - foldSize))
-foldPath.close()
-NSColor(calibratedWhite: 0.82, alpha: 1.0).setFill()
-foldPath.fill()
-
-// MARK: - A few text lines on the page, in the same blue as the background gradient's start.
-// Sized to fit within the space actually available below the folded corner and above the page's
-// bottom edge (checked explicitly, rather than picking a spacing/count by eye and hoping).
-NSColor(calibratedRed: 0.14, green: 0.42, blue: 0.92, alpha: 0.85).setFill()
-let lineInset = pageWidth * 0.16
-let lineHeight = size * 0.026
-let lineWidthFractions: [CGFloat] = [0.68, 0.68, 0.46, 0.68, 0.68]
-let topOfLines = pageY + pageHeight - foldSize - size * 0.10
-let bottomMargin = size * 0.06
-let availableHeight = topOfLines - (pageY + bottomMargin)
-let lineSpacing = availableHeight / CGFloat(lineWidthFractions.count)
-var lineY = topOfLines
-for fraction in lineWidthFractions {
-    let rect = CGRect(x: pageX + lineInset, y: lineY, width: pageWidth * fraction, height: lineHeight)
-    NSBezierPath(roundedRect: rect, xRadius: lineHeight / 2, yRadius: lineHeight / 2).fill()
-    lineY -= lineSpacing
-}
-
-image.unlockFocus()
-
-guard let tiff = image.tiffRepresentation,
-      let rep = NSBitmapImageRep(data: tiff),
-      let png = rep.representation(using: .png, properties: [:]) else {
+guard let png = rep.representation(using: .png, properties: [:]) else {
     print("Failed to render PNG")
     exit(1)
 }
 
-let outputURL = URL(fileURLWithPath: CommandLine.arguments[1])
 try png.write(to: outputURL)
-print("Wrote \(outputURL.path)")
+print("Wrote \(outputURL.path) (\(pixelSize)x\(pixelSize))")

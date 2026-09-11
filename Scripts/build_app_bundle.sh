@@ -60,6 +60,8 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundleDisplayName</key>
     <string>$APP_NAME</string>
     <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
+    <key>CFBundleIconName</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
@@ -83,7 +85,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
             <key>LSHandlerRank</key>
             <string>Alternate</string>
             <key>CFBundleTypeIconFile</key>
-            <string>DocumentIcon</string>
+            <string>DocumentIcon.icns</string>
             <key>LSItemContentTypes</key>
             <array>
                 <string>com.adobe.pdf</string>

@@ -621,7 +621,6 @@ struct SnapshotCardView: View {
     let snap: SnapshotTarget
     @ObservedObject var viewModel: PDFViewerViewModel
     @ObservedObject private var windowManager = SnapshotWindowManager.shared
-    @State private var isCopied: Bool = false
     @State private var showPreviewPopover: Bool = false
     @State private var hoverPreviewTask: Task<Void, Never>?
     @State private var isHovered: Bool = false
@@ -713,57 +712,6 @@ struct SnapshotCardView: View {
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
             }
 
-            // Action Buttons: Open/Close Window, Copy.
-            HStack(spacing: 6) {
-                let isWindowOpen = windowManager.isOpen(snap.id)
-                Button {
-                    if isWindowOpen {
-                        viewModel.closeSnapshotWindow(snap)
-                    } else {
-                        viewModel.openSnapshotInNewWindow(snap)
-                    }
-                } label: {
-                    Label(
-                        isWindowOpen ? "Close Window" : "Open in New Window",
-                        systemImage: isWindowOpen ? "xmark.circle" : "macwindow.badge.plus"
-                    )
-                }
-                .help(isWindowOpen ? "Close the window showing this snapshot" : "Open this snapshot in a new window")
-
-                // A dropdown only when there's an actual choice to make (a rectangular snapshot
-                // with underlying text has both); otherwise a single plain button naming exactly
-                // what it copies, rather than a superfluous one-item menu.
-                if !snap.snippet.isEmpty && snap.thumbnailImage != nil {
-                    Menu {
-                        Button("Copy Text") { copyText() }
-                        Button("Copy Screenshot") { copyImage() }
-                    } label: {
-                        Label(isCopied ? "Copied" : "Copy", systemImage: isCopied ? "checkmark" : "doc.on.doc")
-                            .foregroundStyle(isCopied ? Color.green : Color.accentColor)
-                    }
-                    .help("Copy")
-                } else if !snap.snippet.isEmpty {
-                    Button {
-                        copyText()
-                    } label: {
-                        Label(isCopied ? "Copied" : "Copy Text", systemImage: isCopied ? "checkmark" : "doc.on.doc")
-                    }
-                    .help("Copy Text")
-                } else if snap.thumbnailImage != nil {
-                    Button {
-                        copyImage()
-                    } label: {
-                        Label(isCopied ? "Copied" : "Copy Screenshot", systemImage: isCopied ? "checkmark" : "doc.on.doc")
-                    }
-                    .help("Copy Screenshot")
-                }
-
-                Spacer()
-            }
-            .labelStyle(.titleAndIcon)
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .tint(.accentColor)
         }
         .padding(8)
         .background(
@@ -781,22 +729,55 @@ struct SnapshotCardView: View {
         .onTapGesture {
             viewModel.jumpToSnapshot(snap)
         }
+        .contextMenu {
+            let isWindowOpen = windowManager.isOpen(snap.id)
+            Button {
+                if isWindowOpen {
+                    viewModel.closeSnapshotWindow(snap)
+                } else {
+                    viewModel.openSnapshotInNewWindow(snap)
+                }
+            } label: {
+                Label(
+                    isWindowOpen ? "Close Window" : "Open in New Window",
+                    systemImage: isWindowOpen ? "xmark.circle" : "macwindow.badge.plus"
+                )
+            }
+
+            if !snap.snippet.isEmpty {
+                Button {
+                    copyText()
+                } label: {
+                    Label("Copy Text", systemImage: "doc.on.doc")
+                }
+            }
+
+            if snap.thumbnailImage != nil {
+                Button {
+                    copyImage()
+                } label: {
+                    Label("Copy Screenshot", systemImage: "camera")
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                withAnimation {
+                    viewModel.removeSnapshotTarget(snap)
+                }
+            } label: {
+                Label("Delete Snapshot", systemImage: "trash")
+            }
+        }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
-    }
-
-    private func flashCopied() {
-        isCopied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isCopied = false
-        }
     }
 
     private func copyText() {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(snap.snippet, forType: .string)
-        flashCopied()
     }
 
     private func copyImage() {
@@ -804,7 +785,6 @@ struct SnapshotCardView: View {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.writeObjects([image])
-        flashCopied()
     }
 }
 

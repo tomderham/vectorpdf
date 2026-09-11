@@ -18,6 +18,8 @@ declare -a SPECS=(
     "1024 icon_512x512@2x.png"
 )
 
+SWIFT_CMD="swift -module-cache-path /tmp/swift-cache"
+
 # 1. AppIcon.icns
 APP_ICONSET="AppIcon.iconset"
 rm -rf "$APP_ICONSET"
@@ -26,9 +28,9 @@ echo "Generating AppIcon PNGs..."
 for spec in "${SPECS[@]}"; do
     px="${spec%% *}"
     name="${spec#* }"
-    swift generate_icon.swift "$APP_ICONSET/$name" "$px"
+    $SWIFT_CMD generate_icon.swift "$APP_ICONSET/$name" "$px"
 done
-swift build_icns.swift "$APP_ICONSET" AppIcon.icns
+$SWIFT_CMD build_icns.swift "$APP_ICONSET" AppIcon.icns
 
 # 2. DocumentIcon.icns
 DOC_ICONSET="DocumentIcon.iconset"
@@ -38,6 +40,6 @@ echo "Generating DocumentIcon PNGs..."
 for spec in "${SPECS[@]}"; do
     px="${spec%% *}"
     name="${spec#* }"
-    swift generate_document_icon.swift "$DOC_ICONSET/$name" "$px"
+    $SWIFT_CMD generate_document_icon.swift "$DOC_ICONSET/$name" "$px"
 done
-swift build_icns.swift "$DOC_ICONSET" DocumentIcon.icns
+$SWIFT_CMD build_icns.swift "$DOC_ICONSET" DocumentIcon.icns

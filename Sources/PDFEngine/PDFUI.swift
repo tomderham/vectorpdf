@@ -531,7 +531,7 @@ public struct PDFViewerMainView: View {
                 if selectedSidebarTab == 0 {
                     // Table of Contents - Virtualized Native AppKit NSOutlineView
                     if let doc = viewModel.document, !doc.outline.isEmpty {
-                        PDFOutlineNSView(outline: doc.outline, documentIdentity: doc.filePath) { targetPage in
+                        PDFOutlineNSView(outline: doc.outline, documentIdentity: doc.filePath, viewModel: viewModel) { targetPage in
                             viewModel.jumpToPage(targetPage)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

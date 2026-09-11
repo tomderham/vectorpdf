@@ -624,6 +624,63 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     #expect(vm.activeSnapshots.count == 1)
 }
 
+@Test @MainActor func testSnapshotFromOutlineNodeAndDuplicatePrevention() async throws {
+    let vm = PDFViewerViewModel()
+    #expect(vm.activeSnapshots.isEmpty)
+
+    let node = PDFOutlineNode(title: "Chapter 3: Methodology", uri: nil, targetPage: 12)
+    let target = vm.buildSnapshotTarget(from: node)
+    #expect(target != nil)
+    #expect(target?.label == "Chapter 3: Methodology")
+    #expect(target?.snippet == "Chapter 3: Methodology")
+    #expect(target?.targetPage == 12)
+    #expect(target?.sourcePage == 12)
+
+    // Outline node without targetPage returns nil target
+    let emptyNode = PDFOutlineNode(title: "Part I", uri: nil, targetPage: nil)
+    #expect(vm.buildSnapshotTarget(from: emptyNode) == nil)
+
+    // Add snapshot from outline node
+    vm.addSnapshot(from: node)
+    #expect(vm.activeSnapshots.count == 1)
+    #expect(vm.activeSnapshots.first?.label == "Chapter 3: Methodology")
+
+    // Attempt duplicate addition
+    vm.addSnapshot(from: node)
+    #expect(vm.activeSnapshots.count == 1)
+
+    // Add a second outline node on a different page
+    let node2 = PDFOutlineNode(title: "Chapter 4: Results", uri: nil, targetPage: 25)
+    vm.addSnapshot(from: node2)
+    #expect(vm.activeSnapshots.count == 2)
+}
+
+@Test @MainActor func testOutlineContextMenuGeneration() async throws {
+    let vm = PDFViewerViewModel()
+    let coordinator = PDFOutlineNSView.Coordinator(viewModel: vm, onSelect: { _ in })
+
+    // Node with target page should offer Create Snapshot, Create Snapshot and Open in New Window, and Open in New Window
+    let pageNode = PDFOutlineNode(title: "Introduction", uri: nil, targetPage: 0)
+    let menu = coordinator.contextMenu(for: pageNode)
+    #expect(menu != nil)
+    let items = menu?.items ?? []
+    let titles = items.map(\.title)
+    #expect(titles.contains("Create Snapshot"))
+    #expect(titles.contains("Create Snapshot and Open in New Window"))
+    #expect(titles.contains("Open in New Window"))
+
+    // External link node without targetPage offers Open Link
+    let urlNode = PDFOutlineNode(title: "Project Website", uri: "https://example.com", targetPage: nil)
+    let urlMenu = coordinator.contextMenu(for: urlNode)
+    #expect(urlMenu != nil)
+    let urlTitles = urlMenu?.items.map(\.title) ?? []
+    #expect(urlTitles.contains("Open Link"))
+
+    // Empty node without page or link returns nil menu
+    let bareNode = PDFOutlineNode(title: "Section", uri: nil, targetPage: nil)
+    #expect(coordinator.contextMenu(for: bareNode) == nil)
+}
+
 @Test func testRapidToCNavigationAndBoundedCache() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_toc_nav_\(UUID().uuidString).pdf")

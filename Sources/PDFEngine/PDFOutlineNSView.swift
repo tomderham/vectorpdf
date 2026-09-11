@@ -8,16 +8,18 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     // Identifies which document `outline` belongs to (its file path) — see setOutline's use of
     // this for why a plain node-count comparison isn't enough to detect a document switch.
     let documentIdentity: String
+    let viewModel: PDFViewerViewModel?
     let onSelect: (Int) -> Void
 
-    public init(outline: [PDFOutlineNode], documentIdentity: String, onSelect: @escaping (Int) -> Void) {
+    public init(outline: [PDFOutlineNode], documentIdentity: String, viewModel: PDFViewerViewModel? = nil, onSelect: @escaping (Int) -> Void) {
         self.outline = outline
         self.documentIdentity = documentIdentity
+        self.viewModel = viewModel
         self.onSelect = onSelect
     }
     
     public func makeCoordinator() -> Coordinator {
-        Coordinator(onSelect: onSelect)
+        Coordinator(viewModel: viewModel, onSelect: onSelect)
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
@@ -27,7 +29,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = false
         
-        let outlineView = NSOutlineView(frame: .zero)
+        let outlineView = CustomOutlineView(frame: .zero)
+        outlineView.coordinator = context.coordinator
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("OutlineColumn"))
         column.title = "Contents"
         outlineView.addTableColumn(column)
@@ -51,17 +54,20 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onSelect = onSelect
+        context.coordinator.viewModel = viewModel
         context.coordinator.setOutline(outline, documentIdentity: documentIdentity)
     }
 
     @MainActor
     public final class Coordinator: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
         var onSelect: (Int) -> Void
+        var viewModel: PDFViewerViewModel?
         weak var outlineView: NSOutlineView?
         private var rootItems: [OutlineItemWrapper] = []
         private var lastDocumentIdentity: String?
 
-        init(onSelect: @escaping (Int) -> Void) {
+        init(viewModel: PDFViewerViewModel?, onSelect: @escaping (Int) -> Void) {
+            self.viewModel = viewModel
             self.onSelect = onSelect
         }
 
@@ -183,6 +189,84 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 }
             }
         }
+
+        func contextMenu(for node: PDFOutlineNode) -> NSMenu? {
+            guard let viewModel = viewModel else { return nil }
+
+            if let _ = node.targetPage {
+                let menu = NSMenu(title: "Table of Contents")
+
+                if !viewModel.isTransientWindow {
+                    let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotNodeAction(_:)), keyEquivalent: "")
+                    snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                    snapItem.target = self
+                    snapItem.representedObject = node
+                    menu.addItem(snapItem)
+
+                    let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenNodeAction(_:)), keyEquivalent: "")
+                    snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                    snapAndOpenItem.target = self
+                    snapAndOpenItem.representedObject = node
+                    menu.addItem(snapAndOpenItem)
+
+                    menu.addItem(NSMenuItem.separator())
+                }
+
+                let openItem = NSMenuItem(title: "Open in New Window", action: #selector(openNodeInNewWindowAction(_:)), keyEquivalent: "")
+                openItem.image = NSImage(systemSymbolName: "macwindow.badge.plus", accessibilityDescription: nil)
+                openItem.target = self
+                openItem.representedObject = node
+                menu.addItem(openItem)
+
+                return menu
+            }
+
+            if let uri = node.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
+                let menu = NSMenu(title: "Link")
+                let openLinkItem = NSMenuItem(title: "Open Link", action: #selector(openLinkAction(_:)), keyEquivalent: "")
+                openLinkItem.image = NSImage(systemSymbolName: "safari", accessibilityDescription: nil)
+                openLinkItem.target = self
+                openLinkItem.representedObject = url
+                menu.addItem(openLinkItem)
+                return menu
+            }
+
+            return nil
+        }
+
+        @objc private func snapshotNodeAction(_ sender: NSMenuItem) {
+            guard let node = sender.representedObject as? PDFOutlineNode else { return }
+            viewModel?.addSnapshot(from: node)
+        }
+
+        @objc private func snapshotAndOpenNodeAction(_ sender: NSMenuItem) {
+            guard let node = sender.representedObject as? PDFOutlineNode else { return }
+            viewModel?.addSnapshotAndOpenInNewWindow(from: node)
+        }
+
+        @objc private func openNodeInNewWindowAction(_ sender: NSMenuItem) {
+            guard let node = sender.representedObject as? PDFOutlineNode else { return }
+            viewModel?.openSnapshotInNewWindow(from: node)
+        }
+
+        @objc private func openLinkAction(_ sender: NSMenuItem) {
+            guard let url = sender.representedObject as? URL else { return }
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+/// Custom NSOutlineView that provides contextual menus for outline nodes without changing page selection.
+final class CustomOutlineView: NSOutlineView {
+    weak var coordinator: PDFOutlineNSView.Coordinator?
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let point = convert(event.locationInWindow, from: nil)
+        let row = self.row(at: point)
+        guard row >= 0, let wrapper = item(atRow: row) as? OutlineItemWrapper else {
+            return nil
+        }
+        return coordinator?.contextMenu(for: wrapper.node)
     }
 }
 
