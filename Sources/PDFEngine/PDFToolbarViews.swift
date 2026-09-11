@@ -389,12 +389,185 @@ public struct NativeSearchField: NSViewRepresentable {
     }
 }
 
+/// Native AppKit text field for inline toolbar pills (Page and Zoom), guaranteeing
+/// immediate first-responder focus, select-all on click, Return to commit, Escape to cancel,
+/// and click-outside commit.
+public struct NativePillTextField: NSViewRepresentable {
+    @Binding var text: String
+    var onCommit: (String) -> Void
+    var onCancel: () -> Void
+    
+    public init(text: Binding<String>, onCommit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        self._text = text
+        self.onCommit = onCommit
+        self.onCancel = onCancel
+    }
+    
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    public func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField()
+        field.stringValue = text
+        field.isEditable = true
+        field.isSelectable = true
+        field.isBordered = false
+        field.drawsBackground = false
+        field.alignment = .center
+        field.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize(for: .small), weight: .bold)
+        field.textColor = NSColor.labelColor
+        field.focusRingType = .none
+        field.usesSingleLineMode = true
+        field.maximumNumberOfLines = 1
+        field.delegate = context.coordinator
+        context.coordinator.textField = field
+        
+        context.coordinator.focusAndSelectAll()
+        context.coordinator.startClickOutsideMonitor()
+        
+        return field
+    }
+    
+    public func updateNSView(_ nsView: NSTextField, context: Context) {
+        context.coordinator.parent = self
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+    }
+    
+    public static func dismantleNSView(_ nsView: NSTextField, coordinator: Coordinator) {
+        coordinator.stopClickOutsideMonitor()
+    }
+    
+    @MainActor
+    public class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: NativePillTextField
+        weak var textField: NSTextField?
+        private var monitor: Any?
+        private var hasCommittedOrCancelled = false
+        private var isReadyToCommit = false
+        
+        init(_ parent: NativePillTextField) {
+            self.parent = parent
+            super.init()
+        }
+        
+        func focusAndSelectAll() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let field = self.textField else { return }
+                if let window = field.window {
+                    window.makeFirstResponder(field)
+                    field.selectText(nil)
+                    (field.currentEditor() as? NSTextView)?.selectAll(nil)
+                    DispatchQueue.main.async { [weak self] in
+                        self?.isReadyToCommit = true
+                    }
+                } else {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self, let field = self.textField, let window = field.window else { return }
+                        window.makeFirstResponder(field)
+                        field.selectText(nil)
+                        (field.currentEditor() as? NSTextView)?.selectAll(nil)
+                        DispatchQueue.main.async { [weak self] in
+                            self?.isReadyToCommit = true
+                        }
+                    }
+                }
+            }
+        }
+        
+        func startClickOutsideMonitor() {
+            guard monitor == nil else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, self.monitor == nil, !self.hasCommittedOrCancelled else { return }
+                self.monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+                    guard let self = self, let field = self.textField, self.isReadyToCommit, !self.hasCommittedOrCancelled else {
+                        return event
+                    }
+                    guard field.bounds.width > 0, field.bounds.height > 0, let window = field.window else {
+                        return event
+                    }
+                    
+                    let isOutside: Bool
+                    if event.window === window {
+                        let locationInView = field.convert(event.locationInWindow, from: nil)
+                        let hitBounds = field.bounds.insetBy(dx: -4, dy: -4)
+                        isOutside = !hitBounds.contains(locationInView)
+                    } else {
+                        isOutside = true
+                    }
+                    
+                    if isOutside {
+                        self.commitAction()
+                    }
+                    return event
+                }
+            }
+        }
+        
+        func stopClickOutsideMonitor() {
+            if let m = monitor {
+                NSEvent.removeMonitor(m)
+                monitor = nil
+            }
+        }
+        
+        func commitAction() {
+            guard isReadyToCommit, !hasCommittedOrCancelled else { return }
+            hasCommittedOrCancelled = true
+            stopClickOutsideMonitor()
+            let val = textField?.stringValue ?? parent.text
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.parent.text = val
+                self.parent.onCommit(val)
+            }
+        }
+        
+        func cancelAction() {
+            guard !hasCommittedOrCancelled else { return }
+            hasCommittedOrCancelled = true
+            stopClickOutsideMonitor()
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.onCancel()
+            }
+        }
+        
+        public func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                commitAction()
+                return true
+            } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                cancelAction()
+                return true
+            }
+            return false
+        }
+        
+        public func controlTextDidChange(_ obj: Notification) {
+            if let field = textField {
+                parent.text = field.stringValue
+            }
+        }
+        
+        public func controlTextDidEndEditing(_ obj: Notification) {
+            commitAction()
+        }
+        
+        isolated deinit {
+            if let m = monitor {
+                NSEvent.removeMonitor(m)
+            }
+        }
+    }
+}
+
 /// Interactive zoom percentage field allowing click-to-edit with custom zoom levels in a continuous glass pill
 public struct EditableZoomField: View {
     @ObservedObject var viewModel: PDFViewerViewModel
     @State private var isEditing: Bool = false
     @State private var editValue: String = ""
-    @FocusState private var isFocused: Bool
     
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
@@ -403,6 +576,7 @@ public struct EditableZoomField: View {
     public var body: some View {
         HStack(spacing: 2) {
             Button {
+                if isEditing { commit(with: editValue) }
                 viewModel.zoomOut()
             } label: {
                 Image(systemName: "minus")
@@ -419,36 +593,34 @@ public struct EditableZoomField: View {
                 .frame(width: 0.5, height: 12)
             
             if isEditing {
-                TextField("", text: $editValue)
-                    .font(.caption.monospacedDigit().bold())
-                    .multilineTextAlignment(.center)
-                    .textFieldStyle(.plain)
-                    .frame(width: 48, height: 18)
-                    .focused($isFocused)
-                    .onSubmit {
-                        commit()
-                    }
-                    .onExitCommand {
-                        isEditing = false
-                    }
-                    .onChange(of: isFocused) { _, focused in
-                        if !focused && isEditing {
-                            commit()
-                        }
-                    }
+                NativePillTextField(
+                    text: $editValue,
+                    onCommit: { val in commit(with: val) },
+                    onCancel: { isEditing = false }
+                )
+                .frame(width: 48, height: 18)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.accentColor, lineWidth: 1)
+                )
             } else {
                 Button {
                     editValue = "\(Int(viewModel.zoomScale * 100))"
                     isEditing = true
-                    DispatchQueue.main.async {
-                        isFocused = true
-                    }
                 } label: {
                     Text("\(Int(viewModel.zoomScale * 100))%")
                         .font(.caption.monospacedDigit().bold())
                         .frame(minWidth: 42)
-                        .frame(height: 18)
-                        .contentShape(Rectangle())
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.primary.opacity(0.06))
+                        )
                 }
                 .buttonStyle(.plain)
                 .help("Click to enter custom zoom percentage")
@@ -459,6 +631,7 @@ public struct EditableZoomField: View {
                 .frame(width: 0.5, height: 12)
             
             Button {
+                if isEditing { commit(with: editValue) }
                 viewModel.zoomIn()
             } label: {
                 Image(systemName: "plus")
@@ -483,8 +656,8 @@ public struct EditableZoomField: View {
         .fixedSize()
     }
     
-    private func commit() {
-        let cleaned = editValue.replacingOccurrences(of: "%", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+    private func commit(with value: String) {
+        let cleaned = value.replacingOccurrences(of: "%", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
         if let val = Double(cleaned), val >= 10 && val <= 1000 {
             viewModel.setZoom(CGFloat(val) / 100.0)
         }
@@ -498,7 +671,6 @@ public struct EditablePagePill: View {
     let pageCount: Int
     @State private var isEditing: Bool = false
     @State private var editValue: String = ""
-    @FocusState private var isFocused: Bool
     
     public init(viewModel: PDFViewerViewModel, pageCount: Int) {
         self.viewModel = viewModel
@@ -511,6 +683,7 @@ public struct EditablePagePill: View {
 
         HStack(spacing: 3) {
             Button {
+                if isEditing { commit(with: editValue) }
                 viewModel.previousPage()
             } label: {
                 Image(systemName: "chevron.left")
@@ -529,38 +702,24 @@ public struct EditablePagePill: View {
                 .padding(.leading, 2)
 
             if isEditing {
-                TextField("", text: $editValue)
-                    .font(.caption.monospacedDigit().bold())
-                    .multilineTextAlignment(.center)
-                    .textFieldStyle(.plain)
-                    .frame(width: numberWidth + 8, height: 18)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color(nsColor: .textBackgroundColor))
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color.accentColor, lineWidth: 1)
-                    )
-                    .focused($isFocused)
-                    .onSubmit {
-                        commit()
-                    }
-                    .onExitCommand {
-                        isEditing = false
-                    }
-                    .onChange(of: isFocused) { _, focused in
-                        if !focused && isEditing {
-                            commit()
-                        }
-                    }
+                NativePillTextField(
+                    text: $editValue,
+                    onCommit: { val in commit(with: val) },
+                    onCancel: { isEditing = false }
+                )
+                .frame(width: numberWidth + 8, height: 18)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.accentColor, lineWidth: 1)
+                )
             } else {
                 Button {
                     editValue = "\(viewModel.currentPageIndex + 1)"
                     isEditing = true
-                    DispatchQueue.main.async {
-                        isFocused = true
-                    }
                 } label: {
                     Text("\(viewModel.currentPageIndex + 1)")
                         .font(.caption.monospacedDigit().bold())
@@ -582,6 +741,7 @@ public struct EditablePagePill: View {
                 .padding(.trailing, 2)
 
             Button {
+                if isEditing { commit(with: editValue) }
                 viewModel.nextPage()
             } label: {
                 Image(systemName: "chevron.right")
@@ -607,8 +767,8 @@ public struct EditablePagePill: View {
         .fixedSize()
     }
     
-    private func commit() {
-        if let target = Int(editValue.trimmingCharacters(in: .whitespacesAndNewlines)) {
+    private func commit(with value: String) {
+        if let target = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
             let clamped = min(max(target, 1), pageCount)
             viewModel.jumpToPage(clamped - 1)
         }
@@ -837,6 +997,12 @@ public struct FloatingReaderHUD: View {
     @ObservedObject var viewModel: PDFViewerViewModel
     let pageCount: Int
     @State private var isHovered: Bool = false
+    @State private var isTemporarilyVisible: Bool = false
+    @State private var hideTask: Task<Void, Never>? = nil
+
+    private var isVisible: Bool {
+        isHovered || isTemporarilyVisible
+    }
 
     public init(viewModel: PDFViewerViewModel, pageCount: Int) {
         self.viewModel = viewModel
@@ -847,6 +1013,7 @@ public struct FloatingReaderHUD: View {
         HStack(spacing: 6) {
             Button {
                 viewModel.previousPage()
+                showTemporarily()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 11, weight: .semibold))
@@ -864,6 +1031,7 @@ public struct FloatingReaderHUD: View {
 
             Button {
                 viewModel.nextPage()
+                showTemporarily()
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
@@ -886,13 +1054,39 @@ public struct FloatingReaderHUD: View {
                         .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
                 )
         )
-        .opacity(isHovered ? 1.0 : 0.65)
-        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .opacity(isVisible ? 1.0 : 0.0)
+        .animation(.easeInOut(duration: 0.25), value: isVisible)
+        .allowsHitTesting(isVisible)
         .onHover { hovering in
             isHovered = hovering
+            if hovering {
+                hideTask?.cancel()
+            } else {
+                scheduleAutoHide(delay: 1.5)
+            }
+        }
+        .onChange(of: viewModel.currentPageIndex) { _, _ in
+            showTemporarily()
+        }
+        .onAppear {
+            showTemporarily()
         }
         .fixedSize()
     }
+
+    private func showTemporarily() {
+        guard !isHovered else { return }
+        isTemporarilyVisible = true
+        scheduleAutoHide(delay: 2.0)
+    }
+
+    private func scheduleAutoHide(delay: Double) {
+        hideTask?.cancel()
+        hideTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            if !Task.isCancelled && !isHovered {
+                isTemporarilyVisible = false
+            }
+        }
+    }
 }
-
-
