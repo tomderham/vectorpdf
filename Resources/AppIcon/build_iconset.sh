@@ -1,15 +1,10 @@
 #!/bin/bash
-# Generates AppIcon.icns by rendering each required size via generate_icon.swift
+# Generates AppIcon.icns and DocumentIcon.icns by rendering each required size
 # and assembling the icon set directly with build_icns.swift.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-ICONSET="AppIcon.iconset"
-rm -rf "$ICONSET"
-mkdir "$ICONSET"
-
-# pixel size, output filename
 declare -a SPECS=(
     "16 icon_16x16.png"
     "32 icon_16x16@2x.png"
@@ -23,10 +18,26 @@ declare -a SPECS=(
     "1024 icon_512x512@2x.png"
 )
 
+# 1. AppIcon.icns
+APP_ICONSET="AppIcon.iconset"
+rm -rf "$APP_ICONSET"
+mkdir "$APP_ICONSET"
+echo "Generating AppIcon PNGs..."
 for spec in "${SPECS[@]}"; do
     px="${spec%% *}"
     name="${spec#* }"
-    swift generate_icon.swift "$ICONSET/$name" "$px"
+    swift generate_icon.swift "$APP_ICONSET/$name" "$px"
 done
+swift build_icns.swift "$APP_ICONSET" AppIcon.icns
 
-swift build_icns.swift "$ICONSET" AppIcon.icns
+# 2. DocumentIcon.icns
+DOC_ICONSET="DocumentIcon.iconset"
+rm -rf "$DOC_ICONSET"
+mkdir "$DOC_ICONSET"
+echo "Generating DocumentIcon PNGs..."
+for spec in "${SPECS[@]}"; do
+    px="${spec%% *}"
+    name="${spec#* }"
+    swift generate_document_icon.swift "$DOC_ICONSET/$name" "$px"
+done
+swift build_icns.swift "$DOC_ICONSET" DocumentIcon.icns

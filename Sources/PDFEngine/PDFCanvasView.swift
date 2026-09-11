@@ -167,8 +167,11 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         NotificationCenter.default.publisher(for: .formWidgetDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.needsDisplay = true
-                self?.syncFormControls()
+                guard let self else { return }
+                if !self.isActivelyEditingFormControl {
+                    self.needsDisplay = true
+                }
+                self.syncFormControls()
             }
             .store(in: &cancellables)
 
@@ -1087,13 +1090,38 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         let keysToRemove = activeFormControls.keys.filter { !visibleKeys.contains($0) }
         for key in keysToRemove {
             if let view = activeFormControls[key] {
-                let isEditing = (view.window?.firstResponder as? NSView)?.isDescendant(of: view) == true
+                let isEditing = (view.window?.firstResponder as? NSView)?.isDescendant(of: view) == true || view.window?.firstResponder == view
                 if !isEditing {
                     view.removeFromSuperview()
                     activeFormControls.removeValue(forKey: key)
                 }
             }
         }
+        
+        // Chain key-view loop in reading order (top-to-bottom, left-to-right) for Tab and Shift+Tab navigation
+        let sortedControls = activeFormControls.values
+            .filter { $0.canBecomeKeyView }
+            .sorted { a, b in
+                if abs(a.frame.maxY - b.frame.maxY) > 4 {
+                    return a.frame.maxY > b.frame.maxY
+                }
+                return a.frame.minX < b.frame.minX
+            }
+        if sortedControls.count > 1 {
+            for i in 0..<(sortedControls.count - 1) {
+                sortedControls[i].nextKeyView = sortedControls[i + 1]
+            }
+        }
+    }
+    
+    private var isActivelyEditingFormControl: Bool {
+        guard let firstResponder = window?.firstResponder as? NSView else { return false }
+        for control in activeFormControls.values {
+            if firstResponder.isDescendant(of: control) || firstResponder == control {
+                return true
+            }
+        }
+        return false
     }
     
     private func updateExistingControl(_ view: NSView, for widget: PDFFormWidget) {
@@ -1102,6 +1130,18 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             let isEditing = (tf.window?.firstResponder as? NSView)?.isDescendant(of: tf) == true
             if !isEditing && tf.stringValue != widget.value {
                 tf.stringValue = widget.value
+            }
+        } else if let ctf = view as? PDFFormCombTextField {
+            ctf.updateZoom(frame: ctf.frame)
+            let isEditing = ctf.window?.firstResponder == ctf
+            if !isEditing && ctf.stringValue != widget.value {
+                ctf.stringValue = widget.value
+            }
+        } else if let stf = view as? PDFFormSecureTextField {
+            stf.updateZoom(frame: stf.frame)
+            let isEditing = (stf.window?.firstResponder as? NSView)?.isDescendant(of: stf) == true
+            if !isEditing && stf.stringValue != widget.value {
+                stf.stringValue = widget.value
             }
         } else if let btn = view as? PDFFormButton {
             btn.updateZoom(frame: btn.frame)
@@ -1115,6 +1155,14 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             if popup.titleOfSelectedItem != widget.value && !widget.value.isEmpty {
                 popup.selectItem(withTitle: widget.value)
             }
+        } else if let ecf = view as? PDFFormEditableChoiceField {
+            ecf.updateZoom(frame: ecf.frame)
+            let isEditing = (ecf.window?.firstResponder as? NSView)?.isDescendant(of: ecf) == true
+            if !isEditing && ecf.stringValue != widget.value {
+                ecf.stringValue = widget.value
+            }
+        } else if let pb = view as? PDFFormPushButton {
+            pb.updateZoom(frame: pb.frame)
         } else if let sig = view as? PDFSignatureStampButton {
             sig.updateZoom(frame: sig.frame)
         }

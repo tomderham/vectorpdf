@@ -27,8 +27,8 @@ image.lockFocus()
 // let the system mask it.
 let bgRect = CGRect(x: 0, y: 0, width: size, height: size)
 let bgGradient = NSGradient(colors: [
-    NSColor(calibratedRed: 0.14, green: 0.42, blue: 0.92, alpha: 1.0),
-    NSColor(calibratedRed: 0.08, green: 0.74, blue: 0.68, alpha: 1.0)
+    NSColor(calibratedRed: 0.12, green: 0.45, blue: 0.96, alpha: 1.0),
+    NSColor(calibratedRed: 0.04, green: 0.65, blue: 0.88, alpha: 1.0)
 ])!
 bgGradient.draw(in: bgRect, angle: -60)
 

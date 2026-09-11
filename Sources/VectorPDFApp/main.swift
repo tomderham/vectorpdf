@@ -57,6 +57,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let dirtyWindows = sender.windows.filter { $0.isDocumentEdited && !($0 is NSPanel) }
+        for window in dirtyWindows {
+            window.makeKeyAndOrderFront(nil)
+            if let delegate = window.delegate {
+                if delegate.windowShouldClose?(window) == false {
+                    return .terminateCancel
+                }
+            }
+        }
+        return .terminateNow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         // Covers "still reading a document when you quit" — the one exit path that neither
         // loadDocument's save-on-switch nor PDFViewerMainView's save-on-window-close reaches,

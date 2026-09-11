@@ -101,9 +101,12 @@ char *mupdf_stext_page_text(fz_context *ctx, fz_stext_page *page);
 int mupdf_page_count_widgets(fz_context *ctx, fz_document *doc, int pageno, int *out_count, const char **out_error);
 int mupdf_page_get_widget_info(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
                                int *out_type, fz_rect *out_rect, char **out_name, char **out_value,
-                               int *out_flags, const char **out_error);
+                               int *out_flags, float *out_font_size,
+                               int *out_max_len, int *out_text_align,
+                               const char **out_error);
 int mupdf_page_set_widget_value(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
                                 const char *value, const char **out_error);
+int mupdf_document_reset_form(fz_context *ctx, fz_document *doc, const char **out_error);
 int mupdf_page_get_choice_options(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
                                   char ***out_options, int *out_count, const char **out_error);
 void mupdf_free_choice_options(fz_context *ctx, char **options, int count);

@@ -1,5 +1,6 @@
 import Foundation
 import CoreGraphics
+import AppKit
 import MuPDFBridge
 
 public enum PDFError: Error, LocalizedError, Equatable {
@@ -415,10 +416,14 @@ extension PDFDocumentCore {
             var cName: UnsafeMutablePointer<CChar>? = nil
             var cValue: UnsafeMutablePointer<CChar>? = nil
             var flags: Int32 = 0
+            var fontSize: Float = 0
+            var maxLen: Int32 = 0
+            var textAlign: Int32 = 0
             
             let infoRet = mupdf_page_get_widget_info(
                 ctx, doc, Int32(pageIndex), idx,
-                &rawType, &fzRect, &cName, &cValue, &flags, &errorMsg
+                &rawType, &fzRect, &cName, &cValue, &flags, &fontSize,
+                &maxLen, &textAlign, &errorMsg
             )
             
             guard infoRet == 0 else { continue }
@@ -439,6 +444,10 @@ extension PDFDocumentCore {
             let isReadOnly = (flags & 1) != 0
             let isMultiline = (flags & (1 << 12)) != 0
             let isPassword = (flags & (1 << 13)) != 0
+            let isPushButton = (flags & (1 << 16)) != 0
+            let isEditableChoice = (flags & (1 << 18)) != 0
+            let isComb = ((flags & (1 << 24)) != 0) && (maxLen > 0)
+            let alignment: NSTextAlignment = textAlign == 1 ? .center : (textAlign == 2 ? .right : .left)
             
             var options: [String] = []
             if widgetType == .combobox || widgetType == .listbox {
@@ -464,12 +473,30 @@ extension PDFDocumentCore {
                 isReadOnly: isReadOnly,
                 isMultiline: isMultiline,
                 isPassword: isPassword,
+                fontSize: CGFloat(fontSize),
+                maxLen: Int(maxLen),
+                isComb: isComb,
+                isPushButton: isPushButton,
+                isEditableChoice: isEditableChoice,
+                textAlignment: alignment,
                 options: options
             )
             widgets.append(widget)
         }
         
         return widgets
+    }
+    
+    /// Resets all interactive AcroForm fields in the document to their default values
+    public func resetForm() throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>? = nil
+        let ret = mupdf_document_reset_form(ctx, doc, &errorMsg)
+        if ret != 0 {
+            let desc = errorMsg != nil ? String(cString: errorMsg!) : "Failed to reset form"
+            throw PDFError.renderFailed(desc)
+        }
     }
     
     /// Updates the value of an AcroForm widget on a page

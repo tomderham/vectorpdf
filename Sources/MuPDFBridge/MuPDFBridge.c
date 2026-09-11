@@ -612,13 +612,18 @@ int mupdf_page_count_widgets(fz_context *ctx, fz_document *doc, int pageno, int 
 
 int mupdf_page_get_widget_info(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
                                int *out_type, fz_rect *out_rect, char **out_name, char **out_value,
-                               int *out_flags, const char **out_error) {
+                               int *out_flags, float *out_font_size,
+                               int *out_max_len, int *out_text_align,
+                               const char **out_error) {
     if (!ctx || !doc) return -1;
     if (out_type) *out_type = 0;
     if (out_rect) *out_rect = fz_empty_rect;
     if (out_name) *out_name = NULL;
     if (out_value) *out_value = NULL;
     if (out_flags) *out_flags = 0;
+    if (out_font_size) *out_font_size = 0.0f;
+    if (out_max_len) *out_max_len = 0;
+    if (out_text_align) *out_text_align = 0;
     
     pdf_page *ppage = NULL;
     fz_var(ppage);
@@ -643,11 +648,30 @@ int mupdf_page_get_widget_info(fz_context *ctx, fz_document *doc, int pageno, in
         if (out_rect) {
             *out_rect = pdf_bound_widget(ctx, w);
         }
+        if (out_font_size) {
+            const char *da_font = NULL;
+            float fsize = 0.0f;
+            int da_n = 0;
+            float da_color[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+            pdf_annot_default_appearance(ctx, w, &da_font, &fsize, &da_n, da_color);
+            *out_font_size = fsize;
+        }
+        if (out_max_len) {
+            if (pdf_widget_type(ctx, w) == PDF_WIDGET_TYPE_TEXT) {
+                *out_max_len = pdf_text_widget_max_len(ctx, w);
+            }
+        }
 
         pdf_obj *field = pdf_annot_obj(ctx, w);
         if (field) {
             if (out_flags) {
                 *out_flags = pdf_field_flags(ctx, field);
+            }
+            if (out_text_align) {
+                pdf_obj *q_obj = pdf_dict_gets_inheritable(ctx, field, "Q");
+                if (q_obj) {
+                    *out_text_align = pdf_to_int(ctx, q_obj);
+                }
             }
             if (out_name) {
                 char *fname = pdf_load_field_name(ctx, field);
@@ -715,14 +739,22 @@ int mupdf_page_set_widget_value(fz_context *ctx, fz_document *doc, int pageno, i
             const char *on_str = on_obj ? pdf_to_name(ctx, on_obj) : NULL;
             const char *target_state = is_off ? "Off" : (on_str && on_str[0] != '\0' ? on_str : (value && value[0] != '\0' ? value : "Yes"));
             
-            // Radio siblings share one root field via /Parent — passing the kid's own object here
-            // only updates that kid's /AS, leaving a previously-selected sibling stuck "on". Pass
-            // the shared root so it clears every sibling. Checkboxes have no /Parent, so this is a
-            // no-op fallback to `field`.
+            // In PDF forms, radio button widgets belonging to a radio button group share a parent
+            // field whose /FT is /Btn and has the PDF_BTN_FIELD_IS_RADIO flag. Only in that case does
+            // setting the parent field value properly synchronize siblings (turning the previous one off).
+            // For checkboxes or widgets under structural parents (like Page or Subform dictionaries in f1040.pdf),
+            // the target must remain the widget's own field — otherwise setting the value on a parent
+            // subform cascades and overwrites all descendant text fields with the button state!
             pdf_obj *valueField = field;
-            if (field) {
+            if (field && wtype == PDF_WIDGET_TYPE_RADIOBUTTON) {
                 pdf_obj *parent = pdf_dict_get(ctx, field, PDF_NAME(Parent));
-                if (parent) valueField = parent;
+                if (parent) {
+                    int ptype = pdf_field_type(ctx, parent);
+                    int pflags = pdf_field_flags(ctx, parent);
+                    if (ptype == PDF_WIDGET_TYPE_RADIOBUTTON || (pflags & PDF_BTN_FIELD_IS_RADIO) != 0) {
+                        valueField = parent;
+                    }
+                }
             }
             if (valueField) {
                 pdf_set_field_value(ctx, pdoc, valueField, target_state, 0);
@@ -758,6 +790,20 @@ int mupdf_page_set_widget_value(fz_context *ctx, fz_document *doc, int pageno, i
         pdf_calculate_form(ctx, pdoc);
     } fz_always(ctx) {
         if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_document_reset_form(fz_context *ctx, fz_document *doc, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        pdf_reset_form(ctx, pdoc, NULL, 0);
+        pdf_calculate_form(ctx, pdoc);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
         return -1;

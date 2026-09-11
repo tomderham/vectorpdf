@@ -218,6 +218,7 @@ public final class PDFViewerViewModel: ObservableObject {
     private let renderActor = PDFRenderActor(cacheCapacity: 12)
     private let searchActor = PDFSearchActor()
     private var searchTask: Task<Void, Never>?
+    private var debouncedWidgetTasks: [String: Task<Void, Never>] = [:]
     private let textSelector = SpatialTextSelector()
 
     // Strict bounded cache limits: keeps physical memory <= 60 MB in the normal single-column
@@ -230,6 +231,7 @@ public final class PDFViewerViewModel: ObservableObject {
     // Tab and Window Scoping
     public static weak var active: PDFViewerViewModel?
     public weak var currentWindow: NSWindow?
+    public var windowDelegate: PDFViewerWindowDelegate?
     // Adds a document as a new tab in the current window's tab group — used only by drag-and-
     // drop onto a window that already has a document open, which reads as "add this here" by
     // direct-manipulation convention (unlike explicitly choosing Open or a Favorite).
@@ -262,6 +264,11 @@ public final class PDFViewerViewModel: ObservableObject {
     public init() {}
 
     public func loadDocument(from path: String, password: String? = nil) async {
+        if isDocumentEdited && document?.filePath != path {
+            let canProceed = promptSaveBeforeClosingIfNeeded()
+            guard canProceed else { return }
+        }
+        
         PDFViewerViewModel.active = self
         PDFViewerAppCoordinator.shared.registerActive(self)
         // Persist the *outgoing* document's reading position before switching away from it —
@@ -1460,17 +1467,61 @@ public final class PDFViewerViewModel: ObservableObject {
         panel.begin(completionHandler: completion)
     }
     
+    public func updateWidgetValueDebounced(pageIndex: Int, widgetIndex: Int, value: String) {
+        let key = "p\(pageIndex)_w\(widgetIndex)"
+        debouncedWidgetTasks[key]?.cancel()
+        
+        isDocumentEdited = true
+        currentWindow?.isDocumentEdited = true
+        
+        debouncedWidgetTasks[key] = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 200_000_000) // 200ms debounce
+            guard !Task.isCancelled else { return }
+            self?.debouncedWidgetTasks.removeValue(forKey: key)
+            self?.commitWidgetValue(pageIndex: pageIndex, widgetIndex: widgetIndex, value: value)
+        }
+    }
+    
     public func updateWidgetValue(pageIndex: Int, widgetIndex: Int, value: String) {
+        let key = "p\(pageIndex)_w\(widgetIndex)"
+        debouncedWidgetTasks[key]?.cancel()
+        debouncedWidgetTasks.removeValue(forKey: key)
+        commitWidgetValue(pageIndex: pageIndex, widgetIndex: widgetIndex, value: value)
+    }
+    
+    private func commitWidgetValue(pageIndex: Int, widgetIndex: Int, value: String) {
         guard let doc = document else { return }
         do {
             try doc.setFormWidgetValue(pageIndex: pageIndex, widgetIndex: widgetIndex, value: value)
             let refreshed = doc.loadFormWidgets(for: pageIndex)
             pageFormWidgets[pageIndex] = refreshed
+            for otherPage in pageFormWidgets.keys where otherPage != pageIndex {
+                pageFormWidgets[otherPage] = doc.loadFormWidgets(for: otherPage)
+            }
             isDocumentEdited = true
             currentWindow?.isDocumentEdited = true
             NotificationCenter.default.post(name: .formWidgetDidChange, object: nil)
         } catch {
             print("Failed to set form widget value: \(error)")
+        }
+    }
+    
+    public func resetForm() {
+        guard let doc = document else { return }
+        for (_, task) in debouncedWidgetTasks {
+            task.cancel()
+        }
+        debouncedWidgetTasks.removeAll()
+        do {
+            try doc.resetForm()
+            for page in pageFormWidgets.keys {
+                pageFormWidgets[page] = doc.loadFormWidgets(for: page)
+            }
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            NotificationCenter.default.post(name: .formWidgetDidChange, object: nil)
+        } catch {
+            print("Failed to reset form: \(error)")
         }
     }
     
@@ -1565,6 +1616,44 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
         panel.begin(completionHandler: completion)
+    }
+    
+    /// Prompts the user to Save, Don't Save, or Cancel when closing a document with unsaved edits.
+    /// Returns true if closing should proceed (changes saved or discarded), or false if closing should abort.
+    @MainActor
+    public func promptSaveBeforeClosingIfNeeded() -> Bool {
+        // Commit any pending active text field input before checking or saving
+        currentWindow?.makeFirstResponder(nil)
+        
+        guard isDocumentEdited, let _ = document else { return true }
+        
+        let alert = NSAlert()
+        alert.messageText = "Do you want to save the changes made to the document “\(documentTitle)”?"
+        alert.informativeText = "Your changes will be lost if you don’t save them."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Save")          // .alertFirstButtonReturn (1000)
+        alert.addButton(withTitle: "Cancel")        // .alertSecondButtonReturn (1001)
+        alert.addButton(withTitle: "Don’t Save")     // .alertThirdButtonReturn (1002)
+        
+        if alert.buttons.count >= 3 {
+            alert.buttons[0].keyEquivalent = "\r"
+            alert.buttons[1].keyEquivalent = "\u{1b}" // Escape
+            alert.buttons[2].keyEquivalent = "d"
+            alert.buttons[2].keyEquivalentModifierMask = [.command]
+        }
+        
+        let response = alert.runModal()
+        switch response {
+        case .alertFirstButtonReturn: // Save
+            saveDocument()
+            return !isDocumentEdited
+        case .alertThirdButtonReturn: // Don't Save
+            isDocumentEdited = false
+            currentWindow?.isDocumentEdited = false
+            return true
+        default: // Cancel (.alertSecondButtonReturn)
+            return false
+        }
     }
     
     public func printDocument() {
@@ -1895,6 +1984,22 @@ extension String {
 
         // Fallback for single long word: truncate directly
         return String(slice)
+    }
+}
+
+/// NSWindowDelegate helper to intercept close requests on edited documents and prompt to save
+@MainActor
+public final class PDFViewerWindowDelegate: NSObject, NSWindowDelegate {
+    public weak var viewModel: PDFViewerViewModel?
+    
+    public init(viewModel: PDFViewerViewModel) {
+        self.viewModel = viewModel
+        super.init()
+    }
+    
+    public func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard let vm = viewModel else { return true }
+        return vm.promptSaveBeforeClosingIfNeeded()
     }
 }
 

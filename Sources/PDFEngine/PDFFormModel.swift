@@ -1,5 +1,6 @@
 import Foundation
 import CoreGraphics
+import AppKit
 
 /// Types of AcroForm interactive form widgets supported by MuPDF
 public enum PDFWidgetType: Int, Sendable, Codable {
@@ -25,6 +26,12 @@ public struct PDFFormWidget: Identifiable, Sendable, Equatable {
     public let isReadOnly: Bool
     public let isMultiline: Bool
     public let isPassword: Bool
+    public let fontSize: CGFloat
+    public let maxLen: Int
+    public let isComb: Bool
+    public let isPushButton: Bool
+    public let isEditableChoice: Bool
+    public let textAlignment: NSTextAlignment
     public let options: [String]
     
     public init(
@@ -37,6 +44,12 @@ public struct PDFFormWidget: Identifiable, Sendable, Equatable {
         isReadOnly: Bool = false,
         isMultiline: Bool = false,
         isPassword: Bool = false,
+        fontSize: CGFloat = 0,
+        maxLen: Int = 0,
+        isComb: Bool = false,
+        isPushButton: Bool = false,
+        isEditableChoice: Bool = false,
+        textAlignment: NSTextAlignment = .left,
         options: [String] = []
     ) {
         self.id = "p\(pageIndex)_w\(widgetIndex)"
@@ -49,6 +62,12 @@ public struct PDFFormWidget: Identifiable, Sendable, Equatable {
         self.isReadOnly = isReadOnly
         self.isMultiline = isMultiline
         self.isPassword = isPassword
+        self.fontSize = fontSize
+        self.maxLen = maxLen
+        self.isComb = isComb
+        self.isPushButton = isPushButton
+        self.isEditableChoice = isEditableChoice
+        self.textAlignment = textAlignment
         self.options = options
     }
 }

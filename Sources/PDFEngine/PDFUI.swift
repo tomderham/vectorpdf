@@ -390,6 +390,13 @@ public struct PDFViewerMainView: View {
         .background(
             WindowAccessor { window in
                 viewModel.currentWindow = window
+                if viewModel.windowDelegate == nil {
+                    let del = PDFViewerWindowDelegate(viewModel: viewModel)
+                    viewModel.windowDelegate = del
+                    window.delegate = del
+                } else if window.delegate == nil {
+                    window.delegate = viewModel.windowDelegate
+                }
                 if !isSnapshotWindow {
                     window.tabbingMode = .preferred
                     if window.tabGroup?.isTabBarVisible != true {
@@ -452,6 +459,14 @@ public struct PDFViewerMainView: View {
             guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
             sidebarVisibility = .all
             selectedSidebarTab = 1
+        }
+        .onChange(of: viewModel.document?.filePath) { oldPath, newPath in
+            guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
+            if doc.outline.isEmpty {
+                selectedSidebarTab = 1
+            } else {
+                selectedSidebarTab = 0
+            }
         }
         .task {
             // Falls back to a buffered cold-launch open-file path (see

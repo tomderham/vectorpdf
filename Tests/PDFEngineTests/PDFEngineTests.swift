@@ -1715,6 +1715,258 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!target2.label.hasSuffix(" "))
     #expect(target2.targetPage == 0)
 }
+
+@Test @MainActor func testForm1040CheckboxDoesNotCorruptSiblingTextFields() throws {
+    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
+    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+
+    let doc = try PDFDocumentCore(filePath: f1040URL.path)
+    let page1WidgetsBefore = doc.loadFormWidgets(for: 1)
+    let textWidgetsBefore = page1WidgetsBefore.filter { $0.type == .text }
+    let emptyTextFieldsBefore = textWidgetsBefore.filter { $0.value.isEmpty }
+    #expect(!emptyTextFieldsBefore.isEmpty)
+
+    let btnWidgets = page1WidgetsBefore.filter { $0.type == .checkbox || $0.type == .radiobutton }
+    guard let targetBtn = btnWidgets.first(where: { $0.name.contains("c2_16[1]") || $0.name.contains("c2_17[1]") }) ?? btnWidgets.first else {
+        Issue.record("No button widget found on page 1 of f1040.pdf")
+        return
+    }
+
+    // Toggle button on (which in f1040 sets on-state "2" or "1")
+    try doc.setFormWidgetValue(pageIndex: 1, widgetIndex: targetBtn.widgetIndex, value: "Yes")
+
+    let page1WidgetsAfter = doc.loadFormWidgets(for: 1)
+    let textWidgetsAfter = page1WidgetsAfter.filter { $0.type == .text }
+    
+    // Crucial check: None of the previously empty text fields should now have the button's value (e.g. "2" or "Yes")
+    for tw in textWidgetsAfter {
+        if emptyTextFieldsBefore.contains(where: { $0.name == tw.name }) {
+            #expect(tw.value.isEmpty, "Text field \(tw.name) was unexpectedly populated with '\(tw.value)'")
+        }
+    }
+
+    // Check that the button itself was set
+    let reloadedBtn = page1WidgetsAfter.first(where: { $0.widgetIndex == targetBtn.widgetIndex })
+    #expect(reloadedBtn != nil)
+    #expect(PDFFormButton.isValueChecked(reloadedBtn?.value ?? "") == true)
+
+    // Toggle back off
+    try doc.setFormWidgetValue(pageIndex: 1, widgetIndex: targetBtn.widgetIndex, value: "Off")
+    let page1WidgetsOff = doc.loadFormWidgets(for: 1)
+    let reloadedBtnOff = page1WidgetsOff.first(where: { $0.widgetIndex == targetBtn.widgetIndex })
+    #expect(PDFFormButton.isValueChecked(reloadedBtnOff?.value ?? "") == false)
+
+    for tw in page1WidgetsOff.filter({ $0.type == .text }) {
+        if emptyTextFieldsBefore.contains(where: { $0.name == tw.name }) {
+            #expect(tw.value.isEmpty, "Text field \(tw.name) was unexpectedly populated after unchecking with '\(tw.value)'")
+        }
+    }
+}
+
+@Test @MainActor func testSecureTextFieldCreatedForPasswordWidget() throws {
+    let vm = PDFViewerViewModel()
+    let normalWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 10, y: 10, width: 100, height: 20),
+        name: "Username",
+        value: "user",
+        isPassword: false
+    )
+    let secureWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 1,
+        type: .text,
+        rect: CGRect(x: 10, y: 40, width: 100, height: 20),
+        name: "Password",
+        value: "secret",
+        isPassword: true
+    )
+
+    let normalControl = PDFFormControlFactory.makeControl(for: normalWidget, viewModel: vm, frame: NSRect(x: 10, y: 10, width: 100, height: 20))
+    let secureControl = PDFFormControlFactory.makeControl(for: secureWidget, viewModel: vm, frame: NSRect(x: 10, y: 40, width: 100, height: 20))
+
+    #expect(normalControl is PDFFormTextField)
+    #expect(!(normalControl is PDFFormSecureTextField))
+    #expect(secureControl is PDFFormSecureTextField)
+}
+
+@Test func testDocumentWithoutOutlineHasEmptyOutline() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_no_outline_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.outline.isEmpty == true)
+}
+
+@Test @MainActor func testSingleLineTextFieldDisallowsMultilineAndSanitizesNewlines() throws {
+    let vm = PDFViewerViewModel()
+    let singleLineWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 10, y: 10, width: 200, height: 20),
+        name: "SingleLineField",
+        value: "Line1\nLine2\rLine3",
+        isMultiline: false
+    )
+    let tf = PDFFormTextField(widget: singleLineWidget, viewModel: vm, frame: NSRect(x: 10, y: 10, width: 200, height: 20))
+    #expect(tf.usesSingleLineMode == true)
+    #expect(tf.maximumNumberOfLines == 1)
+    #expect(tf.cell?.wraps == false)
+    #expect(tf.cell?.isScrollable == true)
+    #expect(tf.stringValue == "Line1 Line2 Line3")
+
+    // Multiline field preserves wrapping
+    let multiLineWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 1,
+        type: .text,
+        rect: CGRect(x: 10, y: 40, width: 200, height: 80),
+        name: "MultiLineField",
+        value: "Line1\nLine2",
+        isMultiline: true
+    )
+    let multiTf = PDFFormTextField(widget: multiLineWidget, viewModel: vm, frame: NSRect(x: 10, y: 40, width: 200, height: 80))
+    #expect(multiTf.usesSingleLineMode == false)
+    #expect(multiTf.maximumNumberOfLines == 0)
+    #expect(multiTf.cell?.wraps == true)
+}
+
+@Test @MainActor func testTextFieldAccurateFontSizeScaling() throws {
+    let vm = PDFViewerViewModel()
+    // Explicit font size (e.g. 8pt in tax forms)
+    let exactWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 10, y: 10, width: 100, height: 12),
+        name: "ExactFontField",
+        value: "Test",
+        fontSize: 8.0
+    )
+    let tf = PDFFormTextField(widget: exactWidget, viewModel: vm, frame: NSRect(x: 10, y: 10, width: 100, height: 12))
+    #expect(tf.font?.pointSize == 8.0)
+
+    // Zoomed 1.5x -> height becomes 18
+    tf.updateZoom(frame: NSRect(x: 15, y: 15, width: 150, height: 18))
+    #expect(tf.font?.pointSize == 12.0)
+}
+
+@Test @MainActor func testCombFieldDetectionAndFactoryCreation() throws {
+    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
+    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+
+    let doc = try PDFDocumentCore(filePath: f1040URL.path)
+    let page1Widgets = doc.loadFormWidgets(for: 1)
+    let combWidgets = page1Widgets.filter { $0.isComb }
+    #expect(!combWidgets.isEmpty, "f1040.pdf should have comb fields such as PIN or Routing number")
+
+    let vm = PDFViewerViewModel()
+    for widget in combWidgets {
+        #expect(widget.maxLen > 0)
+        let control = PDFFormControlFactory.makeControl(for: widget, viewModel: vm, frame: NSRect(origin: .zero, size: widget.rect.size))
+        #expect(control is PDFFormCombTextField)
+    }
+}
+
+@Test @MainActor func testCombFieldInteractionAndTyping() throws {
+    let vm = PDFViewerViewModel()
+    let combWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 0, y: 0, width: 100, height: 20),
+        name: "PIN",
+        value: "12",
+        maxLen: 5,
+        isComb: true
+    )
+    let combField = PDFFormCombTextField(widget: combWidget, viewModel: vm, frame: NSRect(x: 0, y: 0, width: 100, height: 20))
+    #expect(combField.stringValue == "12")
+    #expect(combField.maxLen == 5)
+    #expect(combField.activeCellIndex == 2)
+
+    // Setting stringValue respects maxLen
+    combField.stringValue = "123456789"
+    #expect(combField.stringValue == "12345")
+    #expect(combField.activeCellIndex == 4)
+
+    // Clear stringValue
+    combField.stringValue = ""
+    #expect(combField.stringValue == "")
+    #expect(combField.activeCellIndex == 0)
+}
+
+@Test @MainActor func testTextFieldMaxLenEnforcement() throws {
+    let vm = PDFViewerViewModel()
+    let maxLenWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 0, y: 0, width: 100, height: 20),
+        name: "Code",
+        value: "ABCD",
+        maxLen: 4
+    )
+    let tf = PDFFormTextField(widget: maxLenWidget, viewModel: vm, frame: NSRect(x: 0, y: 0, width: 100, height: 20))
+    
+    // Attempting to type or paste past maxLen is rejected by shouldChangeTextIn
+    let tv = NSTextView()
+    tv.string = "ABCD"
+    let canInsertMore = tf.control(tf, textView: tv, shouldChangeTextIn: NSRange(location: 4, length: 0), replacementString: "E")
+    #expect(canInsertMore == false)
+
+    let canReplace = tf.control(tf, textView: tv, shouldChangeTextIn: NSRange(location: 3, length: 1), replacementString: "X")
+    #expect(canReplace == true)
+}
+
+@Test @MainActor func testTextAlignmentApplied() throws {
+    let vm = PDFViewerViewModel()
+    let centerWidget = PDFFormWidget(
+        pageIndex: 0,
+        widgetIndex: 0,
+        type: .text,
+        rect: CGRect(x: 0, y: 0, width: 100, height: 20),
+        name: "Centered",
+        value: "Center",
+        textAlignment: .center
+    )
+    let tf = PDFFormTextField(widget: centerWidget, viewModel: vm, frame: NSRect(x: 0, y: 0, width: 100, height: 20))
+    #expect(tf.alignment == .center)
+}
+
+@Test func testFormResetFunctionality() throws {
+    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
+    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+
+    let doc = try PDFDocumentCore(filePath: f1040URL.path)
+    // Verify resetForm succeeds without throwing
+    try doc.resetForm()
+}
+
+@Test @MainActor func testWindowDelegateClosesCleanlyWhenNotEdited() throws {
+    let vm = PDFViewerViewModel()
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 200, height: 200),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: false
+    )
+    let delegate = PDFViewerWindowDelegate(viewModel: vm)
+    window.delegate = delegate
+    vm.currentWindow = window
+    
+    // When not edited, windowShouldClose immediately returns true
+    #expect(vm.isDocumentEdited == false)
+    #expect(delegate.windowShouldClose(window) == true)
+}
 }
 
 
