@@ -526,15 +526,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             
             // 5. Active Snapshot Focus Ring
             if let activeSnap = viewModel.activeSnapshotTarget, activeSnap.targetPage == pageIdx {
-                // Center focus ring on targetPoint (or targetRect) matching scrollToSnapshot.
-                let targetRect = activeSnap.targetRect
-                    ?? activeSnap.targetPoint.map { CGRect(x: $0.x - 150, y: $0.y - 30, width: 300, height: 60) }
-                    ?? CGRect(x: pBounds.minX, y: pBounds.minY, width: pBounds.width, height: 40)
-                let sx = pFrame.minX + (targetRect.minX - pBounds.minX) * viewModel.zoomScale
-                let sy = pFrame.minY + (targetRect.minY - pBounds.minY) * viewModel.zoomScale
-                let sw = max(targetRect.width * viewModel.zoomScale, 24)
-                let sh = max(targetRect.height * viewModel.zoomScale, 20)
-                let snapRect = NSRect(x: sx, y: sy, width: sw, height: sh)
+                let snapRect = focusRingRect(for: activeSnap, on: pageIdx, pageBounds: pBounds, pageFrame: pFrame)
                 
                 let path = NSBezierPath(roundedRect: snapRect, xRadius: 4, yRadius: 4)
                 NSColor.controlAccentColor.withAlphaComponent(0.15).setFill()
@@ -557,6 +549,77 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
                 path.fill()
             }
         }
+    }
+    
+    /// Computes the canvas frame for an active snapshot / reference target's focus ring,
+    /// ensuring it wraps the target content cleanly and never falls outside the page boundaries.
+    private func focusRingRect(for activeSnap: SnapshotTarget, on pageIdx: Int, pageBounds: CGRect, pageFrame: CGRect) -> NSRect {
+        let targetRect: CGRect
+        if let rect = activeSnap.targetRect {
+            targetRect = rect
+        } else if let point = activeSnap.targetPoint {
+            // Use the shared SpatialTextSelector engine to resolve the content line at targetPoint,
+            // consistently ignoring line-number gutters and margin annotations.
+            var resolvedLineRect: CGRect? = nil
+            if let stext = viewModel.pageStructuredData[pageIdx],
+               let line = viewModel.textSelector.targetLine(on: stext, at: point, label: activeSnap.label) {
+                resolvedLineRect = line.bbox.insetBy(dx: -6, dy: -3)
+            }
+
+            if let lineRect = resolvedLineRect {
+                targetRect = lineRect
+            } else {
+                // Fallback geometry when structured text is unavailable or non-textual.
+                // Uses SpatialTextSelector.minColumnWidth to locate the body margin.
+                let bodyLeftMargin = viewModel.pageStructuredData[pageIdx]?.blocks
+                    .filter { $0.type == .text && $0.bbox.width >= SpatialTextSelector.minColumnWidth }
+                    .map { $0.bbox.minX }.min() ?? (pageBounds.minX + SpatialTextSelector.minColumnWidth)
+
+                let isLeftAnchored = point.x <= pageBounds.minX + SpatialTextSelector.minColumnWidth
+                let desiredWidth: CGFloat = min(360, pageBounds.width - (bodyLeftMargin - pageBounds.minX) - 36)
+                let desiredHeight: CGFloat = 36
+
+                let rx: CGFloat = isLeftAnchored ? bodyLeftMargin : (point.x - desiredWidth / 2)
+                let ry: CGFloat = point.y - desiredHeight / 2
+
+                let minX = bodyLeftMargin
+                let maxX = pageBounds.maxX - 16
+                let minY = pageBounds.minY + 16
+                let maxY = pageBounds.maxY - 16
+
+                let clampedX = max(minX, min(rx, maxX - desiredWidth))
+                let clampedY = max(minY, min(ry, maxY - desiredHeight))
+                let clampedW = min(desiredWidth, maxX - clampedX)
+                let clampedH = min(desiredHeight, maxY - clampedY)
+
+                targetRect = CGRect(x: clampedX, y: clampedY, width: max(clampedW, 40), height: max(clampedH, 20))
+            }
+        } else {
+            let minX = pageBounds.minX + 54
+            let width = max(pageBounds.width - 108, 100)
+            let minY = pageBounds.minY + 36
+            targetRect = CGRect(x: minX, y: minY, width: width, height: 40)
+        }
+
+        // Map to canvas coordinates
+        let sx = pageFrame.minX + (targetRect.minX - pageBounds.minX) * viewModel.zoomScale
+        let sy = pageFrame.minY + (targetRect.minY - pageBounds.minY) * viewModel.zoomScale
+        let sw = max(targetRect.width * viewModel.zoomScale, 24)
+        let sh = max(targetRect.height * viewModel.zoomScale, 20)
+
+        // Ensure the focus ring stays strictly within the visible page frame
+        let safeMargin: CGFloat = 4
+        let safeMinX = pageFrame.minX + safeMargin
+        let safeMaxX = pageFrame.maxX - safeMargin
+        let safeMinY = pageFrame.minY + safeMargin
+        let safeMaxY = pageFrame.maxY - safeMargin
+
+        let finalX = max(safeMinX, min(sx, safeMaxX - 24))
+        let finalY = max(safeMinY, min(sy, safeMaxY - 20))
+        let finalW = min(sw, safeMaxX - finalX)
+        let finalH = min(sh, safeMaxY - finalY)
+
+        return NSRect(x: finalX, y: finalY, width: max(finalW, 24), height: max(finalH, 20))
     }
     
     // MARK: - Mouse & Gesture Interaction

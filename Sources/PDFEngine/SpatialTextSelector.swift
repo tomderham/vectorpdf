@@ -60,6 +60,11 @@ public struct TextPosition: Comparable, Sendable, Equatable {
 }
 
 public final class SpatialTextSelector: Sendable {
+    /// Minimum width for a text block to plausibly be body text, excluding narrow line-number gutters or margin annotations.
+    public static let minColumnWidth: CGFloat = 60.0
+    /// Horizontal gutter threshold when testing multi-column bounds.
+    public static let gutterThreshold: CGFloat = 20.0
+
     public init() {}
     
     /// Selects text on a StructuredPage between startPoint and endPoint, supporting both reading order flow and rectangular marquee
@@ -133,10 +138,8 @@ public final class SpatialTextSelector: Sendable {
         let startBlock = textBlocks[firstPos.blockIndex]
         let endBlock = textBlocks[lastPos.blockIndex]
         let anchorBlock = startBlock.bbox.width >= endBlock.bbox.width ? startBlock : endBlock
-        let minColumnWidth: CGFloat = 60
-        let isMultiColumn = textBlocks.contains { $0.bbox.width > minColumnWidth && abs($0.bbox.midX - anchorBlock.bbox.midX) > 100 }
-        let gutterThreshold: CGFloat = 20.0
-        let constrainToColumn = isMultiColumn && (max(startPoint.x, endPoint.x) < anchorBlock.bbox.maxX + gutterThreshold)
+        let isMultiColumn = textBlocks.contains { $0.bbox.width > Self.minColumnWidth && abs($0.bbox.midX - anchorBlock.bbox.midX) > 100 }
+        let constrainToColumn = isMultiColumn && (max(startPoint.x, endPoint.x) < anchorBlock.bbox.maxX + Self.gutterThreshold)
 
         // Include every text block whose vertical extent overlaps the drag's band, walked in
         // page (top-to-bottom) order — not by mupdf's block *enumeration* index, which can place
@@ -362,5 +365,96 @@ public final class SpatialTextSelector: Sendable {
         }
         
         return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: line.characters.count)
+    }
+
+    // MARK: - Point Target Resolution
+    /// Resolves the primary content line for a target location (such as a cross-reference destination or bookmark),
+    /// consistent with mouse selection: filtering out narrow line-number gutters and margin annotations,
+    /// identifying the appropriate body column, and using the standard spatial distance metric.
+    public func targetLine(on page: StructuredPage, at point: CGPoint, label: String? = nil) -> TextLine? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard !textBlocks.isEmpty else { return nil }
+
+        // 1. Separate body text blocks from narrow margin gutters (line numbers, marginalia).
+        // Consistent with selectReadingOrder's minColumnWidth (60pt).
+        let bodyBlocks = textBlocks.filter { $0.bbox.width >= Self.minColumnWidth }
+        let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
+
+        // 2. Determine target X coordinate.
+        // If point.x is left-anchored (destX == 0 or <= margin + 60, common for /FitH anchors),
+        // target the leftmost body column on the page rather than the margin void.
+        let minBodyX = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
+        let effectiveX: CGFloat
+        if point.x <= page.bounds.minX + Self.minColumnWidth {
+            effectiveX = minBodyX + 10
+        } else {
+            effectiveX = point.x
+        }
+        let targetPoint = CGPoint(x: effectiveX, y: point.y)
+
+        // 3. Score candidate lines using the same spatial alignment metric as resolvePosition.
+        var bestLine: TextLine? = nil
+        var bestScore: CGFloat = .infinity
+
+        for block in candidateBlocks {
+            // In multi-column documents, if point.x is explicitly inside a column,
+            // constrain to blocks in that column consistent with selectReadingOrder.
+            if point.x > page.bounds.minX + Self.minColumnWidth {
+                let overlapWidth = min(block.bbox.maxX, point.x + Self.gutterThreshold) - max(block.bbox.minX, point.x - Self.gutterThreshold)
+                if overlapWidth <= 0 && abs(block.bbox.midX - point.x) > 120 {
+                    continue
+                }
+            }
+
+            for line in block.lines {
+                guard !line.characters.isEmpty else { continue }
+                // Exclude any isolated line that is too narrow and lacks letters (e.g. margin artifact)
+                guard line.bbox.width >= 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
+
+                // Vertical distance metric identical to resolvePosition:
+                let yOverlap = (targetPoint.y >= line.bbox.minY - 3 && targetPoint.y <= line.bbox.maxY + 3)
+                let dy: CGFloat
+                if yOverlap {
+                    dy = 0
+                } else if targetPoint.y < line.bbox.minY {
+                    dy = line.bbox.minY - targetPoint.y
+                } else {
+                    dy = (targetPoint.y - line.bbox.maxY) * 1.5
+                }
+
+                // Restrict search to reasonable vertical proximity
+                guard dy <= 45 else { continue }
+
+                // Horizontal distance metric identical to resolvePosition:
+                let dx: CGFloat
+                if targetPoint.x >= line.bbox.minX && targetPoint.x <= line.bbox.maxX {
+                    dx = 0
+                } else if targetPoint.x < line.bbox.minX {
+                    dx = line.bbox.minX - targetPoint.x
+                } else {
+                    dx = targetPoint.x - line.bbox.maxX
+                }
+
+                // Heavy vertical prioritization matching resolvePosition: (dy * 4.0) + dx
+                var score = (dy * 4.0) + dx
+
+                // Optional label token boost (e.g. section number or name)
+                if let label = label?.lowercased(), !label.isEmpty {
+                    let lineLower = line.text.lowercased()
+                    for token in label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
+                        if token.count >= 2 && lineLower.contains(token) {
+                            score -= 30.0
+                        }
+                    }
+                }
+
+                if score < bestScore {
+                    bestScore = score
+                    bestLine = line
+                }
+            }
+        }
+
+        return bestLine
     }
 }

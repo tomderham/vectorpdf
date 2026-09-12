@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import Combine
 import UniformTypeIdentifiers
-import PDFKit
+import ObjectiveC
 
 /// Progress of the Agent tab's background semantic-indexing pass for the current document. See
 /// PDFViewerViewModel.startAgentIndexingIfNeeded.
@@ -219,7 +219,8 @@ public final class PDFViewerViewModel: ObservableObject {
     private let searchActor = PDFSearchActor()
     private var searchTask: Task<Void, Never>?
     private var debouncedWidgetTasks: [String: Task<Void, Never>] = [:]
-    private let textSelector = SpatialTextSelector()
+    private var pendingWidgetValues: [String: (pageIndex: Int, widgetIndex: Int, value: String)] = [:]
+    public let textSelector = SpatialTextSelector()
 
     // Strict bounded cache limits: keeps physical memory <= 60 MB in the normal single-column
     // layout. Two-Page Mode needs a higher cap, since up to 3 full rows (6 pages) plus draw(_:)'s
@@ -1509,6 +1510,7 @@ public final class PDFViewerViewModel: ObservableObject {
     public func updateWidgetValueDebounced(pageIndex: Int, widgetIndex: Int, value: String) {
         let key = "p\(pageIndex)_w\(widgetIndex)"
         debouncedWidgetTasks[key]?.cancel()
+        pendingWidgetValues[key] = (pageIndex, widgetIndex, value)
         
         isDocumentEdited = true
         currentWindow?.isDocumentEdited = true
@@ -1517,6 +1519,7 @@ public final class PDFViewerViewModel: ObservableObject {
             try? await Task.sleep(nanoseconds: 200_000_000) // 200ms debounce
             guard !Task.isCancelled else { return }
             self?.debouncedWidgetTasks.removeValue(forKey: key)
+            self?.pendingWidgetValues.removeValue(forKey: key)
             self?.commitWidgetValue(pageIndex: pageIndex, widgetIndex: widgetIndex, value: value)
         }
     }
@@ -1525,7 +1528,23 @@ public final class PDFViewerViewModel: ObservableObject {
         let key = "p\(pageIndex)_w\(widgetIndex)"
         debouncedWidgetTasks[key]?.cancel()
         debouncedWidgetTasks.removeValue(forKey: key)
+        pendingWidgetValues.removeValue(forKey: key)
         commitWidgetValue(pageIndex: pageIndex, widgetIndex: widgetIndex, value: value)
+    }
+    
+    /// Flushes any pending debounced form edits and commits active field edits immediately.
+    public func flushPendingFormEdits() {
+        currentWindow?.makeFirstResponder(nil)
+        guard !pendingWidgetValues.isEmpty else { return }
+        for (_, task) in debouncedWidgetTasks {
+            task.cancel()
+        }
+        debouncedWidgetTasks.removeAll()
+        let pending = pendingWidgetValues
+        pendingWidgetValues.removeAll()
+        for (_, entry) in pending {
+            commitWidgetValue(pageIndex: entry.pageIndex, widgetIndex: entry.widgetIndex, value: entry.value)
+        }
     }
     
     private func commitWidgetValue(pageIndex: Int, widgetIndex: Int, value: String) {
@@ -1551,6 +1570,7 @@ public final class PDFViewerViewModel: ObservableObject {
             task.cancel()
         }
         debouncedWidgetTasks.removeAll()
+        pendingWidgetValues.removeAll()
         do {
             try doc.resetForm()
             for page in pageFormWidgets.keys {
@@ -1594,6 +1614,7 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public func saveDocument() {
         guard let doc = document else { return }
+        flushPendingFormEdits()
         // Suspend for our own write (an atomic replace, indistinguishable from an external change)
         // to avoid a pointless self-triggered reload; re-arm right after.
         fileChangeWatcher = nil
@@ -1618,6 +1639,7 @@ public final class PDFViewerViewModel: ObservableObject {
     
     public func saveDocumentAs() {
         guard let doc = document else { return }
+        flushPendingFormEdits()
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType.pdf]
         panel.canCreateDirectories = true
@@ -1697,6 +1719,8 @@ public final class PDFViewerViewModel: ObservableObject {
     
     public func printDocument() {
         guard let doc = document else { return }
+        flushPendingFormEdits()
+
         let printURL: URL
         var temporaryFileURL: URL? = nil
         
@@ -1715,45 +1739,80 @@ public final class PDFViewerViewModel: ObservableObject {
             printURL = URL(fileURLWithPath: doc.filePath)
         }
         
-        guard let pdfDoc = PDFKit.PDFDocument(url: printURL) else {
-            print("Failed to open PDF document for printing at \(printURL.path)")
-            if let temp = temporaryFileURL {
-                try? FileManager.default.removeItem(at: temp)
-            }
-            return
-        }
-
-        // This is a separate PDFKit.PDFDocument instance from our own MuPDF-backed one, so it
-        // needs its own unlock — without this, printing a password-protected PDF silently fails
-        // (or prints blank pages) since pdfDoc.isLocked stays true.
-        if pdfDoc.isLocked, let password = currentDocumentPassword {
-            _ = pdfDoc.unlock(withPassword: password)
-        }
-
-        let printInfo = NSPrintInfo.shared
+        // Isolate print settings on a copy of NSPrintInfo rather than mutating the shared singleton
+        let printInfo = (NSPrintInfo.shared.copy() as? NSPrintInfo) ?? NSPrintInfo()
         printInfo.isHorizontallyCentered = true
         printInfo.isVerticallyCentered = true
-        
-        guard let printOp = pdfDoc.printOperation(for: printInfo, scalingMode: .pageScaleToFit, autoRotate: true) else {
-            print("Failed to initialize print operation")
+        printInfo.dictionary()[NSPrintInfo.AttributeKey.firstPage] = 1
+        printInfo.dictionary()[NSPrintInfo.AttributeKey.lastPage] = doc.pageCount
+
+        if let firstPageBounds = doc.pageBounds.first {
+            printInfo.orientation = (firstPageBounds.width > firstPageBounds.height) ? .landscape : .portrait
+        }
+
+        let printView: MuPDFPrintView
+        do {
+            printView = try MuPDFPrintView(filePath: printURL.path, password: currentDocumentPassword, pageCount: doc.pageCount, printInfo: printInfo)
+        } catch {
             if let temp = temporaryFileURL {
                 try? FileManager.default.removeItem(at: temp)
             }
+            showPrintFailureAlert(reason: "Failed to open document for printing: \(error.localizedDescription)")
             return
         }
+
+        let printOp = NSPrintOperation(view: printView, printInfo: printInfo)
+
+        // Set job title so "Save as PDF" and print spools use the document's actual filename
+        printOp.jobTitle = (doc.filePath as NSString).lastPathComponent
+
         printOp.showsPrintPanel = true
         printOp.showsProgressPanel = true
+        printOp.canSpawnSeparateThread = true
         
-        if let window = currentWindow ?? NSApplication.shared.keyWindow {
-            printOp.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
-        } else {
-            printOp.run()
-        }
+        // Expose native orientation and paper size options in the print dialog.
+        // NOTE: We do not include .showsScaling because scaling is provided in our custom
+        // PDF Options accessory pane. We do not set .showsPageSetupAccessory because in
+        // macOS 13+ (Ventura/Sonoma/Sequoia) that option strips Paper Size and Orientation
+        // out of the native primary print pane.
+        printOp.printPanel.options.insert([
+            .showsPaperSize,
+            .showsOrientation
+        ])
+        printOp.printPanel.options.remove([
+            .showsScaling,
+            .showsPageSetupAccessory
+        ])
         
-        if let temp = temporaryFileURL {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 60.0) {
+        let accessoryVC = PDFPrintAccessoryViewController(printOperation: printOp, printView: printView)
+        printOp.printPanel.addAccessoryController(accessoryVC)
+        
+        let cleanup = {
+            if let temp = temporaryFileURL {
                 try? FileManager.default.removeItem(at: temp)
             }
+        }
+        
+        let completionDelegate = PrintCompletionDelegate(onComplete: cleanup)
+        objc_setAssociatedObject(printOp, &printCompletionDelegateKey, completionDelegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        
+        if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            printOp.runModal(for: window, delegate: completionDelegate, didRun: #selector(PrintCompletionDelegate.printOperationDidRun(_:success:contextInfo:)), contextInfo: nil)
+        } else {
+            printOp.run()
+            cleanup()
+        }
+    }
+
+    private func showPrintFailureAlert(reason: String) {
+        let alert = NSAlert()
+        alert.messageText = "Unable to Print Document"
+        alert.informativeText = reason
+        alert.alertStyle = .warning
+        if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            alert.beginSheetModal(for: window, completionHandler: nil)
+        } else {
+            alert.runModal()
         }
     }
     
@@ -2092,4 +2151,193 @@ public final class PDFViewerWindowDelegate: NSObject, NSWindowDelegate {
         return vm.promptSaveBeforeClosingIfNeeded()
     }
 }
+
+private nonisolated(unsafe) var printCompletionDelegateKey: UInt8 = 0
+
+@MainActor
+private final class PrintCompletionDelegate: NSObject {
+    private var onComplete: (() -> Void)?
+    
+    init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+        super.init()
+    }
+    
+    @objc func printOperationDidRun(_ printOperation: NSPrintOperation, success: Bool, contextInfo: UnsafeMutableRawPointer?) {
+        if success {
+            NSPrintInfo.shared = printOperation.printInfo
+        }
+        onComplete?()
+        onComplete = nil
+    }
+}
+
+/// Print panel accessory view controller providing controls for Auto Rotate and Scaling.
+@MainActor
+final class PDFPrintAccessoryViewController: NSViewController, NSPrintPanelAccessorizing {
+    private weak var printOperation: NSPrintOperation?
+    private weak var printView: MuPDFPrintView?
+    
+    @objc dynamic var previewAutoRotate: Bool = true
+    @objc dynamic var previewScale: Double = 1.0
+    
+    private var autoRotateCheckbox: NSButton!
+    private var scaleToFitRadio: NSButton!
+    private var scaleCustomRadio: NSButton!
+    private var scaleField: NSTextField!
+    private var scaleStepper: NSStepper!
+    
+    private var activePrintInfo: NSPrintInfo? {
+        return printOperation?.printInfo
+    }
+    
+    init(printOperation: NSPrintOperation, printView: MuPDFPrintView) {
+        self.printOperation = printOperation
+        self.printView = printView
+        super.init(nibName: nil, bundle: nil)
+        self.title = "PDF Options"
+        self.previewAutoRotate = printView.autoRotate
+        self.previewScale = 1.0
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func loadView() {
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Auto Rotate (left side)
+        autoRotateCheckbox = NSButton(checkboxWithTitle: "Auto Rotate", target: self, action: #selector(autoRotateChanged(_:)))
+        autoRotateCheckbox.state = printView?.autoRotate == false ? .off : .on
+        
+        // Scale controls (right side)
+        scaleToFitRadio = NSButton(radioButtonWithTitle: "Scale to Fit", target: self, action: #selector(scaleModeChanged(_:)))
+        scaleToFitRadio.state = .on
+        
+        scaleCustomRadio = NSButton(radioButtonWithTitle: "Scale:", target: self, action: #selector(scaleModeChanged(_:)))
+        scaleCustomRadio.state = .off
+        
+        scaleField = NSTextField(string: "100")
+        scaleField.alignment = .right
+        scaleField.target = self
+        scaleField.action = #selector(customScaleChanged(_:))
+        scaleField.isEnabled = false
+        scaleField.widthAnchor.constraint(equalToConstant: 50).isActive = true
+        
+        let pctLabel = NSTextField(labelWithString: "%")
+        
+        scaleStepper = NSStepper()
+        scaleStepper.minValue = 10
+        scaleStepper.maxValue = 400
+        scaleStepper.increment = 5
+        scaleStepper.integerValue = 100
+        scaleStepper.target = self
+        scaleStepper.action = #selector(stepperChanged(_:))
+        scaleStepper.isEnabled = false
+        
+        let customScaleRow = NSStackView(views: [scaleCustomRadio, scaleField, pctLabel, scaleStepper])
+        customScaleRow.orientation = .horizontal
+        customScaleRow.spacing = 4
+        customScaleRow.alignment = .centerY
+        
+        let scaleStack = NSStackView(views: [scaleToFitRadio, customScaleRow])
+        scaleStack.orientation = .vertical
+        scaleStack.alignment = .leading
+        scaleStack.spacing = 6
+        
+        // Horizontal main stack: Auto Rotate on the left, Scale options to the right
+        let mainStack = NSStackView(views: [autoRotateCheckbox, scaleStack])
+        mainStack.orientation = .horizontal
+        mainStack.alignment = .top
+        mainStack.spacing = 32
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        container.addSubview(mainStack)
+        
+        NSLayoutConstraint.activate([
+            mainStack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            mainStack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            mainStack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
+            mainStack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16)
+        ])
+        
+        self.view = container
+    }
+    
+    @objc func keyPathsForValuesAffectingPreview() -> Set<String> {
+        return ["previewScale", "previewAutoRotate"]
+    }
+    
+    @objc private func autoRotateChanged(_ sender: NSButton) {
+        let enabled = (sender.state == .on)
+        previewAutoRotate = enabled
+        printView?.autoRotate = enabled
+        printView?.needsDisplay = true
+    }
+    
+    @objc private func scaleModeChanged(_ sender: NSButton) {
+        if sender === scaleToFitRadio {
+            scaleToFitRadio.state = .on
+            scaleCustomRadio.state = .off
+            scaleField.isEnabled = false
+            scaleStepper.isEnabled = false
+            printView?.scaleMode = 1
+            previewScale = 1.0
+        } else {
+            scaleToFitRadio.state = .off
+            scaleCustomRadio.state = .on
+            scaleField.isEnabled = true
+            scaleStepper.isEnabled = true
+            applyCustomScale()
+        }
+        printView?.needsDisplay = true
+    }
+    
+    @objc private func stepperChanged(_ sender: NSStepper) {
+        if scaleCustomRadio.state != .on {
+            scaleToFitRadio.state = .off
+            scaleCustomRadio.state = .on
+            scaleField.isEnabled = true
+            scaleStepper.isEnabled = true
+        }
+        scaleField.integerValue = sender.integerValue
+        applyCustomScale()
+    }
+    
+    @objc private func customScaleChanged(_ sender: NSTextField) {
+        if scaleCustomRadio.state != .on {
+            scaleToFitRadio.state = .off
+            scaleCustomRadio.state = .on
+            scaleField.isEnabled = true
+            scaleStepper.isEnabled = true
+        }
+        let val = max(10, min(400, sender.integerValue))
+        scaleField.integerValue = val
+        scaleStepper.integerValue = val
+        applyCustomScale()
+    }
+    
+    private func applyCustomScale() {
+        let pct = max(10, min(400, scaleField.integerValue))
+        let factor = CGFloat(pct) / 100.0
+        printView?.scaleMode = 0
+        printView?.customScale = factor
+        previewScale = Double(factor)
+        printView?.needsDisplay = true
+    }
+    
+    nonisolated func localizedSummaryItems() -> [[NSPrintPanel.AccessorySummaryKey: String]] {
+        return MainActor.assumeIsolated {
+            var items: [[NSPrintPanel.AccessorySummaryKey: String]] = []
+            let autoRot = (autoRotateCheckbox?.state == .on) ? "Yes" : "No"
+            items.append([.itemName: "Auto Rotate", .itemDescription: autoRot])
+            let scaleDesc = (scaleToFitRadio?.state == .on) ? "Scale to Fit" : "\(scaleField?.stringValue ?? "100")%"
+            items.append([.itemName: "Scale", .itemDescription: scaleDesc])
+            return items
+        }
+    }
+}
+
 

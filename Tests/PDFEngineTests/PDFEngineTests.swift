@@ -1006,15 +1006,83 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     createSamplePDF(at: pdfURL)
     defer { try? FileManager.default.removeItem(at: pdfURL) }
     
-    guard let pdfDoc = PDFKit.PDFDocument(url: pdfURL) else {
-        Issue.record("Failed to load PDFDocument for printing test")
+    let printView = try MuPDFPrintView(filePath: pdfURL.path, password: nil, pageCount: 1)
+    #expect(printView.pageCount == 1)
+    
+    let printInfo = (NSPrintInfo.shared.copy() as? NSPrintInfo) ?? NSPrintInfo()
+    printInfo.isHorizontallyCentered = true
+    printInfo.isVerticallyCentered = true
+    printInfo.dictionary()[NSPrintInfo.AttributeKey.firstPage] = 1
+    printInfo.dictionary()[NSPrintInfo.AttributeKey.lastPage] = 1
+
+    let printOp = NSPrintOperation(view: printView, printInfo: printInfo)
+    printOp.showsPrintPanel = true
+    printOp.showsProgressPanel = true
+    printOp.canSpawnSeparateThread = true
+    
+    let expectedTitle = (pdfURL.path as NSString).lastPathComponent
+    printOp.jobTitle = expectedTitle
+    #expect(printOp.jobTitle == expectedTitle)
+    
+    printOp.printPanel.options.insert([
+        .showsPaperSize,
+        .showsOrientation
+    ])
+    printOp.printPanel.options.remove([
+        .showsScaling,
+        .showsPageSetupAccessory
+    ])
+    #expect(printOp.printPanel.options.contains(.showsPaperSize))
+    #expect(printOp.printPanel.options.contains(.showsOrientation))
+    #expect(!printOp.printPanel.options.contains(.showsScaling))
+    #expect(!printOp.printPanel.options.contains(.showsPageSetupAccessory))
+    
+    let accessoryVC = PDFPrintAccessoryViewController(printOperation: printOp, printView: printView)
+    printOp.printPanel.addAccessoryController(accessoryVC)
+    #expect(printOp.printPanel.accessoryControllers.count == 1)
+    #expect(printOp.printPanel.accessoryControllers.first?.title == "PDF Options")
+    _ = accessoryVC.view
+    #expect(accessoryVC.localizedSummaryItems().count == 2)
+    #expect(accessoryVC.keyPathsForValuesAffectingPreview().contains("previewScale"))
+    #expect(accessoryVC.keyPathsForValuesAffectingPreview().contains("previewAutoRotate"))
+    
+    var pageRange = NSRange()
+    #expect(printView.knowsPageRange(&pageRange) == true)
+    #expect(pageRange.location == 1)
+    #expect(pageRange.length == 1)
+    
+    let pageRect = printView.rectForPage(1)
+    #expect(pageRect.width > 0 && pageRect.height > 0)
+    
+    let pdfData = printView.dataWithPDF(inside: printView.bounds)
+    #expect(pdfData.count > 1000)
+}
+
+@Test @MainActor func testFlushPendingFormEdits() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_flush_\(UUID().uuidString).pdf")
+    createFormSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+    
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    
+    let widgets = vm.pageFormWidgets[0]
+    guard let textWidget = widgets?.first(where: { $0.type == .text }) else {
+        Issue.record("Missing text widget in sample PDF")
         return
     }
     
-    let printInfo = NSPrintInfo.shared
-    let printOp = pdfDoc.printOperation(for: printInfo, scalingMode: .pageScaleToFit, autoRotate: true)
-    #expect(printOp != nil)
-    #expect(printOp?.showsPrintPanel == true)
+    // Update debounced (not committed immediately)
+    vm.updateWidgetValueDebounced(pageIndex: 0, widgetIndex: textWidget.widgetIndex, value: "Immediately Flushed")
+    
+    // Flush immediately before debounce timer triggers
+    vm.flushPendingFormEdits()
+    
+    // Check that the widget was committed to pageFormWidgets and the document
+    let updatedWidgets = vm.pageFormWidgets[0]
+    let updatedTextWidget = updatedWidgets?.first(where: { $0.widgetIndex == textWidget.widgetIndex })
+    #expect(updatedTextWidget?.value == "Immediately Flushed")
 }
 
 func createFormSamplePDF(at fileURL: URL) {

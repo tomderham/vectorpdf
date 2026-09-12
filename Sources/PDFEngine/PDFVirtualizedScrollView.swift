@@ -226,19 +226,31 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             guard pageIdx >= 0 && pageIdx < doc.pageCount, let canvasView = self.canvasView else { return }
             
             let pageY = viewModel.effectivePageYOffsets[pageIdx]
+            let pageBounds = doc.pageBounds[pageIdx]
+
             // Cross-reference links only ever carry a targetPoint, not a targetRect (see
             // CrossReferenceResolver.resolveLinks) — prefer centering on that exact point over
             // the generic top-of-page fallback, so "Open in New Window" / Option-click on a
             // reference actually centers the new window on the reference, not just its page.
-            let targetRect = snap.targetRect
-                ?? snap.targetPoint.map { CGRect(x: $0.x - 150, y: $0.y - 30, width: 300, height: 60) }
-                ?? CGRect(x: 0, y: 0, width: 400, height: 100)
-            let absoluteY = (pageY + targetRect.midY) * viewModel.zoomScale + 16
+            let targetMidX: CGFloat
+            let targetMidY: CGFloat
+            if let rect = snap.targetRect {
+                targetMidX = rect.midX
+                targetMidY = rect.midY
+            } else if let point = snap.targetPoint {
+                let isLeftAnchored = point.x <= pageBounds.minX + 40
+                targetMidX = isLeftAnchored ? (pageBounds.minX + min(pageBounds.width * 0.35, 180)) : point.x
+                targetMidY = point.y
+            } else {
+                targetMidX = pageBounds.midX
+                targetMidY = pageBounds.minY + 40
+            }
+
+            let absoluteY = (pageY + targetMidY) * viewModel.zoomScale + 16
             let scrollY = max(0, absoluteY - (clipView.bounds.height / 2))
             
-            let pageBounds = doc.pageBounds[pageIdx]
             let pageX = max(32, (canvasView.bounds.width - (pageBounds.width * viewModel.zoomScale)) / 2)
-            let snapX = (targetRect.midX - pageBounds.minX) * viewModel.zoomScale
+            let snapX = (targetMidX - pageBounds.minX) * viewModel.zoomScale
             // See the identical upper-clamp note in scrollToMatch above — same reasoning here.
             let maxScrollX = max(0, canvasView.bounds.width - clipView.bounds.width)
             let scrollX = min(max(0, pageX + snapX - (clipView.bounds.width / 2)), maxScrollX)
