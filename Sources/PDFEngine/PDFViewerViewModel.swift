@@ -1432,7 +1432,78 @@ public final class PDFViewerViewModel: ObservableObject {
         SnapshotWindowManager.shared.close(target.id)
     }
 
+    /// Resolves the bounding box for a reference or snapshot target in native page coordinates,
+    /// unifying spatial text line detection, margin gutter filtering, and fallbacks so that both
+    /// the focus ring renderer and viewport scrolling share identical geometry.
+    public func resolvedTargetRect(for snap: SnapshotTarget) -> CGRect {
+        let pageIdx = snap.targetPage
+        guard let doc = document, pageIdx >= 0, pageIdx < doc.pageCount else {
+            return snap.targetRect ?? CGRect(x: 54, y: 36, width: 300, height: 40)
+        }
+        let pageBounds = doc.pageBounds[pageIdx]
+
+        if let rect = snap.targetRect, rect.width > 0, rect.height > 0 {
+            return rect
+        }
+
+        // Ensure structured data is available for line resolution
+        if pageStructuredData[pageIdx] == nil {
+            pageStructuredData[pageIdx] = doc.loadStructuredPage(for: pageIdx)
+        }
+        let stext = pageStructuredData[pageIdx]
+
+        let rawPoint = snap.targetPoint
+        let hasValidX = (rawPoint != nil && !rawPoint!.x.isNaN)
+        let hasValidY = (rawPoint != nil && !rawPoint!.y.isNaN)
+
+        let safeX = hasValidX ? rawPoint!.x : (pageBounds.minX + SpatialTextSelector.minColumnWidth)
+        let safeY = hasValidY ? rawPoint!.y : (pageBounds.minY + 40)
+        let safePoint = CGPoint(x: safeX, y: safeY)
+
+        var resolvedLineRect: CGRect? = nil
+        if let stext,
+           let line = textSelector.targetLine(on: stext, at: safePoint, label: snap.label) {
+            resolvedLineRect = line.bbox.insetBy(dx: -6, dy: -3)
+        }
+
+        if let lineRect = resolvedLineRect {
+            return lineRect
+        }
+
+        if rawPoint != nil && (hasValidX || hasValidY) {
+            // Fallback geometry when structured text is unavailable or non-textual.
+            let bodyLeftMargin = stext?.blocks
+                .filter { $0.type == .text && $0.bbox.width >= SpatialTextSelector.minColumnWidth }
+                .map { $0.bbox.minX }.min() ?? (pageBounds.minX + SpatialTextSelector.minColumnWidth)
+
+            let isLeftAnchored = safePoint.x <= pageBounds.minX + SpatialTextSelector.minColumnWidth
+            let desiredWidth: CGFloat = min(360, pageBounds.width - (bodyLeftMargin - pageBounds.minX) - 36)
+            let desiredHeight: CGFloat = 36
+
+            let rx: CGFloat = isLeftAnchored ? bodyLeftMargin : (safePoint.x - desiredWidth / 2)
+            let ry: CGFloat = safePoint.y - desiredHeight / 2
+
+            let minX = bodyLeftMargin
+            let maxX = pageBounds.maxX - 16
+            let minY = pageBounds.minY + 16
+            let maxY = pageBounds.maxY - 16
+
+            let clampedX = max(minX, min(rx, maxX - desiredWidth))
+            let clampedY = max(minY, min(ry, maxY - desiredHeight))
+            let clampedW = min(desiredWidth, maxX - clampedX)
+            let clampedH = min(desiredHeight, maxY - clampedY)
+
+            return CGRect(x: clampedX, y: clampedY, width: max(clampedW, 40), height: max(clampedH, 20))
+        }
+
+        let minX = pageBounds.minX + 54
+        let width = max(pageBounds.width - 108, 100)
+        let minY = pageBounds.minY + 36
+        return CGRect(x: minX, y: minY, width: width, height: 40)
+    }
+
     public func jumpToSnapshot(_ snap: SnapshotTarget) {
+        loadPageMetadata(snap.targetPage)
         self.selectedSnapshotId = snap.id
         self.activeSnapshotTarget = snap
         self.currentPageIndex = snap.targetPage
@@ -1455,7 +1526,7 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     
     // MARK: - Zoom Controls
-    // The 0.5/4.0 clamp bounds here match PDFViewerAppCoordinator.minZoomScale/maxZoomScale,
+    // The 0.25/4.0 clamp bounds here match PDFViewerAppCoordinator.minZoomScale/maxZoomScale,
     // which the View menu's Zoom In/Out enablement is based on — keep both in sync.
     public func zoomIn() {
         let step: CGFloat = 0.25
@@ -1465,10 +1536,11 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     public func zoomOut() {
+        guard zoomScale > 0.25 else { return }
         let step: CGFloat = 0.25
         let epsilon: CGFloat = 0.001
         let prevStep = (ceil((zoomScale - epsilon) / step) - 1.0) * step
-        setZoom(max(round(prevStep * 100) / 100, 0.5))
+        setZoom(min(zoomScale, max(round(prevStep * 100) / 100, 0.25)))
     }
     
     public func resetZoom() {
@@ -1496,7 +1568,7 @@ public final class PDFViewerViewModel: ObservableObject {
             availW = 700
         }
         let targetZoom = availW / effectiveW
-        let clamped = min(max(targetZoom, 0.5), 4.0)
+        let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
         setZoom(round(clamped * 100) / 100)
     }
 
@@ -1522,7 +1594,7 @@ public final class PDFViewerViewModel: ObservableObject {
         let scaleX = availW / effectiveW
         let scaleY = availH / pageH
         let targetZoom = min(scaleX, scaleY)
-        let clamped = min(max(targetZoom, 0.5), 4.0)
+        let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
         setZoom(round(clamped * 100) / 100)
     }
 

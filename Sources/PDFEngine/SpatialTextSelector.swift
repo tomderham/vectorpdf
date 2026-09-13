@@ -422,8 +422,25 @@ public final class SpatialTextSelector: Sendable {
                     dy = (targetPoint.y - line.bbox.maxY) * 1.5
                 }
 
-                // Restrict search to reasonable vertical proximity
-                guard dy <= 45 else { continue }
+                // Optional label token boost (e.g. section number or name)
+                var labelBoost: CGFloat = 0.0
+                if let label = label?.lowercased(), !label.isEmpty {
+                    let lineLower = line.text.lowercased()
+                    for token in label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
+                        if token.count >= 2 && lineLower.contains(token) {
+                            labelBoost += 1000.0
+                        }
+                    }
+                }
+
+                // Restrict search to reasonable vertical proximity, unless the anchor is at the top of the page
+                // (e.g. /Fit, /FitH, or float anchors) and this line matches the reference label.
+                let isTopAnchored = targetPoint.y <= page.bounds.minY + 45
+                if isTopAnchored && labelBoost > 0 {
+                    // Allowed across the page when strongly matched by label
+                } else {
+                    guard dy <= 45 else { continue }
+                }
 
                 // Horizontal distance metric identical to resolvePosition:
                 let dx: CGFloat
@@ -435,18 +452,9 @@ public final class SpatialTextSelector: Sendable {
                     dx = targetPoint.x - line.bbox.maxX
                 }
 
-                // Heavy vertical prioritization matching resolvePosition: (dy * 4.0) + dx
-                var score = (dy * 4.0) + dx
-
-                // Optional label token boost (e.g. section number or name)
-                if let label = label?.lowercased(), !label.isEmpty {
-                    let lineLower = line.text.lowercased()
-                    for token in label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
-                        if token.count >= 2 && lineLower.contains(token) {
-                            score -= 30.0
-                        }
-                    }
-                }
+                // Heavy vertical prioritization matching resolvePosition: (effectiveDy * 4.0) + dx - labelBoost
+                let effectiveDy: CGFloat = (isTopAnchored && labelBoost > 0) ? 0 : dy
+                let score = (effectiveDy * 4.0) + dx - labelBoost
 
                 if score < bestScore {
                     bestScore = score

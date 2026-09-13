@@ -1376,7 +1376,74 @@ func createFormSamplePDF(at fileURL: URL) {
     vm.zoomOut()
     #expect(abs(vm.zoomScale - 0.50) < 0.001)
     vm.zoomOut()
-    #expect(abs(vm.zoomScale - 0.50) < 0.001)
+    #expect(abs(vm.zoomScale - 0.25) < 0.001)
+    vm.zoomOut()
+    #expect(abs(vm.zoomScale - 0.25) < 0.001)
+
+    // 5. Behaviors when below 25% (e.g. via pinch-to-zoom down to 10%)
+    vm.zoomScale = 0.10
+    vm.zoomOut()
+    #expect(abs(vm.zoomScale - 0.10) < 0.001)
+    vm.zoomIn()
+    #expect(abs(vm.zoomScale - 0.25) < 0.001)
+}
+
+@Test @MainActor func testMenuZoomCentersOnCurrentPage() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_zoom_center_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+    
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    
+    let scrollView = PDFScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+    let canvasView = PDFCanvasView(viewModel: vm)
+    scrollView.documentView = canvasView
+    let coordinator = PDFVirtualizedScrollView.Coordinator(viewModel: vm)
+    coordinator.scrollView = scrollView
+    coordinator.canvasView = canvasView
+    
+    // Initial layout at 100% zoom
+    coordinator.update(viewModel: vm, scrollView: scrollView)
+    
+    // Now zoom in to 150% (simulating menu / toolbar zoom)
+    vm.zoomScale = 1.5
+    coordinator.update(viewModel: vm, scrollView: scrollView)
+    
+    let clipView = scrollView.contentView
+    guard let pFrame = canvasView.pageFrame(for: vm.currentPageIndex) else {
+        Issue.record("pageFrame missing")
+        return
+    }
+    
+    let maxScrollX = max(0, canvasView.frame.width - clipView.bounds.width)
+    let maxScrollY = max(0, canvasView.frame.height - clipView.bounds.height)
+    let expectedScrollX = min(max(0, pFrame.midX - clipView.bounds.width / 2), maxScrollX)
+    let expectedScrollY = min(max(0, pFrame.midY - clipView.bounds.height / 2), maxScrollY)
+    
+    #expect(abs(clipView.bounds.origin.x - expectedScrollX) < 1.0)
+    #expect(abs(clipView.bounds.origin.y - expectedScrollY) < 1.0)
+}
+
+@Test @MainActor func testPinchToZoomStateAndBounds() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_pinch_bounds_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+    
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    
+    let scrollView = PDFScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+    let canvasView = PDFCanvasView(viewModel: vm)
+    scrollView.documentView = canvasView
+    let coordinator = PDFVirtualizedScrollView.Coordinator(viewModel: vm)
+    coordinator.scrollView = scrollView
+    coordinator.canvasView = canvasView
+    
+    coordinator.update(viewModel: vm, scrollView: scrollView)
+    #expect(coordinator.isPinching == false)
 }
 
 @Test @MainActor func testPDFViewerAppCoordinatorUpdatesOnDocumentLifecycle() async throws {
@@ -1401,7 +1468,17 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(coordinator.documentTitle == pdfURL.lastPathComponent)
     #expect(coordinator.canZoomIn == true)
     #expect(coordinator.canZoomOut == true)
-    
+
+    // At 50% zoom, zoom out is still possible (can go down to 25%)
+    vm.zoomScale = 0.50
+    coordinator.updateDocumentStatus()
+    #expect(coordinator.canZoomOut == true)
+
+    // At 25% zoom, zoom out is disabled
+    vm.zoomScale = 0.25
+    coordinator.updateDocumentStatus()
+    #expect(coordinator.canZoomOut == false)
+
     // Registering nil resets active document status
     coordinator.registerActive(nil)
     #expect(coordinator.hasActiveDocument == false)
@@ -2148,6 +2225,54 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.shouldFoldPreviousQuestion("Where does the document list standard deductions for joint filers?") == false)
 }
 
+@Test @MainActor func testResolvedTargetRectForReferenceAtBottomOfPage() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_bottom_ref_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        Issue.record("Failed to create CGContext")
+        return
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    context.beginPDFPage(nil)
+    let normalFont = NSFont.systemFont(ofSize: 12)
+    ("Header section at the top" as NSString).draw(at: NSPoint(x: 54, y: 720), withAttributes: [.font: normalFont])
+    ("Reference [42] High performance rendering specification." as NSString).draw(at: NSPoint(x: 54, y: 80), withAttributes: [.font: normalFont])
+    context.endPDFPage()
+    context.closePDF()
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    // Destination anchor at top of page (y=0 or y=40, common for /FitH anchors)
+    let topAnchorSnap = SnapshotTarget(label: "[42]", targetPage: 0, targetPoint: CGPoint(x: 0, y: 0), sourcePage: 0)
+    let resolvedRect = vm.resolvedTargetRect(for: topAnchorSnap)
+
+    // The text at CoreGraphics y=80 sits at MuPDF Fitz y ≈ 792 - 80 - 12 ≈ 700.
+    // resolvedTargetRect MUST resolve to the bottom line (y > 600), not the top of the page (y ≈ 0).
+    #expect(resolvedRect.minY > 600)
+    #expect(resolvedRect.maxY < 790)
+
+    // With NaN coordinates, it should still resolve to the line matching the label
+    let nanSnap = SnapshotTarget(label: "[42]", targetPage: 0, targetPoint: CGPoint(x: CGFloat.nan, y: CGFloat.nan), sourcePage: 0)
+    let resolvedNaNRect = vm.resolvedTargetRect(for: nanSnap)
+    #expect(resolvedNaNRect.minY > 600)
+    #expect(resolvedNaNRect.maxY < 790)
+
+    // When a window is not tall enough (e.g. height 400 < 792), simulate viewport scrolling calculation
+    let viewportHeight: CGFloat = 400.0
+    let pageCanvasY: CGFloat = 16.0 // page 0 frame minY
+    let targetCanvasY = pageCanvasY + resolvedRect.minY
+    let targetCanvasH = resolvedRect.height
+
+    let scrollY = targetCanvasY + (targetCanvasH / 2) - (viewportHeight / 2)
+    // The target rect MUST be completely inside the visible viewport [scrollY, scrollY + viewportHeight]
+    #expect(targetCanvasY >= scrollY)
+    #expect(targetCanvasY + targetCanvasH <= scrollY + viewportHeight)
+}
+
 @Test func testAnnotationModelAndColorRGB() throws {
     let quad = PDFQuad(
         ul: CGPoint(x: 10, y: 10),
@@ -2176,7 +2301,7 @@ func createFormSamplePDF(at fileURL: URL) {
     let (gr, gg, gb) = AnnotationColor.green.rgb
     #expect(gr < 0.5 && gg > 0.8 && gb < 0.6)
 
-    #expect(AnnotationColor.allCases.count == 5)
+    #expect(AnnotationColor.allCases.count == 10)
 }
 
 @Test func testMuPDFMultiQuadHighlightAndDeletion() throws {
@@ -2405,7 +2530,8 @@ func createFormSamplePDF(at fileURL: URL) {
     let purplePoints = [CGPoint(x: 100, y: 250), CGPoint(x: 150, y: 320), CGPoint(x: 200, y: 250)]
     try doc.addInkStroke(pageIndex: 0, points: purplePoints, strokeWidth: 4.0, red: 0.69, green: 0.32, blue: 0.87)
 
-    let savedURL = URL(fileURLWithPath: "/Users/thomas/Code/vectorpdf-github/vectorpdf/mupdf_saved_test.pdf")
+    let savedURL = tempDir.appendingPathComponent("mupdf_saved_test_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: savedURL) }
     try doc.save(to: savedURL.path)
 
     let pdfData = try Data(contentsOf: savedURL)
@@ -2695,5 +2821,6 @@ func createFormSamplePDF(at fileURL: URL) {
     }
 }
 }
+
 
 

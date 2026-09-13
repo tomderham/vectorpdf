@@ -706,52 +706,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     /// Computes the canvas frame for an active snapshot / reference target's focus ring,
     /// ensuring it wraps the target content cleanly and never falls outside the page boundaries.
     private func focusRingRect(for activeSnap: SnapshotTarget, on pageIdx: Int, pageBounds: CGRect, pageFrame: CGRect) -> NSRect {
-        let targetRect: CGRect
-        if let rect = activeSnap.targetRect {
-            targetRect = rect
-        } else if let point = activeSnap.targetPoint {
-            // Use the shared SpatialTextSelector engine to resolve the content line at targetPoint,
-            // consistently ignoring line-number gutters and margin annotations.
-            var resolvedLineRect: CGRect? = nil
-            if let stext = viewModel.pageStructuredData[pageIdx],
-               let line = viewModel.textSelector.targetLine(on: stext, at: point, label: activeSnap.label) {
-                resolvedLineRect = line.bbox.insetBy(dx: -6, dy: -3)
-            }
-
-            if let lineRect = resolvedLineRect {
-                targetRect = lineRect
-            } else {
-                // Fallback geometry when structured text is unavailable or non-textual.
-                // Uses SpatialTextSelector.minColumnWidth to locate the body margin.
-                let bodyLeftMargin = viewModel.pageStructuredData[pageIdx]?.blocks
-                    .filter { $0.type == .text && $0.bbox.width >= SpatialTextSelector.minColumnWidth }
-                    .map { $0.bbox.minX }.min() ?? (pageBounds.minX + SpatialTextSelector.minColumnWidth)
-
-                let isLeftAnchored = point.x <= pageBounds.minX + SpatialTextSelector.minColumnWidth
-                let desiredWidth: CGFloat = min(360, pageBounds.width - (bodyLeftMargin - pageBounds.minX) - 36)
-                let desiredHeight: CGFloat = 36
-
-                let rx: CGFloat = isLeftAnchored ? bodyLeftMargin : (point.x - desiredWidth / 2)
-                let ry: CGFloat = point.y - desiredHeight / 2
-
-                let minX = bodyLeftMargin
-                let maxX = pageBounds.maxX - 16
-                let minY = pageBounds.minY + 16
-                let maxY = pageBounds.maxY - 16
-
-                let clampedX = max(minX, min(rx, maxX - desiredWidth))
-                let clampedY = max(minY, min(ry, maxY - desiredHeight))
-                let clampedW = min(desiredWidth, maxX - clampedX)
-                let clampedH = min(desiredHeight, maxY - clampedY)
-
-                targetRect = CGRect(x: clampedX, y: clampedY, width: max(clampedW, 40), height: max(clampedH, 20))
-            }
-        } else {
-            let minX = pageBounds.minX + 54
-            let width = max(pageBounds.width - 108, 100)
-            let minY = pageBounds.minY + 36
-            targetRect = CGRect(x: minX, y: minY, width: width, height: 40)
-        }
+        let targetRect = viewModel.resolvedTargetRect(for: activeSnap)
 
         // Map to canvas coordinates
         let sx = pageFrame.minX + (targetRect.minX - pageBounds.minX) * viewModel.zoomScale
@@ -955,6 +910,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         isDraggingSelection = false
         dragStartCanvasPoint = nil
         activeDragPage = nil
+    }
+    
+    public override func magnify(with event: NSEvent) {
+        if let sv = enclosingScrollView as? PDFScrollView {
+            sv.magnify(with: event)
+        } else {
+            super.magnify(with: event)
+        }
+    }
+    
+    public override func smartMagnify(with event: NSEvent) {
+        if let sv = enclosingScrollView as? PDFScrollView {
+            sv.smartMagnify(with: event)
+        } else {
+            super.smartMagnify(with: event)
+        }
     }
     
     public override func mouseMoved(with event: NSEvent) {

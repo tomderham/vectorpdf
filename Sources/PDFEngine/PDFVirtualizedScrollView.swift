@@ -41,6 +41,27 @@ public struct WindowAccessor: NSViewRepresentable {
     }
 }
 
+/// High-performance custom NSScrollView capturing native trackpad pinch-to-zoom and smart magnify.
+public final class PDFScrollView: NSScrollView {
+    weak var coordinator: PDFVirtualizedScrollView.Coordinator?
+    
+    public override func magnify(with event: NSEvent) {
+        if let coordinator = coordinator {
+            coordinator.handleMagnify(with: event)
+        } else {
+            super.magnify(with: event)
+        }
+    }
+    
+    public override func smartMagnify(with event: NSEvent) {
+        if let coordinator = coordinator {
+            coordinator.handleSmartMagnify(with: event)
+        } else {
+            super.smartMagnify(with: event)
+        }
+    }
+}
+
 /// High-performance AppKit virtualized scroll view hosting a single native PDFCanvasView.
 /// Completely eliminates SwiftUI layout thrashing and guarantees instant ToC navigation.
 public struct PDFVirtualizedScrollView: NSViewRepresentable {
@@ -51,7 +72,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView(frame: .zero)
+        let scrollView = PDFScrollView(frame: .zero)
+        scrollView.coordinator = context.coordinator
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
@@ -95,6 +117,15 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastScrolledTargetId: String? = nil
         private var lastSnapshotId: UUID? = nil
         
+        // Pinch-to-zoom tracking
+        var isPinching: Bool = false
+        private var pinchBaseZoom: CGFloat = 1.0
+        private var pinchAccumulatedScale: CGFloat = 1.0
+        private var pinchViewportOffset: CGPoint = .zero
+        private var pinchAnchorPage: Int = 0
+        private var pinchRelX: CGFloat = 0.5
+        private var pinchRelY: CGFloat = 0.5
+        
         init(viewModel: PDFViewerViewModel) {
             self.viewModel = viewModel
         }
@@ -129,6 +160,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastSnapshotId = nil
             }
             
+            if viewModel.activeSnapshotTarget == nil && lastSnapshotId != nil {
+                lastSnapshotId = nil
+            }
+            
             // 1. Calculate container bounds based on pre-computed document geometry. Width/height
             // swap at 90°/270° rotation — see PDFViewerViewModel.effectivePageYOffsets's doc
             // comment — is why this reads viewModel.effectiveTotalHeight rather than doc.totalHeight,
@@ -147,14 +182,22 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 canvasView.frame = newCanvasFrame
             }
 
-            // 2. Handle Zoom Scale Change
-            if isZoomChanged && !isNewDocument {
+            // 2. Handle Zoom Scale Change (Menu / Toolbar / Shortcuts)
+            if isZoomChanged && !isNewDocument && !isPinching {
                 lastZoomScale = viewModel.zoomScale
-                let targetY = max(0, (viewModel.effectivePageYOffsets[viewModel.currentPageIndex] * viewModel.zoomScale) + 16)
-                isProgrammaticScroll = true
-                clipView.scroll(to: NSPoint(x: clipView.bounds.origin.x, y: targetY))
-                scrollView.reflectScrolledClipView(clipView)
-                isProgrammaticScroll = false
+                let targetPage = viewModel.currentPageIndex
+                if let pFrame = canvasView.pageFrame(for: targetPage) {
+                    let targetMidX = viewModel.isTwoPageMode ? (canvasView.frame.width / 2) : pFrame.midX
+                    let targetMidY = pFrame.midY
+                    let maxScrollX = max(0, canvasView.frame.width - clipView.bounds.width)
+                    let maxScrollY = max(0, canvasView.frame.height - clipView.bounds.height)
+                    let scrollX = min(max(0, targetMidX - (clipView.bounds.width / 2)), maxScrollX)
+                    let scrollY = min(max(0, targetMidY - (clipView.bounds.height / 2)), maxScrollY)
+                    isProgrammaticScroll = true
+                    clipView.scroll(to: NSPoint(x: scrollX, y: scrollY))
+                    scrollView.reflectScrolledClipView(clipView)
+                    isProgrammaticScroll = false
+                }
             }
 
             // 3. Handle Direct Page Jump (e.g. from Table of Contents)
@@ -223,42 +266,204 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
 
         private func scrollToSnapshot(snap: SnapshotTarget, doc: PDFDocumentCore, clipView: NSClipView, scrollView: NSScrollView) {
             let pageIdx = snap.targetPage
-            guard pageIdx >= 0 && pageIdx < doc.pageCount, let canvasView = self.canvasView else { return }
+            guard pageIdx >= 0 && pageIdx < doc.pageCount,
+                  let canvasView = self.canvasView,
+                  let pFrame = canvasView.pageFrame(for: pageIdx) else { return }
             
-            let pageY = viewModel.effectivePageYOffsets[pageIdx]
             let pageBounds = doc.pageBounds[pageIdx]
+            let targetPageRect = viewModel.resolvedTargetRect(for: snap)
 
-            // Cross-reference links only ever carry a targetPoint, not a targetRect (see
-            // CrossReferenceResolver.resolveLinks) — prefer centering on that exact point over
-            // the generic top-of-page fallback, so "Open in New Window" / Option-click on a
-            // reference actually centers the new window on the reference, not just its page.
-            let targetMidX: CGFloat
-            let targetMidY: CGFloat
-            if let rect = snap.targetRect {
-                targetMidX = rect.midX
-                targetMidY = rect.midY
-            } else if let point = snap.targetPoint {
-                let isLeftAnchored = point.x <= pageBounds.minX + 40
-                targetMidX = isLeftAnchored ? (pageBounds.minX + min(pageBounds.width * 0.35, 180)) : point.x
-                targetMidY = point.y
+            // Map targetPageRect to canvas coordinates matching focusRingRect
+            let targetCanvasX = pFrame.minX + (targetPageRect.minX - pageBounds.minX) * viewModel.zoomScale
+            let targetCanvasY = pFrame.minY + (targetPageRect.minY - pageBounds.minY) * viewModel.zoomScale
+            let targetCanvasW = max(targetPageRect.width * viewModel.zoomScale, 24)
+            let targetCanvasH = max(targetPageRect.height * viewModel.zoomScale, 20)
+            let targetCanvasRect = NSRect(x: targetCanvasX, y: targetCanvasY, width: targetCanvasW, height: targetCanvasH)
+
+            // 1. Vertical Scrolling — center bounding box while keeping its entirety visible
+            let maxScrollY = max(0, canvasView.bounds.height - clipView.bounds.height)
+            var scrollY: CGFloat
+
+            if targetCanvasRect.height >= clipView.bounds.height {
+                // If bounding box is taller than viewport, align top with comfortable margin
+                scrollY = targetCanvasRect.minY - 24
             } else {
-                targetMidX = pageBounds.midX
-                targetMidY = pageBounds.minY + 40
-            }
+                // Center the bounding box vertically
+                scrollY = targetCanvasRect.midY - (clipView.bounds.height / 2)
 
-            let absoluteY = (pageY + targetMidY) * viewModel.zoomScale + 16
-            let scrollY = max(0, absoluteY - (clipView.bounds.height / 2))
-            
-            let pageX = max(32, (canvasView.bounds.width - (pageBounds.width * viewModel.zoomScale)) / 2)
-            let snapX = (targetMidX - pageBounds.minX) * viewModel.zoomScale
-            // See the identical upper-clamp note in scrollToMatch above — same reasoning here.
+                // Clamp viewport bounds so top and bottom margins of the bounding box are preserved
+                if scrollY > targetCanvasRect.minY - 24 {
+                    scrollY = targetCanvasRect.minY - 24
+                }
+                if scrollY + clipView.bounds.height < targetCanvasRect.maxY + 24 {
+                    scrollY = targetCanvasRect.maxY + 24 - clipView.bounds.height
+                }
+            }
+            scrollY = min(max(0, scrollY), maxScrollY)
+
+            // 2. Horizontal Scrolling — center target midX and keep within viewport bounds
             let maxScrollX = max(0, canvasView.bounds.width - clipView.bounds.width)
-            let scrollX = min(max(0, pageX + snapX - (clipView.bounds.width / 2)), maxScrollX)
-            
+            var scrollX: CGFloat
+
+            if targetCanvasRect.width >= clipView.bounds.width {
+                scrollX = targetCanvasRect.minX - 32
+            } else {
+                scrollX = targetCanvasRect.midX - (clipView.bounds.width / 2)
+                if scrollX > targetCanvasRect.minX - 32 {
+                    scrollX = targetCanvasRect.minX - 32
+                }
+                if scrollX + clipView.bounds.width < targetCanvasRect.maxX + 32 {
+                    scrollX = targetCanvasRect.maxX + 32 - clipView.bounds.width
+                }
+            }
+            scrollX = min(max(0, scrollX), maxScrollX)
+
             isProgrammaticScroll = true
             clipView.scroll(to: NSPoint(x: scrollX, y: scrollY))
             scrollView.reflectScrolledClipView(clipView)
             isProgrammaticScroll = false
+        }
+        
+        func handleMagnify(with event: NSEvent) {
+            guard let scrollView = self.scrollView,
+                  let canvasView = self.canvasView,
+                  let doc = viewModel.document else { return }
+            
+            let clipView = scrollView.contentView
+            let isBegan = event.phase.contains(.began) || (!isPinching && !event.phase.contains(.ended) && !event.phase.contains(.cancelled))
+            
+            if isBegan {
+                isPinching = true
+                pinchBaseZoom = viewModel.zoomScale
+                pinchAccumulatedScale = 1.0
+                
+                let canvasPoint = canvasView.convert(event.locationInWindow, from: nil)
+                let viewportX = canvasPoint.x - clipView.bounds.origin.x
+                let viewportY = canvasPoint.y - clipView.bounds.origin.y
+                let viewW = clipView.bounds.width
+                let viewH = clipView.bounds.height
+                
+                let clampedViewportX = min(max(0, viewportX), viewW)
+                let clampedViewportY = min(max(0, viewportY), viewH)
+                pinchViewportOffset = CGPoint(x: clampedViewportX, y: clampedViewportY)
+                
+                let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
+                let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
+                
+                let unscaledY = max(0, (effectiveCanvasY - 16) / pinchBaseZoom)
+                let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+                pinchAnchorPage = pageIdx
+                
+                if let pFrame = canvasView.pageFrame(for: pageIdx) {
+                    pinchRelX = (effectiveCanvasX - pFrame.minX) / max(1, pFrame.width)
+                    pinchRelY = (effectiveCanvasY - pFrame.minY) / max(1, pFrame.height)
+                } else {
+                    pinchRelX = 0.5
+                    pinchRelY = 0.5
+                }
+            }
+            
+            if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
+                isPinching = false
+                let finalZoom = min(max(pinchBaseZoom * pinchAccumulatedScale, 0.10), 4.0)
+                viewModel.setZoom(finalZoom)
+                return
+            }
+            
+            pinchAccumulatedScale *= (1.0 + event.magnification)
+            let targetZoom = pinchBaseZoom * pinchAccumulatedScale
+            let clampedZoom = min(max(targetZoom, 0.10), 4.0)
+            
+            if abs(clampedZoom - viewModel.zoomScale) < 0.0001 { return }
+            
+            lastZoomScale = clampedZoom
+            viewModel.zoomScale = clampedZoom
+            
+            let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
+            let widestPage = doc.pageBounds.map { sideways ? $0.height : $0.width }.max() ?? 612
+            let maxDocWidth = viewModel.isTwoPageMode ? (widestPage * 2 + 16) : widestPage
+            let contentWidth = max(clipView.bounds.width, (maxDocWidth * clampedZoom) + 64)
+            let contentHeight = (viewModel.effectiveTotalHeight * clampedZoom) + 48
+            let newCanvasFrame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
+            if canvasView.frame != newCanvasFrame {
+                canvasView.frame = newCanvasFrame
+            }
+            
+            let maxScrollX = max(0, contentWidth - clipView.bounds.width)
+            let maxScrollY = max(0, contentHeight - clipView.bounds.height)
+            
+            let newAnchorCanvasX: CGFloat
+            let newAnchorCanvasY: CGFloat
+            if let newFrame = canvasView.pageFrame(for: pinchAnchorPage) {
+                newAnchorCanvasX = newFrame.minX + (pinchRelX * newFrame.width)
+                newAnchorCanvasY = newFrame.minY + (pinchRelY * newFrame.height)
+            } else {
+                newAnchorCanvasX = contentWidth / 2
+                newAnchorCanvasY = contentHeight / 2
+            }
+            
+            let newScrollX = min(max(0, newAnchorCanvasX - pinchViewportOffset.x), maxScrollX)
+            let newScrollY = min(max(0, newAnchorCanvasY - pinchViewportOffset.y), maxScrollY)
+            
+            isProgrammaticScroll = true
+            clipView.scroll(to: NSPoint(x: newScrollX, y: newScrollY))
+            scrollView.reflectScrolledClipView(clipView)
+            isProgrammaticScroll = false
+            canvasView.needsDisplay = true
+        }
+        
+        func handleSmartMagnify(with event: NSEvent) {
+            guard let scrollView = self.scrollView,
+                  let canvasView = self.canvasView,
+                  let doc = viewModel.document else { return }
+            
+            let clipView = scrollView.contentView
+            let canvasPoint = canvasView.convert(event.locationInWindow, from: nil)
+            let viewportX = canvasPoint.x - clipView.bounds.origin.x
+            let viewportY = canvasPoint.y - clipView.bounds.origin.y
+            let viewW = clipView.bounds.width
+            let viewH = clipView.bounds.height
+            
+            let clampedViewportX = min(max(0, viewportX), viewW)
+            let clampedViewportY = min(max(0, viewportY), viewH)
+            let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
+            let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
+            
+            let unscaledY = max(0, (effectiveCanvasY - 16) / viewModel.zoomScale)
+            let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+            
+            let targetZoom: CGFloat = (abs(viewModel.zoomScale - 1.0) < 0.05) ? 2.0 : 1.0
+            
+            if let pFrame = canvasView.pageFrame(for: pageIdx) {
+                let relX = (effectiveCanvasX - pFrame.minX) / max(1, pFrame.width)
+                let relY = (effectiveCanvasY - pFrame.minY) / max(1, pFrame.height)
+                
+                viewModel.zoomScale = targetZoom
+                lastZoomScale = targetZoom
+                
+                let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
+                let widestPage = doc.pageBounds.map { sideways ? $0.height : $0.width }.max() ?? 612
+                let maxDocWidth = viewModel.isTwoPageMode ? (widestPage * 2 + 16) : widestPage
+                let contentWidth = max(clipView.bounds.width, (maxDocWidth * targetZoom) + 64)
+                let contentHeight = (viewModel.effectiveTotalHeight * targetZoom) + 48
+                canvasView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
+                
+                if let newFrame = canvasView.pageFrame(for: pageIdx) {
+                    let maxScrollX = max(0, contentWidth - clipView.bounds.width)
+                    let maxScrollY = max(0, contentHeight - clipView.bounds.height)
+                    let newAnchorX = newFrame.minX + (relX * newFrame.width)
+                    let newAnchorY = newFrame.minY + (relY * newFrame.height)
+                    let newScrollX = min(max(0, newAnchorX - clampedViewportX), maxScrollX)
+                    let newScrollY = min(max(0, newAnchorY - clampedViewportY), maxScrollY)
+                    
+                    isProgrammaticScroll = true
+                    clipView.scroll(to: NSPoint(x: newScrollX, y: newScrollY))
+                    scrollView.reflectScrolledClipView(clipView)
+                    isProgrammaticScroll = false
+                }
+                
+                viewModel.setZoom(targetZoom)
+            }
         }
         
         @objc func clipViewBoundsDidChange(_ notification: Notification) {
