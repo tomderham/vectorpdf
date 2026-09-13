@@ -141,7 +141,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
 
     // Mirrors the clamp range in PDFViewerViewModel.zoomIn/zoomOut/setZoom — kept as one pair of
     // constants here since both sides need to agree on where "at the limit" is.
-    static let minZoomScale: CGFloat = 0.5
+    static let minZoomScale: CGFloat = 0.25
     static let maxZoomScale: CGFloat = 4.0
 
     public func updateDocumentStatus() {

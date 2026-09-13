@@ -24,7 +24,6 @@ public struct PDFViewerMainView: View {
 
     @State private var selectedSidebarTab: Int = 0
     @State private var overviewMode: OverviewMode = .outline
-    @State private var gestureBaseZoom: CGFloat = 1.0
     @State private var sidebarVisibility: NavigationSplitViewVisibility
     @FocusState private var isAgentInputFocused: Bool
     @State private var undoToastMessage: String? = nil
@@ -134,8 +133,8 @@ public struct PDFViewerMainView: View {
         Divider()
     }
 
-    /// The document canvas plus its pinch-to-zoom gesture — identical for both the normal
-    /// (sidebar) layout's `detail:` and the sidebar-less snapshot-window layout.
+    /// The document canvas — identical for both the normal (sidebar) layout's `detail:`
+    /// and the sidebar-less snapshot-window layout.
     @ViewBuilder
     private var documentCanvas: some View {
         PDFVirtualizedScrollView(viewModel: viewModel)
@@ -148,23 +147,6 @@ public struct PDFViewerMainView: View {
                     }
                 }
             }
-            .simultaneousGesture(
-                MagnificationGesture()
-                    .onChanged { scale in
-                        if gestureBaseZoom == 1.0 {
-                            gestureBaseZoom = viewModel.zoomScale
-                        }
-                        let targetZoom = gestureBaseZoom * scale
-                        let clamped = min(max(targetZoom, 0.5), 4.0)
-                        viewModel.zoomScale = clamped
-                    }
-                    .onEnded { scale in
-                        let targetZoom = gestureBaseZoom * scale
-                        let clamped = min(max(targetZoom, 0.5), 4.0)
-                        gestureBaseZoom = 1.0
-                        viewModel.setZoom(clamped)
-                    }
-            )
             .overlay(alignment: .bottom) {
                 if let doc = viewModel.document, doc.pageCount > 1 {
                     FloatingReaderHUD(viewModel: viewModel, pageCount: doc.pageCount)
