@@ -85,6 +85,12 @@ int mupdf_resolve_link_page(fz_context *ctx, fz_document *doc, const char *uri, 
 
 // Annotations & PDF Saving
 int mupdf_pdf_highlight_annot(fz_context *ctx, fz_document *doc, int pageno, fz_quad quad, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_highlight(fz_context *ctx, fz_document *doc, int pageno, const fz_quad *quads, int n_quads, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_text_markup(fz_context *ctx, fz_document *doc, int pageno, int type, const fz_quad *quads, int n_quads, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_ink_stroke(fz_context *ctx, fz_document *doc, int pageno, const fz_point *points, int n_points, float stroke_width, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_free_text_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char *text, float font_size, float r, float g, float b, const char **out_error);
+int mupdf_pdf_delete_highlight_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error);
+int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error);
 int mupdf_pdf_stamp_image_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const unsigned char *image_data, size_t image_len, const char **out_error);
 int mupdf_pdf_page_has_stamp_near_rect(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, int *out_found, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);

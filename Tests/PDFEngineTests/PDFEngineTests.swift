@@ -2147,6 +2147,553 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.shouldFoldPreviousQuestion("What is the penalty for filing late under section 4?") == false)
     #expect(vm.shouldFoldPreviousQuestion("Where does the document list standard deductions for joint filers?") == false)
 }
+
+@Test func testAnnotationModelAndColorRGB() throws {
+    let quad = PDFQuad(
+        ul: CGPoint(x: 10, y: 10),
+        ur: CGPoint(x: 50, y: 10),
+        ll: CGPoint(x: 10, y: 30),
+        lr: CGPoint(x: 50, y: 30)
+    )
+    let annot = PDFAnnotation(
+        pageIndex: 0,
+        type: PDFAnnotationType.highlight,
+        quads: [quad],
+        color: .yellow,
+        text: "Sample highlighted text"
+    )
+
+    #expect(annot.pageIndex == 0)
+    #expect(annot.type == PDFAnnotationType.highlight)
+    #expect(annot.text == "Sample highlighted text")
+    #expect(annot.contains(pagePoint: CGPoint(x: 25, y: 20)) == true)
+    #expect(annot.contains(pagePoint: CGPoint(x: 100, y: 100)) == false)
+
+    // Check color channels
+    let (yr, yg, yb) = AnnotationColor.yellow.rgb
+    #expect(yr > 0.9 && yg > 0.8 && yb < 0.5)
+
+    let (gr, gg, gb) = AnnotationColor.green.rgb
+    #expect(gr < 0.5 && gg > 0.8 && gb < 0.6)
+
+    #expect(AnnotationColor.allCases.count == 5)
+}
+
+@Test func testMuPDFMultiQuadHighlightAndDeletion() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_highlight_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 2)
+
+    let quad1 = PDFQuad(
+        ul: CGPoint(x: 54, y: 720),
+        ur: CGPoint(x: 200, y: 720),
+        ll: CGPoint(x: 54, y: 740),
+        lr: CGPoint(x: 200, y: 740)
+    )
+    let quad2 = PDFQuad(
+        ul: CGPoint(x: 54, y: 670),
+        ur: CGPoint(x: 250, y: 670),
+        ll: CGPoint(x: 54, y: 690),
+        lr: CGPoint(x: 250, y: 690)
+    )
+
+    // Add multi-quad highlight
+    try doc.addHighlight(pageIndex: 0, quads: [quad1, quad2], red: 1.0, green: 0.9, blue: 0.2)
+
+    // Delete the highlight near the first quad point
+    let hitPoint = CGPoint(x: 100, y: 730)
+    try doc.deleteHighlight(pageIndex: 0, at: hitPoint)
+}
+
+@Test @MainActor func testNavigationHistoryAndPageJump() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_nav_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.document?.pageCount == 2)
+
+    // Initially at page 0
+    #expect(vm.currentPageIndex == 0)
+    #expect(vm.canGoBack == false)
+    #expect(vm.canGoForward == false)
+
+    // Jump to page 1
+    vm.jumpToPage(1)
+    #expect(vm.currentPageIndex == 1)
+    #expect(vm.canGoBack == true)
+    #expect(vm.canGoForward == false)
+
+    // Go back
+    vm.goBack()
+    #expect(vm.currentPageIndex == 0)
+    #expect(vm.canGoForward == true)
+
+    // Go forward
+    vm.goForward()
+    #expect(vm.currentPageIndex == 1)
+
+    // First / Last page helpers
+    vm.goToFirstPage()
+    #expect(vm.currentPageIndex == 0)
+
+    vm.goToLastPage()
+    #expect(vm.currentPageIndex == 1)
+}
+
+@Test @MainActor func testZoomPresets() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_zoom_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    vm.setZoom(1.5)
+    #expect(abs(vm.zoomScale - 1.5) < 0.01)
+
+    vm.resetZoom()
+    #expect(abs(vm.zoomScale - 1.0) < 0.01)
+
+    vm.zoomToFitWidth()
+    #expect(vm.zoomScale > 0.1)
+
+    vm.zoomToFitPage()
+    #expect(vm.zoomScale > 0.1)
+}
+
+@Test func testTextMarkupAndInkAnnotationModel() throws {
+    // 1. Test text markup types and initialization
+    let quad = PDFQuad(
+        ul: CGPoint(x: 20, y: 50),
+        ur: CGPoint(x: 100, y: 50),
+        ll: CGPoint(x: 20, y: 70),
+        lr: CGPoint(x: 100, y: 70)
+    )
+    let underlineAnnot = PDFAnnotation(
+        pageIndex: 0,
+        type: .underline,
+        quads: [quad],
+        color: .cyan,
+        text: "Underlined"
+    )
+    #expect(underlineAnnot.type == .underline)
+    #expect(underlineAnnot.contains(pagePoint: CGPoint(x: 50, y: 60)))
+
+    let strikeoutAnnot = PDFAnnotation(
+        pageIndex: 0,
+        type: .strikeout,
+        quads: [quad],
+        color: .pink,
+        text: "Strikethrough"
+    )
+    #expect(strikeoutAnnot.type == .strikeout)
+    #expect(strikeoutAnnot.contains(pagePoint: CGPoint(x: 50, y: 60)))
+
+    // 2. Test ink annotation model and hit testing
+    let inkPoints = [
+        CGPoint(x: 100, y: 100),
+        CGPoint(x: 150, y: 100),
+        CGPoint(x: 200, y: 150)
+    ]
+    let inkAnnot = PDFAnnotation(
+        pageIndex: 0,
+        type: .ink,
+        inkPoints: inkPoints,
+        strokeWidth: 3.0,
+        color: .green
+    )
+    #expect(inkAnnot.type == .ink)
+    #expect(!inkAnnot.boundingRect.isEmpty)
+    // Hit directly on first segment (125, 100)
+    #expect(inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 100), tolerance: 3.0))
+    // Hit within tolerance of segment
+    #expect(inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 102), tolerance: 3.0))
+    // Far miss
+    #expect(!inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 150), tolerance: 3.0))
+
+    // 3. Test CanvasMode enum
+    #expect(CanvasMode.allCases.count == 4)
+    #expect(CanvasMode.select.rawValue == "select")
+    #expect(CanvasMode.draw.rawValue == "draw")
+    #expect(CanvasMode.text.rawValue == "text")
+    #expect(CanvasMode.eraser.rawValue == "eraser")
+}
+
+@Test func testMuPDFTextMarkupAndInkPersistence() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_markup_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 2)
+
+    let quad = PDFQuad(
+        ul: CGPoint(x: 54, y: 700),
+        ur: CGPoint(x: 180, y: 700),
+        ll: CGPoint(x: 54, y: 720),
+        lr: CGPoint(x: 180, y: 720)
+    )
+
+    // Add Underline
+    try doc.addTextMarkup(pageIndex: 0, type: .underline, quads: [quad], red: 0.2, green: 0.8, blue: 0.95)
+
+    // Add Strikethrough
+    try doc.addTextMarkup(pageIndex: 0, type: .strikeout, quads: [quad], red: 1.0, green: 0.4, blue: 0.6)
+
+    // Add Ink stroke
+    let inkPoints = [CGPoint(x: 100, y: 500), CGPoint(x: 150, y: 520), CGPoint(x: 200, y: 500)]
+    try doc.addInkStroke(pageIndex: 0, points: inkPoints, strokeWidth: 2.5, red: 0.3, green: 0.85, blue: 0.4)
+
+    // Delete annotation near ink point
+    try doc.deleteAnnotation(pageIndex: 0, at: CGPoint(x: 150, y: 520))
+
+    // Save document to ensure Fitz doesn't throw during serialization
+    let savedURL = tempDir.appendingPathComponent("test_saved_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: savedURL) }
+    try doc.save(to: savedURL.path)
+    #expect(FileManager.default.fileExists(atPath: savedURL.path))
+}
+
+@Test func testAllMarkupPDFStandardsCompatibility() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_all_markup_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+
+    // Highlight (Yellow: 1.0, 0.92, 0.23) at view y = 100..120
+    let hlQuad = PDFQuad(
+        ul: CGPoint(x: 54, y: 100),
+        ur: CGPoint(x: 350, y: 100),
+        ll: CGPoint(x: 54, y: 120),
+        lr: CGPoint(x: 350, y: 120)
+    )
+    try doc.addHighlight(pageIndex: 0, quad: hlQuad, red: 1.0, green: 0.92, blue: 0.23)
+
+    // Underline (Cyan: 0.20, 0.78, 0.95) at view y = 130..150
+    let ulQuad = PDFQuad(
+        ul: CGPoint(x: 54, y: 130),
+        ur: CGPoint(x: 350, y: 130),
+        ll: CGPoint(x: 54, y: 150),
+        lr: CGPoint(x: 350, y: 150)
+    )
+    try doc.addTextMarkup(pageIndex: 0, type: .underline, quads: [ulQuad], red: 0.20, green: 0.78, blue: 0.95)
+
+    // Strikeout (Red: 1.00, 0.23, 0.19) at view y = 160..180
+    let soQuad = PDFQuad(
+        ul: CGPoint(x: 54, y: 160),
+        ur: CGPoint(x: 350, y: 160),
+        ll: CGPoint(x: 54, y: 180),
+        lr: CGPoint(x: 350, y: 180)
+    )
+    try doc.addTextMarkup(pageIndex: 0, type: .strikeout, quads: [soQuad], red: 1.00, green: 0.23, blue: 0.19)
+
+    // FreeText (Blue: 0.00, 0.48, 1.00) at view y = 200..230
+    try doc.addFreeText(pageIndex: 0, rect: CGRect(x: 54, y: 200, width: 250, height: 30), text: "Compatibility Note FreeText", fontSize: 14.0, red: 0.0, green: 0.48, blue: 1.0)
+
+    // Ink (Purple: 0.69, 0.32, 0.87) at view y = 250..320
+    let purplePoints = [CGPoint(x: 100, y: 250), CGPoint(x: 150, y: 320), CGPoint(x: 200, y: 250)]
+    try doc.addInkStroke(pageIndex: 0, points: purplePoints, strokeWidth: 4.0, red: 0.69, green: 0.32, blue: 0.87)
+
+    let savedURL = URL(fileURLWithPath: "/Users/thomas/Code/vectorpdf-github/vectorpdf/mupdf_saved_test.pdf")
+    try doc.save(to: savedURL.path)
+
+    let pdfData = try Data(contentsOf: savedURL)
+    let pdfStr = String(decoding: pdfData, as: UTF8.self)
+    #expect(pdfStr.contains("/Highlight"))
+    #expect(pdfStr.contains("/Underline"))
+    #expect(pdfStr.contains("/StrikeOut"))
+    #expect(pdfStr.contains("/FreeText"))
+    #expect(pdfStr.contains("/Ink"))
+    #expect(!pdfStr.contains("/CL[")) // FreeText should not have spurious callout line
+
+    #if canImport(PDFKit)
+    if let pdfKitDoc = PDFKit.PDFDocument(url: savedURL), let page = pdfKitDoc.page(at: 0) {
+        let annots = page.annotations
+        #expect(annots.count == 5)
+        
+        let inkAnnot = annots.first(where: { $0.type == "Ink" })
+        #expect(inkAnnot != nil)
+
+        // Verify PDFKit rendering of Ink annotation produces purple pixels (no grayscale fallback)
+        let rect = page.bounds(for: .mediaBox)
+        let width = Int(rect.width)
+        let height = Int(rect.height)
+        if let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: width,
+            pixelsHigh: height,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .calibratedRGB,
+            bytesPerRow: width * 4,
+            bitsPerPixel: 32
+        ) {
+            NSGraphicsContext.saveGraphicsState()
+            if let ctx = NSGraphicsContext(bitmapImageRep: rep) {
+                NSGraphicsContext.current = ctx
+                ctx.cgContext.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+                ctx.cgContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
+                inkAnnot?.draw(with: .mediaBox, in: ctx.cgContext)
+                NSGraphicsContext.restoreGraphicsState()
+
+                var purpleCount = 0
+                var greyCount = 0
+                for y in 0..<height {
+                    for x in 0..<width {
+                        if let col = rep.colorAt(x: x, y: y), col.redComponent < 0.98 {
+                            let r = col.redComponent
+                            let g = col.greenComponent
+                            let b = col.blueComponent
+                            if r < 0.8 && abs(r - g) < 0.05 && abs(g - b) < 0.05 {
+                                greyCount += 1
+                            } else if r > 0.5 && b > 0.7 && g < 0.4 {
+                                purpleCount += 1
+                            }
+                        }
+                    }
+                }
+                #expect(purpleCount > 0)
+                #expect(greyCount == 0)
+            }
+
+            // Also verify page-level Quartz rendering (matching Apple Preview) renders all markups in full color
+            NSGraphicsContext.saveGraphicsState()
+            if let pageCtx = NSGraphicsContext(bitmapImageRep: rep) {
+                NSGraphicsContext.current = pageCtx
+                pageCtx.cgContext.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+                pageCtx.cgContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
+                page.draw(with: .mediaBox, to: pageCtx.cgContext)
+                NSGraphicsContext.restoreGraphicsState()
+
+                var pagePurple = 0
+                var pageBlue = 0
+                var pageYellow = 0
+                for y in 0..<height {
+                    for x in 0..<width {
+                        if let col = rep.colorAt(x: x, y: y) {
+                            let r = col.redComponent
+                            let g = col.greenComponent
+                            let b = col.blueComponent
+                            if r > 0.5 && b > 0.7 && g < 0.4 {
+                                pagePurple += 1
+                            } else if b > 0.8 && r < 0.3 {
+                                pageBlue += 1
+                            } else if r > 0.8 && g > 0.8 && b < 0.4 {
+                                pageYellow += 1
+                            }
+                        }
+                    }
+                }
+                #expect(pagePurple > 0)
+                #expect(pageBlue > 0)
+                #expect(pageYellow > 0)
+            }
+        }
+    }
+    #endif
+}
+
+@Test @MainActor func testViewModelMarkupAndCanvasModes() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_vm_markup_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.document != nil)
+
+    // Canvas mode state
+    #expect(vm.canvasMode == .select)
+    #expect(vm.isMarkupBarVisible == false)
+    #expect(vm.selectedAnnotationColor == .yellow)
+    #expect(vm.drawStrokeWidth == 2.5)
+
+    vm.isMarkupBarVisible = true
+    #expect(vm.isMarkupBarVisible == true)
+
+    vm.canvasMode = .draw
+    #expect(vm.canvasMode == .draw)
+
+    // Add ink annotation via ViewModel
+    let inkPoints = [CGPoint(x: 50, y: 100), CGPoint(x: 80, y: 120)]
+    let created = vm.addInkAnnotation(pageIndex: 0, points: inkPoints, strokeWidth: 3.0, color: .orange)
+    #expect(created != nil)
+    #expect(vm.pageAnnotations[0]?.count == 1)
+    #expect(vm.pageAnnotations[0]?.first?.type == .ink)
+    #expect(vm.isDocumentEdited == true)
+
+    // Remove ink annotation
+    if let annot = created {
+        vm.removeAnnotation(annot)
+        #expect(vm.pageAnnotations[0]?.isEmpty == true)
+    }
+}
+
+@Test @MainActor func testTenAnnotationColorsAndIcons() async throws {
+    let allColors = AnnotationColor.allCases
+    #expect(allColors.count == 10)
+    
+    let expectedNames = ["Yellow", "Green", "Cyan", "Blue", "Purple", "Pink", "Red", "Orange", "Gray", "Black"]
+    let actualNames = allColors.map(\.displayName)
+    #expect(actualNames == expectedNames)
+
+    for color in allColors {
+        let (r, g, b) = color.rgb
+        #expect(r >= 0.0 && r <= 1.0)
+        #expect(g >= 0.0 && g <= 1.0)
+        #expect(b >= 0.0 && b <= 1.0)
+
+        let icon = color.menuIcon
+        #expect(icon.size.width == 13)
+        #expect(icon.size.height == 13)
+        #expect(icon.isTemplate == false)
+    }
+}
+
+@Test @MainActor func testFreeTextAnnotationCoreAndSerialization() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_freetext_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+
+    let boxRect = CGRect(x: 100, y: 300, width: 200, height: 40)
+    try doc.addFreeText(pageIndex: 0, rect: boxRect, text: "Sample FreeText Annotation", fontSize: 14.0, red: 0.0, green: 0.48, blue: 1.0)
+
+    // Save document to ensure Fitz doesn't throw during FreeText serialization
+    let savedURL = tempDir.appendingPathComponent("test_saved_freetext_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: savedURL) }
+    try doc.save(to: savedURL.path)
+    #expect(FileManager.default.fileExists(atPath: savedURL.path))
+
+    // Verify PDF structure: FreeText exists, /DA is set, but no /C fill color array that creates solid blocks
+    let pdfData = try Data(contentsOf: savedURL)
+    let pdfString = String(decoding: pdfData, as: UTF8.self)
+    #expect(pdfString.contains("/FreeText"))
+    #expect(pdfString.contains("/Helv"))
+    #expect(!pdfString.contains("/C ["))
+
+    // Verify standard PDF reader interoperability via Apple's PDFKit (engine behind macOS Preview)
+    #if canImport(PDFKit)
+    if let pdfDoc = PDFKit.PDFDocument(url: savedURL), let page = pdfDoc.page(at: 0) {
+        let annots = page.annotations
+        let freeTextAnnot = annots.first(where: { $0.type == "FreeText" })
+        #expect(freeTextAnnot != nil)
+        #expect(freeTextAnnot?.contents == "Sample FreeText Annotation")
+    }
+    #endif
+
+    // Reopen and ensure rendering succeeds cleanly
+    let reloadedDoc = try PDFDocumentCore(filePath: savedURL.path)
+    #expect(reloadedDoc.pageCount > 0)
+    let renderActor = PDFRenderActor()
+    try await renderActor.openDocument(filePath: savedURL.path)
+    let image = try await renderActor.renderPage(pageIndex: 0, scale: 1.0).image
+    #expect(image.width > 0)
+
+    // Reopen and delete annotation near center of box
+    try reloadedDoc.deleteAnnotation(pageIndex: 0, at: CGPoint(x: 150, y: 320))
+    
+    let savedDeletedURL = tempDir.appendingPathComponent("test_saved_deleted_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: savedDeletedURL) }
+    try reloadedDoc.save(to: savedDeletedURL.path)
+    #expect(FileManager.default.fileExists(atPath: savedDeletedURL.path))
+}
+
+@Test @MainActor func testViewModelFreeTextAnnotation() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_vm_freetext_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.document != nil)
+
+    vm.canvasMode = .text
+    #expect(vm.canvasMode == .text)
+    #expect(vm.selectedFontSize == 13.0)
+
+    let boxRect = CGRect(x: 120, y: 250, width: 180, height: 35)
+    let created = vm.addFreeTextAnnotation(pageIndex: 0, rect: boxRect, text: "Hello VectorPDF", fontSize: 16.0, color: .purple)
+    #expect(created != nil)
+    #expect(vm.pageAnnotations[0]?.count == 1)
+    #expect(vm.pageAnnotations[0]?.first?.type == .freeText)
+    #expect(vm.pageAnnotations[0]?.first?.text == "Hello VectorPDF")
+    #expect(vm.pageAnnotations[0]?.first?.fontSize == 16.0)
+    #expect(vm.pageAnnotations[0]?.first?.color == .purple)
+    #expect(vm.isDocumentEdited == true)
+
+    // Test hit testing on FreeText
+    if let annot = created {
+        #expect(annot.contains(pagePoint: CGPoint(x: 150, y: 260)))
+        #expect(!annot.contains(pagePoint: CGPoint(x: 10, y: 10)))
+
+        vm.removeAnnotation(annot)
+        #expect(vm.pageAnnotations[0]?.isEmpty == true)
+    }
+}
+
+@Test @MainActor func testWindowTopBarDraggingAndControls() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_win_drag_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let window = DocumentWindowing.makeWindow(for: pdfURL)
+    window.makeKeyAndOrderFront(nil)
+    window.displayIfNeeded()
+
+    #expect(window.isMovableByWindowBackground == true)
+    #expect(window.titlebarAppearsTransparent == true)
+    #expect(window.toolbarStyle == .unified)
+    #expect(window.styleMask.contains(.fullSizeContentView))
+
+    let titlebarHeight = window.frame.height - window.contentLayoutRect.height
+    #expect(titlebarHeight > 0)
+
+    // Add second tab to verify multi-tab state
+    let doc2URL = tempDir.appendingPathComponent("test_tab2_\(UUID().uuidString).pdf")
+    createSamplePDF(at: doc2URL)
+    defer { try? FileManager.default.removeItem(at: doc2URL) }
+
+    DocumentWindowing.addTab(url: doc2URL, to: window)
+    window.displayIfNeeded()
+
+    #expect(window.tabGroup?.windows.count == 2)
+
+    // Verify clicks on titlebar / toolbar execute safely
+    let topBarLocation = NSPoint(x: window.frame.width * 0.5, y: window.frame.height - 15)
+    let event = NSEvent.mouseEvent(
+        with: .leftMouseDown,
+        location: topBarLocation,
+        modifierFlags: [],
+        timestamp: ProcessInfo.processInfo.systemUptime,
+        windowNumber: window.windowNumber,
+        context: nil,
+        eventNumber: 1,
+        clickCount: 1,
+        pressure: 1.0
+    )
+    if let event {
+        window.sendEvent(event)
+    }
+}
 }
 
 

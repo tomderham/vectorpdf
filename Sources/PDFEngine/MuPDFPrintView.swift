@@ -19,12 +19,66 @@ private final class PrintResource: @unchecked Sendable {
     }
 }
 
+/// An optimized NSPrintInfo subclass that caches paper size and imageable bounds,
+/// preventing macOS PrintingUI from repeatedly querying Carbon print tickets and locking mutexes
+/// for thousands of pages in NSCollectionViewFlowLayout.
+public final class PDFPrintInfo: NSPrintInfo {
+    private var _cachedPaperSize: NSSize?
+    private var _cachedImageableBounds: NSRect?
+
+    public override var paperSize: NSSize {
+        get {
+            if let size = _cachedPaperSize { return size }
+            let size = super.paperSize
+            _cachedPaperSize = size
+            return size
+        }
+        set {
+            _cachedPaperSize = newValue
+            super.paperSize = newValue
+        }
+    }
+
+    public override var imageablePageBounds: NSRect {
+        if let bounds = _cachedImageableBounds { return bounds }
+        let bounds = super.imageablePageBounds
+        _cachedImageableBounds = bounds
+        return bounds
+    }
+
+    public override var orientation: NSPrintInfo.PaperOrientation {
+        get { super.orientation }
+        set {
+            _cachedPaperSize = nil
+            _cachedImageableBounds = nil
+            super.orientation = newValue
+        }
+    }
+
+    public override var paperName: NSPrinter.PaperName? {
+        get { super.paperName }
+        set {
+            _cachedPaperSize = nil
+            _cachedImageableBounds = nil
+            super.paperName = newValue
+        }
+    }
+
+    public override func copy(with zone: NSZone? = nil) -> Any {
+        let copy = super.copy(with: zone) as! PDFPrintInfo
+        copy._cachedPaperSize = self._cachedPaperSize
+        copy._cachedImageableBounds = self._cachedImageableBounds
+        return copy
+    }
+}
+
 /// An NSView that renders PDF pages directly using the native MuPDF engine during print operations,
 /// guaranteeing 100% visual parity with on-screen viewing and restoring macOS native orientation controls.
 public final class MuPDFPrintView: NSView {
     private let resource: PrintResource
     public let pageCount: Int
     public let printInfo: NSPrintInfo
+    private var cachedPaperRect: NSRect
     
     public var autoRotate: Bool = true {
         didSet { needsDisplay = true }
@@ -68,7 +122,9 @@ public final class MuPDFPrintView: NSView {
         self.pageCount = pageCount
         let resolvedInfo = printInfo ?? (NSPrintInfo.shared.copy() as? NSPrintInfo ?? NSPrintInfo())
         self.printInfo = resolvedInfo
-        super.init(frame: NSRect(origin: .zero, size: resolvedInfo.paperSize))
+        let paperRect = NSRect(origin: .zero, size: resolvedInfo.paperSize)
+        self.cachedPaperRect = paperRect
+        super.init(frame: paperRect)
     }
     
     required init?(coder: NSCoder) {
@@ -81,13 +137,15 @@ public final class MuPDFPrintView: NSView {
     }
     
     public override func rectForPage(_ page: Int) -> NSRect {
-        let activeInfo = NSPrintOperation.current?.printInfo ?? self.printInfo
-        return NSRect(origin: .zero, size: activeInfo.paperSize)
+        return cachedPaperRect
     }
     
     public override func draw(_ dirtyRect: NSRect) {
         let printOp = NSPrintOperation.current
         let activePrintInfo = printOp?.printInfo ?? self.printInfo
+        let paperSize = activePrintInfo.paperSize
+        self.cachedPaperRect = NSRect(origin: .zero, size: paperSize)
+        
         let rawPage = printOp?.currentPage ?? 1
         let pageIndex = max(0, min(pageCount - 1, rawPage > 0 ? (rawPage - 1) : 0))
         guard let doc = resource.doc else { return }
@@ -105,7 +163,6 @@ public final class MuPDFPrintView: NSView {
         let pageH = CGFloat(rect.y1 - rect.y0)
         guard pageW > 0 && pageH > 0 else { return }
         
-        let paperSize = activePrintInfo.paperSize
         let imageableBounds = activePrintInfo.imageablePageBounds
         
         // Check if auto-rotation is needed to match paper orientation
@@ -143,11 +200,11 @@ public final class MuPDFPrintView: NSView {
             renderScaleFactor = factor
         }
         
-        // Use responsive DPI for UI previews to ensure instant responsiveness without network printer delays,
-        // and full hardware/600 DPI when printing.
-        let isResponsive = (printOp?.preferredRenderingQuality == .responsive)
-        let targetDPI: CGFloat = isResponsive ? 144.0 : resolvePrinterDPI(for: activePrintInfo)
-        let renderDPI = min(600.0, max(144.0, targetDPI))
+        // Use responsive 144 DPI for UI previews to ensure instant responsiveness without network printer delays,
+        // and 600 DPI for physical printing for maximum print resolution and quality.
+        // Avoid synchronous PMPrinter/CUPS capability queries to prevent 15-20s network printer discovery hangs.
+        let isResponsive = (printOp == nil || printOp?.preferredRenderingQuality == .responsive)
+        let renderDPI: CGFloat = isResponsive ? 144.0 : 600.0
         let dpiScale = Float(renderDPI / 72.0)
         let totalScale = dpiScale * Float(renderScaleFactor)
         
@@ -157,7 +214,6 @@ public final class MuPDFPrintView: NSView {
         }
         defer {
             mupdf_pixmap_drop(ctx, pix)
-            _ = mupdf_context_shrink_store(ctx, 50)
         }
         
         guard let cgImage = makeCGImage(from: pix) else { return }
@@ -182,27 +238,6 @@ public final class MuPDFPrintView: NSView {
         }
     }
     
-    private func resolvePrinterDPI(for printInfo: NSPrintInfo) -> CGFloat {
-        let session = OpaquePointer(printInfo.pmPrintSession())
-        var printer: PMPrinter?
-        if PMSessionGetCurrentPrinter(session, &printer) == 0, let pr = printer {
-            var count: UInt32 = 0
-            if PMPrinterGetPrinterResolutionCount(pr, &count) == 0 && count > 0 {
-                var maxDPI: Double = 0
-                for i in 1...count {
-                    var res = PMResolution(hRes: 0, vRes: 0)
-                    if PMPrinterGetIndexedPrinterResolution(pr, i, &res) == 0 {
-                        maxDPI = max(maxDPI, max(res.hRes, res.vRes))
-                    }
-                }
-                if maxDPI >= 300.0 {
-                    return CGFloat(min(600.0, maxDPI))
-                }
-            }
-        }
-        return 600.0
-    }
-    
     private func makeCGImage(from pix: FZPixmap) -> CGImage? {
         let w = Int(mupdf_pixmap_width(pix))
         let h = Int(mupdf_pixmap_height(pix))
@@ -211,8 +246,11 @@ public final class MuPDFPrintView: NSView {
         guard let samples = mupdf_pixmap_samples(pix), w > 0, h > 0 else {
             return nil
         }
-        let data = Data(bytes: samples, count: stride * h)
-        guard let provider = CGDataProvider(data: data as CFData) else { return nil }
+        // Zero-copy data provider directly wrapping pixmap samples buffer.
+        // Valid for the duration of draw(_:) where pix is guaranteed alive by defer.
+        guard let provider = CGDataProvider(dataInfo: nil, data: samples, size: stride * h, releaseData: { _, _, _ in }) else {
+            return nil
+        }
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo: CGBitmapInfo
         if n == 4 {

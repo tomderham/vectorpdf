@@ -12,6 +12,45 @@ final class PDFViewerWindow: NSWindow {
     override func newWindowForTab(_ sender: Any?) {
         DocumentWindowing.addEmptyTab(to: self)
     }
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown && event.clickCount == 1 {
+            let loc = event.locationInWindow
+            let titlebarHeight = frame.height - contentLayoutRect.height
+            if titlebarHeight > 0 && loc.y >= frame.height - titlebarHeight {
+                let rootHit = (contentView?.superview ?? contentView)?.hitTest(loc)
+                if let hitView = rootHit {
+                    if !isInteractiveControl(hitView) {
+                        performDrag(with: event)
+                        return
+                    }
+                }
+            }
+        }
+        super.sendEvent(event)
+    }
+
+    private func isInteractiveControl(_ view: NSView) -> Bool {
+        var current: NSView? = view
+        while let v = current {
+            if v is NSControl {
+                return true
+            }
+            let name = String(describing: type(of: v))
+            if name.contains("Button") ||
+               name.contains("Control") ||
+               name.contains("TextField") ||
+               name.contains("Scroller") ||
+               name.contains("Slider") ||
+               name.contains("ToolbarItem") ||
+               name.contains("Tab") ||
+               name.contains("Widget") {
+                return true
+            }
+            current = v.superview
+        }
+        return false
+    }
 }
 
 /// Shared low-level window/tab creation for opening a document — used by the app's top-level
@@ -29,12 +68,14 @@ public enum DocumentWindowing {
             backing: .buffered,
             defer: false
         )
+        window.minSize = NSSize(width: 600, height: 400)
         // NSWindow defaults isReleasedWhenClosed to true, a pre-ARC behavior that double-frees a
         // manually constructed window under ARC — required for any NSWindow(...) created
         // directly like this, or closing it can crash later.
         window.isReleasedWhenClosed = false
         window.titlebarAppearsTransparent = true
         window.toolbarStyle = .unified
+        window.isMovableByWindowBackground = true
         window.tabbingMode = .preferred
         if let tabbingIdentifier {
             window.tabbingIdentifier = tabbingIdentifier

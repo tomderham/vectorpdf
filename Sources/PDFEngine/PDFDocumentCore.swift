@@ -299,18 +299,104 @@ public final class PDFDocumentCore: @unchecked Sendable {
         return try body(page)
     }
     
-    /// Adds a highlight annotation to a page
-    public func addHighlight(pageIndex: Int, quad: PDFQuad, red: Float, green: Float, blue: Float) throws {
+    /// Adds a text markup annotation (highlight, underline, or strikethrough) to a page across one or more text line quads
+    public func addTextMarkup(pageIndex: Int, type: PDFAnnotationType, quads: [PDFQuad], red: Float, green: Float, blue: Float) throws {
+        guard !quads.isEmpty else { return }
         lock.lock()
         defer { lock.unlock() }
-        
-        let fzQ = quad.toFZQuad()
+
+        let markupType: Int32
+        switch type {
+        case .highlight: markupType = 0
+        case .underline: markupType = 1
+        case .strikeout: markupType = 2
+        case .ink, .freeText: return
+        }
+
+        let fzQuads = quads.map { $0.toFZQuad() }
         var errorMsg: UnsafePointer<CChar>?
-        let ret = mupdf_pdf_highlight_annot(ctx, doc, Int32(pageIndex), fzQ, red, green, blue, &errorMsg)
+        let ret = fzQuads.withUnsafeBufferPointer { buf in
+            mupdf_pdf_add_text_markup(ctx, doc, Int32(pageIndex), markupType, buf.baseAddress, Int32(buf.count), red, green, blue, &errorMsg)
+        }
         if ret != 0 {
-            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add highlight"
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add text markup"
             throw PDFError.saveFailed(msg)
         }
+    }
+
+    /// Adds a highlight annotation to a page across one or more text line quads
+    public func addHighlight(pageIndex: Int, quads: [PDFQuad], red: Float, green: Float, blue: Float) throws {
+        try addTextMarkup(pageIndex: pageIndex, type: .highlight, quads: quads, red: red, green: green, blue: blue)
+    }
+    
+    /// Single-quad highlight overload
+    public func addHighlight(pageIndex: Int, quad: PDFQuad, red: Float, green: Float, blue: Float) throws {
+        try addHighlight(pageIndex: pageIndex, quads: [quad], red: red, green: green, blue: blue)
+    }
+
+    /// Adds a freehand ink stroke annotation to a page
+    public func addInkStroke(pageIndex: Int, points: [CGPoint], strokeWidth: CGFloat, red: Float, green: Float, blue: Float) throws {
+        guard !points.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+
+        let fzPoints = points.map { fz_point(x: Float($0.x), y: Float($0.y)) }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = fzPoints.withUnsafeBufferPointer { buf in
+            mupdf_pdf_add_ink_stroke(ctx, doc, Int32(pageIndex), buf.baseAddress, Int32(buf.count), Float(strokeWidth), red, green, blue, &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add ink stroke"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Adds a FreeText (text box) annotation to a page
+    public func addFreeText(pageIndex: Int, rect: CGRect, text: String, fontSize: CGFloat, red: Float, green: Float, blue: Float) throws {
+        guard !text.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = text.withCString { cText in
+            mupdf_pdf_add_free_text_annot(
+                ctx,
+                doc,
+                Int32(pageIndex),
+                Float(rect.origin.x),
+                Float(rect.origin.y),
+                Float(rect.origin.x + rect.width),
+                Float(rect.origin.y + rect.height),
+                cText,
+                Float(fontSize),
+                red,
+                green,
+                blue,
+                &errorMsg
+            )
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add free text annotation"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Deletes any user annotation (highlight, underline, strikethrough, or ink) located near a point on a page
+    public func deleteAnnotation(pageIndex: Int, at pagePoint: CGPoint) throws {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_delete_annot_near_point(ctx, doc, Int32(pageIndex), Float(pagePoint.x), Float(pagePoint.y), &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete annotation"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Deletes a highlight annotation located near a point on a page
+    public func deleteHighlight(pageIndex: Int, at pagePoint: CGPoint) throws {
+        try deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
     }
     
     /// Stamps `imageData` (PNG or JPEG bytes) into `rect` (native bottom-up PDF coordinates) on a

@@ -349,23 +349,6 @@ struct VectorPDFApp: App {
                     }
                 }
             }
-
-            if !TabGroupManager.shared.groups.isEmpty {
-                Divider()
-                Section("Tab Groups") {
-                    ForEach(TabGroupManager.shared.groups) { group in
-                        Menu("\(group.name) (\(group.documentPaths.count))") {
-                            Button("Open") {
-                                TabGroupManager.shared.open(group)
-                                TabGroupManager.shared.open(group, replacing: resolvedViewModel?.currentWindow)
-                            }
-                            Button("Delete Group", role: .destructive) {
-                                TabGroupManager.shared.removeGroup(group.id)
-                            }
-                        }
-                    }
-                }
-            }
         }
         
         CommandGroup(after: .textEditing) {
@@ -387,9 +370,25 @@ struct VectorPDFApp: App {
                 .keyboardShortcut("g", modifiers: [.command, .shift])
                 .disabled(!hasDocument)
             }
+
+            Divider()
+
+            Button("Highlight Selection") {
+                resolvedViewModel?.highlightSelection(color: .yellow)
+            }
+            .keyboardShortcut("h", modifiers: [.command, .shift])
+            .disabled(resolvedViewModel?.activeSelection == nil)
         }
         
         CommandGroup(replacing: .toolbar) {
+            Button((resolvedViewModel?.isMarkupBarVisible ?? false) ? "Hide Markup Toolbar" : "Show Markup Toolbar") {
+                resolvedViewModel?.isMarkupBarVisible.toggle()
+            }
+            .keyboardShortcut("a", modifiers: [.command, .shift])
+            .disabled(!hasDocument)
+
+            Divider()
+
             Button("Zoom In") {
                 resolvedViewModel?.zoomIn()
             }
@@ -406,6 +405,46 @@ struct VectorPDFApp: App {
                 resolvedViewModel?.resetZoom()
             }
             .keyboardShortcut("0", modifiers: .command)
+            .disabled(!hasDocument)
+
+            Button("Zoom to Fit Width") {
+                resolvedViewModel?.zoomToFitWidth()
+            }
+            .keyboardShortcut("9", modifiers: .command)
+            .disabled(!hasDocument)
+
+            Button("Zoom to Fit Window") {
+                resolvedViewModel?.zoomToFitPage()
+            }
+            .keyboardShortcut("0", modifiers: [.command, .option])
+            .disabled(!hasDocument)
+        }
+
+        CommandMenu("Go") {
+            Button("Back") {
+                resolvedViewModel?.goBack()
+            }
+            .keyboardShortcut("[", modifiers: .command)
+            .disabled(!(resolvedViewModel?.canGoBack ?? false))
+
+            Button("Forward") {
+                resolvedViewModel?.goForward()
+            }
+            .keyboardShortcut("]", modifiers: .command)
+            .disabled(!(resolvedViewModel?.canGoForward ?? false))
+
+            Divider()
+
+            Button("First Page") {
+                resolvedViewModel?.goToFirstPage()
+            }
+            .keyboardShortcut(.upArrow, modifiers: .command)
+            .disabled(!hasDocument)
+
+            Button("Last Page") {
+                resolvedViewModel?.goToLastPage()
+            }
+            .keyboardShortcut(.downArrow, modifiers: .command)
             .disabled(!hasDocument)
         }
     }

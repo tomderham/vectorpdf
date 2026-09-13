@@ -5,9 +5,10 @@ import Accelerate
 
 /// High-performance AppKit canvas view for rendering PDF pages, search highlights, and text selection.
 /// Directly paints via Quartz 2D in draw(_:) without any NSHostingView overhead or focus engine bloat.
-public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
+public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFieldDelegate {
     public override var isFlipped: Bool { true }
     public override var acceptsFirstResponder: Bool { true }
+    public override var mouseDownCanMoveWindow: Bool { false }
     
     public unowned var viewModel: PDFViewerViewModel
     private var cancellables = Set<AnyCancellable>()
@@ -17,6 +18,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
     private var dragStartCanvasPoint: CGPoint?
     private var isDraggingSelection: Bool = false
     private var activeDragPage: Int?
+    
+    // Freehand drawing in-progress state
+    private var currentDrawingPoints: [CGPoint] = []
+    private var currentDrawingPageIndex: Int?
+
+    // Inline text box editing state
+    private var activeInlineTextField: NSTextField?
+    private var activeEditingAnnotation: PDFAnnotation?
+    private var activeEditingPageIndex: Int?
+    private var activeEditingPagePoint: CGPoint?
     
     // Visible AcroForm controls cache (keyed by widget.id, e.g. "p0_w1")
     private var activeFormControls: [String: NSView] = [:]
@@ -458,6 +469,147 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             // the normal single-page, unrotated view to use search/selection/links/forms again.
             guard viewModel.isInteractiveViewingMode else { continue }
 
+            // 2.5 User Annotations (Highlights, Underlines, Strikethroughs, Ink)
+            if let annots = viewModel.pageAnnotations[pageIdx] {
+                for annot in annots {
+                    switch annot.type {
+                    case .highlight:
+                        annot.color.highlightFillColor.setFill()
+                        for quad in annot.quads {
+                            let r = quad.boundingRect
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
+                            let qw = max(r.width * viewModel.zoomScale, 2)
+                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
+                            let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
+                            path.fill()
+                        }
+                    case .underline:
+                        annot.color.nsColor.setStroke()
+                        let lineWidth = max(1.5 * viewModel.zoomScale, 1.5)
+                        for quad in annot.quads {
+                            let r = quad.boundingRect
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
+                            let qw = max(r.width * viewModel.zoomScale, 2)
+                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let yPos = qy + qh - lineWidth * 0.5
+                            let path = NSBezierPath()
+                            path.lineWidth = lineWidth
+                            path.move(to: NSPoint(x: qx, y: yPos))
+                            path.line(to: NSPoint(x: qx + qw, y: yPos))
+                            path.stroke()
+                        }
+                    case .strikeout:
+                        annot.color.nsColor.setStroke()
+                        let lineWidth = max(1.5 * viewModel.zoomScale, 1.5)
+                        for quad in annot.quads {
+                            let r = quad.boundingRect
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
+                            let qw = max(r.width * viewModel.zoomScale, 2)
+                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let yPos = qy + qh * 0.55
+                            let path = NSBezierPath()
+                            path.lineWidth = lineWidth
+                            path.move(to: NSPoint(x: qx, y: yPos))
+                            path.line(to: NSPoint(x: qx + qw, y: yPos))
+                            path.stroke()
+                        }
+                    case .ink:
+                        guard !annot.inkPoints.isEmpty else { continue }
+                        annot.color.nsColor.setStroke()
+                        annot.color.nsColor.setFill()
+                        let lineWidth = max(annot.strokeWidth * viewModel.zoomScale, 1.0)
+                        if annot.inkPoints.count == 1 {
+                            let p = annot.inkPoints[0]
+                            let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.zoomScale
+                            let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.zoomScale
+                            let dotRect = NSRect(x: cx - lineWidth * 0.5, y: cy - lineWidth * 0.5, width: lineWidth, height: lineWidth)
+                            let dot = NSBezierPath(ovalIn: dotRect)
+                            dot.fill()
+                        } else {
+                            let path = NSBezierPath()
+                            path.lineWidth = lineWidth
+                            path.lineCapStyle = .round
+                            path.lineJoinStyle = .round
+                            let first = annot.inkPoints[0]
+                            path.move(to: NSPoint(
+                                x: pFrame.minX + (first.x - pBounds.minX) * viewModel.zoomScale,
+                                y: pFrame.minY + (first.y - pBounds.minY) * viewModel.zoomScale
+                            ))
+                            for pt in annot.inkPoints.dropFirst() {
+                                path.line(to: NSPoint(
+                                    x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.zoomScale,
+                                    y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.zoomScale
+                                ))
+                            }
+                            path.stroke()
+                        }
+                    case .freeText:
+                        guard let rect = annot.rect, !annot.text.isEmpty else { continue }
+                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.zoomScale
+                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.zoomScale
+                        let rw = max(rect.width * viewModel.zoomScale, 60)
+                        let rh = max(rect.height * viewModel.zoomScale, 20)
+                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+
+                        // If currently editing this annotation inline, draw dashed focus outline
+                        if activeEditingAnnotation?.id == annot.id {
+                            let borderPath = NSBezierPath(roundedRect: boxRect, xRadius: 2, yRadius: 2)
+                            borderPath.lineWidth = 1.0
+                            let dashes: [CGFloat] = [3.0, 3.0]
+                            borderPath.setLineDash(dashes, count: 2, phase: 0)
+                            annot.color.nsColor.setStroke()
+                            borderPath.stroke()
+                            continue
+                        }
+
+                        let fSize = max((annot.fontSize ?? 13.0) * viewModel.zoomScale, 8.0)
+                        let font = NSFont.systemFont(ofSize: fSize)
+                        let attrs: [NSAttributedString.Key: Any] = [
+                            .font: font,
+                            .foregroundColor: annot.color.nsColor
+                        ]
+                        let str = annot.text as NSString
+                        str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
+                    }
+                }
+            }
+
+            // 2.6 Live Drawing Stroke in Progress
+            if currentDrawingPageIndex == pageIdx && !currentDrawingPoints.isEmpty {
+                viewModel.selectedAnnotationColor.nsColor.setStroke()
+                viewModel.selectedAnnotationColor.nsColor.setFill()
+                let lineWidth = max(viewModel.drawStrokeWidth * viewModel.zoomScale, 1.0)
+                if currentDrawingPoints.count == 1 {
+                    let p = currentDrawingPoints[0]
+                    let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.zoomScale
+                    let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.zoomScale
+                    let dotRect = NSRect(x: cx - lineWidth * 0.5, y: cy - lineWidth * 0.5, width: lineWidth, height: lineWidth)
+                    let dot = NSBezierPath(ovalIn: dotRect)
+                    dot.fill()
+                } else {
+                    let path = NSBezierPath()
+                    path.lineWidth = lineWidth
+                    path.lineCapStyle = .round
+                    path.lineJoinStyle = .round
+                    let first = currentDrawingPoints[0]
+                    path.move(to: NSPoint(
+                        x: pFrame.minX + (first.x - pBounds.minX) * viewModel.zoomScale,
+                        y: pFrame.minY + (first.y - pBounds.minY) * viewModel.zoomScale
+                    ))
+                    for pt in currentDrawingPoints.dropFirst() {
+                        path.line(to: NSPoint(
+                            x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.zoomScale,
+                            y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.zoomScale
+                        ))
+                    }
+                    path.stroke()
+                }
+            }
+
             // 3. Search Highlights
             let matches = viewModel.matches(on: pageIdx)
             for match in matches {
@@ -637,6 +789,46 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         guard viewModel.isInteractiveViewingMode else { return }
         let point = convert(event.locationInWindow, from: nil)
 
+        // In draw mode: capture start point for freehand ink stroke
+        if viewModel.canvasMode == .draw {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                currentDrawingPageIndex = pageIdx
+                currentDrawingPoints = [pagePoint]
+                needsDisplay = true
+            }
+            return
+        }
+
+        // In eraser mode: remove annotation at clicked point
+        if viewModel.canvasMode == .eraser {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                viewModel.removeAnnotation(at: pagePoint, pageIndex: pageIdx)
+                needsDisplay = true
+            }
+            return
+        }
+
+        // In text mode: create new or edit existing text box
+        if viewModel.canvasMode == .text {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                if let tf = activeInlineTextField, tf.frame.contains(point) {
+                    return
+                }
+                commitActiveInlineTextField()
+                if let list = viewModel.pageAnnotations[pageIdx],
+                   let hit = list.first(where: { $0.type == .freeText && $0.contains(pagePoint: pagePoint) }) {
+                    startInlineEditing(annotation: hit, pageIndex: pageIdx)
+                } else {
+                    startInlineEditing(newAt: pagePoint, pageIndex: pageIdx)
+                }
+                return
+            }
+        } else {
+            if activeInlineTextField != nil {
+                commitActiveInlineTextField()
+            }
+        }
+
         // Check clickable links / cross-references
         if let (pageIdx, _, pagePoint) = pageInfo(at: point),
            let links = viewModel.pageLinks[pageIdx],
@@ -670,6 +862,30 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
     }
     
     public override func mouseDragged(with event: NSEvent) {
+        if viewModel.canvasMode == .draw {
+            guard let dragPageIdx = currentDrawingPageIndex,
+                  let pFrame = pageFrame(for: dragPageIdx),
+                  let doc = viewModel.document else { return }
+            let currentCanvas = convert(event.locationInWindow, from: nil)
+            let pBounds = doc.pageBounds[dragPageIdx]
+            let currentPagePoint = CGPoint(
+                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.zoomScale),
+                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.zoomScale)
+            )
+            currentDrawingPoints.append(currentPagePoint)
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .eraser {
+            let currentCanvas = convert(event.locationInWindow, from: nil)
+            if let (pageIdx, _, pagePoint) = pageInfo(at: currentCanvas) {
+                viewModel.removeAnnotation(at: pagePoint, pageIndex: pageIdx)
+                needsDisplay = true
+            }
+            return
+        }
+
         guard isDraggingSelection,
               let startCanvas = dragStartCanvasPoint,
               let dragPageIdx = activeDragPage,
@@ -716,6 +932,26 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
     }
     
     public override func mouseUp(with event: NSEvent) {
+        if viewModel.canvasMode == .draw {
+            if let pIdx = currentDrawingPageIndex, !currentDrawingPoints.isEmpty {
+                viewModel.addInkAnnotation(
+                    pageIndex: pIdx,
+                    points: currentDrawingPoints,
+                    strokeWidth: viewModel.drawStrokeWidth,
+                    color: viewModel.selectedAnnotationColor
+                )
+            }
+            currentDrawingPoints = []
+            currentDrawingPageIndex = nil
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .eraser {
+            needsDisplay = true
+            return
+        }
+
         isDraggingSelection = false
         dragStartCanvasPoint = nil
         activeDragPage = nil
@@ -731,6 +967,14 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
                 needsDisplay = true
             }
             NSCursor.arrow.set()
+            return
+        }
+        if viewModel.canvasMode == .draw || viewModel.canvasMode == .eraser {
+            if hoveredLink != nil {
+                hoveredLink = nil
+                needsDisplay = true
+            }
+            NSCursor.crosshair.set()
             return
         }
         let point = convert(event.locationInWindow, from: nil)
@@ -813,6 +1057,35 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             return menu
         }
 
+        // Right-clicking an existing annotation offers removal
+        if let (pIdx, _, pPoint) = pageInfo(at: point),
+           let annots = viewModel.pageAnnotations[pIdx],
+           let hitAnnot = annots.first(where: { $0.contains(pagePoint: pPoint) }) {
+            let menu = NSMenu(title: "Annotation")
+            if hitAnnot.type == .freeText {
+                let editItem = NSMenuItem(title: "Edit Text Box", action: #selector(editHitAnnotationAction(_:)), keyEquivalent: "")
+                editItem.image = NSImage(systemSymbolName: "pencil", accessibilityDescription: nil)
+                editItem.target = self
+                editItem.representedObject = hitAnnot
+                menu.addItem(editItem)
+                menu.addItem(NSMenuItem.separator())
+            }
+            let removeTitle: String
+            switch hitAnnot.type {
+            case .highlight: removeTitle = "Remove Highlight"
+            case .underline: removeTitle = "Remove Underline"
+            case .strikeout: removeTitle = "Remove Strikethrough"
+            case .ink: removeTitle = "Delete Drawing"
+            case .freeText: removeTitle = "Delete Text Box"
+            }
+            let removeItem = NSMenuItem(title: removeTitle, action: #selector(removeHitAnnotationAction(_:)), keyEquivalent: "")
+            removeItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
+            removeItem.target = self
+            removeItem.representedObject = hitAnnot
+            menu.addItem(removeItem)
+            return menu
+        }
+
         // No link, no selection — offer to create a snapshot from surrounding text or open here in a new window.
         if let target = pointTarget(at: point) {
             let menu = NSMenu(title: "Page")
@@ -880,6 +1153,54 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
                 copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
                 copyItem.target = self
                 menu.addItem(copyItem)
+
+                // Highlight submenu with colors
+                let highlightMenu = NSMenu(title: "Highlight")
+                for color in AnnotationColor.allCases {
+                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(highlightWithColorAction(_:)), keyEquivalent: "")
+                    colorItem.image = color.menuIcon
+                    colorItem.target = self
+                    colorItem.representedObject = color
+                    highlightMenu.addItem(colorItem)
+                }
+                let highlightParentItem = NSMenuItem(title: "Highlight", action: #selector(highlightDefaultAction(_:)), keyEquivalent: "h")
+                highlightParentItem.keyEquivalentModifierMask = [.command, .shift]
+                highlightParentItem.image = NSImage(systemSymbolName: "highlighter", accessibilityDescription: nil)
+                highlightParentItem.target = self
+                highlightParentItem.submenu = highlightMenu
+                menu.addItem(highlightParentItem)
+
+                // Underline submenu with colors
+                let underlineMenu = NSMenu(title: "Underline")
+                for color in AnnotationColor.allCases {
+                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(underlineWithColorAction(_:)), keyEquivalent: "")
+                    colorItem.image = color.menuIcon
+                    colorItem.target = self
+                    colorItem.representedObject = color
+                    underlineMenu.addItem(colorItem)
+                }
+                let underlineParentItem = NSMenuItem(title: "Underline", action: #selector(underlineDefaultAction(_:)), keyEquivalent: "u")
+                underlineParentItem.keyEquivalentModifierMask = [.command, .shift]
+                underlineParentItem.image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
+                underlineParentItem.target = self
+                underlineParentItem.submenu = underlineMenu
+                menu.addItem(underlineParentItem)
+
+                // Strikethrough submenu with colors
+                let strikeMenu = NSMenu(title: "Strikethrough")
+                for color in AnnotationColor.allCases {
+                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(strikethroughWithColorAction(_:)), keyEquivalent: "")
+                    colorItem.image = color.menuIcon
+                    colorItem.target = self
+                    colorItem.representedObject = color
+                    strikeMenu.addItem(colorItem)
+                }
+                let strikeParentItem = NSMenuItem(title: "Strikethrough", action: #selector(strikethroughDefaultAction(_:)), keyEquivalent: "x")
+                strikeParentItem.keyEquivalentModifierMask = [.command, .shift]
+                strikeParentItem.image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
+                strikeParentItem.target = self
+                strikeParentItem.submenu = strikeMenu
+                menu.addItem(strikeParentItem)
             }
 
             if !viewModel.isTransientWindow {
@@ -963,6 +1284,179 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
         viewModel.openSelectionInNewWindow()
     }
 
+    @objc private func highlightDefaultAction(_ sender: Any) {
+        viewModel.highlightSelection(color: .yellow)
+        needsDisplay = true
+    }
+
+    @objc private func highlightWithColorAction(_ sender: NSMenuItem) {
+        guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.highlightSelection(color: color)
+        needsDisplay = true
+    }
+
+    @objc private func underlineDefaultAction(_ sender: Any) {
+        viewModel.underlineSelection(color: viewModel.selectedAnnotationColor)
+        needsDisplay = true
+    }
+
+    @objc private func underlineWithColorAction(_ sender: NSMenuItem) {
+        guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.underlineSelection(color: color)
+        needsDisplay = true
+    }
+
+    @objc private func strikethroughDefaultAction(_ sender: Any) {
+        viewModel.strikethroughSelection(color: viewModel.selectedAnnotationColor)
+        needsDisplay = true
+    }
+
+    @objc private func strikethroughWithColorAction(_ sender: NSMenuItem) {
+        guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.strikethroughSelection(color: color)
+        needsDisplay = true
+    }
+
+    @objc private func removeHitAnnotationAction(_ sender: NSMenuItem) {
+        guard let annot = sender.representedObject as? PDFAnnotation else { return }
+        viewModel.removeAnnotation(annot)
+        needsDisplay = true
+    }
+
+    @objc private func editHitAnnotationAction(_ sender: NSMenuItem) {
+        guard let annot = sender.representedObject as? PDFAnnotation else { return }
+        startInlineEditing(annotation: annot, pageIndex: annot.pageIndex)
+    }
+
+    // MARK: - Inline Text Box Editing
+
+    private func commitActiveInlineTextField() {
+        guard let tf = activeInlineTextField,
+              let pIdx = activeEditingPageIndex,
+              let doc = viewModel.document,
+              pIdx >= 0, pIdx < doc.pageCount else {
+            activeInlineTextField?.removeFromSuperview()
+            activeInlineTextField = nil
+            activeEditingAnnotation = nil
+            activeEditingPageIndex = nil
+            activeEditingPagePoint = nil
+            needsDisplay = true
+            return
+        }
+        let text = tf.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let color = viewModel.selectedAnnotationColor
+        let fontSize = viewModel.selectedFontSize
+
+        if let existing = activeEditingAnnotation {
+            if text.isEmpty {
+                viewModel.removeAnnotation(existing)
+            } else if text != existing.text || color != existing.color || fontSize != (existing.fontSize ?? 13.0) {
+                viewModel.removeAnnotation(existing)
+                let r = existing.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
+                viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+            }
+        } else if !text.isEmpty, let pagePt = activeEditingPagePoint {
+            let pBounds = doc.pageBounds[pIdx]
+            let approxWidth = min(max(CGFloat(text.count) * fontSize * 0.65 + 16, 80), pBounds.width - pagePt.x)
+            let approxHeight = max(fontSize * 1.5, 20)
+            let r = CGRect(x: pagePt.x, y: pagePt.y, width: approxWidth, height: approxHeight)
+            viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+        }
+
+        tf.removeFromSuperview()
+        activeInlineTextField = nil
+        activeEditingAnnotation = nil
+        activeEditingPageIndex = nil
+        activeEditingPagePoint = nil
+        needsDisplay = true
+    }
+
+    private func cancelActiveInlineTextField() {
+        activeInlineTextField?.removeFromSuperview()
+        activeInlineTextField = nil
+        activeEditingAnnotation = nil
+        activeEditingPageIndex = nil
+        activeEditingPagePoint = nil
+        needsDisplay = true
+    }
+
+    private func startInlineEditing(annotation: PDFAnnotation, pageIndex: Int) {
+        commitActiveInlineTextField()
+        guard let pFrame = pageFrame(for: pageIndex),
+              let doc = viewModel.document,
+              let rect = annotation.rect else { return }
+
+        let pBounds = doc.pageBounds[pageIndex]
+        let canvasX = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.zoomScale
+        let canvasY = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.zoomScale
+        let canvasW = max(rect.width * viewModel.zoomScale, 120)
+        let canvasH = max(rect.height * viewModel.zoomScale, 26)
+
+        let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
+        tf.stringValue = annotation.text
+        tf.font = NSFont.systemFont(ofSize: max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.zoomScale, 10.0))
+        tf.textColor = annotation.color.nsColor
+        tf.backgroundColor = isDarkMode ? NSColor.windowBackgroundColor : NSColor.white
+        tf.drawsBackground = true
+        tf.isBordered = true
+        tf.focusRingType = .exterior
+        tf.delegate = self
+        addSubview(tf)
+        window?.makeFirstResponder(tf)
+
+        activeInlineTextField = tf
+        activeEditingAnnotation = annotation
+        activeEditingPageIndex = pageIndex
+        activeEditingPagePoint = rect.origin
+        needsDisplay = true
+    }
+
+    private func startInlineEditing(newAt pagePoint: CGPoint, pageIndex: Int) {
+        commitActiveInlineTextField()
+        guard let pFrame = pageFrame(for: pageIndex),
+              let doc = viewModel.document else { return }
+
+        let pBounds = doc.pageBounds[pageIndex]
+        let canvasX = pFrame.minX + (pagePoint.x - pBounds.minX) * viewModel.zoomScale
+        let canvasY = pFrame.minY + (pagePoint.y - pBounds.minY) * viewModel.zoomScale
+        let canvasW: CGFloat = 160
+        let canvasH = max(viewModel.selectedFontSize * viewModel.zoomScale + 10, 26)
+
+        let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
+        tf.placeholderString = "Type text..."
+        tf.font = NSFont.systemFont(ofSize: max(viewModel.selectedFontSize * viewModel.zoomScale, 10.0))
+        tf.textColor = viewModel.selectedAnnotationColor.nsColor
+        tf.backgroundColor = isDarkMode ? NSColor.windowBackgroundColor : NSColor.white
+        tf.drawsBackground = true
+        tf.isBordered = true
+        tf.focusRingType = .exterior
+        tf.delegate = self
+        addSubview(tf)
+        window?.makeFirstResponder(tf)
+
+        activeInlineTextField = tf
+        activeEditingAnnotation = nil
+        activeEditingPageIndex = pageIndex
+        activeEditingPagePoint = pagePoint
+        needsDisplay = true
+    }
+
+    // MARK: - NSTextFieldDelegate
+
+    public func controlTextDidEndEditing(_ obj: Notification) {
+        commitActiveInlineTextField()
+    }
+
+    public func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            commitActiveInlineTextField()
+            return true
+        } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            cancelActiveInlineTextField()
+            return true
+        }
+        return false
+    }
 
     // MARK: - Keyboard Shortcuts
     
@@ -1004,6 +1498,25 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             viewModel.previousSearchMatch()
             return
         }
+
+        // Shift + Cmd + H: Highlight selection with default yellow
+        if flags == [.command, .shift] && event.charactersIgnoringModifiers?.lowercased() == "h" {
+            viewModel.highlightSelection(color: .yellow)
+            needsDisplay = true
+            return
+        }
+
+        // Cmd + [ : Back in navigation history
+        if flags == .command && event.charactersIgnoringModifiers == "[" {
+            viewModel.goBack()
+            return
+        }
+
+        // Cmd + ] : Forward in navigation history
+        if flags == .command && event.charactersIgnoringModifiers == "]" {
+            viewModel.goForward()
+            return
+        }
         
         // Cmd + = / Cmd + +: Zoom In
         if flags.contains(.command) && (event.charactersIgnoringModifiers == "=" || event.charactersIgnoringModifiers == "+") {
@@ -1016,10 +1529,34 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations {
             viewModel.zoomOut()
             return
         }
+
+        // Cmd + 9: Zoom to Fit Width
+        if flags == .command && event.charactersIgnoringModifiers == "9" {
+            viewModel.zoomToFitWidth()
+            return
+        }
+
+        // Opt + Cmd + 0: Zoom to Fit Page / Window
+        if (flags == [.command, .option] || (flags.contains(.command) && flags.contains(.option))) && event.charactersIgnoringModifiers == "0" {
+            viewModel.zoomToFitPage()
+            return
+        }
         
         // Cmd + 0: Reset Zoom (100%)
-        if flags.contains(.command) && event.charactersIgnoringModifiers == "0" {
+        if flags == .command && event.charactersIgnoringModifiers == "0" {
             viewModel.resetZoom()
+            return
+        }
+
+        // Cmd + Up Arrow or Cmd + Home: Go to First Page
+        if flags == .command && (event.keyCode == 126 || event.keyCode == 115 || event.specialKey == .upArrow || event.specialKey == .home) {
+            viewModel.goToFirstPage()
+            return
+        }
+
+        // Cmd + Down Arrow or Cmd + End: Go to Last Page
+        if flags == .command && (event.keyCode == 125 || event.keyCode == 119 || event.specialKey == .downArrow || event.specialKey == .end) {
+            viewModel.goToLastPage()
             return
         }
         

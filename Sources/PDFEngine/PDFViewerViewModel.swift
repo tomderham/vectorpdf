@@ -161,6 +161,25 @@ public final class PDFViewerViewModel: ObservableObject {
     // Form Widgets & Editing State
     @Published public var pageFormWidgets: [Int: [PDFFormWidget]] = [:]
     @Published public var isDocumentEdited: Bool = false
+
+    // Annotations & Markup
+    @Published public var pageAnnotations: [Int: [PDFAnnotation]] = [:]
+    @Published public var isMarkupBarVisible: Bool = false
+    @Published public var canvasMode: CanvasMode = .select
+    @Published public var selectedAnnotationColor: AnnotationColor = .yellow
+    @Published public var drawStrokeWidth: CGFloat = 2.5
+    @Published public var selectedFontSize: CGFloat = 13.0
+
+    // Navigation History
+    @Published public private(set) var canGoBack: Bool = false
+    @Published public private(set) var canGoForward: Bool = false
+    private var navigationHistory: [Int] = []
+    private var navigationHistoryIndex: Int = -1
+    private var isNavigatingHistory: Bool = false
+
+    // Thumbnail Cache for Outline/Thumbnails View
+    @Published public var thumbnailImages: [Int: NSImage] = [:]
+    private var thumbnailsLoading: Set<Int> = []
     
     // Search State
     @Published public var searchQuery: String = ""
@@ -319,6 +338,13 @@ public final class PDFViewerViewModel: ObservableObject {
             self.pageStructuredData = [:]
             self.activeSelection = nil
             self.additionalSelectionPages = []
+            self.pageAnnotations = [:]
+            self.navigationHistory = [0]
+            self.navigationHistoryIndex = 0
+            self.canGoBack = false
+            self.canGoForward = false
+            self.thumbnailImages = [:]
+            self.thumbnailsLoading.removeAll()
             self.currentPageIndex = 0
             self.zoomScale = 1.0
             // Rotation and Two-Page Mode are both per-document — a fresh document always starts
@@ -519,6 +545,9 @@ public final class PDFViewerViewModel: ObservableObject {
     public func jumpToPage(_ pageIndex: Int) {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
         self.currentPageIndex = pageIndex
+        if !isNavigatingHistory {
+            recordNavigationLocation(pageIndex)
+        }
         pruneCaches(around: pageIndex)
         Task {
             await renderPage(pageIndex)
@@ -533,6 +562,62 @@ public final class PDFViewerViewModel: ObservableObject {
     public func previousPage() {
         guard currentPageIndex > 0 else { return }
         jumpToPage(currentPageIndex - 1)
+    }
+
+    public func goToFirstPage() {
+        jumpToPage(0)
+    }
+
+    public func goToLastPage() {
+        guard let doc = document, doc.pageCount > 0 else { return }
+        jumpToPage(doc.pageCount - 1)
+    }
+
+    // MARK: - Navigation History (Back / Forward)
+
+    public func recordNavigationLocation(_ pageIndex: Int) {
+        guard !isNavigatingHistory else { return }
+        if navigationHistory.isEmpty {
+            navigationHistory = [pageIndex]
+            navigationHistoryIndex = 0
+        } else {
+            if navigationHistoryIndex < navigationHistory.count - 1 {
+                navigationHistory = Array(navigationHistory.prefix(navigationHistoryIndex + 1))
+            }
+            if navigationHistory.last != pageIndex {
+                navigationHistory.append(pageIndex)
+                if navigationHistory.count > 50 {
+                    navigationHistory.removeFirst()
+                }
+                navigationHistoryIndex = navigationHistory.count - 1
+            }
+        }
+        updateNavigationHistoryState()
+    }
+
+    private func updateNavigationHistoryState() {
+        canGoBack = navigationHistoryIndex > 0
+        canGoForward = navigationHistoryIndex >= 0 && navigationHistoryIndex < navigationHistory.count - 1
+    }
+
+    public func goBack() {
+        guard canGoBack, navigationHistoryIndex > 0 else { return }
+        navigationHistoryIndex -= 1
+        let targetPage = navigationHistory[navigationHistoryIndex]
+        isNavigatingHistory = true
+        jumpToPage(targetPage)
+        isNavigatingHistory = false
+        updateNavigationHistoryState()
+    }
+
+    public func goForward() {
+        guard canGoForward, navigationHistoryIndex < navigationHistory.count - 1 else { return }
+        navigationHistoryIndex += 1
+        let targetPage = navigationHistory[navigationHistoryIndex]
+        isNavigatingHistory = true
+        jumpToPage(targetPage)
+        isNavigatingHistory = false
+        updateNavigationHistoryState()
     }
     
     // MARK: - Search Functionality
@@ -1395,6 +1480,191 @@ public final class PDFViewerViewModel: ObservableObject {
         renderedPages = [:]
         Task { await renderPage(currentPageIndex) }
     }
+
+    public func zoomToFitWidth(viewportWidth: CGFloat? = nil) {
+        guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
+        let sideways = isRotatedSideways
+        let pageW = sideways ? doc.pageBounds[currentPageIndex].height : doc.pageBounds[currentPageIndex].width
+        let effectiveW = isTwoPageMode ? (pageW * 2 + 16) : pageW
+        
+        let availW: CGFloat
+        if let custom = viewportWidth, custom > 100 {
+            availW = custom - 32
+        } else if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            availW = max(window.contentLayoutRect.width - 48, 300)
+        } else {
+            availW = 700
+        }
+        let targetZoom = availW / effectiveW
+        let clamped = min(max(targetZoom, 0.5), 4.0)
+        setZoom(round(clamped * 100) / 100)
+    }
+
+    public func zoomToFitPage(viewportSize: CGSize? = nil) {
+        guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
+        let sideways = isRotatedSideways
+        let pageW = sideways ? doc.pageBounds[currentPageIndex].height : doc.pageBounds[currentPageIndex].width
+        let pageH = sideways ? doc.pageBounds[currentPageIndex].width : doc.pageBounds[currentPageIndex].height
+        let effectiveW = isTwoPageMode ? (pageW * 2 + 16) : pageW
+        
+        let availW: CGFloat
+        let availH: CGFloat
+        if let size = viewportSize, size.width > 100, size.height > 100 {
+            availW = size.width - 32
+            availH = size.height - 32
+        } else if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            availW = max(window.contentLayoutRect.width - 48, 300)
+            availH = max(window.contentLayoutRect.height - 64, 300)
+        } else {
+            availW = 700
+            availH = 900
+        }
+        let scaleX = availW / effectiveW
+        let scaleY = availH / pageH
+        let targetZoom = min(scaleX, scaleY)
+        let clamped = min(max(targetZoom, 0.5), 4.0)
+        setZoom(round(clamped * 100) / 100)
+    }
+
+    // MARK: - Annotations
+
+    @discardableResult
+    public func addTextMarkupSelection(type: PDFAnnotationType, color: AnnotationColor = .yellow) -> [PDFAnnotation] {
+        guard let sel = activeSelection, !sel.result.highlightQuads.isEmpty, let doc = document else { return [] }
+        var created: [PDFAnnotation] = []
+
+        let pIdx = sel.pageIndex
+        let quads = sel.result.highlightQuads
+        let text = sel.result.text
+        let annot = PDFAnnotation(pageIndex: pIdx, type: type, quads: quads, color: color, text: text)
+        do {
+            try doc.addTextMarkup(pageIndex: pIdx, type: type, quads: quads, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+            pageAnnotations[pIdx, default: []].append(annot)
+            created.append(annot)
+        } catch {
+            print("Failed to add \(type) on page \(pIdx): \(error)")
+        }
+
+        for extra in additionalSelectionPages {
+            let epIdx = extra.pageIndex
+            let eQuads = extra.result.highlightQuads
+            guard !eQuads.isEmpty else { continue }
+            let eText = extra.result.text
+            let eAnnot = PDFAnnotation(pageIndex: epIdx, type: type, quads: eQuads, color: color, text: eText)
+            do {
+                try doc.addTextMarkup(pageIndex: epIdx, type: type, quads: eQuads, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+                pageAnnotations[epIdx, default: []].append(eAnnot)
+                created.append(eAnnot)
+            } catch {
+                print("Failed to add \(type) on page \(epIdx): \(error)")
+            }
+        }
+
+        if !created.isEmpty {
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            clearSelection()
+        }
+        return created
+    }
+
+    @discardableResult
+    public func highlightSelection(color: AnnotationColor = .yellow) -> [PDFAnnotation] {
+        return addTextMarkupSelection(type: .highlight, color: color)
+    }
+
+    @discardableResult
+    public func underlineSelection(color: AnnotationColor = .yellow) -> [PDFAnnotation] {
+        return addTextMarkupSelection(type: .underline, color: color)
+    }
+
+    @discardableResult
+    public func strikethroughSelection(color: AnnotationColor = .yellow) -> [PDFAnnotation] {
+        return addTextMarkupSelection(type: .strikeout, color: color)
+    }
+
+    @discardableResult
+    public func addInkAnnotation(pageIndex: Int, points: [CGPoint], strokeWidth: CGFloat = 2.5, color: AnnotationColor = .yellow) -> PDFAnnotation? {
+        guard !points.isEmpty, let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let annot = PDFAnnotation(pageIndex: pageIndex, type: .ink, inkPoints: points, strokeWidth: strokeWidth, color: color)
+        do {
+            try doc.addInkStroke(pageIndex: pageIndex, points: points, strokeWidth: strokeWidth, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+            pageAnnotations[pageIndex, default: []].append(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return annot
+        } catch {
+            print("Failed to add ink annotation on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
+    @discardableResult
+    public func addFreeTextAnnotation(pageIndex: Int, rect: CGRect, text: String, fontSize: CGFloat = 13.0, color: AnnotationColor = .black) -> PDFAnnotation? {
+        guard !text.isEmpty, let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let annot = PDFAnnotation(pageIndex: pageIndex, type: .freeText, rect: rect, fontSize: fontSize, color: color, text: text)
+        do {
+            try doc.addFreeText(pageIndex: pageIndex, rect: rect, text: text, fontSize: fontSize, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+            pageAnnotations[pageIndex, default: []].append(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return annot
+        } catch {
+            print("Failed to add free text annotation on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
+    public func removeAnnotation(_ annotation: PDFAnnotation) {
+        guard let doc = document else { return }
+        let pIdx = annotation.pageIndex
+        if let idx = pageAnnotations[pIdx]?.firstIndex(where: { $0.id == annotation.id }) {
+            pageAnnotations[pIdx]?.remove(at: idx)
+            let testPoint: CGPoint
+            if annotation.type == .ink, let firstPt = annotation.inkPoints.first {
+                testPoint = firstPt
+            } else if annotation.type == .freeText, let r = annotation.rect {
+                testPoint = CGPoint(x: r.midX, y: r.midY)
+            } else {
+                testPoint = CGPoint(x: annotation.boundingRect.midX, y: annotation.boundingRect.midY)
+            }
+            try? doc.deleteAnnotation(pageIndex: pIdx, at: testPoint)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+        }
+    }
+
+    public func removeAnnotation(at pagePoint: CGPoint, pageIndex: Int) {
+        guard let doc = document else { return }
+        if let list = pageAnnotations[pageIndex], let annot = list.first(where: { $0.contains(pagePoint: pagePoint) }) {
+            removeAnnotation(annot)
+        } else {
+            try? doc.deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
+        }
+    }
+
+    // MARK: - Page Thumbnail Generation
+
+    public func requestThumbnail(for pageIndex: Int) {
+        guard thumbnailImages[pageIndex] == nil, !thumbnailsLoading.contains(pageIndex), let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        thumbnailsLoading.insert(pageIndex)
+        Task { [weak self] in
+            guard let self = self else { return }
+            do {
+                let rendered = try await self.renderActor.renderPage(pageIndex: pageIndex, scale: 0.25)
+                let cgImg = rendered.image
+                let nsImg = NSImage(cgImage: cgImg, size: NSSize(width: CGFloat(cgImg.width), height: CGFloat(cgImg.height)))
+                await MainActor.run {
+                    self.thumbnailImages[pageIndex] = nsImg
+                    self.thumbnailsLoading.remove(pageIndex)
+                }
+            } catch {
+                await MainActor.run {
+                    _ = self.thumbnailsLoading.remove(pageIndex)
+                }
+            }
+        }
+    }
     
     /// The single decision point for every *explicit* "open this document" action (File > Open,
     /// the toolbar Open button, clicking a Favorite): load directly into this window/tab if it's
@@ -1739,12 +2009,21 @@ public final class PDFViewerViewModel: ObservableObject {
             printURL = URL(fileURLWithPath: doc.filePath)
         }
         
-        // Isolate print settings on a copy of NSPrintInfo rather than mutating the shared singleton
-        let printInfo = (NSPrintInfo.shared.copy() as? NSPrintInfo) ?? NSPrintInfo()
+        // CRITICAL ARCHITECTURAL REQUIREMENT:
+        // Printing MUST always be rendered via native MuPDF (MuPDFPrintView), NOT Apple's PDFKit.
+        // PDFKit renders differently from MuPDF (different font rasterization, antialiasing, blend
+        // modes, and form appearance handling). Printing anything different from what is rendered
+        // on screen is unacceptable. DO NOT revert printing to PDFKit.PDFDocument.printOperation.
+        
+        // Isolate print settings on an optimized PDFPrintInfo rather than mutating the shared singleton
+        let baseShared = NSPrintInfo.shared
+        let dict = (baseShared.dictionary() as? [NSPrintInfo.AttributeKey: Any]) ?? [:]
+        let printInfo = PDFPrintInfo(dictionary: dict)
         printInfo.isHorizontallyCentered = true
         printInfo.isVerticallyCentered = true
         printInfo.dictionary()[NSPrintInfo.AttributeKey.firstPage] = 1
         printInfo.dictionary()[NSPrintInfo.AttributeKey.lastPage] = doc.pageCount
+        printInfo.dictionary()[NSPrintInfo.AttributeKey.allPages] = true
 
         if let firstPageBounds = doc.pageBounds.first {
             printInfo.orientation = (firstPageBounds.width > firstPageBounds.height) ? .landscape : .portrait
@@ -1771,10 +2050,6 @@ public final class PDFViewerViewModel: ObservableObject {
         printOp.canSpawnSeparateThread = true
         
         // Expose native orientation and paper size options in the print dialog.
-        // NOTE: We do not include .showsScaling because scaling is provided in our custom
-        // PDF Options accessory pane. We do not set .showsPageSetupAccessory because in
-        // macOS 13+ (Ventura/Sonoma/Sequoia) that option strips Paper Size and Orientation
-        // out of the native primary print pane.
         printOp.printPanel.options.insert([
             .showsPaperSize,
             .showsOrientation

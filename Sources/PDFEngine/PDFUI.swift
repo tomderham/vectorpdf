@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
-import PDFKit
 
 // Notifications used for app lifecycle events
 extension Notification.Name {
@@ -17,7 +16,14 @@ public struct PDFViewerMainView: View {
     @ObservedObject private var appCoordinator = PDFViewerAppCoordinator.shared
     @ObservedObject private var tabGroupManager = TabGroupManager.shared
     @ObservedObject private var snapshotWindowManager = SnapshotWindowManager.shared
+    private enum OverviewMode: String, CaseIterable, Identifiable {
+        case outline = "Outline"
+        case thumbnails = "Thumbnails"
+        var id: String { rawValue }
+    }
+
     @State private var selectedSidebarTab: Int = 0
+    @State private var overviewMode: OverviewMode = .outline
     @State private var gestureBaseZoom: CGFloat = 1.0
     @State private var sidebarVisibility: NavigationSplitViewVisibility
     @FocusState private var isAgentInputFocused: Bool
@@ -134,6 +140,14 @@ public struct PDFViewerMainView: View {
     private var documentCanvas: some View {
         PDFVirtualizedScrollView(viewModel: viewModel)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if viewModel.isMarkupBarVisible {
+                    VStack(spacing: 0) {
+                        PDFMarkupToolbarView(viewModel: viewModel)
+                        Divider()
+                    }
+                }
+            }
             .simultaneousGesture(
                 MagnificationGesture()
                     .onChanged { scale in
@@ -310,7 +324,7 @@ public struct PDFViewerMainView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 700, idealWidth: 960, maxWidth: .infinity, minHeight: 450, idealHeight: 650, maxHeight: .infinity)
         .overlay(alignment: .bottom) {
             if let msg = undoToastMessage, let action = undoAction {
                 UndoToastView(message: msg) {
@@ -387,6 +401,7 @@ public struct PDFViewerMainView: View {
                 navigationSplitBody
             }
         }
+        .frame(minWidth: isSnapshotWindow ? 600 : 700, idealWidth: isSnapshotWindow ? 960 : 1080, minHeight: isSnapshotWindow ? 450 : 500, idealHeight: isSnapshotWindow ? 720 : 720)
         .background(
             WindowAccessor { window in
                 viewModel.currentWindow = window
@@ -397,7 +412,9 @@ public struct PDFViewerMainView: View {
                 } else if window.delegate == nil {
                     window.delegate = viewModel.windowDelegate
                 }
+                window.isMovableByWindowBackground = true
                 if !isSnapshotWindow {
+                    window.minSize = NSSize(width: 600, height: 400)
                     window.tabbingMode = .preferred
                     if window.tabGroup?.isTabBarVisible != true {
                         window.toggleTabBar(nil)
@@ -451,6 +468,9 @@ public struct PDFViewerMainView: View {
             if let path = notif.object as? String {
                 Task {
                     await viewModel.loadDocument(from: path)
+                    if let doc = viewModel.document {
+                        overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
+                    }
                     DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
                 }
             }
@@ -462,11 +482,8 @@ public struct PDFViewerMainView: View {
         }
         .onChange(of: viewModel.document?.filePath) { oldPath, newPath in
             guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
-            if doc.outline.isEmpty {
-                selectedSidebarTab = 1
-            } else {
-                selectedSidebarTab = 0
-            }
+            overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
+            selectedSidebarTab = 0
         }
         .task {
             // Falls back to a buffered cold-launch open-file path (see
@@ -477,6 +494,9 @@ public struct PDFViewerMainView: View {
                 await viewModel.loadDocument(from: path)
                 if let target = initialTarget {
                     viewModel.jumpToSnapshot(target)
+                }
+                if let doc = viewModel.document {
+                    overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
                 }
                 DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
             }
@@ -492,7 +512,7 @@ public struct PDFViewerMainView: View {
                     Image(systemName: "list.bullet")
                         .imageScale(.medium)
                         .tag(0)
-                        .help("Table of Contents")
+                        .help("Outline & Thumbnails")
                     Image(systemName: "magnifyingglass")
                         .imageScale(.medium)
                         .tag(1)
@@ -529,14 +549,39 @@ public struct PDFViewerMainView: View {
                 Divider()
                 
                 if selectedSidebarTab == 0 {
-                    // Table of Contents - Virtualized Native AppKit NSOutlineView
-                    if let doc = viewModel.document, !doc.outline.isEmpty {
-                        PDFOutlineNSView(outline: doc.outline, documentIdentity: doc.filePath, viewModel: viewModel) { targetPage in
-                            viewModel.jumpToPage(targetPage)
+                    // Outline & Thumbnails Tab
+                    if let doc = viewModel.document {
+                        if doc.outline.isEmpty {
+                            PDFThumbnailGridView(viewModel: viewModel)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            VStack(spacing: 0) {
+                                Picker("Overview Mode", selection: $overviewMode) {
+                                    Text("Outline").tag(OverviewMode.outline)
+                                    Text("Thumbnails").tag(OverviewMode.thumbnails)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .controlSize(.small)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+
+                                Divider()
+
+                                if overviewMode == .outline {
+                                    PDFOutlineNSView(outline: doc.outline, documentIdentity: doc.filePath, viewModel: viewModel) { targetPage in
+                                        viewModel.jumpToPage(targetPage)
+                                    }
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                } else {
+                                    PDFThumbnailGridView(viewModel: viewModel)
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        ContentUnavailableView("No Outline", systemImage: "text.justify.leading", description: Text("This document has no Table of Contents"))
+                        ContentUnavailableView("No Document", systemImage: "doc", description: Text("No document is currently open"))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 } else if selectedSidebarTab == 1 {
@@ -961,7 +1006,6 @@ public struct PDFViewerMainView: View {
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
             documentCanvas
-                .navigationTitle(viewModel.documentTitle)
         }
         .toolbar {
             documentToolbarContent
@@ -1107,6 +1151,19 @@ public struct PDFViewerMainView: View {
                 }
                 .disabled(viewModel.document == nil)
                 .help("Two-Page Mode — shows pages side by side for reading. Search, text selection, and form fields are unavailable while active.")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        viewModel.isMarkupBarVisible.toggle()
+                    }
+                } label: {
+                    Image(systemName: "pencil.tip.crop.circle")
+                        .symbolVariant(viewModel.isMarkupBarVisible ? .fill : .none)
+                }
+                .disabled(viewModel.document == nil)
+                .help("Markup Toolbar (⇧⌘A)")
             }
             
             if let doc = viewModel.document {
