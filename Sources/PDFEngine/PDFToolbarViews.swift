@@ -281,12 +281,17 @@ public struct NativeSearchField: NSViewRepresentable {
         (field.cell as? NSSearchFieldCell)?.sendsWholeSearchString = true
         field.sendsSearchStringImmediately = false
         (field.cell as? NSSearchFieldCell)?.sendsSearchStringImmediately = false
+        field.cell?.isScrollable = true
+        field.cell?.wraps = false
+        field.cell?.lineBreakMode = .byClipping
+        field.usesSingleLineMode = true
         context.coordinator.searchField = field
         context.coordinator.focusAndSelectText()
         return field
     }
     
     public func updateNSView(_ nsView: NSSearchField, context: Context) {
+        context.coordinator.parent = self
         context.coordinator.searchField = nsView
         if nsView.stringValue != text {
             nsView.stringValue = text
@@ -294,6 +299,11 @@ public struct NativeSearchField: NSViewRepresentable {
         if nsView.placeholderString != placeholder {
             nsView.placeholderString = placeholder
         }
+        nsView.toolTip = text.isEmpty ? nil : text
+    }
+
+    public static func dismantleNSView(_ nsView: NSSearchField, coordinator: Coordinator) {
+        NotificationCenter.default.removeObserver(coordinator)
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -314,6 +324,12 @@ public struct NativeSearchField: NSViewRepresentable {
                 name: .focusSearchCommand,
                 object: nil
             )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleSelectionDidChange(_:)),
+                name: NSTextView.didChangeSelectionNotification,
+                object: nil
+            )
         }
         
         deinit {
@@ -322,6 +338,25 @@ public struct NativeSearchField: NSViewRepresentable {
         
         @objc func handleFocusSearch(_ notification: Notification) {
             focusAndSelectText()
+        }
+
+        @objc func handleSelectionDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView,
+                  let field = self.searchField,
+                  textView == field.currentEditor() else { return }
+            scrollToSelection(in: textView)
+        }
+
+        func scrollToSelection(in textView: NSTextView) {
+            guard let textContainer = textView.textContainer,
+                  let layoutManager = textView.layoutManager else { return }
+            let charRange = textView.selectedRange()
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+            var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            if rect.width == 0 {
+                rect.size.width = 1
+            }
+            textView.scrollToVisible(rect)
         }
         
         func focusAndSelectText() {
@@ -354,7 +389,8 @@ public struct NativeSearchField: NSViewRepresentable {
             // In NSSearchField, pressing Return is intercepted by control(_:textView:doCommandBy:).
             // This action selector is only invoked when clicking the search icon / search button
             // or if an explicit Return/Enter key was pressed outside the standard editor.
-            // Ensure we NEVER navigate on an automatic typing pause timer.
+            // Ensure we NEVER navigate on an automatic typing pause timer or when clearing.
+            guard !sender.stringValue.isEmpty else { return }
             guard let event = NSApplication.shared.currentEvent else { return }
             let isMouseClick = (event.type == .leftMouseUp || event.type == .leftMouseDown)
             let isReturnKey = (event.type == .keyDown && (event.keyCode == 36 || event.keyCode == 76))
@@ -367,6 +403,9 @@ public struct NativeSearchField: NSViewRepresentable {
             if let field = obj.object as? NSSearchField {
                 parent.text = field.stringValue
                 parent.onCommit()
+                if let textView = field.currentEditor() as? NSTextView {
+                    scrollToSelection(in: textView)
+                }
             }
         }
         
