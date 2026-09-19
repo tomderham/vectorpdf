@@ -89,6 +89,8 @@ public final class CrossReferenceResolver: @unchecked Sendable {
         }
         defer { mupdf_links_drop(ctx, links) }
         
+        let stext = try? StructuredPage.load(from: page, pageIndex: pageIndex, ctx: ctx)
+        
         var targets: [SnapshotTarget] = []
         var curr: FZLink? = links
         
@@ -101,6 +103,29 @@ public final class CrossReferenceResolver: @unchecked Sendable {
                 height: CGFloat(rect.y1 - rect.y0)
             )
             
+            // Extract the underlying visible anchor text at linkRect on the source page.
+            // Require significant vertical overlap (>= 35% of character height) to prevent capturing
+            // glyph descenders/ascenders from tight vertically adjacent lines.
+            var sourceText = ""
+            if let stext {
+                let chars = stext.allCharacters.filter { ch in
+                    let inter = linkRect.intersection(ch.boundingRect)
+                    guard !inter.isNull && inter.width > 0 && inter.height > 0 else { return false }
+                    return (inter.height / ch.boundingRect.height) >= 0.35
+                }
+                if !chars.isEmpty {
+                    var str = String(chars.map { $0.char })
+                        .replacingOccurrences(of: "\n", with: " ")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    while str.contains("  ") {
+                        str = str.replacingOccurrences(of: "  ", with: " ")
+                    }
+                    if !str.isEmpty && str.count <= 100 {
+                        sourceText = str
+                    }
+                }
+            }
+            
             if let cUri = mupdf_link_uri(link) {
                 let uri = String(cString: cUri)
                 var destPage: Int32 = -1
@@ -109,9 +134,10 @@ public final class CrossReferenceResolver: @unchecked Sendable {
                 
                 if mupdf_resolve_link_page(ctx, doc, uri, &destPage, &destX, &destY) == 0 && destPage >= 0 {
                     let point = CGPoint(x: CGFloat(destX), y: CGFloat(destY))
-                    let label = uri.starts(with: "#") ? String(uri.dropFirst()) : uri
+                    let uriLabel = uri.starts(with: "#") ? String(uri.dropFirst()) : uri
+                    let label = !sourceText.isEmpty ? sourceText : (uriLabel.isEmpty ? "Page \(destPage + 1)" : uriLabel)
                     targets.append(SnapshotTarget(
-                        label: label.isEmpty ? "Page \(destPage + 1)" : label,
+                        label: label,
                         targetPage: Int(destPage),
                         targetPoint: point,
                         sourceRect: linkRect,
@@ -119,8 +145,9 @@ public final class CrossReferenceResolver: @unchecked Sendable {
                         uri: uri
                     ))
                 } else if uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:") {
+                    let label = !sourceText.isEmpty ? sourceText : uri
                     targets.append(SnapshotTarget(
-                        label: uri,
+                        label: label,
                         targetPage: -1,
                         targetPoint: nil,
                         sourceRect: linkRect,
@@ -133,6 +160,40 @@ public final class CrossReferenceResolver: @unchecked Sendable {
             curr = mupdf_link_next(link)
         }
         
+        // For links split across multiple lines or fragments sharing the same URI,
+        // propagate the most informative label (e.g. "Table 27-14" from line 1 over "PPDU)" from line 2).
+        var bestLabelForURI: [String: String] = [:]
+        for t in targets {
+            guard let uri = t.uri, !uri.isEmpty else { continue }
+            let lbl = t.label
+            let isInformative = lbl.range(of: #"\b(?:Table|Figure|Fig\.?|Equation|Eq\.?)\b"#, options: [.regularExpression, .caseInsensitive]) != nil
+            if isInformative {
+                if let existing = bestLabelForURI[uri] {
+                    if lbl.count > existing.count {
+                        bestLabelForURI[uri] = lbl
+                    }
+                } else {
+                    bestLabelForURI[uri] = lbl
+                }
+            }
+        }
+        if !bestLabelForURI.isEmpty {
+            targets = targets.map { t in
+                if let uri = t.uri, let best = bestLabelForURI[uri], t.label != best {
+                    return SnapshotTarget(
+                        label: best,
+                        targetPage: t.targetPage,
+                        targetPoint: t.targetPoint,
+                        targetRect: t.targetRect,
+                        sourceRect: t.sourceRect,
+                        sourcePage: t.sourcePage,
+                        uri: t.uri
+                    )
+                }
+                return t
+            }
+        }
+
         return targets
     }
     

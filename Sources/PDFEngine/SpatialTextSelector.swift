@@ -370,7 +370,7 @@ public final class SpatialTextSelector: Sendable {
     // MARK: - Point Target Resolution
     /// Resolves the primary content line for a target location (such as a cross-reference destination or bookmark),
     /// consistent with mouse selection: filtering out narrow line-number gutters and margin annotations,
-    /// identifying the appropriate body column, and using the standard spatial distance metric.
+    /// identifying the appropriate body column, and accurately targeting figure/table titles and equations.
     public func targetLine(on page: StructuredPage, at point: CGPoint, label: String? = nil) -> TextLine? {
         let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
         guard !textBlocks.isEmpty else { return nil }
@@ -380,9 +380,155 @@ public final class SpatialTextSelector: Sendable {
         let bodyBlocks = textBlocks.filter { $0.bbox.width >= Self.minColumnWidth }
         let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
 
-        // 2. Determine target X coordinate.
-        // If point.x is left-anchored (destX == 0 or <= margin + 60, common for /FitH anchors),
-        // target the leftmost body column on the page rather than the margin void.
+        // 2. Parse target reference intent from label (e.g. "Table 27-14", "Equation (27-19)", "Figure 3")
+        let cleanLabel = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var eqTargetNum: String? = nil
+        var tableOrFigKind: String? = nil
+        var tableOrFigNum: String? = nil
+
+        if !cleanLabel.isEmpty {
+            // Check for Equation pattern: e.g. "Equation (27-19)", "Eq. (27-19)", "Equation 27-19", "(27-19)"
+            let eqPattern = #"(?:Equation|Eq\.?)\s*(?:\(?([0-9A-Za-z\.\-]+)\)?|\(([^\)]+)\))"#
+            if let eqRegex = try? NSRegularExpression(pattern: eqPattern, options: .caseInsensitive),
+               let match = eqRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                let ns = cleanLabel as NSString
+                if match.numberOfRanges > 1 && match.range(at: 1).location != NSNotFound {
+                    eqTargetNum = ns.substring(with: match.range(at: 1))
+                } else if match.numberOfRanges > 2 && match.range(at: 2).location != NSNotFound {
+                    eqTargetNum = ns.substring(with: match.range(at: 2))
+                }
+            } else if cleanLabel.hasPrefix("(") && cleanLabel.hasSuffix(")") {
+                let inner = String(cleanLabel.dropFirst().dropLast()).trimmingCharacters(in: .whitespaces)
+                if !inner.isEmpty && inner.rangeOfCharacter(from: .decimalDigits) != nil {
+                    eqTargetNum = inner
+                }
+            }
+
+            // Check for Table / Figure pattern: e.g. "Table 27-14", "Figure 3", "Fig. 2", "TABLE I", "table.caption.3"
+            let tfPattern = #"\b(Table|Figure|Fig\.?)\s*([0-9A-Za-z\.\-]+)"#
+            if let tfRegex = try? NSRegularExpression(pattern: tfPattern, options: .caseInsensitive),
+               let match = tfRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                let ns = cleanLabel as NSString
+                let prefix = ns.substring(with: match.range(at: 1)).lowercased()
+                tableOrFigKind = prefix.hasPrefix("fig") ? "figure" : "table"
+                tableOrFigNum = ns.substring(with: match.range(at: 2)).lowercased()
+            }
+        }
+
+        // 3. Specialized search: Equation References
+        // If referencing an equation (e.g. "Equation (27-19)", "Eq. (2)"), locate the equation's number tag or formula,
+        // prioritizing standalone equation tags/numbering on the right margin over prose paragraphs referencing the equation,
+        // and strictly avoiding following prose clauses ("where ...").
+        if let eqNum = eqTargetNum {
+            let targetParens = "(\(eqNum))"
+            var bestEqLine: TextLine? = nil
+            var bestEqScore: CGFloat = .infinity
+
+            for block in page.blocks where block.type == .text {
+                for line in block.lines {
+                    // Strictly exclude margin line numbers: numeric-only with narrow width or far left
+                    if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40 { continue }
+                    if line.bbox.minX < page.bounds.minX + Self.minColumnWidth - 10 && line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) { continue }
+
+                    let lineText = line.text.trimmingCharacters(in: .whitespaces)
+                    let isExactTag = (lineText == targetParens || lineText == eqNum)
+                    let isRightAlignedTag = (lineText.hasSuffix(targetParens) || lineText.hasSuffix(eqNum)) &&
+                                            (line.bbox.minX > page.bounds.midX) &&
+                                            (lineText.count <= targetParens.count + 6)
+                    let isStandaloneTag = isExactTag || isRightAlignedTag
+
+                    let dy = abs(line.bbox.midY - point.y)
+                    guard dy <= 450 else { continue }
+
+                    // Standalone equation tags get massive priority over prose paragraphs mentioning the equation
+                    let tagBonus: CGFloat = isStandaloneTag ? 1000.0 : (lineText.contains(targetParens) ? 100.0 : 0.0)
+                    guard tagBonus > 0 else { continue }
+
+                    let score = dy - tagBonus
+                    if score < bestEqScore {
+                        bestEqScore = score
+                        bestEqLine = line
+                    }
+                }
+            }
+
+            if let eqNumLine = bestEqLine {
+                // If there are formula lines on this same equation row, expand horizontally to frame
+                // both the formula and the equation number, strictly excluding margin line numbers.
+                let rowMinY = eqNumLine.bbox.minY - 15
+                let rowMaxY = eqNumLine.bbox.maxY + 15
+                let rowLines = page.blocks.filter { $0.type == .text }.flatMap { $0.lines }.filter { line in
+                    // Exclude margin line numbers
+                    guard !(line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40) else { return false }
+                    guard line.bbox.minX >= page.bounds.minX + 75 else { return false }
+                    return line.bbox.minY >= rowMinY && line.bbox.maxY <= rowMaxY
+                }
+                if !rowLines.isEmpty {
+                    let minX = rowLines.map { $0.bbox.minX }.min() ?? eqNumLine.bbox.minX
+                    let maxX = rowLines.map { $0.bbox.maxX }.max() ?? eqNumLine.bbox.maxX
+                    let minY = rowLines.map { $0.bbox.minY }.min() ?? eqNumLine.bbox.minY
+                    let maxY = rowLines.map { $0.bbox.maxY }.max() ?? eqNumLine.bbox.maxY
+                    let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                    return TextLine(bbox: combinedBBox, characters: rowLines.flatMap { $0.characters })
+                }
+                return eqNumLine
+            }
+        }
+
+        // 4. Specialized search: Table or Figure References
+        // If referencing a Table or Figure (e.g. "Table 27-14", "Figure 1"), directly locate the caption headline.
+        if let kind = tableOrFigKind, let num = tableOrFigNum {
+            var bestTitleLine: TextLine? = nil
+            var bestTitleDy: CGFloat = .infinity
+
+            // For tables, title is near anchor (±250pt).
+            // For figures, caption is almost always below the figure illustration (up to 500pt below anchor).
+            let maxDyAbove: CGFloat = (kind == "figure") ? 60 : 250
+            let maxDyBelow: CGFloat = (kind == "figure") ? 500 : 250
+
+            for block in candidateBlocks {
+                for line in block.lines {
+                    guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 10 else { continue }
+                    let lineLower = line.text.lowercased()
+                    let containsKind = (kind == "figure")
+                        ? (lineLower.contains("figure") || lineLower.contains("fig"))
+                        : lineLower.contains("table")
+                    let containsNum = lineLower.contains(num)
+
+                    if containsKind && containsNum {
+                        let dy = line.bbox.midY - point.y
+                        if dy >= -maxDyAbove && dy <= maxDyBelow {
+                            let absDy = abs(dy)
+                            if absDy < bestTitleDy {
+                                bestTitleDy = absDy
+                                bestTitleLine = line
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let titleLine = bestTitleLine {
+                // If title wraps across subsequent lines in the same block, frame the full title heading
+                if let block = candidateBlocks.first(where: { $0.lines.contains(where: { $0.bbox == titleLine.bbox }) }) {
+                    let titleLines = block.lines.filter {
+                        $0.bbox.minY >= titleLine.bbox.minY - 2 &&
+                        $0.bbox.maxY <= titleLine.bbox.maxY + 40
+                    }
+                    if titleLines.count > 1 {
+                        let minX = titleLines.map { $0.bbox.minX }.min() ?? titleLine.bbox.minX
+                        let maxX = titleLines.map { $0.bbox.maxX }.max() ?? titleLine.bbox.maxX
+                        let minY = titleLines.map { $0.bbox.minY }.min() ?? titleLine.bbox.minY
+                        let maxY = titleLines.map { $0.bbox.maxY }.max() ?? titleLine.bbox.maxY
+                        let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                        return TextLine(bbox: combinedBBox, characters: titleLines.flatMap { $0.characters })
+                    }
+                }
+                return titleLine
+            }
+        }
+
+        // 5. General Spatial Proximity Scoring (fallback for other references)
         let minBodyX = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
         let effectiveX: CGFloat
         if point.x <= page.bounds.minX + Self.minColumnWidth {
@@ -392,14 +538,20 @@ public final class SpatialTextSelector: Sendable {
         }
         let targetPoint = CGPoint(x: effectiveX, y: point.y)
 
-        // 3. Score candidate lines using the same spatial alignment metric as resolvePosition.
+        // Multi-column detection: only constrain to a column if the page actually contains
+        // side-by-side body text columns, preventing single-column centered headings from being discarded.
+        let isMultiColumn = candidateBlocks.contains { b1 in
+            candidateBlocks.contains { b2 in
+                b1.bbox != b2.bbox && abs(b1.bbox.midX - b2.bbox.midX) > 150 &&
+                min(b1.bbox.maxY, b2.bbox.maxY) > max(b1.bbox.minY, b2.bbox.minY) + 40
+            }
+        }
+
         var bestLine: TextLine? = nil
         var bestScore: CGFloat = .infinity
 
         for block in candidateBlocks {
-            // In multi-column documents, if point.x is explicitly inside a column,
-            // constrain to blocks in that column consistent with selectReadingOrder.
-            if point.x > page.bounds.minX + Self.minColumnWidth {
+            if isMultiColumn && point.x > page.bounds.minX + Self.minColumnWidth {
                 let overlapWidth = min(block.bbox.maxX, point.x + Self.gutterThreshold) - max(block.bbox.minX, point.x - Self.gutterThreshold)
                 if overlapWidth <= 0 && abs(block.bbox.midX - point.x) > 120 {
                     continue
@@ -408,7 +560,8 @@ public final class SpatialTextSelector: Sendable {
 
             for line in block.lines {
                 guard !line.characters.isEmpty else { continue }
-                // Exclude any isolated line that is too narrow and lacks letters (e.g. margin artifact)
+                // Exclude narrow margin gutter line numbers (strictly numeric, width < 40)
+                guard line.bbox.minX >= page.bounds.minX + 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
                 guard line.bbox.width >= 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
 
                 // Vertical distance metric identical to resolvePosition:
@@ -424,17 +577,19 @@ public final class SpatialTextSelector: Sendable {
 
                 // Optional label token boost (e.g. section number or name)
                 var labelBoost: CGFloat = 0.0
-                if let label = label?.lowercased(), !label.isEmpty {
+                if !cleanLabel.isEmpty {
                     let lineLower = line.text.lowercased()
-                    for token in label.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
-                        if token.count >= 2 && lineLower.contains(token) {
+                    for token in cleanLabel.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "-" && $0 != "." }) {
+                        let t = String(token).lowercased()
+                        if t.count >= 2 && lineLower.contains(t) {
                             labelBoost += 1000.0
+                        } else if t.count == 1 && lineLower.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains(Substring(t)) {
+                            labelBoost += 500.0
                         }
                     }
                 }
 
                 // Restrict search to reasonable vertical proximity, unless the anchor is at the top of the page
-                // (e.g. /Fit, /FitH, or float anchors) and this line matches the reference label.
                 let isTopAnchored = targetPoint.y <= page.bounds.minY + 45
                 if isTopAnchored && labelBoost > 0 {
                     // Allowed across the page when strongly matched by label
@@ -452,9 +607,13 @@ public final class SpatialTextSelector: Sendable {
                     dx = targetPoint.x - line.bbox.maxX
                 }
 
-                // Heavy vertical prioritization matching resolvePosition: (effectiveDy * 4.0) + dx - labelBoost
+                // Deprioritize running page headers when the target point is within body content
+                let isPageHeader = line.bbox.minY <= page.bounds.minY + 45
+                let headerPenalty: CGFloat = (isPageHeader && targetPoint.y > page.bounds.minY + 50) ? 500.0 : 0.0
+
+                // Heavy vertical prioritization matching resolvePosition: (effectiveDy * 4.0) + dx + headerPenalty - labelBoost
                 let effectiveDy: CGFloat = (isTopAnchored && labelBoost > 0) ? 0 : dy
-                let score = (effectiveDy * 4.0) + dx - labelBoost
+                let score = (effectiveDy * 4.0) + dx + headerPenalty - labelBoost
 
                 if score < bestScore {
                     bestScore = score

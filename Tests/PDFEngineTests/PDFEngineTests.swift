@@ -2820,7 +2820,143 @@ func createFormSamplePDF(at fileURL: URL) {
         window.sendEvent(event)
     }
 }
+
+@Test @MainActor func testTableAndFigureTargetResolution() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_table_fig_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 12)
+
+    // Page 0: Contains references
+    context.beginPDFPage(nil)
+    ("See Table 1 for details." as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: font])
+    ("See Figure 2 for overview." as NSString).draw(at: NSPoint(x: 100, y: 650), withAttributes: [.font: font])
+    context.endPDFPage()
+
+    // Page 1:
+    // Running header at top (y=740 in CG coordinates -> y=52 in MuPDF Fitz top-down)
+    // Table 1 at y=500 in CG (y=292 in Fitz), followed by header cell "Parameter" at y=460 (y=332 in Fitz)
+    // Figure 2 illustration at y=300 (y=492 in Fitz), with caption "Figure 2: Architecture diagram" at y=150 (y=642 in Fitz)
+    context.beginPDFPage(nil)
+    ("IEEE JOURNAL OF SELECTED TOPICS, VOL. 10" as NSString).draw(at: NSPoint(x: 100, y: 740), withAttributes: [.font: font])
+    ("Table 1 - System Performance Parameters" as NSString).draw(at: NSPoint(x: 150, y: 500), withAttributes: [.font: font])
+    ("Setting   Value   Description" as NSString).draw(at: NSPoint(x: 100, y: 460), withAttributes: [.font: font])
+    ("[Illustration diagram box]" as NSString).draw(at: NSPoint(x: 100, y: 300), withAttributes: [.font: font])
+    ("Figure 2: Architecture diagram" as NSString).draw(at: NSPoint(x: 150, y: 150), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    guard let stext = doc.loadStructuredPage(for: 1) else {
+        #expect(Bool(false), "StructuredPage must load")
+        return
+    }
+
+    let selector = SpatialTextSelector()
+
+    // 1. Table 1 target resolution: anchor is near table top (y=290 in Fitz)
+    let tableTarget = selector.targetLine(on: stext, at: CGPoint(x: 90, y: 290), label: "Table 1")
+    #expect(tableTarget != nil)
+    #expect(tableTarget?.text.contains("Table 1") == true)
+    #expect(tableTarget?.text.contains("Setting") == false)
+
+    // 2. Figure 2 target resolution: anchor is at top of figure float (y=480 in Fitz),
+    // while caption is at y=642 (162pt below anchor)
+    let figTarget = selector.targetLine(on: stext, at: CGPoint(x: 90, y: 480), label: "Figure 2")
+    #expect(figTarget != nil)
+    #expect(figTarget?.text.contains("Figure 2") == true)
+    #expect(figTarget?.text.contains("Illustration") == false)
 }
+
+@Test @MainActor func testEquationTargetResolution() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_equation_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 12)
+
+    context.beginPDFPage(nil)
+    // Left-margin line number at x=60
+    ("33" as NSString).draw(at: NSPoint(x: 60, y: 500), withAttributes: [.font: font])
+    // Centered equation math formula
+    ("y = a * x + b" as NSString).draw(at: NSPoint(x: 200, y: 500), withAttributes: [.font: font])
+    // Right-aligned equation number (27-19)
+    ("(27-19)" as NSString).draw(at: NSPoint(x: 500, y: 500), withAttributes: [.font: font])
+    // Explanatory prose directly below
+    ("where y is the output vector and a is the gain." as NSString).draw(at: NSPoint(x: 100, y: 460), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    guard let stext = doc.loadStructuredPage(for: 0) else {
+        #expect(Bool(false), "StructuredPage must load")
+        return
+    }
+
+    let selector = SpatialTextSelector()
+
+    // Anchor placed near equation baseline / top of "where" prose
+    let targetPoint = CGPoint(x: 90, y: 292) // y=500 in CG -> y=292 in Fitz
+    let eqTarget = selector.targetLine(on: stext, at: targetPoint, label: "Equation (27-19)")
+
+    #expect(eqTarget != nil)
+    // Must select the equation and/or its (27-19) number, NOT the "where" prose below
+    #expect(eqTarget?.text.contains("where") == false)
+    #expect(eqTarget?.text.contains("33") == false) // Must not pick line number 33
+    #expect(eqTarget?.text.contains("27-19") == true || eqTarget?.text.contains("y = a") == true)
+}
+
+@Test @MainActor func testRealREVmfD30TargetResolutionIfPresent() async throws {
+    let pdfPath = "/Users/td958143/Library/CloudStorage/GoogleDrive-tom.derham@gmail.com/My Drive/Standards-PDFs/IEEE/Draft P802.11REVmf_D3.0.pdf"
+    guard FileManager.default.fileExists(atPath: pdfPath) else { return }
+
+    let doc = try PDFDocumentCore(filePath: pdfPath)
+    let selector = SpatialTextSelector()
+
+    // 1. Table 27-14 link from page 4811 -> page 4813
+    let page4811Links = doc.loadLinks(for: 4811)
+    let table14Links = page4811Links.filter { $0.targetPage == 4813 }
+    #expect(!table14Links.isEmpty)
+    if let stext4813 = doc.loadStructuredPage(for: 4813) {
+        for l in table14Links {
+            #expect(l.label.contains("Table 27-14"))
+            if let targetPt = l.targetPoint {
+                let resolved = selector.targetLine(on: stext4813, at: targetPt, label: l.label)
+                #expect(resolved != nil)
+                #expect(resolved?.text.contains("Table 27-14") == true)
+                #expect(resolved?.text.contains("Parameter") == false)
+            }
+        }
+    }
+
+    // 2. Equation (27-19) link from page 4829 -> page 4843
+    let page4829Links = doc.loadLinks(for: 4829)
+    let eq19Link = page4829Links.first { $0.label.contains("27-19") }
+    #expect(eq19Link != nil)
+    if let eq19Link, let targetPt = eq19Link.targetPoint, let stext4843 = doc.loadStructuredPage(for: eq19Link.targetPage) {
+        let resolved = selector.targetLine(on: stext4843, at: targetPt, label: eq19Link.label)
+        #expect(resolved != nil)
+        #expect(resolved?.text.contains("27-19") == true)
+        #expect(resolved?.text.contains("BEAM_CHANGE") == false)
+        #expect(resolved?.text.contains("where") == false)
+        // Ensure no line numbers in gutter are targeted
+        #expect((resolved?.bbox.minX ?? 0) >= 75)
+    }
+}
+}
+
+
 
 
 
