@@ -30,4 +30,7 @@ Vendor/.build-tmp/
 prepare_publish.sh
 *.dmg
 dmg_staging/
+Scripts/build_dmg.sh
+build_dmg.sh
+
 
