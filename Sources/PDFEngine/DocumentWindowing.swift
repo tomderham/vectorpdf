@@ -59,6 +59,19 @@ final class PDFViewerWindow: NSWindow {
 /// closure-wiring boilerplate is written once instead of separately for every caller.
 @MainActor
 public enum DocumentWindowing {
+    /// Installs a handler on NSWindow so that clicking the native tab-bar "+" button on any
+    /// window (including SwiftUI's initial WindowGroup window) opens a new tab in that window
+    /// instead of spawning a new standalone window.
+    public static func installTabBarPlusButtonHandler() {
+        let sel = #selector(NSWindow.newWindowForTab(_:))
+        guard class_getInstanceMethod(NSWindow.self, sel) == nil else { return }
+        let block: @convention(block) (NSWindow, Any?) -> Void = { window, _ in
+            DocumentWindowing.addEmptyTab(to: window)
+        }
+        let imp = imp_implementationWithBlock(block)
+        class_addMethod(NSWindow.self, sel, imp, "v@:@")
+    }
+
     /// The bare window shell shared by every variant below — same style mask, ARC-safety flag,
     /// and tab-bar identity handling, whether or not it ends up showing a document.
     private static func makeBareWindow(tabbingIdentifier: String?) -> NSWindow {
@@ -121,6 +134,7 @@ public enum DocumentWindowing {
         )
         window.contentViewController = NSHostingController(rootView: view)
         window.title = url.lastPathComponent
+        TabBarAppearanceHelper.refreshTabs(for: window)
         return window
     }
 
@@ -131,6 +145,7 @@ public enum DocumentWindowing {
         let window = makeWindow(for: url)
         window.center()
         window.makeKeyAndOrderFront(nil)
+        TabBarAppearanceHelper.refreshTabs(for: window)
     }
 
     /// Opens a new, standalone empty window displaying the Start screen (Cmd+N).
@@ -156,14 +171,17 @@ public enum DocumentWindowing {
     /// onto a window that already has a document open ("add this here" reads as a tab, not a new
     /// window, matching direct-manipulation convention).
     public static func addTab(url: URL, to sourceWindow: NSWindow) {
+        sourceWindow.tabbingMode = .preferred
         let window = makeWindow(for: url, tabbingIdentifier: sourceWindow.tabbingIdentifier)
         sourceWindow.addTabbedWindow(window, ordered: .above)
         window.makeKeyAndOrderFront(nil)
+        TabBarAppearanceHelper.refreshTabs(for: window)
     }
 
     /// Adds a blank tab (the Start screen, no document loaded) to `sourceWindow`'s tab group —
     /// what the native tab-bar "+" button now does; see PDFViewerWindow.newWindowForTab.
     public static func addEmptyTab(to sourceWindow: NSWindow) {
+        sourceWindow.tabbingMode = .preferred
         let window = makeBareWindow(tabbingIdentifier: sourceWindow.tabbingIdentifier)
         window.title = "VectorPDF"
 
@@ -180,6 +198,7 @@ public enum DocumentWindowing {
         window.contentViewController = NSHostingController(rootView: view)
         sourceWindow.addTabbedWindow(window, ordered: .above)
         window.makeKeyAndOrderFront(nil)
+        TabBarAppearanceHelper.refreshTabs(for: window)
     }
 
     /// Determines whether `window` is a standalone empty Start Screen window that can be cleanly

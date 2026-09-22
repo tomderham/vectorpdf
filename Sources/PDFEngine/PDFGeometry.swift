@@ -41,17 +41,77 @@ public struct PDFQuad: Sendable, Equatable, Codable {
 }
 
 public struct PDFOutlineNode: Sendable, Identifiable {
-    public let id = UUID()
+    public let id: UUID
     public let title: String
     public let uri: String?
     public let targetPage: Int?
     public let children: [PDFOutlineNode]
     
-    public init(title: String, uri: String?, targetPage: Int?, children: [PDFOutlineNode] = []) {
+    public init(id: UUID = UUID(), title: String, uri: String? = nil, targetPage: Int? = nil, children: [PDFOutlineNode] = []) {
+        self.id = id
         self.title = title
         self.uri = uri
         self.targetPage = targetPage
         self.children = children
+    }
+    
+    /// Recursively filters outline nodes by title matching `query` (case-insensitive).
+    /// Keeps nodes whose title matches `query`, or parent nodes necessary to display matching descendants.
+    /// Non-matching child sections are excluded.
+    public static func filter(nodes: [PDFOutlineNode], query: String) -> [PDFOutlineNode] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nodes }
+        let lowercasedQuery = trimmed.lowercased()
+        return filterInternal(nodes: nodes, lowercasedQuery: lowercasedQuery)
+    }
+    
+    private static func filterInternal(nodes: [PDFOutlineNode], lowercasedQuery: String) -> [PDFOutlineNode] {
+        var result: [PDFOutlineNode] = []
+        for node in nodes {
+            let matchesSelf = node.title.lowercased().contains(lowercasedQuery)
+            let filteredChildren = filterInternal(nodes: node.children, lowercasedQuery: lowercasedQuery)
+            
+            if matchesSelf || !filteredChildren.isEmpty {
+                result.append(PDFOutlineNode(
+                    id: node.id,
+                    title: node.title,
+                    uri: node.uri,
+                    targetPage: node.targetPage,
+                    children: filteredChildren
+                ))
+            }
+        }
+        return result
+    }
+    
+    /// Finds the outline node ID corresponding to `page` (0-indexed).
+    /// - If any section headings start on `page`, the FIRST heading on `page` is returned (representing the top of the page).
+    /// - If no headings start on `page`, the LAST heading before `page` is returned (representing the continuing section).
+    public static func findActiveNodeId(in nodes: [PDFOutlineNode], for page: Int) -> UUID? {
+        guard page >= 0 else { return nil }
+        
+        var flatList: [PDFOutlineNode] = []
+        func flatten(_ list: [PDFOutlineNode]) {
+            for node in list {
+                flatList.append(node)
+                flatten(node.children)
+            }
+        }
+        flatten(nodes)
+        
+        // If any heading starts on this exact page, the first one on the page represents the page start
+        if let firstOnPage = flatList.first(where: { $0.targetPage == page }) {
+            return firstOnPage.id
+        }
+        
+        // Otherwise, find the last heading that started before this page
+        var lastPreceding: PDFOutlineNode? = nil
+        for node in flatList {
+            if let target = node.targetPage, target < page {
+                lastPreceding = node
+            }
+        }
+        return lastPreceding?.id
     }
 }
 

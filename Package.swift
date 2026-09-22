@@ -7,7 +7,7 @@ let package = Package(
     products: [
         .library(name: "MuPDFBridge", targets: ["MuPDFBridge"]),
         .library(name: "PDFEngine", targets: ["PDFEngine"]),
-        .executable(name: "VectorPDFApp", targets: ["VectorPDFApp"]),
+        .executable(name: "VectorPDF", targets: ["VectorPDF"]),
     ],
     targets: [
         // Vendored, self-contained MuPDF build (see Vendor/README.md)
@@ -27,7 +27,7 @@ let package = Package(
             dependencies: ["MuPDFBridge"]
         ),
         .executableTarget(
-            name: "VectorPDFApp",
+            name: "VectorPDF",
             dependencies: ["PDFEngine"]
         ),
         .testTarget(

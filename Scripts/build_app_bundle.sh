@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 CONFIG="${1:-release}"
 SDK_MODE="${2:-auto}"
 APP_NAME="VectorPDF"
-EXECUTABLE_NAME="VectorPDFApp"
+EXECUTABLE_NAME="VectorPDF"
 APP_BUNDLE="$APP_NAME.app"
 APP_VERSION="$(cat VERSION | tr -d '[:space:]')"
 

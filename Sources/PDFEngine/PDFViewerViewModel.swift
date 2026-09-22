@@ -320,6 +320,7 @@ public final class PDFViewerViewModel: ObservableObject {
                 if !isTransientWindow && window.tabGroup?.isTabBarVisible != true {
                     window.toggleTabBar(nil)
                 }
+                TabBarAppearanceHelper.refreshTabs(for: window)
             }
 
             self.isDocumentEdited = false
@@ -2496,6 +2497,24 @@ public final class PDFViewerWindowDelegate: NSObject, NSWindowDelegate {
     public func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard let vm = viewModel else { return true }
         return vm.promptSaveBeforeClosingIfNeeded()
+    }
+
+    public func windowDidBecomeKey(_ notification: Notification) {
+        if let window = notification.object as? NSWindow {
+            TabBarAppearanceHelper.refreshTabs(for: window)
+        }
+    }
+
+    public func windowDidResignKey(_ notification: Notification) {
+        if let window = notification.object as? NSWindow {
+            TabBarAppearanceHelper.refreshTabs(for: window)
+        }
+    }
+
+    public func windowDidBecomeMain(_ notification: Notification) {
+        if let window = notification.object as? NSWindow {
+            TabBarAppearanceHelper.refreshTabs(for: window)
+        }
     }
 }
 

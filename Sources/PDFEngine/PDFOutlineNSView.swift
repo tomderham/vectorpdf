@@ -2,18 +2,27 @@ import SwiftUI
 import AppKit
 
 /// High-performance, virtualized AppKit Table of Contents outline view.
-/// Recycles table cells and completely eliminates SwiftUI FocusStoreList memory overhead.
+/// Recycles table cells and supports in-ToC search filtering and active section highlighting.
 public struct PDFOutlineNSView: NSViewRepresentable {
     let outline: [PDFOutlineNode]
-    // Identifies which document `outline` belongs to (its file path) — see setOutline's use of
-    // this for why a plain node-count comparison isn't enough to detect a document switch.
     let documentIdentity: String
+    let searchQuery: String
+    let currentPage: Int
     let viewModel: PDFViewerViewModel?
     let onSelect: (Int) -> Void
 
-    public init(outline: [PDFOutlineNode], documentIdentity: String, viewModel: PDFViewerViewModel? = nil, onSelect: @escaping (Int) -> Void) {
+    public init(
+        outline: [PDFOutlineNode],
+        documentIdentity: String,
+        searchQuery: String = "",
+        currentPage: Int = 0,
+        viewModel: PDFViewerViewModel? = nil,
+        onSelect: @escaping (Int) -> Void
+    ) {
         self.outline = outline
         self.documentIdentity = documentIdentity
+        self.searchQuery = searchQuery
+        self.currentPage = currentPage
         self.viewModel = viewModel
         self.onSelect = onSelect
     }
@@ -47,7 +56,29 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         
         scrollView.documentView = outlineView
         context.coordinator.outlineView = outlineView
-        context.coordinator.setOutline(outline, documentIdentity: documentIdentity)
+
+        let emptyLabel = NSTextField(labelWithString: "No matching outline sections")
+        emptyLabel.font = NSFont.systemFont(ofSize: 12)
+        emptyLabel.textColor = .secondaryLabelColor
+        emptyLabel.alignment = .center
+        emptyLabel.isHidden = true
+        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(emptyLabel)
+        context.coordinator.emptyLabel = emptyLabel
+        
+        NSLayoutConstraint.activate([
+            emptyLabel.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            emptyLabel.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor, constant: -20),
+            emptyLabel.leadingAnchor.constraint(greaterThanOrEqualTo: scrollView.leadingAnchor, constant: 16),
+            emptyLabel.trailingAnchor.constraint(lessThanOrEqualTo: scrollView.trailingAnchor, constant: -16)
+        ])
+        
+        context.coordinator.updateState(
+            outline: outline,
+            documentIdentity: documentIdentity,
+            searchQuery: searchQuery,
+            currentPage: currentPage
+        )
 
         return scrollView
     }
@@ -55,7 +86,12 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onSelect = onSelect
         context.coordinator.viewModel = viewModel
-        context.coordinator.setOutline(outline, documentIdentity: documentIdentity)
+        context.coordinator.updateState(
+            outline: outline,
+            documentIdentity: documentIdentity,
+            searchQuery: searchQuery,
+            currentPage: currentPage
+        )
     }
 
     @MainActor
@@ -63,51 +99,190 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         var onSelect: (Int) -> Void
         var viewModel: PDFViewerViewModel?
         weak var outlineView: NSOutlineView?
-        private var rootItems: [OutlineItemWrapper] = []
+        weak var emptyLabel: NSTextField?
+
+        private var rawOutline: [PDFOutlineNode] = []
+        private var displayedWrappers: [OutlineItemWrapper] = []
         private var lastDocumentIdentity: String?
+        private var lastSearchQuery: String?
+        private var currentPage: Int = 0
+        private var currentVisibleActiveWrapper: OutlineItemWrapper?
+        private var selectedNodeId: UUID?
+        private var selectedNodePage: Int?
+        private var searchWorkItem: DispatchWorkItem?
 
         init(viewModel: PDFViewerViewModel?, onSelect: @escaping (Int) -> Void) {
             self.viewModel = viewModel
             self.onSelect = onSelect
         }
 
-        // Skips the reloadData()/expandItem() pass below when nothing has actually changed —
-        // updateNSView(_:context:) runs on every SwiftUI re-render of the containing view (e.g.
-        // every page/zoom change), not only when the outline itself changes, so this guard matters
-        // for avoiding needless work on every scroll. Compares document identity (the file path)
-        // rather than nodes.count, since two different documents can easily share the same
-        // top-level section count.
-        func setOutline(_ nodes: [PDFOutlineNode], documentIdentity: String) {
-            if documentIdentity == lastDocumentIdentity && !rootItems.isEmpty {
-                return
-            }
-            lastDocumentIdentity = documentIdentity
-            rootItems = nodes.map { OutlineItemWrapper(node: $0) }
+        func updateState(outline: [PDFOutlineNode], documentIdentity: String, searchQuery: String, currentPage: Int) {
+            let documentChanged = (documentIdentity != self.lastDocumentIdentity)
+            let searchChanged = (searchQuery != self.lastSearchQuery)
+            let pageChanged = (currentPage != self.currentPage)
 
-            // Deferred to the next run loop turn, never called synchronously from
-            // updateNSView(_:context:): reloadData()/expandItem() can trigger a
-            // synchronous layout pass that loops back into another SwiftUI update
-            // before this call returns, which AppKit surfaces as "reentrant
-            // operation in its NSTableView delegate" — a warning today, but it
-            // silently corrupts the outline view's internal row/view-recycling
-            // state, which crashes unpredictably later (a generic, unsymbolicated
-            // autorelease-pool-drain SIGSEGV, disconnected from this call site).
-            DispatchQueue.main.async { [weak self] in
-                guard let self, let outlineView = self.outlineView else { return }
-                outlineView.reloadData()
-
-                // Expand first level items for immediate usability
-                for item in self.rootItems where !item.children.isEmpty {
-                    outlineView.expandItem(item)
+            if pageChanged {
+                if let selPage = selectedNodePage, currentPage != selPage {
+                    self.selectedNodeId = nil
+                    self.selectedNodePage = nil
                 }
             }
+
+            self.lastDocumentIdentity = documentIdentity
+            self.lastSearchQuery = searchQuery
+            self.currentPage = currentPage
+            self.rawOutline = outline
+
+            if documentChanged {
+                searchWorkItem?.cancel()
+                let isSearching = !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                rebuildDisplayedItems(expandAll: isSearching, scrollToActive: true)
+            } else if searchChanged {
+                searchWorkItem?.cancel()
+                let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    // Instant response when clearing search
+                    rebuildDisplayedItems(expandAll: false, scrollToActive: true)
+                } else {
+                    // 100ms debounce while user is typing
+                    let workItem = DispatchWorkItem { [weak self] in
+                        self?.rebuildDisplayedItems(expandAll: true, scrollToActive: false)
+                    }
+                    self.searchWorkItem = workItem
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: workItem)
+                }
+            } else if pageChanged {
+                refreshActiveIndicators(scrollToVisible: true)
+            }
+        }
+
+        private func rebuildDisplayedItems(expandAll: Bool, scrollToActive: Bool) {
+            let query = lastSearchQuery ?? ""
+            let filteredNodes = PDFOutlineNode.filter(nodes: rawOutline, query: query)
+            displayedWrappers = filteredNodes.map { OutlineItemWrapper(node: $0) }
+
+            let isEmptyResult = displayedWrappers.isEmpty && !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            emptyLabel?.isHidden = !isEmptyResult
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let outlineView = self.outlineView else { return }
+                outlineView.reloadData()
+
+                if expandAll {
+                    self.expandAllMatchingItems(in: self.displayedWrappers, in: outlineView)
+                } else {
+                    for item in self.displayedWrappers where !item.children.isEmpty {
+                        outlineView.expandItem(item)
+                    }
+                }
+
+                self.refreshActiveIndicators(scrollToVisible: scrollToActive)
+            }
+        }
+
+        private func expandAllMatchingItems(in wrappers: [OutlineItemWrapper], in outlineView: NSOutlineView) {
+            for item in wrappers {
+                if !item.children.isEmpty {
+                    outlineView.expandItem(item)
+                    expandAllMatchingItems(in: item.children, in: outlineView)
+                }
+            }
+        }
+
+        func refreshActiveIndicators(scrollToVisible: Bool = false) {
+            guard let outlineView = outlineView else { return }
+            let activeId: UUID?
+            if let selId = selectedNodeId, selectedNodePage == currentPage {
+                activeId = selId
+            } else {
+                activeId = PDFOutlineNode.findActiveNodeId(in: rawOutline, for: currentPage)
+            }
+
+            var targetWrapper: OutlineItemWrapper? = nil
+            if let activeId = activeId {
+                targetWrapper = findWrapper(by: activeId, in: displayedWrappers)
+            }
+
+            // Reveal active item by expanding any collapsed ancestors
+            if scrollToVisible, let target = targetWrapper {
+                revealItem(target, in: outlineView)
+            }
+
+            var visibleActiveWrapper: OutlineItemWrapper? = nil
+            if let target = targetWrapper {
+                visibleActiveWrapper = findVisibleItem(for: target, in: outlineView)
+            }
+
+            self.currentVisibleActiveWrapper = visibleActiveWrapper
+
+            let numRows = outlineView.numberOfRows
+            guard numRows > 0 else { return }
+            for row in 0..<numRows {
+                guard let cellView = outlineView.view(atColumn: 0, row: row, makeIfNecessary: false) as? OutlineCellView,
+                      let itemWrapper = outlineView.item(atRow: row) as? OutlineItemWrapper else {
+                    continue
+                }
+                let isActive = (visibleActiveWrapper === itemWrapper)
+                let isSelected = (outlineView.selectedRow == row)
+                cellView.setActive(isActive, isRowSelected: isSelected)
+            }
+
+            // Scroll so the current active section is comfortably visible on screen
+            if scrollToVisible, let visibleWrapper = visibleActiveWrapper {
+                let row = outlineView.row(forItem: visibleWrapper)
+                if row >= 0 {
+                    let rowRect = outlineView.rect(ofRow: row)
+                    let visibleRect = outlineView.visibleRect
+                    if !visibleRect.contains(rowRect) {
+                        let paddedRect = rowRect.insetBy(dx: 0, dy: -24)
+                        outlineView.scrollToVisible(paddedRect)
+                    }
+                }
+            }
+        }
+
+        private func revealItem(_ wrapper: OutlineItemWrapper, in outlineView: NSOutlineView) {
+            var ancestors: [OutlineItemWrapper] = []
+            var cur = wrapper.parent
+            while let p = cur {
+                ancestors.append(p)
+                cur = p.parent
+            }
+            for ancestor in ancestors.reversed() {
+                if !outlineView.isItemExpanded(ancestor) {
+                    outlineView.expandItem(ancestor)
+                }
+            }
+        }
+
+        private func findWrapper(by id: UUID, in wrappers: [OutlineItemWrapper]) -> OutlineItemWrapper? {
+            for wrapper in wrappers {
+                if wrapper.node.id == id {
+                    return wrapper
+                }
+                if let found = findWrapper(by: id, in: wrapper.children) {
+                    return found
+                }
+            }
+            return nil
+        }
+
+        private func findVisibleItem(for wrapper: OutlineItemWrapper, in outlineView: NSOutlineView) -> OutlineItemWrapper? {
+            var current: OutlineItemWrapper? = wrapper
+            while let c = current {
+                if outlineView.row(forItem: c) >= 0 {
+                    return c
+                }
+                current = c.parent
+            }
+            return nil
         }
         
         // MARK: - NSOutlineViewDataSource
         
         public func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
             if item == nil {
-                return rootItems.count
+                return displayedWrappers.count
             }
             if let wrapper = item as? OutlineItemWrapper {
                 return wrapper.children.count
@@ -117,7 +292,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         
         public func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
             if item == nil {
-                return rootItems[index]
+                return displayedWrappers[index]
             }
             if let wrapper = item as? OutlineItemWrapper {
                 return wrapper.children[index]
@@ -138,31 +313,23 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             guard let wrapper = item as? OutlineItemWrapper else { return nil }
             
             let cellIdentifier = NSUserInterfaceItemIdentifier("OutlineCell")
-            var cell = outlineView.makeView(withIdentifier: cellIdentifier, owner: nil) as? NSTableCellView
+            var cell = outlineView.makeView(withIdentifier: cellIdentifier, owner: nil) as? OutlineCellView
             
             if cell == nil {
-                cell = NSTableCellView()
+                cell = OutlineCellView()
                 cell?.identifier = cellIdentifier
-                
-                let tf = NSTextField(labelWithString: "")
-                tf.lineBreakMode = .byTruncatingTail
-                tf.font = NSFont.systemFont(ofSize: 12)
-                tf.translatesAutoresizingMaskIntoConstraints = false
-                cell?.addSubview(tf)
-                cell?.textField = tf
-                
-                NSLayoutConstraint.activate([
-                    tf.leadingAnchor.constraint(equalTo: cell!.leadingAnchor, constant: 4),
-                    tf.trailingAnchor.constraint(equalTo: cell!.trailingAnchor, constant: -4),
-                    tf.centerYAnchor.constraint(equalTo: cell!.centerYAnchor)
-                ])
             }
             
-            if let page = wrapper.node.targetPage {
-                cell?.textField?.stringValue = "\(wrapper.node.title)  (\(page + 1))"
-            } else {
-                cell?.textField?.stringValue = wrapper.node.title
-            }
+            let row = outlineView.row(forItem: item)
+            let isSelected = (row >= 0 && outlineView.selectedRow == row)
+            let isActive = (wrapper === currentVisibleActiveWrapper)
+
+            cell?.configure(
+                title: wrapper.node.title,
+                targetPage: wrapper.node.targetPage,
+                isActive: isActive,
+                isRowSelected: isSelected
+            )
             
             return cell
         }
@@ -174,16 +341,33 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         public func outlineViewSelectionDidChange(_ notification: Notification) {
             guard let outlineView = notification.object as? NSOutlineView else { return }
             let row = outlineView.selectedRow
-            guard row >= 0, let wrapper = outlineView.item(atRow: row) as? OutlineItemWrapper, let page = wrapper.node.targetPage else { return }
+            guard row >= 0, let wrapper = outlineView.item(atRow: row) as? OutlineItemWrapper, let page = wrapper.node.targetPage else {
+                refreshActiveIndicators()
+                return
+            }
+            self.selectedNodeId = wrapper.node.id
+            self.selectedNodePage = page
+            refreshActiveIndicators(scrollToVisible: false)
             DispatchQueue.main.async { [weak self] in
                 self?.onSelect(page)
             }
+        }
+
+        public func outlineViewItemDidExpand(_ notification: Notification) {
+            refreshActiveIndicators()
+        }
+
+        public func outlineViewItemDidCollapse(_ notification: Notification) {
+            refreshActiveIndicators()
         }
         
         @objc func onOutlineClick(_ sender: NSOutlineView) {
             let row = sender.clickedRow
             guard row >= 0 else { return }
             if let wrapper = sender.item(atRow: row) as? OutlineItemWrapper, let page = wrapper.node.targetPage {
+                self.selectedNodeId = wrapper.node.id
+                self.selectedNodePage = page
+                refreshActiveIndicators(scrollToVisible: false)
                 DispatchQueue.main.async { [weak self] in
                     self?.onSelect(page)
                 }
@@ -256,6 +440,105 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     }
 }
 
+/// Custom NSTableCellView with subtle current-page active section indicator and background styling.
+final class OutlineCellView: NSTableCellView {
+    let indicatorBar = NSView()
+    let backgroundPill = NSView()
+
+    private(set) var isActive: Bool = false
+    private(set) var isRowSelected: Bool = false
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupViews()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupViews()
+    }
+
+    private func setupViews() {
+        wantsLayer = true
+
+        backgroundPill.wantsLayer = true
+        backgroundPill.layer?.cornerRadius = 4
+        backgroundPill.layer?.masksToBounds = true
+        backgroundPill.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(backgroundPill)
+
+        indicatorBar.wantsLayer = true
+        indicatorBar.layer?.cornerRadius = 1.5
+        indicatorBar.layer?.masksToBounds = true
+        indicatorBar.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(indicatorBar)
+
+        let tf = NSTextField(labelWithString: "")
+        tf.lineBreakMode = .byTruncatingTail
+        tf.font = NSFont.systemFont(ofSize: 12)
+        tf.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(tf)
+        self.textField = tf
+
+        NSLayoutConstraint.activate([
+            backgroundPill.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 1),
+            backgroundPill.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -1),
+            backgroundPill.topAnchor.constraint(equalTo: topAnchor, constant: 1),
+            backgroundPill.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -1),
+
+            indicatorBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            indicatorBar.centerYAnchor.constraint(equalTo: centerYAnchor),
+            indicatorBar.widthAnchor.constraint(equalToConstant: 3),
+            indicatorBar.heightAnchor.constraint(equalToConstant: 14),
+
+            tf.leadingAnchor.constraint(equalTo: indicatorBar.trailingAnchor, constant: 5),
+            tf.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            tf.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+
+        updateAppearance()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearance()
+    }
+
+    func configure(title: String, targetPage: Int?, isActive: Bool, isRowSelected: Bool) {
+        if let page = targetPage {
+            textField?.stringValue = "\(title)  (\(page + 1))"
+        } else {
+            textField?.stringValue = title
+        }
+        setActive(isActive, isRowSelected: isRowSelected)
+    }
+
+    func setActive(_ isActive: Bool, isRowSelected: Bool) {
+        self.isActive = isActive
+        self.isRowSelected = isRowSelected
+        updateAppearance()
+    }
+
+    private func updateAppearance() {
+        if isActive {
+            indicatorBar.isHidden = false
+            if isRowSelected {
+                indicatorBar.layer?.backgroundColor = NSColor.white.cgColor
+                backgroundPill.layer?.backgroundColor = NSColor.clear.cgColor
+                textField?.font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+            } else {
+                indicatorBar.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+                backgroundPill.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
+                textField?.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+            }
+        } else {
+            indicatorBar.isHidden = true
+            backgroundPill.layer?.backgroundColor = NSColor.clear.cgColor
+            textField?.font = NSFont.systemFont(ofSize: 12, weight: .regular)
+        }
+    }
+}
+
 /// Custom NSOutlineView that provides contextual menus for outline nodes without changing page selection.
 final class CustomOutlineView: NSOutlineView {
     weak var coordinator: PDFOutlineNSView.Coordinator?
@@ -270,14 +553,20 @@ final class CustomOutlineView: NSOutlineView {
     }
 }
 
-/// Class wrapper around PDFOutlineNode for standard AppKit outline data source identity
+/// Class wrapper around PDFOutlineNode for standard AppKit outline data source identity and parent tracking.
 final class OutlineItemWrapper: NSObject {
     let node: PDFOutlineNode
     let children: [OutlineItemWrapper]
-    
-    init(node: PDFOutlineNode) {
+    weak var parent: OutlineItemWrapper?
+
+    init(node: PDFOutlineNode, parent: OutlineItemWrapper? = nil) {
         self.node = node
-        self.children = node.children.map { OutlineItemWrapper(node: $0) }
+        self.parent = parent
+        let builtChildren = node.children.map { OutlineItemWrapper(node: $0) }
+        self.children = builtChildren
         super.init()
+        for child in builtChildren {
+            child.parent = self
+        }
     }
 }

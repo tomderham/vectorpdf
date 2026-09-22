@@ -6,6 +6,7 @@ import PDFEngine
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        DocumentWindowing.installTabBarPlusButtonHandler()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         for window in NSApp.windows {
@@ -15,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if window.tabGroup?.isTabBarVisible != true {
                     window.toggleTabBar(nil)
                 }
+                TabBarAppearanceHelper.refreshTabs(for: window)
             }
         }
         DispatchQueue.main.async {
@@ -55,6 +57,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
+    }
+
+    @MainActor
+    @objc func newWindowForTab(_ sender: Any?) {
+        if let keyWindow = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first {
+            DocumentWindowing.addEmptyTab(to: keyWindow)
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -136,7 +145,7 @@ struct DocumentWindowView: View {
 }
 
 @main
-struct VectorPDFApp: App {
+struct VectorPDF: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
 
@@ -193,7 +202,7 @@ struct VectorPDFApp: App {
     private var appCommands: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About VectorPDF") {
-                NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: VectorPDFApp.aboutCredits])
+                NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: VectorPDF.aboutCredits])
             }
             Button("Check for Updates...") {
                 GitHubUpdater.shared.checkForUpdates(isManualCheck: true)

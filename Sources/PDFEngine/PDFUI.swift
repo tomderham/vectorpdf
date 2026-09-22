@@ -25,6 +25,7 @@ public struct PDFViewerMainView: View {
     @State private var selectedSidebarTab: Int = 0
     @State private var overviewMode: OverviewMode = .outline
     @State private var sidebarVisibility: NavigationSplitViewVisibility
+    @State private var tocSearchQuery: String = ""
     @FocusState private var isAgentInputFocused: Bool
     @State private var undoToastMessage: String? = nil
     @State private var undoAction: (() -> Void)? = nil
@@ -412,6 +413,7 @@ public struct PDFViewerMainView: View {
                     window.title = viewModel.documentTitle
                     window.representedURL = URL(fileURLWithPath: doc.filePath)
                 }
+                TabBarAppearanceHelper.refreshTabs(for: window)
             }
         )
         .onAppear {
@@ -466,6 +468,7 @@ public struct PDFViewerMainView: View {
             guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
             overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
             selectedSidebarTab = 0
+            tocSearchQuery = ""
         }
         .task {
             // Falls back to a buffered cold-launch open-file path (see
@@ -551,7 +554,49 @@ public struct PDFViewerMainView: View {
                                 Divider()
 
                                 if overviewMode == .outline {
-                                    PDFOutlineNSView(outline: doc.outline, documentIdentity: doc.filePath, viewModel: viewModel) { targetPage in
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "magnifyingglass")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.secondary)
+
+                                        TextField("Search outline...", text: $tocSearchQuery)
+                                            .textFieldStyle(.plain)
+                                            .font(.system(size: 11))
+
+                                        if !tocSearchQuery.isEmpty {
+                                            Button {
+                                                tocSearchQuery = ""
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(Color(nsColor: .controlBackgroundColor))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+                                    )
+                                    .padding(.horizontal, 10)
+                                    .padding(.top, 4)
+                                    .padding(.bottom, 6)
+
+                                    Divider()
+
+                                    PDFOutlineNSView(
+                                        outline: doc.outline,
+                                        documentIdentity: doc.filePath,
+                                        searchQuery: tocSearchQuery,
+                                        currentPage: viewModel.currentPageIndex,
+                                        viewModel: viewModel
+                                    ) { targetPage in
                                         viewModel.jumpToPage(targetPage)
                                     }
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
