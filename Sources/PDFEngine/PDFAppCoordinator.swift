@@ -25,6 +25,21 @@ public enum AgentSynthesisPreference: String, CaseIterable, Codable, Sendable {
     }
 }
 
+/// Defines how 100% scale is interpreted, matching macOS Preview settings:
+/// - physical: "Size on screen equals size on printout" (Preview default)
+/// - pointToPoint: "1 point equals 1 screen point" (72 DPI)
+public enum PDFScaleMode: String, CaseIterable, Codable, Sendable {
+    case physical
+    case pointToPoint
+
+    public var displayName: String {
+        switch self {
+        case .physical: return "Size on Screen Equals Size on Printout"
+        case .pointToPoint: return "1 Point Equals 1 Screen Point"
+        }
+    }
+}
+
 /// Global coordinator that tracks the active PDF document and publishes updates to SwiftUI App menus.
 @MainActor
 public final class PDFViewerAppCoordinator: ObservableObject {
@@ -72,6 +87,31 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     }
     private static let agentSynthesisPreferenceKey = "com.vectorpdf.app.agentSynthesisPreference"
 
+    /// Defines how 100% scale is interpreted. Defaults to .physical ("Size on screen equals size on printout", matching Preview).
+    @Published public var scaleMode: PDFScaleMode = .physical {
+        didSet {
+            UserDefaults.standard.set(scaleMode.rawValue, forKey: Self.scaleModeKey)
+        }
+    }
+    private static let scaleModeKey = "com.vectorpdf.app.scaleMode"
+
+    /// Computes the physical display scale factor (points per inch / 72.0) for a given screen.
+    /// On a Retina MacBook (127.5 DPI), this returns ~1.77. On a 109 DPI display, ~1.51.
+    public static func physicalScale(for screen: NSScreen?) -> CGFloat {
+        guard let screen = screen else { return 1.0 }
+        guard let screenNum = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+            return 1.0
+        }
+        let mmSize = CGDisplayScreenSize(screenNum)
+        guard mmSize.width > 0 else { return 1.0 }
+        let inchWidth = mmSize.width / 25.4
+        let pointsWidth = screen.frame.width
+        guard inchWidth > 0 else { return 1.0 }
+        let pointsDPI = Double(pointsWidth) / inchWidth
+        let scale = pointsDPI / 72.0
+        return max(0.5, CGFloat(scale))
+    }
+
     private var docCancellable: AnyCancellable?
 
     /// Set by AppDelegate when macOS asks the app to open a file (Finder double-click, Dock drop,
@@ -99,6 +139,10 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         if let prefRaw = UserDefaults.standard.string(forKey: Self.agentSynthesisPreferenceKey),
            let pref = AgentSynthesisPreference(rawValue: prefRaw) {
             agentSynthesisPreference = pref
+        }
+        if let scaleRaw = UserDefaults.standard.string(forKey: Self.scaleModeKey),
+           let mode = PDFScaleMode(rawValue: scaleRaw) {
+            scaleMode = mode
         }
     }
 

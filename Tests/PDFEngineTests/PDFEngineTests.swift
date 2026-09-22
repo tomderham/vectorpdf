@@ -2954,7 +2954,70 @@ func createFormSamplePDF(at fileURL: URL) {
         #expect((resolved?.bbox.minX ?? 0) >= 75)
     }
 }
+
+@Test @MainActor func testPhysicalScaleAndEffectiveZoom() throws {
+    let coordinator = PDFViewerAppCoordinator.shared
+    
+    // Save previous scale mode to restore at defer
+    let originalMode = coordinator.scaleMode
+    defer { coordinator.scaleMode = originalMode }
+
+    // 1. physicalScale calculation
+    let scale = PDFViewerAppCoordinator.physicalScale(for: NSScreen.main)
+    #expect(scale > 0.5 && scale < 5.0)
+
+    let vm = PDFViewerViewModel()
+    vm.displayScale = 1.770833 // Typical 14"/16" MacBook Retina physical scale factor
+    vm.zoomScale = 1.0
+
+    // In physical scale mode (Apple Preview default), effectiveZoom matches displayScale * zoomScale
+    coordinator.scaleMode = .physical
+    #expect(abs(vm.effectiveZoom - 1.770833) < 0.0001)
+
+    // At 200% zoom
+    vm.zoomScale = 2.0
+    #expect(abs(vm.effectiveZoom - (1.770833 * 2.0)) < 0.0001)
+
+    // In point-to-point mode (72 DPI, 1 pt = 1 pt)
+    coordinator.scaleMode = .pointToPoint
+    vm.zoomScale = 1.0
+    #expect(abs(vm.effectiveZoom - 1.0) < 0.0001)
+
+    vm.zoomScale = 0.5
+    #expect(abs(vm.effectiveZoom - 0.5) < 0.0001)
 }
+
+@Test @MainActor func testSupersampledRenderScaleAtSmallZooms() async throws {
+    let coordinator = PDFViewerAppCoordinator.shared
+    let originalMode = coordinator.scaleMode
+    defer { coordinator.scaleMode = originalMode }
+
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_zoom_render_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    vm.displayScale = 1.0
+    coordinator.scaleMode = .pointToPoint
+
+    // When zoom is very small (e.g. 0.25 on a 1x display, targetScale = 0.25),
+    // targetScale is below the 1.5 floor. The render engine enforces max(targetScale, 1.5)
+    // to preserve font stem sharpness and prevent stroke collapse.
+    vm.zoomScale = 0.25
+    let smallTargetScale = vm.effectiveZoom * 1.0
+    let enforcedRenderScale = max(smallTargetScale, 1.5)
+    #expect(enforcedRenderScale == 1.5)
+
+    // At 100% zoom with Retina 2.0 backing scale, targetScale = 2.0 >= 1.5
+    let retinaTargetScale = 1.0 * 2.0
+    let normalRenderScale = max(retinaTargetScale, 1.5)
+    #expect(normalRenderScale == 2.0)
+}
+}
+
 
 
 

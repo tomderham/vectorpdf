@@ -19,7 +19,25 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public private(set) var document: PDFDocumentCore?
     @Published public var currentPageIndex: Int = 0
     @Published public var zoomScale: CGFloat = 1.0
+    @Published public var displayScale: CGFloat = 1.0
     @Published public var renderedPages: [Int: NSImage] = [:]
+
+    /// The actual scaling applied to page coordinates on screen.
+    /// In .physical mode (Preview default), scales relative to the display's physical DPI.
+    /// In .pointToPoint mode, 1 point = 1 screen point (72 DPI).
+    public var effectiveZoom: CGFloat {
+        zoomScale * (PDFViewerAppCoordinator.shared.scaleMode == .physical ? displayScale : 1.0)
+    }
+
+    /// Updates the display scale factor based on the window's screen.
+    public func updateDisplayScale(for window: NSWindow?) {
+        let screen = window?.screen ?? NSScreen.main ?? NSScreen.screens.first
+        let newScale = PDFViewerAppCoordinator.physicalScale(for: screen)
+        guard abs(displayScale - newScale) > 0.001 else { return }
+        displayScale = newScale
+        renderedPages = [:]
+        Task { await renderPage(currentPageIndex) }
+    }
     /// Pages currently being rendered by renderActor — checked by renderPage(_:) so rapid repeated
     /// calls for the same not-yet-rendered page (e.g. draw(_:) firing on every scroll tick before
     /// the first render completes) queue at most one actual render request instead of piling up
@@ -274,14 +292,19 @@ public final class PDFViewerViewModel: ObservableObject {
     /// to point.
     public var isTransientWindow: Bool = false
 
-    // Intentionally does NOT call PDFViewerAppCoordinator.shared.registerActive(self) here.
-    // @StateObject's initializer runs as part of SwiftUI constructing the view graph — i.e.
-    // during a view update — and registerActive() mutates several @Published properties on the
-    // coordinator singleton in sequence, which is exactly what "Publishing changes from within
-    // view updates is not allowed" describes and can corrupt AppKit/SwiftUI object lifecycle
-    // bookkeeping. PDFViewerMainView's .onAppear calls registerActive(viewModel) instead, at a
-    // safe time after the view is mounted.
-    public init() {}
+    private var scaleModeCancellable: AnyCancellable?
+
+    public init() {
+        scaleModeCancellable = PDFViewerAppCoordinator.shared.$scaleMode
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.objectWillChange.send()
+                self.renderedPages = [:]
+                Task { await self.renderPage(self.currentPageIndex) }
+            }
+    }
 
     public func loadDocument(from path: String, password: String? = nil) async {
         if isDocumentEdited && document?.filePath != path {
@@ -348,6 +371,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.thumbnailsLoading.removeAll()
             self.currentPageIndex = 0
             self.zoomScale = 1.0
+            let initialScreen = (currentWindow ?? NSApplication.shared.keyWindow)?.screen ?? NSScreen.main ?? NSScreen.screens.first
+            self.displayScale = PDFViewerAppCoordinator.physicalScale(for: initialScreen)
             // Rotation and Two-Page Mode are both per-document — a fresh document always starts
             // unrotated and single-column, and recomputeEffectiveLayout must run at least once for
             // any newly-loaded document regardless, since it's what populates effectivePageYOffsets/
@@ -454,9 +479,19 @@ public final class PDFViewerViewModel: ObservableObject {
         pagesCurrentlyRendering.insert(pageIndex)
         defer { pagesCurrentlyRendering.remove(pageIndex) }
         do {
-            let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: zoomScale * 2.0)
+            let window = currentWindow ?? NSApplication.shared.keyWindow
+            let backingScale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2.0
+            let targetScale = effectiveZoom * backingScale
+            // Supersampling quality floor: at small zooms (e.g. 25%-50%), rendering text in MuPDF below
+            // ~1.5 scale causes FreeType glyph stems to drop below 1 pixel and appear faint/gray.
+            // Rendering at max(targetScale, 1.5) and downsampling via CoreGraphics high-quality area
+            // averaging preserves high-contrast, razor-sharp glyph outlines.
+            let renderScale = max(targetScale, 1.5)
+            let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: renderScale)
             let cgImage = rendered.image
-            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width / 2, height: cgImage.height / 2))
+            let ptWidth = CGFloat(cgImage.width) / (renderScale / effectiveZoom)
+            let ptHeight = CGFloat(cgImage.height) / (renderScale / effectiveZoom)
+            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: ptWidth, height: ptHeight))
             renderedPages[pageIndex] = nsImage
             // Corrects this page's assumed placeholder geometry the first time its real bounds turn
             // out to differ (only ever does anything for documents > 60 pages — see
@@ -1568,7 +1603,9 @@ public final class PDFViewerViewModel: ObservableObject {
         } else {
             availW = 700
         }
-        let targetZoom = availW / effectiveW
+        let targetEffectiveZoom = availW / effectiveW
+        let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? displayScale : 1.0)
+        let targetZoom = targetEffectiveZoom / max(baseScale, 0.1)
         let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
         setZoom(round(clamped * 100) / 100)
     }
@@ -1594,7 +1631,9 @@ public final class PDFViewerViewModel: ObservableObject {
         }
         let scaleX = availW / effectiveW
         let scaleY = availH / pageH
-        let targetZoom = min(scaleX, scaleY)
+        let targetEffectiveZoom = min(scaleX, scaleY)
+        let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? displayScale : 1.0)
+        let targetZoom = targetEffectiveZoom / max(baseScale, 0.1)
         let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
         setZoom(round(clamped * 100) / 100)
     }

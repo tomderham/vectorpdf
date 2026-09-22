@@ -413,7 +413,7 @@ struct VectorPDF: App {
             Button("Actual Size (100%)") {
                 resolvedViewModel?.resetZoom()
             }
-            .keyboardShortcut("0", modifiers: .command)
+            .keyboardShortcut("1", modifiers: .command)
             .disabled(!hasDocument)
 
             Button("Zoom to Fit Width") {
@@ -427,6 +427,23 @@ struct VectorPDF: App {
             }
             .keyboardShortcut("0", modifiers: [.command, .option])
             .disabled(!hasDocument)
+
+            Divider()
+
+            Menu("Define 100% Scale As") {
+                ForEach(PDFScaleMode.allCases, id: \.self) { mode in
+                    Button {
+                        PDFViewerAppCoordinator.shared.scaleMode = mode
+                    } label: {
+                        HStack {
+                            Text(mode.displayName)
+                            if PDFViewerAppCoordinator.shared.scaleMode == mode {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         CommandMenu("Go") {

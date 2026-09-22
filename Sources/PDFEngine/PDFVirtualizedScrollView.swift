@@ -174,8 +174,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
             let widestPage = doc.pageBounds.map { sideways ? $0.height : $0.width }.max() ?? 612
             let maxDocWidth = viewModel.isTwoPageMode ? (widestPage * 2 + 16) : widestPage
-            let contentWidth = max(clipView.bounds.width, (maxDocWidth * viewModel.zoomScale) + 64)
-            let contentHeight = (viewModel.effectiveTotalHeight * viewModel.zoomScale) + 48
+            let contentWidth = max(clipView.bounds.width, (maxDocWidth * viewModel.effectiveZoom) + 64)
+            let contentHeight = (viewModel.effectiveTotalHeight * viewModel.effectiveZoom) + 48
             let newCanvasFrame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
 
             if canvasView.frame != newCanvasFrame {
@@ -205,7 +205,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastNavigatedPage = viewModel.currentPageIndex
                 let targetPage = viewModel.currentPageIndex
                 if targetPage >= 0 && targetPage < doc.pageCount {
-                    let targetY = max(0, (viewModel.effectivePageYOffsets[targetPage] * viewModel.zoomScale) + 16)
+                    let targetY = max(0, (viewModel.effectivePageYOffsets[targetPage] * viewModel.effectiveZoom) + 16)
                     isProgrammaticScroll = true
                     clipView.scroll(to: NSPoint(x: clipView.bounds.origin.x, y: targetY))
                     scrollView.reflectScrolledClipView(clipView)
@@ -244,12 +244,12 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             let pageY = viewModel.effectivePageYOffsets[pageIdx]
             let matchRect = match.highlightQuads.first?.boundingRect ?? CGRect(x: 0, y: 0, width: 200, height: 20)
-            let absoluteY = (pageY + matchRect.midY) * viewModel.zoomScale + 16
+            let absoluteY = (pageY + matchRect.midY) * viewModel.effectiveZoom + 16
             let scrollY = max(0, absoluteY - (clipView.bounds.height / 2))
             
             let pageBounds = doc.pageBounds[pageIdx]
-            let pageX = max(32, (canvasView.bounds.width - (pageBounds.width * viewModel.zoomScale)) / 2)
-            let matchX = (matchRect.midX - pageBounds.minX) * viewModel.zoomScale
+            let pageX = max(32, (canvasView.bounds.width - (pageBounds.width * viewModel.effectiveZoom)) / 2)
+            let matchX = (matchRect.midX - pageBounds.minX) * viewModel.effectiveZoom
             let absoluteX = pageX + matchX
             // Upper-clamped too, not just lower: centering a match near the page's right edge could
             // otherwise request a scroll position beyond how far the content can actually scroll
@@ -274,10 +274,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let targetPageRect = viewModel.resolvedTargetRect(for: snap)
 
             // Map targetPageRect to canvas coordinates matching focusRingRect
-            let targetCanvasX = pFrame.minX + (targetPageRect.minX - pageBounds.minX) * viewModel.zoomScale
-            let targetCanvasY = pFrame.minY + (targetPageRect.minY - pageBounds.minY) * viewModel.zoomScale
-            let targetCanvasW = max(targetPageRect.width * viewModel.zoomScale, 24)
-            let targetCanvasH = max(targetPageRect.height * viewModel.zoomScale, 20)
+            let targetCanvasX = pFrame.minX + (targetPageRect.minX - pageBounds.minX) * viewModel.effectiveZoom
+            let targetCanvasY = pFrame.minY + (targetPageRect.minY - pageBounds.minY) * viewModel.effectiveZoom
+            let targetCanvasW = max(targetPageRect.width * viewModel.effectiveZoom, 24)
+            let targetCanvasH = max(targetPageRect.height * viewModel.effectiveZoom, 20)
             let targetCanvasRect = NSRect(x: targetCanvasX, y: targetCanvasY, width: targetCanvasW, height: targetCanvasH)
 
             // 1. Vertical Scrolling — center bounding box while keeping its entirety visible
@@ -350,7 +350,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
                 let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
                 
-                let unscaledY = max(0, (effectiveCanvasY - 16) / pinchBaseZoom)
+                let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? viewModel.displayScale : 1.0)
+                let unscaledY = max(0, (effectiveCanvasY - 16) / (pinchBaseZoom * baseScale))
                 let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
                 pinchAnchorPage = pageIdx
                 
@@ -382,8 +383,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
             let widestPage = doc.pageBounds.map { sideways ? $0.height : $0.width }.max() ?? 612
             let maxDocWidth = viewModel.isTwoPageMode ? (widestPage * 2 + 16) : widestPage
-            let contentWidth = max(clipView.bounds.width, (maxDocWidth * clampedZoom) + 64)
-            let contentHeight = (viewModel.effectiveTotalHeight * clampedZoom) + 48
+            let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? viewModel.displayScale : 1.0)
+            let effectiveClamped = clampedZoom * baseScale
+            let contentWidth = max(clipView.bounds.width, (maxDocWidth * effectiveClamped) + 64)
+            let contentHeight = (viewModel.effectiveTotalHeight * effectiveClamped) + 48
             let newCanvasFrame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
             if canvasView.frame != newCanvasFrame {
                 canvasView.frame = newCanvasFrame
@@ -429,7 +432,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
             let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
             
-            let unscaledY = max(0, (effectiveCanvasY - 16) / viewModel.zoomScale)
+            let unscaledY = max(0, (effectiveCanvasY - 16) / viewModel.effectiveZoom)
             let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
             
             let targetZoom: CGFloat = (abs(viewModel.zoomScale - 1.0) < 0.05) ? 2.0 : 1.0
@@ -444,8 +447,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
                 let widestPage = doc.pageBounds.map { sideways ? $0.height : $0.width }.max() ?? 612
                 let maxDocWidth = viewModel.isTwoPageMode ? (widestPage * 2 + 16) : widestPage
-                let contentWidth = max(clipView.bounds.width, (maxDocWidth * targetZoom) + 64)
-                let contentHeight = (viewModel.effectiveTotalHeight * targetZoom) + 48
+                let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? viewModel.displayScale : 1.0)
+                let effectiveTarget = targetZoom * baseScale
+                let contentWidth = max(clipView.bounds.width, (maxDocWidth * effectiveTarget) + 64)
+                let contentHeight = (viewModel.effectiveTotalHeight * effectiveTarget) + 48
                 canvasView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
                 
                 if let newFrame = canvasView.pageFrame(for: pageIdx) {
@@ -471,7 +476,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             let clipView = scrollView.contentView
             let currentScrollY = max(0, clipView.bounds.origin.y - 16)
-            let unscaledY = currentScrollY / viewModel.zoomScale
+            let unscaledY = currentScrollY / viewModel.effectiveZoom
             
             // Rapid O(log N) binary search for active page
             let activePage = viewModel.effectivePageIndex(atYOffset: unscaledY + 80)

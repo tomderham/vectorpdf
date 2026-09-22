@@ -59,7 +59,7 @@ public final class PDFFormTextField: NSTextField, NSTextFieldDelegate {
     public func updateZoom(frame: NSRect) {
         let fontSize: CGFloat
         if widget.fontSize > 0 {
-            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.zoomScale
+            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.effectiveZoom
             fontSize = max(5, min(72, widget.fontSize * zoom))
         } else {
             fontSize = max(6, min(48, frame.height * 0.56))
@@ -165,7 +165,7 @@ public final class PDFFormSecureTextField: NSSecureTextField, NSTextFieldDelegat
     public func updateZoom(frame: NSRect) {
         let fontSize: CGFloat
         if widget.fontSize > 0 {
-            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.zoomScale
+            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.effectiveZoom
             fontSize = max(5, min(72, widget.fontSize * zoom))
         } else {
             fontSize = max(6, min(48, frame.height * 0.56))
@@ -663,7 +663,7 @@ public final class PDFFormCombTextField: NSControl {
         let cellHeight = frame.height
         let fontSize: CGFloat
         if widget.fontSize > 0 {
-            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.zoomScale
+            let zoom = widget.rect.height > 0 ? (frame.height / widget.rect.height) : viewModel.effectiveZoom
             fontSize = max(6, min(48, widget.fontSize * zoom))
         } else {
             fontSize = max(6, min(48, cellHeight * 0.65))

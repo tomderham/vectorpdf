@@ -58,6 +58,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         needsDisplay = true
     }
 
+    public override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        viewModel.updateDisplayScale(for: window)
+        needsDisplay = true
+    }
+
+    public override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let win = window {
+            viewModel.updateDisplayScale(for: win)
+        }
+    }
+
     /// The image actually drawn on screen for a page — the rendered bitmap as-is in light mode,
     /// or a cached inverted version in dark mode. Falls back to the un-inverted image if inversion
     /// fails for any reason (never worth blocking the page from showing at all).
@@ -221,7 +234,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     public func pageFrame(for pageIndex: Int) -> NSRect? {
         guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
         let pBounds = doc.pageBounds[pageIndex]
-        let y = 16 + (viewModel.effectivePageYOffsets[pageIndex] * viewModel.zoomScale)
+        let y = 16 + (viewModel.effectivePageYOffsets[pageIndex] * viewModel.effectiveZoom)
 
         if viewModel.isTwoPageMode {
             // Both pages of a pair share the same row (same y, computed above), placed left/right
@@ -232,12 +245,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             let pairStart = isLeft ? pageIndex : pageIndex - 1
             let rightIndex = pairStart + 1
             let hasRight = rightIndex < doc.pageCount
-            let leftWidth = doc.pageBounds[pairStart].width * viewModel.zoomScale
-            let rightWidth = hasRight ? doc.pageBounds[rightIndex].width * viewModel.zoomScale : 0
+            let leftWidth = doc.pageBounds[pairStart].width * viewModel.effectiveZoom
+            let rightWidth = hasRight ? doc.pageBounds[rightIndex].width * viewModel.effectiveZoom : 0
             let pairWidth = leftWidth + (hasRight ? pageGap + rightWidth : 0)
             let pairX = max(32, (bounds.width - pairWidth) / 2)
-            let w = pBounds.width * viewModel.zoomScale
-            let h = pBounds.height * viewModel.zoomScale
+            let w = pBounds.width * viewModel.effectiveZoom
+            let h = pBounds.height * viewModel.effectiveZoom
             let x = isLeft ? pairX : pairX + leftWidth + pageGap
             return NSRect(x: x, y: y, width: w, height: h)
         }
@@ -246,15 +259,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         // bounds — see effectivePageYOffsets's doc comment. viewRotationDegrees is 0 far more often
         // than not, so this stays exactly the pre-rotation math in the common case.
         let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
-        let w = (sideways ? pBounds.height : pBounds.width) * viewModel.zoomScale
-        let h = (sideways ? pBounds.width : pBounds.height) * viewModel.zoomScale
+        let w = (sideways ? pBounds.height : pBounds.width) * viewModel.effectiveZoom
+        let h = (sideways ? pBounds.width : pBounds.height) * viewModel.effectiveZoom
         let x = max(32, (bounds.width - w) / 2)
         return NSRect(x: x, y: y, width: w, height: h)
     }
 
     public func pageInfo(at canvasPoint: CGPoint) -> (pageIndex: Int, frame: NSRect, pagePoint: CGPoint)? {
         guard viewModel.document != nil else { return nil }
-        let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.zoomScale)
+        let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.effectiveZoom)
         let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
         guard let pFrame = pageFrame(for: pageIdx) else { return nil }
 
@@ -264,8 +277,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             // inert while rotated (see PDFViewerViewModel.viewRotationDegrees's doc comment), so an
             // uncorrected value here is simply never acted on rather than needing to be right.
             let pBounds = viewModel.document!.pageBounds[pageIdx]
-            let pageX = pBounds.minX + ((canvasPoint.x - pFrame.minX) / viewModel.zoomScale)
-            let pageY = pBounds.minY + ((canvasPoint.y - pFrame.minY) / viewModel.zoomScale)
+            let pageX = pBounds.minX + ((canvasPoint.x - pFrame.minX) / viewModel.effectiveZoom)
+            let pageY = pBounds.minY + ((canvasPoint.y - pFrame.minY) / viewModel.effectiveZoom)
             return (pageIdx, pFrame, CGPoint(x: pageX, y: pageY))
         }
         return nil
@@ -295,24 +308,24 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     func widgetScreenFrame(for widget: PDFFormWidget, pageFrame: NSRect, pageBounds: CGRect) -> NSRect {
         let isChoice = (widget.type == .combobox || widget.type == .listbox)
         let isButton = (widget.type == .checkbox || widget.type == .radiobutton)
-        let vx = pageFrame.minX + (widget.rect.minX - pageBounds.minX) * viewModel.zoomScale
-        let vy = pageFrame.minY + (widget.rect.minY - pageBounds.minY) * viewModel.zoomScale
+        let vx = pageFrame.minX + (widget.rect.minX - pageBounds.minX) * viewModel.effectiveZoom
+        let vy = pageFrame.minY + (widget.rect.minY - pageBounds.minY) * viewModel.effectiveZoom
 
         let vw: CGFloat
         let vh: CGFloat
         if isButton {
             // Checkboxes and radio buttons strictly scale with zoom, with no minimum size,
             // so the mask/control never intrude on adjacent form labels or sibling rows.
-            vw = widget.rect.width * viewModel.zoomScale
-            vh = widget.rect.height * viewModel.zoomScale
+            vw = widget.rect.width * viewModel.effectiveZoom
+            vh = widget.rect.height * viewModel.effectiveZoom
         } else if isChoice {
             let baseWidth = max(widget.rect.width, 85.0)
-            vw = max(baseWidth * viewModel.zoomScale, 40)
-            vh = max(widget.rect.height * viewModel.zoomScale, 14)
+            vw = max(baseWidth * viewModel.effectiveZoom, 40)
+            vh = max(widget.rect.height * viewModel.effectiveZoom, 14)
         } else {
             // Text fields keep a legibility/click-target floor at low zoom.
-            vw = max(widget.rect.width * viewModel.zoomScale, 16)
-            vh = max(widget.rect.height * viewModel.zoomScale, 14)
+            vw = max(widget.rect.width * viewModel.effectiveZoom, 16)
+            vh = max(widget.rect.height * viewModel.effectiveZoom, 14)
         }
         return NSRect(x: vx, y: vy, width: vw, height: vh)
     }
@@ -347,6 +360,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
         
+        // High-quality area-averaging interpolation for razor-sharp downscaled text and lines
+        NSGraphicsContext.current?.imageInterpolation = .high
+        
         // Canvas background
         NSColor.windowBackgroundColor.setFill()
         dirtyRect.fill()
@@ -354,8 +370,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         pruneInvertedPageCache()
 
         // Determine visible page range intersecting dirtyRect via binary search
-        let unscaledMinY = max(0, (dirtyRect.minY - 16) / viewModel.zoomScale)
-        let unscaledMaxY = max(0, (dirtyRect.maxY - 16) / viewModel.zoomScale)
+        let unscaledMinY = max(0, (dirtyRect.minY - 16) / viewModel.effectiveZoom)
+        let unscaledMaxY = max(0, (dirtyRect.maxY - 16) / viewModel.effectiveZoom)
         let firstPage = viewModel.effectivePageIndex(atYOffset: unscaledMinY)
         let lastPage = viewModel.effectivePageIndex(atYOffset: unscaledMaxY)
         
@@ -400,21 +416,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             // light-on-dark rather than a bright rectangle breaking up an otherwise dark app.
             if let image = viewModel.renderedPages[pageIdx] {
                 let displayImg = displayImage(for: pageIdx, source: image)
+                let alignedFrame = backingAlignedRect(pFrame, options: .alignAllEdgesNearest)
                 if viewModel.viewRotationDegrees == 0 {
-                    displayImg.draw(in: pFrame)
+                    displayImg.draw(in: alignedFrame)
                 } else if let cgContext = NSGraphicsContext.current?.cgContext {
                     // Draws the page's native (unrotated) bitmap through the same rotation
                     // transform pageFrame used to compute pFrame's swapped width/height, so the
                     // rotated image always exactly fills pFrame with no gap or overflow.
-                    let scaledW = pBounds.width * viewModel.zoomScale
-                    let scaledH = pBounds.height * viewModel.zoomScale
+                    let scaledW = pBounds.width * viewModel.effectiveZoom
+                    let scaledH = pBounds.height * viewModel.effectiveZoom
                     cgContext.saveGState()
-                    cgContext.translateBy(x: pFrame.minX, y: pFrame.minY)
+                    cgContext.translateBy(x: alignedFrame.minX, y: alignedFrame.minY)
                     cgContext.concatenate(Self.rotationTransform(degrees: viewModel.viewRotationDegrees, nativeWidth: scaledW, nativeHeight: scaledH))
                     displayImg.draw(in: CGRect(x: 0, y: 0, width: scaledW, height: scaledH))
                     cgContext.restoreGState()
                 } else {
-                    displayImg.draw(in: pFrame)
+                    displayImg.draw(in: alignedFrame)
                 }
             } else {
                 // Asynchronously render on demand
@@ -469,7 +486,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             // the normal single-page, unrotated view to use search/selection/links/forms again.
             guard viewModel.isInteractiveViewingMode else { continue }
 
-            // 2.5 User Annotations (Highlights, Underlines, Strikethroughs, Ink)
+            // 2.5 Page Annotations (Highlights, Underlines, Strikeouts, Freehand Ink, FreeText)
             if let annots = viewModel.pageAnnotations[pageIdx] {
                 for annot in annots {
                     switch annot.type {
@@ -477,23 +494,23 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         annot.color.highlightFillColor.setFill()
                         for quad in annot.quads {
                             let r = quad.boundingRect
-                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                            let qw = max(r.width * viewModel.zoomScale, 2)
-                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                            let qw = max(r.width * viewModel.effectiveZoom, 2)
+                            let qh = max(r.height * viewModel.effectiveZoom, 4)
                             let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
                             let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
                             path.fill()
                         }
                     case .underline:
                         annot.color.nsColor.setStroke()
-                        let lineWidth = max(1.5 * viewModel.zoomScale, 1.5)
+                        let lineWidth = max(1.5 * viewModel.effectiveZoom, 1.5)
                         for quad in annot.quads {
                             let r = quad.boundingRect
-                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                            let qw = max(r.width * viewModel.zoomScale, 2)
-                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                            let qw = max(r.width * viewModel.effectiveZoom, 2)
+                            let qh = max(r.height * viewModel.effectiveZoom, 4)
                             let yPos = qy + qh - lineWidth * 0.5
                             let path = NSBezierPath()
                             path.lineWidth = lineWidth
@@ -503,13 +520,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         }
                     case .strikeout:
                         annot.color.nsColor.setStroke()
-                        let lineWidth = max(1.5 * viewModel.zoomScale, 1.5)
+                        let lineWidth = max(1.5 * viewModel.effectiveZoom, 1.5)
                         for quad in annot.quads {
                             let r = quad.boundingRect
-                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                            let qw = max(r.width * viewModel.zoomScale, 2)
-                            let qh = max(r.height * viewModel.zoomScale, 4)
+                            let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                            let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                            let qw = max(r.width * viewModel.effectiveZoom, 2)
+                            let qh = max(r.height * viewModel.effectiveZoom, 4)
                             let yPos = qy + qh * 0.55
                             let path = NSBezierPath()
                             path.lineWidth = lineWidth
@@ -521,11 +538,11 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         guard !annot.inkPoints.isEmpty else { continue }
                         annot.color.nsColor.setStroke()
                         annot.color.nsColor.setFill()
-                        let lineWidth = max(annot.strokeWidth * viewModel.zoomScale, 1.0)
+                        let lineWidth = max(annot.strokeWidth * viewModel.effectiveZoom, 1.0)
                         if annot.inkPoints.count == 1 {
                             let p = annot.inkPoints[0]
-                            let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.zoomScale
-                            let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.zoomScale
+                            let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.effectiveZoom
+                            let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.effectiveZoom
                             let dotRect = NSRect(x: cx - lineWidth * 0.5, y: cy - lineWidth * 0.5, width: lineWidth, height: lineWidth)
                             let dot = NSBezierPath(ovalIn: dotRect)
                             dot.fill()
@@ -536,23 +553,23 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             path.lineJoinStyle = .round
                             let first = annot.inkPoints[0]
                             path.move(to: NSPoint(
-                                x: pFrame.minX + (first.x - pBounds.minX) * viewModel.zoomScale,
-                                y: pFrame.minY + (first.y - pBounds.minY) * viewModel.zoomScale
+                                x: pFrame.minX + (first.x - pBounds.minX) * viewModel.effectiveZoom,
+                                y: pFrame.minY + (first.y - pBounds.minY) * viewModel.effectiveZoom
                             ))
                             for pt in annot.inkPoints.dropFirst() {
                                 path.line(to: NSPoint(
-                                    x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.zoomScale,
-                                    y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.zoomScale
+                                    x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.effectiveZoom,
+                                    y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.effectiveZoom
                                 ))
                             }
                             path.stroke()
                         }
                     case .freeText:
                         guard let rect = annot.rect, !annot.text.isEmpty else { continue }
-                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.zoomScale
-                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.zoomScale
-                        let rw = max(rect.width * viewModel.zoomScale, 60)
-                        let rh = max(rect.height * viewModel.zoomScale, 20)
+                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
+                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+                        let rw = max(rect.width * viewModel.effectiveZoom, 60)
+                        let rh = max(rect.height * viewModel.effectiveZoom, 20)
                         let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
 
                         // If currently editing this annotation inline, draw dashed focus outline
@@ -566,7 +583,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             continue
                         }
 
-                        let fSize = max((annot.fontSize ?? 13.0) * viewModel.zoomScale, 8.0)
+                        let fSize = max((annot.fontSize ?? 13.0) * viewModel.effectiveZoom, 8.0)
                         let font = NSFont.systemFont(ofSize: fSize)
                         let attrs: [NSAttributedString.Key: Any] = [
                             .font: font,
@@ -582,11 +599,11 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             if currentDrawingPageIndex == pageIdx && !currentDrawingPoints.isEmpty {
                 viewModel.selectedAnnotationColor.nsColor.setStroke()
                 viewModel.selectedAnnotationColor.nsColor.setFill()
-                let lineWidth = max(viewModel.drawStrokeWidth * viewModel.zoomScale, 1.0)
+                let lineWidth = max(viewModel.drawStrokeWidth * viewModel.effectiveZoom, 1.0)
                 if currentDrawingPoints.count == 1 {
                     let p = currentDrawingPoints[0]
-                    let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.zoomScale
-                    let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.zoomScale
+                    let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.effectiveZoom
+                    let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.effectiveZoom
                     let dotRect = NSRect(x: cx - lineWidth * 0.5, y: cy - lineWidth * 0.5, width: lineWidth, height: lineWidth)
                     let dot = NSBezierPath(ovalIn: dotRect)
                     dot.fill()
@@ -597,13 +614,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                     path.lineJoinStyle = .round
                     let first = currentDrawingPoints[0]
                     path.move(to: NSPoint(
-                        x: pFrame.minX + (first.x - pBounds.minX) * viewModel.zoomScale,
-                        y: pFrame.minY + (first.y - pBounds.minY) * viewModel.zoomScale
+                        x: pFrame.minX + (first.x - pBounds.minX) * viewModel.effectiveZoom,
+                        y: pFrame.minY + (first.y - pBounds.minY) * viewModel.effectiveZoom
                     ))
                     for pt in currentDrawingPoints.dropFirst() {
                         path.line(to: NSPoint(
-                            x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.zoomScale,
-                            y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.zoomScale
+                            x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.effectiveZoom,
+                            y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.effectiveZoom
                         ))
                     }
                     path.stroke()
@@ -616,10 +633,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 let isActive = viewModel.isActiveMatch(match)
                 for quad in match.highlightQuads {
                     let r = quad.boundingRect
-                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                    let qw = max(r.width * viewModel.zoomScale, 4)
-                    let qh = max(r.height * viewModel.zoomScale, 8)
+                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                    let qw = max(r.width * viewModel.effectiveZoom, 4)
+                    let qh = max(r.height * viewModel.effectiveZoom, 8)
                     let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
                     let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
                     
@@ -654,10 +671,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 let isRectMode = (selResult.mode == .rectangularArea)
                 for quad in selResult.highlightQuads {
                     let r = quad.boundingRect
-                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                    let qw = max(r.width * viewModel.zoomScale, 2)
-                    let qh = max(r.height * viewModel.zoomScale, 4)
+                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                    let qw = max(r.width * viewModel.effectiveZoom, 2)
+                    let qh = max(r.height * viewModel.effectiveZoom, 4)
                     let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
                     let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
 
@@ -690,10 +707,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             
             // 6. Hovered Link Highlight
             if let hLink = hoveredLink, hLink.targetPage == pageIdx, let r = hLink.sourceRect {
-                let lx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.zoomScale
-                let ly = pFrame.minY + (r.minY - pBounds.minY) * viewModel.zoomScale
-                let lw = max(r.width * viewModel.zoomScale, 10)
-                let lh = max(r.height * viewModel.zoomScale, 10)
+                let lx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                let ly = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                let lw = max(r.width * viewModel.effectiveZoom, 10)
+                let lh = max(r.height * viewModel.effectiveZoom, 10)
                 let linkRect = NSRect(x: lx, y: ly, width: lw, height: lh)
                 
                 let path = NSBezierPath(roundedRect: linkRect, xRadius: 2, yRadius: 2)
@@ -709,10 +726,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         let targetRect = viewModel.resolvedTargetRect(for: activeSnap)
 
         // Map to canvas coordinates
-        let sx = pageFrame.minX + (targetRect.minX - pageBounds.minX) * viewModel.zoomScale
-        let sy = pageFrame.minY + (targetRect.minY - pageBounds.minY) * viewModel.zoomScale
-        let sw = max(targetRect.width * viewModel.zoomScale, 24)
-        let sh = max(targetRect.height * viewModel.zoomScale, 20)
+        let sx = pageFrame.minX + (targetRect.minX - pageBounds.minX) * viewModel.effectiveZoom
+        let sy = pageFrame.minY + (targetRect.minY - pageBounds.minY) * viewModel.effectiveZoom
+        let sw = max(targetRect.width * viewModel.effectiveZoom, 24)
+        let sh = max(targetRect.height * viewModel.effectiveZoom, 20)
 
         // Ensure the focus ring stays strictly within the visible page frame
         let safeMargin: CGFloat = 4
@@ -824,8 +841,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             let currentCanvas = convert(event.locationInWindow, from: nil)
             let pBounds = doc.pageBounds[dragPageIdx]
             let currentPagePoint = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.zoomScale),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.zoomScale)
+                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
             )
             currentDrawingPoints.append(currentPagePoint)
             needsDisplay = true
@@ -851,8 +868,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         let pBounds = doc.pageBounds[dragPageIdx]
 
         let startPagePoint = CGPoint(
-            x: pBounds.minX + ((startCanvas.x - pFrame.minX) / viewModel.zoomScale),
-            y: pBounds.minY + ((startCanvas.y - pFrame.minY) / viewModel.zoomScale)
+            x: pBounds.minX + ((startCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+            y: pBounds.minY + ((startCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
         )
 
         let isOptionPressed = event.modifierFlags.contains(.option)
@@ -873,8 +890,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         }
 
         let currentPagePoint = CGPoint(
-            x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.zoomScale),
-            y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.zoomScale)
+            x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+            y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
         )
 
         viewModel.handleDragSelect(
@@ -1358,14 +1375,14 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
               let rect = annotation.rect else { return }
 
         let pBounds = doc.pageBounds[pageIndex]
-        let canvasX = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.zoomScale
-        let canvasY = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.zoomScale
-        let canvasW = max(rect.width * viewModel.zoomScale, 120)
-        let canvasH = max(rect.height * viewModel.zoomScale, 26)
+        let canvasX = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
+        let canvasY = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+        let canvasW = max(rect.width * viewModel.effectiveZoom, 120)
+        let canvasH = max(rect.height * viewModel.effectiveZoom, 26)
 
         let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
         tf.stringValue = annotation.text
-        tf.font = NSFont.systemFont(ofSize: max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.zoomScale, 10.0))
+        tf.font = NSFont.systemFont(ofSize: max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.effectiveZoom, 10.0))
         tf.textColor = annotation.color.nsColor
         tf.backgroundColor = isDarkMode ? NSColor.windowBackgroundColor : NSColor.white
         tf.drawsBackground = true
@@ -1388,14 +1405,14 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
               let doc = viewModel.document else { return }
 
         let pBounds = doc.pageBounds[pageIndex]
-        let canvasX = pFrame.minX + (pagePoint.x - pBounds.minX) * viewModel.zoomScale
-        let canvasY = pFrame.minY + (pagePoint.y - pBounds.minY) * viewModel.zoomScale
+        let canvasX = pFrame.minX + (pagePoint.x - pBounds.minX) * viewModel.effectiveZoom
+        let canvasY = pFrame.minY + (pagePoint.y - pBounds.minY) * viewModel.effectiveZoom
         let canvasW: CGFloat = 160
-        let canvasH = max(viewModel.selectedFontSize * viewModel.zoomScale + 10, 26)
+        let canvasH = max(viewModel.selectedFontSize * viewModel.effectiveZoom + 10, 26)
 
         let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
         tf.placeholderString = "Type text..."
-        tf.font = NSFont.systemFont(ofSize: max(viewModel.selectedFontSize * viewModel.zoomScale, 10.0))
+        tf.font = NSFont.systemFont(ofSize: max(viewModel.selectedFontSize * viewModel.effectiveZoom, 10.0))
         tf.textColor = viewModel.selectedAnnotationColor.nsColor
         tf.backgroundColor = isDarkMode ? NSColor.windowBackgroundColor : NSColor.white
         tf.drawsBackground = true
@@ -1591,8 +1608,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         let visible = visibleRect
         guard visible.width > 0 && visible.height > 0 else { return }
         
-        let unscaledMinY = max(0, (visible.minY - 16) / viewModel.zoomScale)
-        let unscaledMaxY = max(0, (visible.maxY - 16) / viewModel.zoomScale)
+        let unscaledMinY = max(0, (visible.minY - 16) / viewModel.effectiveZoom)
+        let unscaledMaxY = max(0, (visible.maxY - 16) / viewModel.effectiveZoom)
         let firstPage = viewModel.effectivePageIndex(atYOffset: unscaledMinY)
         let lastPage = viewModel.effectivePageIndex(atYOffset: unscaledMaxY)
         
