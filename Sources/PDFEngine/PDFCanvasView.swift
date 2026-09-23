@@ -15,8 +15,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     
     // Mouse interaction state
     private var hoveredLink: SnapshotTarget?
+    private var pendingLinkTarget: (target: SnapshotTarget, isOption: Bool)?
     private var dragStartCanvasPoint: CGPoint?
     private var isDraggingSelection: Bool = false
+    private var hasDraggedPastThreshold: Bool = false
     private var activeDragPage: Int?
     
     // Freehand drawing in-progress state
@@ -220,7 +222,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         for area in trackingAreas {
             removeTrackingArea(area)
         }
-        let options: NSTrackingArea.Options = [.activeInKeyWindow, .mouseMoved, .cursorUpdate]
+        let options: NSTrackingArea.Options = [.activeInKeyWindow, .mouseMoved, .cursorUpdate, .mouseEnteredAndExited]
         addTrackingArea(NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil))
     }
     
@@ -706,7 +708,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             
             // 6. Hovered Link Highlight
-            if let hLink = hoveredLink, hLink.targetPage == pageIdx, let r = hLink.sourceRect {
+            if let hLink = hoveredLink, hLink.sourcePage == pageIdx, let r = hLink.sourceRect {
                 let lx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
                 let ly = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
                 let lw = max(r.width * viewModel.effectiveZoom, 10)
@@ -805,22 +807,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         if let (pageIdx, _, pagePoint) = pageInfo(at: point),
            let links = viewModel.pageLinks[pageIdx],
            let clickedLink = links.first(where: { $0.sourceRect?.contains(pagePoint) == true }) {
-            if let uri = clickedLink.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
-                NSWorkspace.shared.open(url)
-                return
-            } else if clickedLink.targetPage >= 0 {
-                // Option-click opens the target in a separate snapshot window instead of
-                // navigating away in place — a shortcut alongside the equivalent context-menu
-                // item, for comparing it against the text that pointed to it without losing your
-                // reading position. Plain click keeps its existing in-place-navigate behavior.
-                if event.modifierFlags.contains(.option) {
-                    viewModel.openSnapshotInNewWindow(clickedLink)
-                } else {
-                    // Scroll to and focus the exact destination point (including same-page targets).
-                    viewModel.jumpToSnapshot(clickedLink)
-                }
-                return
-            }
+            pendingLinkTarget = (target: clickedLink, isOption: event.modifierFlags.contains(.option))
+            dragStartCanvasPoint = point
+            activeDragPage = pageIdx
+            isDraggingSelection = true
+            hasDraggedPastThreshold = false
+            return
         }
         
         // Otherwise begin drag selection
@@ -828,6 +820,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             dragStartCanvasPoint = point
             activeDragPage = pageIdx
             isDraggingSelection = true
+            hasDraggedPastThreshold = false
             viewModel.clearSelection()
             needsDisplay = true
         }
@@ -865,6 +858,27 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
               let doc = viewModel.document else { return }
 
         let currentCanvas = convert(event.locationInWindow, from: nil)
+        let dragDistance = hypot(currentCanvas.x - startCanvas.x, currentCanvas.y - startCanvas.y)
+
+        if !hasDraggedPastThreshold {
+            if dragDistance > 3.0 {
+                hasDraggedPastThreshold = true
+                if pendingLinkTarget != nil {
+                    pendingLinkTarget = nil
+                    viewModel.clearSelection()
+                    hoveredLink = nil
+                }
+                let isOption = event.modifierFlags.contains(.option)
+                if isOption {
+                    NSCursor.crosshair.set()
+                } else {
+                    NSCursor.iBeam.set()
+                }
+            } else {
+                return
+            }
+        }
+
         let pBounds = doc.pageBounds[dragPageIdx]
 
         let startPagePoint = CGPoint(
@@ -924,9 +938,46 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
 
+        let pending = pendingLinkTarget
+        pendingLinkTarget = nil
+        let wasDragged = hasDraggedPastThreshold
+        hasDraggedPastThreshold = false
         isDraggingSelection = false
         dragStartCanvasPoint = nil
         activeDragPage = nil
+
+        if let pending = pending, !wasDragged {
+            hoveredLink = nil
+            needsDisplay = true
+
+            // Confirm release point is still within or immediately adjacent to link source rectangle
+            let releasePoint = convert(event.locationInWindow, from: nil)
+            if let (upPageIdx, _, upPagePoint) = pageInfo(at: releasePoint) {
+                if upPageIdx != pending.target.sourcePage ||
+                   (pending.target.sourceRect != nil && !pending.target.sourceRect!.insetBy(dx: -4, dy: -4).contains(upPagePoint)) {
+                    return
+                }
+            } else {
+                return
+            }
+
+            if let uri = pending.target.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
+                NSWorkspace.shared.open(url)
+                return
+            } else if pending.target.targetPage >= 0 {
+                // Option-click opens the target in a separate snapshot window instead of
+                // navigating away in place — a shortcut alongside the equivalent context-menu
+                // item, for comparing it against the text that pointed to it without losing your
+                // reading position. Plain click keeps its existing in-place-navigate behavior.
+                if pending.isOption {
+                    viewModel.openSnapshotInNewWindow(pending.target)
+                } else {
+                    viewModel.clearSelection()
+                    viewModel.jumpToSnapshot(pending.target)
+                }
+                return
+            }
+        }
     }
     
     public override func magnify(with event: NSEvent) {
@@ -989,6 +1040,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         } else {
             NSCursor.arrow.set()
         }
+    }
+    
+    public override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        if hoveredLink != nil {
+            hoveredLink = nil
+            needsDisplay = true
+        }
+        NSCursor.arrow.set()
     }
     
     /// Builds a target for a canvas point with no link or selection under

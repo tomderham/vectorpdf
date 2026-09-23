@@ -3160,6 +3160,113 @@ func createFormSamplePDF(at fileURL: URL) {
     vm.jumpToSnapshot(snap)
     #expect(vm.snapshotJumpToken == initialToken + 2)
 }
+
+@Test @MainActor func testLinkClickOnMouseUpAndDragSelection() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_link_mouseup_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 1000), styleMask: [.borderless], backing: .buffered, defer: false)
+    let canvas = PDFCanvasView(viewModel: vm)
+    canvas.frame = NSRect(x: 0, y: 0, width: 800, height: 1000)
+    window.contentView = canvas
+
+    guard let pFrame = canvas.pageFrame(for: 0), let doc = vm.document else {
+        Issue.record("Missing pageFrame or document")
+        return
+    }
+    let pBounds = doc.pageBounds[0]
+
+    // Create an internal link target on page 0 pointing to page 1
+    let linkSourceRect = CGRect(x: pBounds.minX + 50, y: pBounds.minY + 50, width: 100, height: 20)
+    let linkTarget = SnapshotTarget(
+        label: "Section 2",
+        targetPage: 1,
+        targetPoint: CGPoint(x: 100, y: 100),
+        sourceRect: linkSourceRect,
+        sourcePage: 0
+    )
+    vm.pageLinks[0] = [linkTarget]
+
+    // Canvas coordinates corresponding to the link sourceRect center
+    let canvasClickPoint = CGPoint(
+        x: pFrame.minX + (linkSourceRect.midX - pBounds.minX) * vm.effectiveZoom,
+        y: pFrame.minY + (linkSourceRect.midY - pBounds.minY) * vm.effectiveZoom
+    )
+    let windowClickLocation = canvas.convert(canvasClickPoint, to: nil)
+
+    let mouseDownEvent = NSEvent.mouseEvent(
+        with: .leftMouseDown,
+        location: windowClickLocation,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: window.windowNumber,
+        context: nil,
+        eventNumber: 1,
+        clickCount: 1,
+        pressure: 1.0
+    )!
+
+    // 1. Mouse down over the link: should NOT trigger jump immediately
+    canvas.mouseDown(with: mouseDownEvent)
+    #expect(vm.activeSnapshotTarget == nil)
+
+    // 2. Mouse up at the same point: SHOULD trigger jump
+    let mouseUpEvent = NSEvent.mouseEvent(
+        with: .leftMouseUp,
+        location: windowClickLocation,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: window.windowNumber,
+        context: nil,
+        eventNumber: 2,
+        clickCount: 1,
+        pressure: 0.0
+    )!
+    canvas.mouseUp(with: mouseUpEvent)
+    #expect(vm.activeSnapshotTarget?.id == linkTarget.id)
+
+    // Reset active snapshot target
+    vm.activeSnapshotTarget = nil
+
+    // 3. Mouse down over the link, then DRAG past threshold: should cancel link jump and start drag selection
+    canvas.mouseDown(with: mouseDownEvent)
+    #expect(vm.activeSnapshotTarget == nil)
+
+    let dragPoint = CGPoint(x: canvasClickPoint.x + 50, y: canvasClickPoint.y)
+    let windowDragLocation = canvas.convert(dragPoint, to: nil)
+    let mouseDraggedEvent = NSEvent.mouseEvent(
+        with: .leftMouseDragged,
+        location: windowDragLocation,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: window.windowNumber,
+        context: nil,
+        eventNumber: 3,
+        clickCount: 1,
+        pressure: 1.0
+    )!
+    canvas.mouseDragged(with: mouseDraggedEvent)
+
+    // Mouse up after dragging: link jump must NOT be triggered
+    let mouseUpAfterDragEvent = NSEvent.mouseEvent(
+        with: .leftMouseUp,
+        location: windowDragLocation,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: window.windowNumber,
+        context: nil,
+        eventNumber: 4,
+        clickCount: 1,
+        pressure: 0.0
+    )!
+    canvas.mouseUp(with: mouseUpAfterDragEvent)
+    #expect(vm.activeSnapshotTarget == nil)
+}
 }
 
 
