@@ -20,6 +20,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     private var isDraggingSelection: Bool = false
     private var hasDraggedPastThreshold: Bool = false
     private var activeDragPage: Int?
+    private var lastContextMenuLocation: CGPoint = .zero
     
     // Freehand drawing in-progress state
     private var currentDrawingPoints: [CGPoint] = []
@@ -803,6 +804,23 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
         }
 
+        // Double-click to select word, triple-click to select line
+        if event.clickCount == 2 {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                viewModel.selectWord(at: pagePoint, pageIndex: pageIdx)
+                isDraggingSelection = false
+                needsDisplay = true
+                return
+            }
+        } else if event.clickCount >= 3 {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                viewModel.selectLine(at: pagePoint, pageIndex: pageIdx)
+                isDraggingSelection = false
+                needsDisplay = true
+                return
+            }
+        }
+
         // Check clickable links / cross-references
         if let (pageIdx, _, pagePoint) = pageInfo(at: point),
            let links = viewModel.pageLinks[pageIdx],
@@ -1074,6 +1092,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         // there, rather than one offering actions that don't correspond to what's under the click.
         guard viewModel.isInteractiveViewingMode else { return nil }
         let point = convert(event.locationInWindow, from: nil)
+        self.lastContextMenuLocation = point
 
         // An active selection takes priority over a coincidental cross-reference link at the same
         // point.
@@ -1081,19 +1100,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return buildSelectionMenu(for: sel)
         }
 
-        // Right-clicking a cross-reference link (with no active selection) offers snapshot & open actions.
+        // Right-clicking a cross-reference link (with no active selection) offers anchor & open actions.
         if let link = internalLinkInfo(at: point) {
-            let menu = NSMenu(title: "Reference")
+            let menu = NSMenu(title: "Anchor")
 
             if !viewModel.isTransientWindow {
-                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
-                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage.anchorIcon
                 snapItem.target = self
                 snapItem.representedObject = link
                 menu.addItem(snapItem)
 
-                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
-                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                let snapAndOpenItem = NSMenuItem(title: "Create Anchor and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage.anchorIcon
                 snapAndOpenItem.target = self
                 snapAndOpenItem.representedObject = link
                 menu.addItem(snapAndOpenItem)
@@ -1134,19 +1153,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return menu
         }
 
-        // No link, no selection — offer to create a snapshot from surrounding text or open here in a new window.
+        // No link, no selection — offer to create an anchor from surrounding text or open here in a new window.
         if let target = pointTarget(at: point) {
             let menu = NSMenu(title: "Page")
 
             if !viewModel.isTransientWindow {
-                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
-                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotTargetAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage.anchorIcon
                 snapItem.target = self
                 snapItem.representedObject = target
                 menu.addItem(snapItem)
 
-                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
-                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                let snapAndOpenItem = NSMenuItem(title: "Create Anchor and Open in New Window", action: #selector(snapshotAndOpenTargetAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage.anchorIcon
                 snapAndOpenItem.target = self
                 snapAndOpenItem.representedObject = target
                 menu.addItem(snapAndOpenItem)
@@ -1184,13 +1203,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             if !viewModel.isTransientWindow {
                 menu.addItem(NSMenuItem.separator())
 
-                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
-                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage.anchorIcon
                 snapItem.target = self
                 menu.addItem(snapItem)
 
-                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
-                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                let snapAndOpenItem = NSMenuItem(title: "Create Anchor and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage.anchorIcon
                 snapAndOpenItem.target = self
                 menu.addItem(snapAndOpenItem)
             }
@@ -1201,6 +1220,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
                 copyItem.target = self
                 menu.addItem(copyItem)
+
+                let rawSelectedText = viewModel.activeSelectionCombinedText.trimmingCharacters(in: .whitespacesAndNewlines)
+                let truncated = rawSelectedText.truncatedAtWordBoundary(maxLength: 24)
+
+                let lookUpItem = NSMenuItem(title: "Look Up \"\(truncated)\"", action: #selector(lookUpSelectionAction(_:)), keyEquivalent: "")
+                lookUpItem.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
+                lookUpItem.target = self
+                menu.addItem(lookUpItem)
+
+                let translateItem = NSMenuItem(title: "Translate Selection", action: #selector(translateSelectionAction(_:)), keyEquivalent: "t")
+                translateItem.keyEquivalentModifierMask = [.control, .option]
+                translateItem.image = NSImage(systemSymbolName: "character.bubble", accessibilityDescription: nil)
+                translateItem.target = self
+                menu.addItem(translateItem)
+
+                menu.addItem(NSMenuItem.separator())
 
                 // Highlight submenu with colors
                 let highlightMenu = NSMenu(title: "Highlight")
@@ -1256,13 +1291,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                     menu.addItem(NSMenuItem.separator())
                 }
 
-                let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotAction(_:)), keyEquivalent: "")
-                snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotAction(_:)), keyEquivalent: "")
+                snapItem.image = NSImage.anchorIcon
                 snapItem.target = self
                 menu.addItem(snapItem)
 
-                let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
-                snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                let snapAndOpenItem = NSMenuItem(title: "Create Anchor and Open in New Window", action: #selector(snapshotAndOpenSelectionAction(_:)), keyEquivalent: "")
+                snapAndOpenItem.image = NSImage.anchorIcon
                 snapAndOpenItem.target = self
                 menu.addItem(snapAndOpenItem)
             }
@@ -1279,6 +1314,26 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         menu.addItem(openWindowItem)
 
         return menu
+    }
+
+    @objc private func lookUpSelectionAction(_ sender: NSMenuItem) {
+        let text = viewModel.activeSelectionCombinedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let targetPoint = (lastContextMenuLocation != .zero) ? lastContextMenuLocation : currentSelectionAnchorPoint()
+        self.showDefinition(for: NSAttributedString(string: text), at: targetPoint)
+    }
+
+    @objc private func translateSelectionAction(_ sender: NSMenuItem) {
+        viewModel.translateSelection()
+    }
+
+    private func currentSelectionAnchorPoint() -> CGPoint {
+        if let sel = viewModel.activeSelection, let firstQuad = sel.result.highlightQuads.first {
+            let pIdx = sel.pageIndex
+            let pageY = (viewModel.document?.pageYOffsets.indices.contains(pIdx) == true) ? viewModel.document!.pageYOffsets[pIdx] : 0
+            return CGPoint(x: firstQuad.ul.x, y: pageY + firstQuad.ul.y)
+        }
+        return CGPoint(x: bounds.midX, y: bounds.midY)
     }
 
     @objc private func snapshotTargetAction(_ sender: NSMenuItem) {

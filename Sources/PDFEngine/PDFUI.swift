@@ -1,6 +1,9 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+#if canImport(Translation)
+import Translation
+#endif
 
 // Notifications used for app lifecycle events
 extension Notification.Name {
@@ -98,12 +101,17 @@ public struct PDFViewerMainView: View {
             let inState = ReadingStateManager.shared.state(for: path)?.snapshots.contains(where: { $0.id == target.id }) ?? false
             return inState || viewModel.activeSnapshots.contains(where: { $0.id == target.id })
         } ?? false
-        let bannerTitle = isSaved ? "Snapshot" : "Reference"
+        let bannerTitle = "Anchor"
 
         HStack(spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: isSaved ? "camera.viewfinder" : "macwindow.badge.plus")
-                    .foregroundStyle(Color.accentColor)
+                if isSaved {
+                    Image.anchorIcon
+                        .foregroundStyle(Color.accentColor)
+                } else {
+                    Image(systemName: "macwindow.badge.plus")
+                        .foregroundStyle(Color.accentColor)
+                }
                 Text(bannerTitle)
                     .font(.caption.weight(.semibold))
                 if let target = initialTarget {
@@ -119,7 +127,7 @@ public struct PDFViewerMainView: View {
                     viewModel.jumpToSnapshot(target)
                 }
             }
-            .help(isSaved ? "Click to jump back to this snapshot" : "Click to jump back to this reference")
+            .help("Click to jump back to this anchor")
 
             Spacer()
 
@@ -486,6 +494,7 @@ public struct PDFViewerMainView: View {
                 DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
             }
         }
+        .modifier(TranslationPresentationHelper(viewModel: viewModel))
     }
 
     @ViewBuilder
@@ -502,10 +511,10 @@ public struct PDFViewerMainView: View {
                         .imageScale(.medium)
                         .tag(1)
                         .help("Search Document (Cmd+F)")
-                    Image(systemName: "camera.viewfinder")
+                    Image.anchorIcon
                         .imageScale(.medium)
                         .tag(2)
-                        .help("Snapshots & References")
+                        .help("Anchors")
                     if appCoordinator.showAgentTab {
                         Image(systemName: "sparkles")
                             .imageScale(.medium)
@@ -516,6 +525,11 @@ public struct PDFViewerMainView: View {
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .controlSize(.regular)
+                .segmentedControlTooltips([
+                    "Outline & Thumbnails",
+                    "Search Document (Cmd+F)",
+                    "Anchors"
+                ] + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                 .padding(8)
                 .onChange(of: selectedSidebarTab) { _, newValue in
                     if newValue == 3 {
@@ -548,6 +562,7 @@ public struct PDFViewerMainView: View {
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
                                 .controlSize(.small)
+                                .segmentedControlTooltips(["Outline", "Thumbnails"])
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
 
@@ -709,39 +724,54 @@ public struct PDFViewerMainView: View {
                         // for the Snapshots list a little further down in this file.
                         ScrollViewReader { proxy in
                             ScrollView {
-                                LazyVStack(spacing: 2) {
-                                    ForEach(Array(viewModel.searchResults.enumerated()), id: \.element.id) { index, match in
-                                        SearchResultRowView(
-                                            match: match,
-                                            isActive: viewModel.isActiveMatch(match)
+                                LazyVStack(spacing: 3) {
+                                    ForEach(viewModel.searchPageGroups) { group in
+                                        SearchPageSeparatorView(
+                                            pageIndex: group.pageIndex,
+                                            count: group.matches.count
                                         )
-                                        .onTapGesture {
-                                            DispatchQueue.main.async {
-                                                viewModel.navigateToMatch(at: index, shouldScrollList: false)
+                                        
+                                        ForEach(group.matches) { match in
+                                            SearchResultRowView(
+                                                match: match,
+                                                isActive: viewModel.isActiveMatch(match)
+                                            )
+                                            .onTapGesture {
+                                                DispatchQueue.main.async {
+                                                    viewModel.navigateToMatch(match, shouldScrollList: false)
+                                                }
                                             }
+                                            .contextMenu {
+                                                Button {
+                                                    viewModel.addSnapshot(from: match)
+                                                } label: {
+                                                    Label {
+                                                        Text("Create Anchor")
+                                                    } icon: {
+                                                        Image.anchorIcon
+                                                    }
+                                                }
+
+                                                Button {
+                                                    viewModel.addSnapshotAndOpenInNewWindow(from: match)
+                                                } label: {
+                                                    Label {
+                                                        Text("Create Anchor and Open in New Window")
+                                                    } icon: {
+                                                        Image.anchorIcon
+                                                    }
+                                                }
+
+                                                Divider()
+
+                                                Button {
+                                                    viewModel.openSnapshotInNewWindow(from: match)
+                                                } label: {
+                                                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
+                                                }
+                                            }
+                                            .id(match.id)
                                         }
-                                        .contextMenu {
-                                            Button {
-                                                viewModel.addSnapshot(from: match)
-                                            } label: {
-                                                Label("Create Snapshot", systemImage: "camera.viewfinder")
-                                            }
-
-                                            Button {
-                                                viewModel.addSnapshotAndOpenInNewWindow(from: match)
-                                            } label: {
-                                                Label("Create Snapshot and Open in New Window", systemImage: "camera.badge.ellipsis")
-                                            }
-
-                                            Divider()
-
-                                            Button {
-                                                viewModel.openSnapshotInNewWindow(from: match)
-                                            } label: {
-                                                Label("Open in New Window", systemImage: "macwindow.badge.plus")
-                                            }
-                                        }
-                                        .id(match.id)
                                     }
                                 }
                                 .padding(.horizontal, 6)
@@ -758,18 +788,22 @@ public struct PDFViewerMainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if selectedSidebarTab == 2 {
-                    // Snapshots & Cross-References Tab
+                    // Anchors Tab
                     VStack(spacing: 0) {
                         if viewModel.activeSnapshots.isEmpty {
-                            ContentUnavailableView(
-                                "No Snapshots",
-                                systemImage: "camera.viewfinder",
-                                description: Text("Select text or Option-drag an area, then right-click \u{2192} \"Create Snapshot\" to save it here.")
-                            )
+                            ContentUnavailableView {
+                                Label {
+                                    Text("No Anchors")
+                                } icon: {
+                                    Image.anchorIcon
+                                }
+                            } description: {
+                                Text("Select text, Option-drag an area, or right-click \u{2192} \"Create Anchor\" to pin a location here.")
+                            }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             HStack {
-                                Text("\(viewModel.activeSnapshots.count) Snapshot\(viewModel.activeSnapshots.count == 1 ? "" : "s")")
+                                Text("\(viewModel.activeSnapshots.count) Anchor\(viewModel.activeSnapshots.count == 1 ? "" : "s")")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                 Spacer()
@@ -1141,6 +1175,10 @@ public struct PDFViewerMainView: View {
                 }
                 .pickerStyle(.segmented)
                 .disabled(viewModel.document == nil)
+                .segmentedControlTooltips([
+                    "Text Selection (Reading Order)",
+                    "Area Selection (Hold Option while dragging)"
+                ])
                 .help("Selection Tool: Text Flow or Rectangular Area (Hold Option while dragging for Area)")
             }
             
@@ -1234,33 +1272,68 @@ public struct PDFViewerMainView: View {
     }
 }
 
+private struct SearchPageSeparatorView: View {
+    let pageIndex: Int
+    let count: Int
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            
+            Text("Page \(pageIndex + 1)")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color.primary)
+            
+            Spacer()
+            
+            Text("\(count) \(count == 1 ? "item" : "items")")
+                .font(.caption2.monospacedDigit().weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.accentColor.opacity(0.12))
+                )
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                )
+        )
+        .padding(.top, 8)
+        .padding(.bottom, 2)
+    }
+}
+
 private struct SearchResultRowView: View {
     let match: SearchResult
     let isActive: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text("Page \(match.pageIndex + 1)")
-                    .font(.caption.bold())
-                    .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
-                Spacer()
-            }
-            Text(match.snippet)
-                .font(.caption)
-                .lineLimit(2)
-                .foregroundStyle(isActive ? Color.primary : Color.secondary)
-        }
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isActive ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.03))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(isActive ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.04), lineWidth: 0.5)
-                )
-        )
-        .contentShape(Rectangle())
+        Text(match.snippet)
+            .font(.caption)
+            .lineLimit(3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(isActive ? Color.primary : Color.primary.opacity(0.85))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isActive ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor).opacity(0.55))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .strokeBorder(isActive ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.06), lineWidth: 0.75)
+                    )
+            )
+            .contentShape(Rectangle())
     }
 }
 
@@ -1349,6 +1422,26 @@ private struct SnapshotBannerCloseButton: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
-        .help("Close all snapshot and reference windows opened from the parent document")
+        .help("Close all anchor windows opened from the parent document")
+    }
+}
+
+private struct TranslationPresentationHelper: ViewModifier {
+    @ObservedObject var viewModel: PDFViewerViewModel
+
+    func body(content: Content) -> some View {
+        #if canImport(Translation)
+        if #available(macOS 15.0, *) {
+            content
+                .translationPresentation(
+                    isPresented: $viewModel.isPresentingTranslation,
+                    text: viewModel.translationTargetText ?? ""
+                )
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }

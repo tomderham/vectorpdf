@@ -659,14 +659,14 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     let vm = PDFViewerViewModel()
     let coordinator = PDFOutlineNSView.Coordinator(viewModel: vm, onSelect: { _ in })
 
-    // Node with target page should offer Create Snapshot, Create Snapshot and Open in New Window, and Open in New Window
+    // Node with target page should offer Create Anchor, Create Anchor and Open in New Window, and Open in New Window
     let pageNode = PDFOutlineNode(title: "Introduction", uri: nil, targetPage: 0)
     let menu = coordinator.contextMenu(for: pageNode)
     #expect(menu != nil)
     let items = menu?.items ?? []
     let titles = items.map(\.title)
-    #expect(titles.contains("Create Snapshot"))
-    #expect(titles.contains("Create Snapshot and Open in New Window"))
+    #expect(titles.contains("Create Anchor"))
+    #expect(titles.contains("Create Anchor and Open in New Window"))
     #expect(titles.contains("Open in New Window"))
 
     // External link node without targetPage offers Open Link
@@ -2917,42 +2917,223 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(eqTarget?.text.contains("27-19") == true || eqTarget?.text.contains("y = a") == true)
 }
 
-@Test @MainActor func testRealREVmfD30TargetResolutionIfPresent() async throws {
-    let pdfPath = "/Users/td958143/Library/CloudStorage/GoogleDrive-tom.derham@gmail.com/My Drive/Standards-PDFs/IEEE/Draft P802.11REVmf_D3.0.pdf"
-    guard FileManager.default.fileExists(atPath: pdfPath) else { return }
+@Test @MainActor func testSpatialSelectionBleedAndAdjacentLineSeparation() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_selection_bleed_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
 
-    let doc = try PDFDocumentCore(filePath: pdfPath)
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 12)
+
+    context.beginPDFPage(nil)
+    // Line 48: margin line number at x=40, math symbols line at x=80, y=650
+    ("48" as NSString).draw(at: NSPoint(x: 40, y: 650), withAttributes: [.font: font])
+    ("Nr, Nc, Nr, Nc parameters" as NSString).draw(at: NSPoint(x: 80, y: 650), withAttributes: [.font: font])
+
+    // Line 49: margin line number at x=40, body text at x=80, y=630
+    ("49" as NSString).draw(at: NSPoint(x: 40, y: 630), withAttributes: [.font: font])
+    ("number of rows and columns, respectively" as NSString).draw(at: NSPoint(x: 80, y: 630), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    guard let stext = doc.loadStructuredPage(for: 0) else {
+        #expect(Bool(false), "StructuredPage must load")
+        return
+    }
+
     let selector = SpatialTextSelector()
 
-    // 1. Table 27-14 link from page 4811 -> page 4813
-    let page4811Links = doc.loadLinks(for: 4811)
-    let table14Links = page4811Links.filter { $0.targetPage == 4813 }
-    #expect(!table14Links.isEmpty)
-    if let stext4813 = doc.loadStructuredPage(for: 4813) {
-        for l in table14Links {
-            #expect(l.label.contains("Table 27-14"))
-            if let targetPt = l.targetPoint {
-                let resolved = selector.targetLine(on: stext4813, at: targetPt, label: l.label)
-                #expect(resolved != nil)
-                #expect(resolved?.text.contains("Table 27-14") == true)
-                #expect(resolved?.text.contains("Parameter") == false)
-            }
-        }
+    // 1. Text selection on line 49 must not bleed math symbols from line 48
+    let result = selector.selectText(on: stext, from: CGPoint(x: 80, y: 162), to: CGPoint(x: 250, y: 162))
+    #expect(result.text.contains("number of rows and columns"))
+    #expect(!result.text.contains("Nr"))
+    #expect(!result.text.contains("Nc"))
+
+    // 2. Double-click word selection on "number"
+    if let wordSel = selector.selectWord(at: CGPoint(x: 95, y: 162), on: stext) {
+        #expect(wordSel.text == "number")
+        #expect(!wordSel.highlightQuads.isEmpty)
     }
 
-    // 2. Equation (27-19) link from page 4829 -> page 4843
-    let page4829Links = doc.loadLinks(for: 4829)
-    let eq19Link = page4829Links.first { $0.label.contains("27-19") }
-    #expect(eq19Link != nil)
-    if let eq19Link, let targetPt = eq19Link.targetPoint, let stext4843 = doc.loadStructuredPage(for: eq19Link.targetPage) {
-        let resolved = selector.targetLine(on: stext4843, at: targetPt, label: eq19Link.label)
-        #expect(resolved != nil)
-        #expect(resolved?.text.contains("27-19") == true)
-        #expect(resolved?.text.contains("BEAM_CHANGE") == false)
-        #expect(resolved?.text.contains("where") == false)
-        // Ensure no line numbers in gutter are targeted
-        #expect((resolved?.bbox.minX ?? 0) >= 75)
+    // 3. Triple-click line selection on line 49
+    if let lineSel = selector.selectLine(at: CGPoint(x: 95, y: 162), on: stext) {
+        #expect(lineSel.text.contains("number of rows and columns"))
+        #expect(!lineSel.text.contains("Nr"))
     }
+}
+
+@Test @MainActor func testDeterministicAnchorHeadingAndGutterResolution() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_anchor_heading_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 12)
+    let boldFont = NSFont.boldSystemFont(ofSize: 14)
+
+    context.beginPDFPage(nil)
+    // Section Heading at y=700, margin line number 48 at x=40
+    ("48" as NSString).draw(at: NSPoint(x: 40, y: 700), withAttributes: [.font: font])
+    ("19.3.12.3.6 Compressed beamforming feedback matrix" as NSString).draw(at: NSPoint(x: 80, y: 700), withAttributes: [.font: boldFont])
+
+    // Body Line at y=660, margin line number 49 at x=40
+    ("49" as NSString).draw(at: NSPoint(x: 40, y: 660), withAttributes: [.font: font])
+    ("number of rows and columns, respectively" as NSString).draw(at: NSPoint(x: 80, y: 660), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    vm.document?.outline = [
+        PDFOutlineNode(title: "19.3.12.3.6 Compressed beamforming feedback matrix", uri: nil, targetPage: 0)
+    ]
+
+    // Heading Anchor: deterministic outline matching, excludes line number 48
+    let headingAnchor = vm.buildSnapshotTarget(at: CGPoint(x: 100, y: 92), pageIndex: 0)
+    #expect(headingAnchor.label == "19.3.12.3.6 Compressed beamforming feedback matrix")
+    #expect(headingAnchor.snippet == "19.3.12.3.6 Compressed beamforming feedback matrix")
+    #expect(!headingAnchor.label.contains("48"))
+
+    // Body Anchor: extracts body words, strictly excludes line number 49
+    let bodyAnchor = vm.buildSnapshotTarget(at: CGPoint(x: 100, y: 132), pageIndex: 0)
+    #expect(bodyAnchor.label.contains("number of rows and columns"))
+    #expect(!bodyAnchor.label.contains("49"))
+
+    // Margin click: skips gutter line number and anchors to the body text
+    let marginAnchor = vm.buildSnapshotTarget(at: CGPoint(x: 42, y: 132), pageIndex: 0)
+    #expect(marginAnchor.label.contains("number of rows and columns"))
+    #expect(!marginAnchor.label.contains("49"))
+}
+
+@Test @MainActor func testPageManipulationMarksDocumentDirtyAndSavesOnDemand() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_dirty_tracking_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    // Create 3-page test PDF
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 14)
+    for i in 1...3 {
+        context.beginPDFPage(nil)
+        ("Page \(i) content" as NSString).draw(at: NSPoint(x: 72, y: 700), withAttributes: [.font: font])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let originalData = try Data(contentsOf: pdfURL)
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.isDocumentEdited == false)
+
+    // 1. Rotate Page 0: marks document dirty, but original file on disk is NOT touched yet
+    vm.rotatePage(0, by: 90)
+    #expect(vm.isDocumentEdited == true)
+
+    let fileDataDuringEdit = try Data(contentsOf: pdfURL)
+    #expect(fileDataDuringEdit == originalData) // Disk file was NOT overwritten!
+
+    // 2. Explicit Save: writes changes to disk and clears isDocumentEdited
+    vm.saveDocument()
+    #expect(vm.isDocumentEdited == false)
+
+    let fileDataAfterSave = try Data(contentsOf: pdfURL)
+    #expect(fileDataAfterSave != originalData) // Disk file has now been updated!
+
+    // 3. Delete Page 1: marks document dirty, disk file unchanged until save
+    let dataBeforeDelete = try Data(contentsOf: pdfURL)
+    vm.deletePage(1)
+    #expect(vm.isDocumentEdited == true)
+
+    let fileDataDuringDelete = try Data(contentsOf: pdfURL)
+    #expect(fileDataDuringDelete == dataBeforeDelete)
+
+    // 4. Save updates disk and verifies page count
+    vm.saveDocument()
+    #expect(vm.isDocumentEdited == false)
+    let reloadedDoc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(reloadedDoc.pageCount == 2)
+}
+
+@Test @MainActor func testViewModelWordSelectionAndTranslation() async throws {
+    let vm = PDFViewerViewModel()
+    let selResult = SelectionResult(
+        text: "Bonjour le monde",
+        highlightQuads: [PDFQuad(ul: .zero, ur: CGPoint(x: 100, y: 0), ll: CGPoint(x: 0, y: 20), lr: CGPoint(x: 100, y: 20))],
+        boundingRect: CGRect(x: 0, y: 0, width: 100, height: 20),
+        mode: .readingOrder
+    )
+    vm.activeSelection = (pageIndex: 0, result: selResult)
+    #expect(vm.activeSelectionCombinedText == "Bonjour le monde")
+
+    vm.translateSelection()
+    #expect(vm.translationTargetText == "Bonjour le monde")
+    #expect(vm.isPresentingTranslation == true)
+}
+
+@Test @MainActor func testPageManipulationOperations() async throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("manipulation_test.pdf")
+
+    // Create 3-page PDF
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create test PDF")
+    }
+    for i in 1...3 {
+        context.beginPDFPage(nil)
+        let text = "Page \(i) Content"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 3)
+    let origWidth = doc.pageBounds[0].width
+    let origHeight = doc.pageBounds[0].height
+    #expect(origWidth == 612)
+    #expect(origHeight == 792)
+
+    // 1. Rotate Page 0 by 90 degrees
+    try doc.rotatePage(0, by: 90)
+    #expect(doc.pageBounds[0].width == 792)
+    #expect(doc.pageBounds[0].height == 612)
+
+    // 2. Extract Pages 0 and 2
+    let extractURL = tempDir.appendingPathComponent("extracted.pdf")
+    try doc.extractPages([0, 2], to: extractURL)
+    let extractDoc = try PDFDocumentCore(filePath: extractURL.path)
+    #expect(extractDoc.pageCount == 2)
+
+    // 3. Delete Page 1
+    try doc.deletePage(1)
+    #expect(doc.pageCount == 2)
+
+    // 4. Reorder Page 0 to 1
+    try doc.reorderPage(from: 0, to: 1)
+    #expect(doc.pageCount == 2)
+
+    // 5. Save and reload
+    try doc.save(to: pdfURL.path)
+    let reloadedDoc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(reloadedDoc.pageCount == 2)
 }
 
 @Test @MainActor func testPhysicalScaleAndEffectiveZoom() throws {
@@ -3113,10 +3294,33 @@ func createFormSamplePDF(at fileURL: URL) {
     // Snapshot from selection must focus on the first line rather than the full multi-column union
     let target = vm.buildSnapshotTargetFromSelection()
     #expect(target != nil)
+    #expect(target?.label == "Line 1 in col 1")
     #expect(target?.targetRect != nil)
     // First line width should be ~228pt (300 - 72), not 478pt across both columns!
     #expect((target?.targetRect?.width ?? 0) <= 250)
     #expect(target?.targetRect?.minX == 72)
+
+    // Area selection label fallback
+    let areaResult = SelectionResult(
+        text: "",
+        highlightQuads: [],
+        boundingRect: CGRect(x: 100, y: 100, width: 200, height: 150),
+        mode: .rectangularArea
+    )
+    vm.activeSelection = (pageIndex: 2, result: areaResult)
+    let areaTarget = vm.buildSnapshotTargetFromSelection()
+    #expect(areaTarget?.label == "Area Anchor (Page 3)")
+
+    // Empty reading order selection label fallback
+    let emptyReadingResult = SelectionResult(
+        text: "",
+        highlightQuads: [],
+        boundingRect: CGRect(x: 100, y: 100, width: 50, height: 12),
+        mode: .readingOrder
+    )
+    vm.activeSelection = (pageIndex: 4, result: emptyReadingResult)
+    let emptyReadingTarget = vm.buildSnapshotTargetFromSelection()
+    #expect(emptyReadingTarget?.label == "Anchor (Page 5)")
 }
 
 @Test @MainActor func testResolvedTargetRectAvoidsGutterAndAddsPadding() {
@@ -3266,6 +3470,209 @@ func createFormSamplePDF(at fileURL: URL) {
     )!
     canvas.mouseUp(with: mouseUpAfterDragEvent)
     #expect(vm.activeSnapshotTarget == nil)
+}
+
+@Test @MainActor func testSegmentedControlTooltipsApplied() {
+    let seg = NSSegmentedControl(labels: ["One", "Two", "Three"], trackingMode: .selectOne, target: nil, action: nil)
+    #expect(seg.segmentCount == 3)
+    let tooltips = ["Outline & Thumbnails", "Search Document (Cmd+F)", "Anchors"]
+    SegmentedControlTooltipAccessor.applyTooltips(tooltips, to: seg)
+
+    #expect(seg.toolTip(forSegment: 0) == "Outline & Thumbnails")
+    #expect(seg.toolTip(forSegment: 1) == "Search Document (Cmd+F)")
+    #expect(seg.toolTip(forSegment: 2) == "Anchors")
+}
+
+@Test func testThumbnailDropLogicCalculation() {
+    // 4-page document: pages 0, 1, 2, 3 (display as 1, 2, 3, 4)
+    // Dragging Page 1 (index 0) forward:
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndex: 0) == false) // before page 1 -> no-op
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 1, fromIndex: 0) == false) // between 1 and 2 -> no-op
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 2, fromIndex: 0) == true)  // between 2 and 3
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 3, fromIndex: 0) == true)  // between 3 and 4
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 4, fromIndex: 0) == true)  // after 4 (at end)
+
+    #expect(ThumbnailDropLogic.destinationIndex(from: 0, slot: 0) == nil)
+    #expect(ThumbnailDropLogic.destinationIndex(from: 0, slot: 1) == nil)
+    #expect(ThumbnailDropLogic.destinationIndex(from: 0, slot: 2) == 1) // becomes Page 2
+    #expect(ThumbnailDropLogic.destinationIndex(from: 0, slot: 3) == 2) // becomes Page 3
+    #expect(ThumbnailDropLogic.destinationIndex(from: 0, slot: 4) == 3) // becomes Page 4
+
+    // Badge labels when dragging Page 1 forward:
+    #expect(ThumbnailDropLogic.slotLabel(slot: 2, fromIndex: 0, pageCount: 4) == "Move to Page 2")
+    #expect(ThumbnailDropLogic.slotLabel(slot: 3, fromIndex: 0, pageCount: 4) == "Move to Page 3")
+    #expect(ThumbnailDropLogic.slotLabel(slot: 4, fromIndex: 0, pageCount: 4) == "Move to Page 4")
+
+    // Dragging Page 4 (index 3) backward:
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndex: 3) == true)  // before page 1
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 1, fromIndex: 3) == true)  // between 1 and 2
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 2, fromIndex: 3) == true)  // between 2 and 3
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 3, fromIndex: 3) == false) // between 3 and 4 -> no-op
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 4, fromIndex: 3) == false) // after 4 -> no-op
+
+    #expect(ThumbnailDropLogic.destinationIndex(from: 3, slot: 0) == 0) // becomes Page 1
+    #expect(ThumbnailDropLogic.destinationIndex(from: 3, slot: 1) == 1) // becomes Page 2
+    #expect(ThumbnailDropLogic.destinationIndex(from: 3, slot: 2) == 2) // becomes Page 3
+    #expect(ThumbnailDropLogic.destinationIndex(from: 3, slot: 3) == nil)
+    #expect(ThumbnailDropLogic.destinationIndex(from: 3, slot: 4) == nil)
+
+    // Badge labels when dragging Page 4 backward:
+    #expect(ThumbnailDropLogic.slotLabel(slot: 0, fromIndex: 3, pageCount: 4) == "Move to Page 1")
+    #expect(ThumbnailDropLogic.slotLabel(slot: 1, fromIndex: 3, pageCount: 4) == "Move to Page 2")
+    #expect(ThumbnailDropLogic.slotLabel(slot: 2, fromIndex: 3, pageCount: 4) == "Move to Page 3")
+
+    // When no drag is active (fromIndex == nil), no slot is valid:
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndex: nil) == false)
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 1, fromIndex: nil) == false)
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 2, fromIndex: nil) == false)
+}
+
+@Test @MainActor func testThumbnailDragLifecycle() {
+    let vm = PDFViewerViewModel()
+    #expect(vm.draggedThumbnailPageIndex == nil)
+    #expect(vm.activeThumbnailDropSlot == nil)
+
+    vm.startThumbnailDrag(pageIndex: 2)
+    #expect(vm.draggedThumbnailPageIndex == 2)
+
+    vm.activeThumbnailDropSlot = 4
+    #expect(vm.activeThumbnailDropSlot == 4)
+
+    vm.endThumbnailDrag()
+    #expect(vm.draggedThumbnailPageIndex == nil)
+    #expect(vm.activeThumbnailDropSlot == nil)
+
+    // Idempotent cleanups
+    vm.endThumbnailDrag()
+    #expect(vm.draggedThumbnailPageIndex == nil)
+    #expect(vm.activeThumbnailDropSlot == nil)
+}
+
+@Test func testThumbnailDropLogicMultiPage() {
+    let pageCount = 6
+
+    // Contiguous selection S = {2, 3} (Pages 3 and 4)
+    let sContig: Set<Int> = [2, 3]
+    // In-place / inside slots are no-ops:
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 2, fromIndices: sContig, pageCount: pageCount) == false)
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 3, fromIndices: sContig, pageCount: pageCount) == false)
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 4, fromIndices: sContig, pageCount: pageCount) == false)
+
+    // Moving to beginning (slot 0):
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndices: sContig, pageCount: pageCount) == true)
+    #expect(ThumbnailDropLogic.destinationIndex(fromIndices: sContig, slot: 0, pageCount: pageCount) == 0)
+    #expect(ThumbnailDropLogic.slotLabel(slot: 0, fromIndices: sContig, pageCount: pageCount) == "Move 2 Pages to Page 1")
+
+    // Moving between page 1 and 2 (slot 1):
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 1, fromIndices: sContig, pageCount: pageCount) == true)
+    #expect(ThumbnailDropLogic.destinationIndex(fromIndices: sContig, slot: 1, pageCount: pageCount) == 1)
+    #expect(ThumbnailDropLogic.slotLabel(slot: 1, fromIndices: sContig, pageCount: pageCount) == "Move 2 Pages to Page 2")
+
+    // Moving to end of document (slot 6):
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 6, fromIndices: sContig, pageCount: pageCount) == true)
+    #expect(ThumbnailDropLogic.destinationIndex(fromIndices: sContig, slot: 6, pageCount: pageCount) == 4)
+    #expect(ThumbnailDropLogic.slotLabel(slot: 6, fromIndices: sContig, pageCount: pageCount) == "Move 2 Pages to Page 5")
+
+    // Non-contiguous selection S = {0, 3}: moving them together at slot 0 moves page 3 to index 1
+    let sNonContig: Set<Int> = [0, 3]
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndices: sNonContig, pageCount: pageCount) == true)
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 2, fromIndices: sNonContig, pageCount: pageCount) == true)
+    #expect(ThumbnailDropLogic.destinationIndex(fromIndices: sNonContig, slot: 2, pageCount: pageCount) == 1)
+
+    // Empty selection
+    #expect(ThumbnailDropLogic.isValidSlot(slot: 0, fromIndices: [], pageCount: pageCount) == false)
+    #expect(ThumbnailDropLogic.destinationIndex(fromIndices: [], slot: 0, pageCount: pageCount) == nil)
+}
+
+@Test @MainActor func testMultiPageSelectionAndDragLifecycle() {
+    let vm = PDFViewerViewModel()
+
+    // Initial state
+    #expect(vm.selectedThumbnailPageIndices == [0])
+    #expect(vm.draggedThumbnailPageIndices.isEmpty)
+
+    // Select single thumbnail
+    vm.selectThumbnail(pageIndex: 2, isShift: false, isCommand: false)
+    #expect(vm.selectedThumbnailPageIndices == [2])
+    #expect(vm.currentPageIndex == 2)
+
+    // Shift-click range from 2 to 5
+    vm.selectThumbnail(pageIndex: 5, isShift: true, isCommand: false)
+    #expect(vm.selectedThumbnailPageIndices == Set([2, 3, 4, 5]))
+    #expect(vm.currentPageIndex == 5)
+
+    // Shift-click range from anchor 2 to 3 narrows selection
+    vm.selectThumbnail(pageIndex: 3, isShift: true, isCommand: false)
+    #expect(vm.selectedThumbnailPageIndices == Set([2, 3]))
+
+    // Command-click adds page 7
+    vm.selectThumbnail(pageIndex: 7, isShift: false, isCommand: true)
+    #expect(vm.selectedThumbnailPageIndices == Set([2, 3, 7]))
+
+    // Command-click removes page 3
+    vm.selectThumbnail(pageIndex: 3, isShift: false, isCommand: true)
+    #expect(vm.selectedThumbnailPageIndices == Set([2, 7]))
+
+    // Dragging an already-selected thumbnail (e.g. 7) drags the whole selection
+    vm.startThumbnailDrag(pageIndex: 7)
+    #expect(vm.draggedThumbnailPageIndices == Set([2, 7]))
+    #expect(vm.draggedThumbnailPageIndex == 7)
+
+    // End drag cleans up both
+    vm.endThumbnailDrag()
+    #expect(vm.draggedThumbnailPageIndices.isEmpty)
+    #expect(vm.draggedThumbnailPageIndex == nil)
+
+    // Dragging an unselected thumbnail (e.g. 1) collapses selection and drags just that thumbnail
+    vm.startThumbnailDrag(pageIndex: 1)
+    #expect(vm.selectedThumbnailPageIndices == Set([1]))
+    #expect(vm.draggedThumbnailPageIndices == Set([1]))
+    #expect(vm.draggedThumbnailPageIndex == 1)
+
+    vm.endThumbnailDrag()
+    #expect(vm.draggedThumbnailPageIndices.isEmpty)
+    #expect(vm.draggedThumbnailPageIndex == nil)
+}
+
+@Test @MainActor func testMultiPageManipulationCore() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("bulk_test.pdf")
+
+    // Create 5-page PDF
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create test PDF")
+    }
+    for i in 1...5 {
+        context.beginPDFPage(nil)
+        let text = "Page \(i) Content"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 5)
+
+    // Test multi-page reorder: move pages 1 and 2 to slot 0 (beginning)
+    try doc.reorderPages(from: [1, 2], toSlot: 0)
+    #expect(doc.pageCount == 5)
+
+    // Test multi-page rotate: rotate pages 0 and 1 by 90 degrees
+    try doc.rotatePages([0, 1], by: 90)
+    #expect(doc.pageCount == 5)
+
+    // Test multi-page delete: delete pages 3 and 4
+    try doc.deletePages([3, 4])
+    #expect(doc.pageCount == 3)
+
+    // Guard against deleting all pages
+    #expect(throws: Error.self) {
+        try doc.deletePages([0, 1, 2])
+    }
 }
 }
 

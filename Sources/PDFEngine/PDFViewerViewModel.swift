@@ -197,6 +197,14 @@ public final class PDFViewerViewModel: ObservableObject {
 
     // Thumbnail Cache for Outline/Thumbnails View
     @Published public var thumbnailImages: [Int: NSImage] = [:]
+    @Published public var thumbnailVersion: UUID = UUID()
+    @Published public var selectedThumbnailPageIndices: Set<Int> = [0]
+    @Published public var draggedThumbnailPageIndex: Int? = nil
+    @Published public var draggedThumbnailPageIndices: Set<Int> = []
+    @Published public var activeThumbnailDropSlot: Int? = nil
+    private var selectionAnchorPageIndex: Int = 0
+    private var dragWatchdogTimer: Timer?
+    private var dragEventMonitor: Any?
     private var thumbnailsLoading: Set<Int> = []
     
     // Search State
@@ -247,6 +255,18 @@ public final class PDFViewerViewModel: ObservableObject {
     // reloads it live — see handleExternalFileChange. Replacing this property (done every
     // loadDocument call) tears down the previous watcher via its deinit.
     private var fileChangeWatcher: FileChangeWatcher?
+    private var workingCopyPath: String?
+
+    private func cleanupWorkingCopy() {
+        if let workingPath = workingCopyPath {
+            try? FileManager.default.removeItem(atPath: workingPath)
+            workingCopyPath = nil
+        }
+    }
+
+    isolated deinit {
+        cleanupWorkingCopy()
+    }
 
     // Background Concurrency Actors
     // Note: PDFRenderActor and PDFSearchActor each maintain their own cloned MuPDF context
@@ -323,6 +343,7 @@ public final class PDFViewerViewModel: ObservableObject {
         // Cancel any active search task immediately
         searchTask?.cancel()
         searchTask = nil
+        cleanupWorkingCopy()
 
         do {
             let doc = try await Task.detached(priority: .userInitiated) {
@@ -580,7 +601,9 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     
     public func jumpToPage(_ pageIndex: Int) {
-        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        if let doc = document {
+            guard pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        }
         self.currentPageIndex = pageIndex
         if !isNavigatingHistory {
             recordNavigationLocation(pageIndex)
@@ -658,6 +681,29 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     
     // MARK: - Search Functionality
+    public struct SearchPageGroup: Identifiable, Sendable {
+        public var id: Int { pageIndex }
+        public let pageIndex: Int
+        public var matches: [SearchResult]
+        
+        public init(pageIndex: Int, matches: [SearchResult]) {
+            self.pageIndex = pageIndex
+            self.matches = matches
+        }
+    }
+    
+    public var searchPageGroups: [SearchPageGroup] {
+        var groups: [SearchPageGroup] = []
+        for match in searchResults {
+            if let last = groups.last, last.pageIndex == match.pageIndex {
+                groups[groups.count - 1].matches.append(match)
+            } else {
+                groups.append(SearchPageGroup(pageIndex: match.pageIndex, matches: [match]))
+            }
+        }
+        return groups
+    }
+
     public func matches(on pageIndex: Int) -> [SearchResult] {
         return searchResultsByPage[pageIndex] ?? []
     }
@@ -728,6 +774,12 @@ public final class PDFViewerViewModel: ObservableObject {
         pruneCaches(around: match.pageIndex)
         Task {
             await renderPage(match.pageIndex)
+        }
+    }
+
+    public func navigateToMatch(_ match: SearchResult, shouldScrollList: Bool = false) {
+        if let idx = searchResults.firstIndex(where: { $0.id == match.id }) {
+            navigateToMatch(at: idx, shouldScrollList: shouldScrollList)
         }
     }
     
@@ -924,6 +976,42 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    public func selectWord(at pagePoint: CGPoint, pageIndex: Int) {
+        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else { return }
+        if let res = textSelector.selectWord(at: pagePoint, on: stext) {
+            self.activeSelection = (pageIndex: pageIndex, result: res)
+            self.additionalSelectionPages = []
+        }
+    }
+
+    public func selectLine(at pagePoint: CGPoint, pageIndex: Int) {
+        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else { return }
+        if let res = textSelector.selectLine(at: pagePoint, on: stext) {
+            self.activeSelection = (pageIndex: pageIndex, result: res)
+            self.additionalSelectionPages = []
+        }
+    }
+
+    // MARK: - Translation Support
+    @Published public var translationTargetText: String? = nil
+    @Published public var isPresentingTranslation: Bool = false
+
+    public func translateSelection() {
+        let text = activeSelectionCombinedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        #if canImport(Translation)
+        if #available(macOS 15.0, *) {
+            self.translationTargetText = text
+            self.isPresentingTranslation = true
+            return
+        }
+        #endif
+        if let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let url = URL(string: "https://translate.google.com/?sl=auto&tl=en&text=\(encoded)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     /// Handles a reading-order drag that has moved onto a *different* page than where it started
     /// (e.g. dragging from partway down page 3 into page 4) — selects from whichever of the two
     /// points is on the earlier page down to the bottom of that page, the whole of any pages
@@ -1115,13 +1203,13 @@ public final class PDFViewerViewModel: ObservableObject {
             let firstLine = combinedText.components(separatedBy: .newlines).first ?? combinedText
             let normalized = firstLine.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
             let truncated = normalized.truncatedAtWordBoundary(maxLength: 45)
-            labelText = truncated.isEmpty ? "Snapshot (Page \(pageIdx + 1))" : truncated
+            labelText = truncated.isEmpty ? "Anchor (Page \(pageIdx + 1))" : truncated
         } else if sel.result.mode == .rectangularArea {
-            labelText = "Area Snapshot (Page \(pageIdx + 1))"
+            labelText = "Area Anchor (Page \(pageIdx + 1))"
         } else {
             // A reading-order selection with nothing extractable (visible highlight, empty
-            // text) — rare, but possible; "Area Snapshot" would be actively misleading here.
-            labelText = "Snapshot (Page \(pageIdx + 1))"
+            // text) — rare, but possible; "Area Anchor" would be actively misleading here.
+            labelText = "Anchor (Page \(pageIdx + 1))"
         }
 
         // Only generate a screenshot for rectangular/area selections, where boundingRect is
@@ -1290,7 +1378,8 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     /// Builds a SnapshotTarget at an arbitrary point on a page (e.g. from right-clicking with no active selection),
-    /// capturing the nearest text words/snippet around that point.
+    /// Builds an Anchor/Snapshot target at an arbitrary point on a page (e.g. from right-clicking with no active selection),
+    /// deterministically filtering out margin line-number gutters and matching section/subsection headings directly from the outline.
     public func buildSnapshotTarget(at pagePoint: CGPoint, pageIndex: Int) -> SnapshotTarget {
         guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else {
             return SnapshotTarget(
@@ -1305,126 +1394,145 @@ public final class PDFViewerViewModel: ObservableObject {
             )
         }
 
-        let (indexedText, charQuads) = stext.searchableIndex
-        let nsIndexed = indexedText as NSString
+        // 1. Collect all authoritative outline (TOC) nodes for this page to deterministically identify section/subsection headings
+        var outlineNodesOnPage: [PDFOutlineNode] = []
+        func collectOutline(nodes: [PDFOutlineNode]) {
+            for n in nodes {
+                if n.targetPage == pageIndex {
+                    outlineNodesOnPage.append(n)
+                }
+                collectOutline(nodes: n.children)
+            }
+        }
+        if let outline = document?.outline {
+            collectOutline(nodes: outline)
+        }
 
-        if !indexedText.isEmpty && !charQuads.isEmpty {
-            var bestIdx: Int? = nil
-            var bestDist: CGFloat = .infinity
+        // 2. Separate body content from margin line-number gutters
+        let textBlocks = stext.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        let bodyBlocks = textBlocks.filter { $0.bbox.width >= SpatialTextSelector.minColumnWidth }
+        let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
+        let bodyLeftMargin = candidateBlocks.map { $0.bbox.minX }.min() ?? (stext.bounds.minX + SpatialTextSelector.minColumnWidth)
 
-            for i in 0..<min(charQuads.count, nsIndexed.length) {
-                guard let q = charQuads[i] else { continue }
-                let box = q.boundingRect
-                let dx = max(0, max(box.minX - pagePoint.x, pagePoint.x - box.maxX))
-                let dy = max(0, max(box.minY - pagePoint.y, pagePoint.y - box.maxY))
-                let dist = (dy * 3.0) + dx
-                if dist < bestDist {
-                    bestDist = dist
-                    bestIdx = i
+        var contentLines: [(line: TextLine, block: TextBlock)] = []
+        for block in textBlocks {
+            for line in block.lines {
+                // Strictly exclude margin line numbers: numeric-only with narrow width or in the left margin gutter
+                if SpatialTextSelector.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
+                if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 45 { continue }
+                contentLines.append((line, block))
+            }
+        }
+
+        // 3. Find the best content line closest to the click point (prioritizing vertical alignment)
+        var bestCandidate: (line: TextLine, block: TextBlock)? = nil
+        var bestScore: CGFloat = .infinity
+
+        for item in contentLines {
+            let line = item.line
+            let dy: CGFloat
+            if pagePoint.y >= line.bbox.minY - 4 && pagePoint.y <= line.bbox.maxY + 4 {
+                dy = 0
+            } else if pagePoint.y < line.bbox.minY {
+                dy = line.bbox.minY - pagePoint.y
+            } else {
+                dy = pagePoint.y - line.bbox.maxY
+            }
+
+            let dx: CGFloat
+            if pagePoint.x >= line.bbox.minX && pagePoint.x <= line.bbox.maxX {
+                dx = 0
+            } else if pagePoint.x < line.bbox.minX {
+                dx = line.bbox.minX - pagePoint.x
+            } else {
+                dx = pagePoint.x - line.bbox.maxX
+            }
+
+            let score = (dy * 3.5) + dx
+            if score < bestScore {
+                bestScore = score
+                bestCandidate = item
+            }
+        }
+
+        if let (bestLine, bestBlock) = bestCandidate, bestScore < 250 {
+            func normalizeHeading(_ str: String) -> String {
+                str.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ").lowercased()
+            }
+
+            let lineNorm = normalizeHeading(bestLine.text)
+            let blockNorm = normalizeHeading(bestBlock.text)
+
+            // 4. Deterministic Heading Detection: Check if the clicked line or its block matches a document outline node
+            var matchedOutlineNode: PDFOutlineNode? = nil
+            for node in outlineNodesOnPage {
+                let nodeNorm = normalizeHeading(node.title)
+                guard !nodeNorm.isEmpty else { continue }
+                if lineNorm == nodeNorm || blockNorm == nodeNorm ||
+                   lineNorm.hasPrefix(nodeNorm) || nodeNorm.hasPrefix(lineNorm) ||
+                   blockNorm.hasPrefix(nodeNorm) {
+                    matchedOutlineNode = node
+                    break
                 }
             }
 
-            if let hitIdx = bestIdx, bestDist < 120 {
-                let whitespaceChars = CharacterSet.whitespacesAndNewlines
-                var wordIdx = hitIdx
-
-                // If hitIdx is on whitespace, scan backward/forward to find the clicked or adjacent word
-                if let scalar = UnicodeScalar(nsIndexed.character(at: wordIdx)), whitespaceChars.contains(scalar) {
-                    if wordIdx > 0, let s = UnicodeScalar(nsIndexed.character(at: wordIdx - 1)), !whitespaceChars.contains(s) {
-                        wordIdx -= 1
-                    } else {
-                        while wordIdx < nsIndexed.length {
-                            if let s = UnicodeScalar(nsIndexed.character(at: wordIdx)), !whitespaceChars.contains(s) {
-                                break
-                            }
-                            wordIdx += 1
-                        }
-                    }
-                }
-
-                if wordIdx < nsIndexed.length {
-                    // Find the start of the clicked word
-                    var wordStart = wordIdx
-                    while wordStart > 0 {
-                        let prevChar = nsIndexed.character(at: wordStart - 1)
-                        if let scalar = UnicodeScalar(prevChar), whitespaceChars.contains(scalar) {
-                            break
-                        }
-                        wordStart -= 1
-                    }
-
-                    // Extract words starting right from the clicked word (not from the previous sentence!)
-                    let remaining = nsIndexed.substring(from: wordStart)
-                        .replacingOccurrences(of: "\n", with: " ")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    let words = remaining.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-
-                    let candidateLabel = words.prefix(6).joined(separator: " ")
-                    let truncated = candidateLabel.truncatedAtWordBoundary(maxLength: 45)
-                    let cleanLabel = truncated.isEmpty ? "Page \(pageIndex + 1)" : truncated
-
-                    // Bounding rect for the clicked phrase
-                    let quadStart = wordStart
-                    let quadEnd = min(charQuads.count, wordStart + cleanLabel.utf16.count)
-                    var localQuads: [PDFQuad] = []
-                    for i in quadStart..<quadEnd {
-                        if let q = charQuads[i] {
-                            localQuads.append(q)
-                        }
-                    }
-                    let unionRect = localQuads.reduce(into: CGRect.null) { $0 = $0.isNull ? $1.boundingRect : $0.union($1.boundingRect) }
-                    let targetRect = unionRect.isNull ? CGRect(x: max(0, pagePoint.x - 100), y: max(0, pagePoint.y - 20), width: 200, height: 40) : unionRect
-                    let targetPoint = CGPoint(x: targetRect.midX, y: targetRect.midY)
-
-                    // Clean snippet around the word with whole-word boundaries
-                    let rawStart = max(0, wordStart - 40)
-                    let rawEnd = min(nsIndexed.length, wordStart + 60)
-
-                    var cleanStart = rawStart
-                    if cleanStart > 0 {
-                        while cleanStart < wordStart {
-                            let ch = nsIndexed.character(at: cleanStart)
-                            if let s = UnicodeScalar(ch), whitespaceChars.contains(s) {
-                                cleanStart += 1
-                                break
-                            }
-                            cleanStart += 1
-                        }
-                    }
-
-                    var cleanEnd = rawEnd
-                    if cleanEnd < nsIndexed.length {
-                        while cleanEnd > wordStart {
-                            let ch = nsIndexed.character(at: cleanEnd - 1)
-                            if let s = UnicodeScalar(ch), whitespaceChars.contains(s) {
-                                cleanEnd -= 1
-                                break
-                            }
-                            cleanEnd -= 1
-                        }
-                    }
-
-                    let snippetSub = (cleanEnd > cleanStart)
-                        ? nsIndexed.substring(with: NSRange(location: cleanStart, length: cleanEnd - cleanStart))
-                            .replacingOccurrences(of: "\n", with: " ")
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        : cleanLabel
-                    let prefix = cleanStart > 0 ? "... " : ""
-                    let suffix = cleanEnd < nsIndexed.length ? " ..." : ""
-                    let snippet = prefix + snippetSub + suffix
-
-                    return SnapshotTarget(
-                        label: cleanLabel,
-                        snippet: snippet,
-                        targetPage: pageIndex,
-                        targetPoint: targetPoint,
-                        targetRect: targetRect,
-                        sourceRect: targetRect,
-                        sourcePage: pageIndex,
-                        thumbnailData: nil
-                    )
-                }
+            if let node = matchedOutlineNode {
+                let cleanHeading = node.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                let targetRect = (bestBlock.lines.count <= 3 && bestBlock.bbox.width >= bestLine.bbox.width) ? bestBlock.bbox : bestLine.bbox
+                let targetPoint = CGPoint(x: targetRect.minX, y: targetRect.midY)
+                return SnapshotTarget(
+                    label: cleanHeading,
+                    snippet: cleanHeading,
+                    targetPage: pageIndex,
+                    targetPoint: targetPoint,
+                    targetRect: targetRect,
+                    sourceRect: targetRect,
+                    sourcePage: pageIndex,
+                    uri: node.uri,
+                    thumbnailData: nil
+                )
             }
+
+            // 5. Regular Body Line (not an outline heading): Extract clean words without any line numbers
+            let validChars = bestLine.characters.filter { $0.char != "\n" }
+            let lineCleanText = bestLine.text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+
+            var startCharIdx = 0
+            if pagePoint.x > bestLine.bbox.minX + 25 {
+                var closestCharIdx = 0
+                var closestDx: CGFloat = .infinity
+                for (cIdx, char) in validChars.enumerated() {
+                    let dx = abs(char.boundingRect.midX - pagePoint.x)
+                    if dx < closestDx {
+                        closestDx = dx
+                        closestCharIdx = cIdx
+                    }
+                }
+                while closestCharIdx > 0 && validChars[closestCharIdx - 1].char != " " {
+                    closestCharIdx -= 1
+                }
+                startCharIdx = closestCharIdx
+            }
+
+            let remainingText = String(validChars[startCharIdx...].map { $0.char }).trimmingCharacters(in: .whitespacesAndNewlines)
+            let words = remainingText.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+            let candidateLabel = words.prefix(6).joined(separator: " ")
+            let truncated = candidateLabel.truncatedAtWordBoundary(maxLength: 45)
+            let cleanLabel = truncated.isEmpty ? (lineCleanText.isEmpty ? "Page \(pageIndex + 1)" : lineCleanText) : truncated
+
+            let targetRect = bestLine.bbox
+            let targetPoint = CGPoint(x: targetRect.minX, y: targetRect.midY)
+
+            return SnapshotTarget(
+                label: cleanLabel,
+                snippet: lineCleanText,
+                targetPage: pageIndex,
+                targetPoint: targetPoint,
+                targetRect: targetRect,
+                sourceRect: targetRect,
+                sourcePage: pageIndex,
+                thumbnailData: nil
+            )
         }
 
         return SnapshotTarget(
@@ -1811,6 +1919,95 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Thumbnail Selection Management
+
+    public func selectThumbnail(pageIndex: Int, isShift: Bool, isCommand: Bool) {
+        if let doc = document {
+            guard pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        }
+
+        if isCommand {
+            if selectedThumbnailPageIndices.contains(pageIndex) {
+                if selectedThumbnailPageIndices.count > 1 {
+                    selectedThumbnailPageIndices.remove(pageIndex)
+                }
+            } else {
+                selectedThumbnailPageIndices.insert(pageIndex)
+            }
+            selectionAnchorPageIndex = pageIndex
+            jumpToPage(pageIndex)
+        } else if isShift {
+            let start = min(selectionAnchorPageIndex, pageIndex)
+            let end = max(selectionAnchorPageIndex, pageIndex)
+            selectedThumbnailPageIndices = Set(start...end)
+            jumpToPage(pageIndex)
+        } else {
+            selectedThumbnailPageIndices = [pageIndex]
+            selectionAnchorPageIndex = pageIndex
+            jumpToPage(pageIndex)
+        }
+    }
+
+    public func selectAllThumbnails() {
+        guard let doc = document, doc.pageCount > 0 else { return }
+        selectedThumbnailPageIndices = Set(0..<doc.pageCount)
+    }
+
+    // MARK: - Thumbnail Drag and Drop Lifecycle
+
+    public func startThumbnailDrag(pageIndex: Int) {
+        self.endThumbnailDrag()
+
+        // If the dragged thumbnail is part of multi-selection, drag the whole selection;
+        // otherwise, collapse selection to just this page.
+        if selectedThumbnailPageIndices.contains(pageIndex) {
+            self.draggedThumbnailPageIndices = selectedThumbnailPageIndices
+        } else {
+            self.selectedThumbnailPageIndices = [pageIndex]
+            self.selectionAnchorPageIndex = pageIndex
+            self.draggedThumbnailPageIndices = [pageIndex]
+        }
+        self.draggedThumbnailPageIndex = pageIndex
+
+        // Local event monitor for immediate mouse-up and Escape key detection
+        self.dragEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp, .rightMouseUp, .otherMouseUp, .keyDown]) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self = self else { return }
+                if event.type == .leftMouseUp || (event.type == .keyDown && event.keyCode == 53 /* Escape */) {
+                    self.endThumbnailDrag()
+                }
+            }
+            return event
+        }
+
+        // Repeating timer in .common run loop mode to guarantee reset if mouse is released anywhere,
+        // even if AppKit's dragging session swallowed the mouse-up event.
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self = self else { return }
+                if self.draggedThumbnailPageIndex == nil || (NSEvent.pressedMouseButtons & 1) == 0 {
+                    self.endThumbnailDrag()
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.dragWatchdogTimer = timer
+    }
+
+    public func endThumbnailDrag() {
+        self.dragWatchdogTimer?.invalidate()
+        self.dragWatchdogTimer = nil
+        if let monitor = self.dragEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            self.dragEventMonitor = nil
+        }
+        if self.draggedThumbnailPageIndex != nil || !self.draggedThumbnailPageIndices.isEmpty || self.activeThumbnailDropSlot != nil {
+            self.draggedThumbnailPageIndex = nil
+            self.draggedThumbnailPageIndices = []
+            self.activeThumbnailDropSlot = nil
+        }
+    }
     
     /// The single decision point for every *explicit* "open this document" action (File > Open,
     /// the toolbar Open button, clicking a Favorite): load directly into this window/tab if it's
@@ -2039,6 +2236,7 @@ public final class PDFViewerViewModel: ObservableObject {
             try doc.save(to: doc.filePath)
             self.isDocumentEdited = false
             self.currentWindow?.isDocumentEdited = false
+            cleanupWorkingCopy()
         } catch {
             print("Failed to save document: \(error)")
             let alert = NSAlert()
@@ -2070,6 +2268,7 @@ public final class PDFViewerViewModel: ObservableObject {
                     try doc.save(to: url.path)
                     self.isDocumentEdited = false
                     self.currentWindow?.isDocumentEdited = false
+                    self.cleanupWorkingCopy()
                     await self.loadDocument(from: url.path)
                 } catch {
                     print("Failed to save document as: \(error)")
@@ -2093,6 +2292,295 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
         panel.begin(completionHandler: completion)
+    }
+
+    // MARK: - Page Manipulation
+    public func rotatePage(_ pageIndex: Int, by degrees: Int = 90) {
+        guard let doc = document else { return }
+        do {
+            try doc.rotatePage(pageIndex, by: degrees)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else {
+                return
+            }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeValue(forKey: pageIndex)
+                self.thumbnailImages.removeValue(forKey: pageIndex)
+                self.pageAnnotations.removeValue(forKey: pageIndex)
+                self.pageStructuredData.removeValue(forKey: pageIndex)
+                self.pageLinks.removeValue(forKey: pageIndex)
+                self.objectWillChange.send()
+                self.requestThumbnail(for: pageIndex)
+                await self.renderPage(pageIndex)
+            }
+        } catch {
+            print("Failed to rotate page \(pageIndex): \(error)")
+        }
+    }
+
+    public func deletePage(_ pageIndex: Int) {
+        guard let doc = document, doc.pageCount > 1 else { return }
+        do {
+            try doc.deletePage(pageIndex)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else {
+                return
+            }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+                if self.currentPageIndex >= doc.pageCount {
+                    self.currentPageIndex = max(0, doc.pageCount - 1)
+                }
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, self.currentPageIndex - 8)
+                let end = min(doc.pageCount, self.currentPageIndex + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to delete page \(pageIndex): \(error)")
+        }
+    }
+
+    public func reorderPage(from fromIndex: Int, to toIndex: Int) {
+        self.endThumbnailDrag()
+        guard let doc = document else { return }
+        guard fromIndex != toIndex, fromIndex >= 0, fromIndex < doc.pageCount, toIndex >= 0, toIndex < doc.pageCount else { return }
+        do {
+            try doc.reorderPage(from: fromIndex, to: toIndex)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else {
+                return
+            }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.endThumbnailDrag()
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+                self.currentPageIndex = toIndex
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, toIndex - 8)
+                let end = min(doc.pageCount, toIndex + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to reorder page from \(fromIndex) to \(toIndex): \(error)")
+        }
+    }
+
+    public func reorderPages(from fromIndices: [Int], toSlot destSlot: Int) {
+        self.endThumbnailDrag()
+        guard let doc = document else { return }
+        guard !fromIndices.isEmpty,
+              ThumbnailDropLogic.isValidSlot(slot: destSlot, fromIndices: Set(fromIndices), pageCount: doc.pageCount) else {
+            return
+        }
+
+        let sortedFrom = fromIndices.sorted()
+        let beforeCount = sortedFrom.filter { $0 < destSlot }.count
+        let targetStartingIndex = destSlot - beforeCount
+
+        do {
+            try doc.reorderPages(from: sortedFrom, toSlot: destSlot)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.endThumbnailDrag()
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+
+                let newSelectedRange = Set(targetStartingIndex..<(targetStartingIndex + sortedFrom.count))
+                self.selectedThumbnailPageIndices = newSelectedRange
+                self.selectionAnchorPageIndex = targetStartingIndex
+                self.currentPageIndex = targetStartingIndex
+
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, targetStartingIndex - 8)
+                let end = min(doc.pageCount, targetStartingIndex + sortedFrom.count + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to reorder pages from \(fromIndices) to slot \(destSlot): \(error)")
+        }
+    }
+
+    public func deleteSelectedThumbnails() {
+        guard let doc = document else { return }
+        let toDelete = selectedThumbnailPageIndices.sorted()
+        guard !toDelete.isEmpty, toDelete.count < doc.pageCount else { return }
+        do {
+            try doc.deletePages(toDelete)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+
+                let targetPage = min(toDelete[0], doc.pageCount - 1)
+                self.currentPageIndex = targetPage
+                self.selectedThumbnailPageIndices = [targetPage]
+                self.selectionAnchorPageIndex = targetPage
+
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, targetPage - 8)
+                let end = min(doc.pageCount, targetPage + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to delete pages \(toDelete): \(error)")
+        }
+    }
+
+    public func rotateSelectedThumbnails(by degrees: Int = 90) {
+        guard let doc = document else { return }
+        let toRotate = selectedThumbnailPageIndices.sorted()
+        guard !toRotate.isEmpty else { return }
+        do {
+            try doc.rotatePages(toRotate, by: degrees)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                for p in toRotate {
+                    self.renderedPages.removeValue(forKey: p)
+                    self.thumbnailImages.removeValue(forKey: p)
+                    self.pageAnnotations.removeValue(forKey: p)
+                    self.pageStructuredData.removeValue(forKey: p)
+                    self.pageLinks.removeValue(forKey: p)
+                }
+                self.objectWillChange.send()
+                for p in toRotate {
+                    self.requestThumbnail(for: p)
+                }
+                await self.renderPage(self.currentPageIndex)
+            }
+        } catch {
+            print("Failed to rotate pages \(toRotate): \(error)")
+        }
+    }
+
+    public func extractSelectedThumbnails() {
+        let pages = selectedThumbnailPageIndices.sorted()
+        guard !pages.isEmpty else { return }
+        extractPages(pages)
+    }
+
+    public func extractPage(_ pageIndex: Int) {
+        extractPages([pageIndex])
+    }
+
+    public func extractPages(_ pageIndices: [Int]) {
+        guard let doc = document, !pageIndices.isEmpty else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType.pdf]
+        let baseName = ((doc.filePath as NSString).lastPathComponent as NSString).deletingPathExtension
+        if pageIndices.count == 1 {
+            panel.nameFieldStringValue = "\(baseName)_Page_\(pageIndices[0] + 1).pdf"
+        } else {
+            panel.nameFieldStringValue = "\(baseName)_Extracted.pdf"
+        }
+        panel.prompt = "Extract"
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try self?.document?.extractPages(pageIndices, to: url)
+            } catch {
+                print("Failed to extract pages: \(error)")
+            }
+        }
+
+        if let window = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(panel.runModal())
+        }
     }
     
     /// Prompts the user to Save, Don't Save, or Cancel when closing a document with unsaved edits.
@@ -2127,6 +2615,7 @@ public final class PDFViewerViewModel: ObservableObject {
         case .alertThirdButtonReturn: // Don't Save
             isDocumentEdited = false
             currentWindow?.isDocumentEdited = false
+            cleanupWorkingCopy()
             return true
         default: // Cancel (.alertSecondButtonReturn)
             return false

@@ -381,14 +381,14 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 let menu = NSMenu(title: "Table of Contents")
 
                 if !viewModel.isTransientWindow {
-                    let snapItem = NSMenuItem(title: "Create Snapshot", action: #selector(snapshotNodeAction(_:)), keyEquivalent: "")
-                    snapItem.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+                    let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotNodeAction(_:)), keyEquivalent: "")
+                    snapItem.image = NSImage.anchorIcon
                     snapItem.target = self
                     snapItem.representedObject = node
                     menu.addItem(snapItem)
 
-                    let snapAndOpenItem = NSMenuItem(title: "Create Snapshot and Open in New Window", action: #selector(snapshotAndOpenNodeAction(_:)), keyEquivalent: "")
-                    snapAndOpenItem.image = NSImage(systemSymbolName: "camera.badge.ellipsis", accessibilityDescription: nil)
+                    let snapAndOpenItem = NSMenuItem(title: "Create Anchor and Open in New Window", action: #selector(snapshotAndOpenNodeAction(_:)), keyEquivalent: "")
+                    snapAndOpenItem.image = NSImage.anchorIcon
                     snapAndOpenItem.target = self
                     snapAndOpenItem.representedObject = node
                     menu.addItem(snapAndOpenItem)

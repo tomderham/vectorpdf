@@ -853,7 +853,7 @@ struct SnapshotCardView: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Delete Snapshot")
+                .help("Delete Anchor")
             }
             
             // Visual Thumbnail Preview (clicking navigates; hover displays enlarged preview).
@@ -966,7 +966,7 @@ struct SnapshotCardView: View {
                     viewModel.removeSnapshotTarget(snap)
                 }
             } label: {
-                Label("Delete Snapshot", systemImage: "trash")
+                Label("Delete Anchor", systemImage: "trash")
             }
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)

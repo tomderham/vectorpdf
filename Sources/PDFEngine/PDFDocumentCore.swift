@@ -9,6 +9,7 @@ public enum PDFError: Error, LocalizedError, Equatable {
     case renderFailed(String)
     case stextFailed(String)
     case saveFailed(String)
+    case operationFailed(String)
     case outOfBounds(Int)
     /// The document is encrypted and no password was supplied yet — distinct from
     /// `incorrectPassword` so the caller knows to prompt for the first time rather than show a
@@ -24,6 +25,7 @@ public enum PDFError: Error, LocalizedError, Equatable {
         case .renderFailed(let msg): return "Failed to render: \(msg)"
         case .stextFailed(let msg): return "Failed to extract structured text: \(msg)"
         case .saveFailed(let msg): return "Failed to save document: \(msg)"
+        case .operationFailed(let msg): return "Operation failed: \(msg)"
         case .outOfBounds(let p): return "Page index \(p) is out of bounds"
         case .passwordRequired: return "This document requires a password."
         case .incorrectPassword: return "Incorrect password."
@@ -39,7 +41,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public let filePath: String
     private let ctx: FZContext
     private let doc: FZDocument
-    public let pageCount: Int
+    public private(set) var pageCount: Int
     // `var`, not `let`, so a page's placeholder geometry (see hasExactBounds below) can be
     // corrected once its real size is known — see recordActualPageBounds. Only ever touched from
     // the main actor (PDFCanvasView, PDFVirtualizedScrollView, PDFViewerViewModel); the render/
@@ -48,7 +50,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public private(set) var pageBounds: [CGRect]
     public private(set) var pageYOffsets: [CGFloat]
     public private(set) var totalHeight: CGFloat
-    public let outline: [PDFOutlineNode]
+    public internal(set) var outline: [PDFOutlineNode]
 
     /// Whether pageBounds[i] is that page's own real, inspected dimensions rather than an assumed
     /// placeholder — see init's "large documents" branch. Always all-true for documents <= 60
@@ -92,21 +94,29 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
 
         self.doc = doc
-        
-        // Count pages
+        self.pageCount = 0
+        self.pageBounds = []
+        self.pageYOffsets = []
+        self.totalHeight = 0
+        self.hasExactBounds = []
+        self.outline = []
+
+        rebuildPageLayoutAndOutline()
+    }
+
+    /// Recomputes page count, layout coordinates, page bounds, and outline after document modifications.
+    private func rebuildPageLayoutAndOutline() {
         var count: Int32 = 0
-        mupdf_document_count_pages(ctx, doc, &count, &errorMsg)
+        mupdf_document_count_pages(ctx, doc, &count, nil)
         let totalPages = Int(count)
         self.pageCount = totalPages
-        
-        // Rapid page bounds indexing for virtualized scrolling layout
+
         var bounds: [CGRect] = []
         var yOffsets: [CGFloat] = []
         var hasExact: [Bool] = []
         var currentY: CGFloat = 0.0
         let pageSpacing = Self.pageSpacing
-        
-        // Fast-path baseline geometry: sample page 0
+
         var baselineRect = CGRect(x: 0, y: 0, width: 612, height: 792)
         if totalPages > 0 {
             autoreleasepool {
@@ -121,48 +131,34 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 }
             }
         }
-        
+
         if totalPages <= 60 {
-            // For smaller documents, inspect exact bounds for every page
             bounds.reserveCapacity(totalPages)
             yOffsets.reserveCapacity(totalPages)
             hasExact.reserveCapacity(totalPages)
             for i in 0..<totalPages {
-                if i == 0 {
-                    bounds.append(baselineRect)
-                    yOffsets.append(currentY)
-                    hasExact.append(true)
-                    currentY += baselineRect.height + pageSpacing
-                } else {
-                    autoreleasepool {
-                        var pagePtr: FZPage?
-                        if mupdf_page_load(ctx, doc, Int32(i), &pagePtr, nil) == 0, let page = pagePtr {
-                            var rect = fz_rect()
-                            mupdf_page_bounds(ctx, page, &rect, nil)
-                            let w = CGFloat(rect.x1 - rect.x0)
-                            let h = CGFloat(rect.y1 - rect.y0)
-                            let pageRect = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: max(w, 100), height: max(h, 100))
-                            bounds.append(pageRect)
-                            yOffsets.append(currentY)
-                            hasExact.append(true)
-                            currentY += pageRect.height + pageSpacing
-                            mupdf_page_drop(ctx, page)
-                        } else {
-                            bounds.append(baselineRect)
-                            yOffsets.append(currentY)
-                            hasExact.append(true)
-                            currentY += baselineRect.height + pageSpacing
-                        }
+                autoreleasepool {
+                    var pagePtr: FZPage?
+                    if mupdf_page_load(ctx, doc, Int32(i), &pagePtr, nil) == 0, let page = pagePtr {
+                        var rect = fz_rect()
+                        mupdf_page_bounds(ctx, page, &rect, nil)
+                        let w = CGFloat(rect.x1 - rect.x0)
+                        let h = CGFloat(rect.y1 - rect.y0)
+                        let pageRect = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: max(w, 100), height: max(h, 100))
+                        bounds.append(pageRect)
+                        yOffsets.append(currentY)
+                        hasExact.append(true)
+                        currentY += pageRect.height + pageSpacing
+                        mupdf_page_drop(ctx, page)
+                    } else {
+                        bounds.append(baselineRect)
+                        yOffsets.append(currentY)
+                        hasExact.append(true)
+                        currentY += baselineRect.height + pageSpacing
                     }
                 }
             }
         } else {
-            // For large documents (e.g. 100 - 7,000+ pages), pre-populate with baseline geometry in
-            // < 1 ms instead of loading and measuring every page up front, since 99.9% of large
-            // documents maintain uniform page dimensions anyway. Pages other than 0 are marked
-            // !hasExact, so if one turns out to actually be a different size (e.g. a landscape
-            // foldout in an otherwise-portrait document), recordActualPageBounds patches in its
-            // real dimensions the first time it's actually rendered.
             bounds.reserveCapacity(totalPages)
             yOffsets.reserveCapacity(totalPages)
             hasExact.reserveCapacity(totalPages)
@@ -179,8 +175,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         self.pageYOffsets = yOffsets
         self.totalHeight = currentY
         self.hasExactBounds = hasExact
-        
-        // Load outline
+
         var outlinePtr: FZOutline?
         if mupdf_document_load_outline(ctx, doc, &outlinePtr, nil) == 0, let out = outlinePtr {
             self.outline = PDFDocumentCore.parseOutline(out)
@@ -463,6 +458,104 @@ public final class PDFDocumentCore: @unchecked Sendable {
         
         if isSameFile {
             _ = try FileManager.default.replaceItemAt(destinationURL, withItemAt: tempURL)
+        }
+    }
+
+    // MARK: - Page Manipulation
+    public func rotatePage(_ pageIndex: Int, by degrees: Int = 90) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_rotate_page(ctx, doc, Int32(pageIndex), Int32(degrees), &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to rotate page"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func deletePage(_ pageIndex: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_delete_page(ctx, doc, Int32(pageIndex), &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete page"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func reorderPage(from fromIndex: Int, to toIndex: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_reorder_page(ctx, doc, Int32(fromIndex), Int32(toIndex), &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to reorder page"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func reorderPages(from fromIndices: [Int], toSlot destSlot: Int) throws {
+        guard !fromIndices.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let int32Indices = fromIndices.map { Int32($0) }
+        let ret = int32Indices.withUnsafeBufferPointer { buf in
+            mupdf_pdf_reorder_pages(ctx, doc, buf.baseAddress, Int32(buf.count), Int32(destSlot), &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to reorder pages"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func deletePages(_ pageIndices: [Int]) throws {
+        guard !pageIndices.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let int32Indices = pageIndices.map { Int32($0) }
+        let ret = int32Indices.withUnsafeBufferPointer { buf in
+            mupdf_pdf_delete_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete pages"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func rotatePages(_ pageIndices: [Int], by degrees: Int = 90) throws {
+        guard !pageIndices.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        for pageIndex in pageIndices {
+            var errorMsg: UnsafePointer<CChar>?
+            let ret = mupdf_pdf_rotate_page(ctx, doc, Int32(pageIndex), Int32(degrees), &errorMsg)
+            if ret != 0 {
+                let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to rotate page \(pageIndex)"
+                throw PDFError.operationFailed(msg)
+            }
+        }
+        rebuildPageLayoutAndOutline()
+    }
+
+    public func extractPages(_ pageIndices: [Int], to destinationURL: URL) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let int32Indices = pageIndices.map { Int32($0) }
+        let ret = int32Indices.withUnsafeBufferPointer { buf in
+            mupdf_pdf_extract_pages(ctx, doc, buf.baseAddress, Int32(buf.count), destinationURL.path, &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to extract pages"
+            throw PDFError.operationFailed(msg)
         }
     }
 }

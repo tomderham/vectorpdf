@@ -855,6 +855,221 @@ int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const ch
     return 0;
 }
 
+int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int count = pdf_count_pages(ctx, pdoc);
+        if (pageno < 0 || pageno >= count) fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds");
+        pdf_obj *page_obj = pdf_lookup_page_obj(ctx, pdoc, pageno);
+        if (!page_obj) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to lookup page object");
+        int current_rot = pdf_dict_get_inheritable_int(ctx, page_obj, PDF_NAME(Rotate));
+        int new_rot = (current_rot + delta_degrees) % 360;
+        if (new_rot < 0) new_rot += 360;
+        new_rot = (new_rot / 90) * 90;
+        pdf_dict_put_int(ctx, page_obj, PDF_NAME(Rotate), new_rot);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_delete_page(fz_context *ctx, fz_document *doc, int pageno, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int count = pdf_count_pages(ctx, pdoc);
+        if (count <= 1) fz_throw(ctx, FZ_ERROR_GENERIC, "Cannot delete the only page in the document");
+        if (pageno < 0 || pageno >= count) fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds");
+        pdf_delete_page(ctx, pdoc, pageno);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_reorder_page(fz_context *ctx, fz_document *doc, int from_page, int to_page, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_obj *page_obj = NULL;
+    fz_var(page_obj);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int count = pdf_count_pages(ctx, pdoc);
+        if (from_page < 0 || from_page >= count || to_page < 0 || to_page >= count) {
+            fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds");
+        }
+        if (from_page == to_page) return 0;
+        page_obj = pdf_lookup_page_obj(ctx, pdoc, from_page);
+        if (!page_obj) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to lookup page object");
+        pdf_keep_obj(ctx, page_obj);
+        pdf_delete_page(ctx, pdoc, from_page);
+        pdf_insert_page(ctx, pdoc, to_page, page_obj);
+    } fz_always(ctx) {
+        if (page_obj) pdf_drop_obj(ctx, page_obj);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_reorder_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int dest_slot, const char **out_error) {
+    if (!ctx || !doc || !page_indices || count <= 0) return -1;
+    pdf_obj **page_objs = NULL;
+    int *sorted_indices = NULL;
+    fz_var(page_objs);
+    fz_var(sorted_indices);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int total_pages = pdf_count_pages(ctx, pdoc);
+        if (dest_slot < 0 || dest_slot > total_pages) {
+            fz_throw(ctx, FZ_ERROR_GENERIC, "Destination slot out of bounds");
+        }
+        for (int i = 0; i < count; i++) {
+            if (page_indices[i] < 0 || page_indices[i] >= total_pages) {
+                fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds");
+            }
+        }
+
+        page_objs = (pdf_obj **)fz_malloc(ctx, count * sizeof(pdf_obj *));
+        sorted_indices = (int *)fz_malloc(ctx, count * sizeof(int));
+        for (int i = 0; i < count; i++) {
+            page_objs[i] = NULL;
+            sorted_indices[i] = page_indices[i];
+        }
+
+        // Retain page objects in requested selection order
+        for (int i = 0; i < count; i++) {
+            page_objs[i] = pdf_lookup_page_obj(ctx, pdoc, page_indices[i]);
+            if (!page_objs[i]) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to lookup page object");
+            pdf_keep_obj(ctx, page_objs[i]);
+        }
+
+        // Sort indices descending to delete from back to front without index shift
+        for (int i = 0; i < count - 1; i++) {
+            for (int j = i + 1; j < count; j++) {
+                if (sorted_indices[i] < sorted_indices[j]) {
+                    int tmp = sorted_indices[i];
+                    sorted_indices[i] = sorted_indices[j];
+                    sorted_indices[j] = tmp;
+                }
+            }
+        }
+
+        // Count how many selected pages were before dest_slot
+        int before_slot = 0;
+        for (int i = 0; i < count; i++) {
+            if (page_indices[i] < dest_slot) {
+                before_slot++;
+            }
+        }
+        int insert_index = dest_slot - before_slot;
+
+        // Delete from back to front
+        for (int i = 0; i < count; i++) {
+            pdf_delete_page(ctx, pdoc, sorted_indices[i]);
+        }
+
+        // Insert at target slot in original request order
+        for (int i = 0; i < count; i++) {
+            pdf_insert_page(ctx, pdoc, insert_index + i, page_objs[i]);
+        }
+    } fz_always(ctx) {
+        if (page_objs) {
+            for (int i = 0; i < count; i++) {
+                if (page_objs[i]) pdf_drop_obj(ctx, page_objs[i]);
+            }
+            fz_free(ctx, page_objs);
+        }
+        if (sorted_indices) {
+            fz_free(ctx, sorted_indices);
+        }
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_delete_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char **out_error) {
+    if (!ctx || !doc || !page_indices || count <= 0) return -1;
+    int *sorted_indices = NULL;
+    fz_var(sorted_indices);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int total_pages = pdf_count_pages(ctx, pdoc);
+        if (count >= total_pages) {
+            fz_throw(ctx, FZ_ERROR_GENERIC, "Cannot delete all pages in the document");
+        }
+        for (int i = 0; i < count; i++) {
+            if (page_indices[i] < 0 || page_indices[i] >= total_pages) {
+                fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds");
+            }
+        }
+
+        sorted_indices = (int *)fz_malloc(ctx, count * sizeof(int));
+        for (int i = 0; i < count; i++) {
+            sorted_indices[i] = page_indices[i];
+        }
+
+        // Sort indices descending to delete from back to front
+        for (int i = 0; i < count - 1; i++) {
+            for (int j = i + 1; j < count; j++) {
+                if (sorted_indices[i] < sorted_indices[j]) {
+                    int tmp = sorted_indices[i];
+                    sorted_indices[i] = sorted_indices[j];
+                    sorted_indices[j] = tmp;
+                }
+            }
+        }
+
+        // Delete from back to front
+        for (int i = 0; i < count; i++) {
+            pdf_delete_page(ctx, pdoc, sorted_indices[i]);
+        }
+    } fz_always(ctx) {
+        if (sorted_indices) fz_free(ctx, sorted_indices);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char *out_path, const char **out_error) {
+    if (!ctx || !doc || !page_indices || count <= 0 || !out_path) return -1;
+    pdf_document *dst = NULL;
+    fz_var(dst);
+    fz_try(ctx) {
+        pdf_document *src = pdf_document_from_fz_document(ctx, doc);
+        if (!src) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        int src_count = pdf_count_pages(ctx, src);
+        dst = pdf_create_document(ctx);
+        if (!dst) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to create target PDF document");
+        for (int i = 0; i < count; i++) {
+            int p = page_indices[i];
+            if (p < 0 || p >= src_count) {
+                fz_throw(ctx, FZ_ERROR_GENERIC, "Page index out of bounds for extraction");
+            }
+            pdf_graft_page(ctx, dst, -1, src, p);
+        }
+        pdf_save_document(ctx, dst, out_path, &pdf_default_write_options);
+    } fz_always(ctx) {
+        if (dst) pdf_drop_document(ctx, dst);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 // Store & Memory Management
 void mupdf_context_empty_store(fz_context *ctx) {
     if (ctx) fz_empty_store(ctx);

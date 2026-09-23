@@ -148,7 +148,10 @@ public final class SpatialTextSelector: Sendable {
         // it sits visually between them, silently dropping it from a selection that visibly
         // spans it.
         let bandBlocks = textBlocks.enumerated()
-            .filter { _, block in block.bbox.maxY >= bandMinY && block.bbox.minY <= bandMaxY }
+            .filter { _, block in
+                let overlap = min(block.bbox.maxY, bandMaxY) - max(block.bbox.minY, bandMinY)
+                return overlap > 1.0 || (block.bbox.midY >= bandMinY && block.bbox.midY <= bandMaxY)
+            }
             .filter { _, block in
                 // Only exclude a block when it's confined to a clearly different horizontal
                 // region than the anchor column — measured as the fraction of the *narrower* of
@@ -183,11 +186,12 @@ public final class SpatialTextSelector: Sendable {
                 let line = block.lines[lIdx]
                 guard !line.characters.isEmpty else { continue }
                 // Any other ("extra", in-between) block was picked up purely by vertical-band
-                // overlap at the block level above — for those, still confirm each individual
-                // line is actually within the band, guarding against a tall block that only
-                // partially dips into the band at one edge.
+                // overlap at the block level above — for those, confirm the line is meaningfully
+                // within the band, guarding against a line on an adjacent visual row whose bounding
+                // box merely grazes or overlaps by fractions of a point.
                 if !isFirstBlock && !isLastBlock {
-                    guard line.bbox.maxY >= bandMinY && line.bbox.minY <= bandMaxY else { continue }
+                    let lineOverlap = min(line.bbox.maxY, bandMaxY) - max(line.bbox.minY, bandMinY)
+                    guard (line.bbox.midY >= bandMinY && line.bbox.midY <= bandMaxY) || lineOverlap >= min(line.bbox.height * 0.4, 4.0) else { continue }
                 }
 
                 let isFirstSelectedLine = (isFirstBlock && lIdx == firstPos.lineIndex)
@@ -662,5 +666,106 @@ public final class SpatialTextSelector: Sendable {
         }
 
         return bestLine
+    }
+
+    // MARK: - Word & Line Selection
+    public func selectWord(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard let pos = resolvePosition(at: point, in: textBlocks) else { return nil }
+        let block = textBlocks[pos.blockIndex]
+        guard pos.lineIndex < block.lines.count else { return nil }
+        let line = block.lines[pos.lineIndex]
+        guard !line.characters.isEmpty else { return nil }
+
+        func isWordChar(_ c: Character) -> Bool {
+            c.isLetter || c.isNumber || c == "_"
+        }
+
+        var targetIdx = min(pos.charIndex, line.characters.count - 1)
+        if targetIdx > 0 && !isWordChar(line.characters[targetIdx].char) && isWordChar(line.characters[targetIdx - 1].char) {
+            targetIdx -= 1
+        } else if targetIdx + 1 < line.characters.count && !isWordChar(line.characters[targetIdx].char) && isWordChar(line.characters[targetIdx + 1].char) {
+            targetIdx += 1
+        }
+
+        let isWord = isWordChar(line.characters[targetIdx].char)
+        var startIdx = targetIdx
+        var endIdx = targetIdx + 1
+
+        if isWord {
+            while startIdx > 0 && isWordChar(line.characters[startIdx - 1].char) {
+                startIdx -= 1
+            }
+            while endIdx < line.characters.count && isWordChar(line.characters[endIdx].char) {
+                endIdx += 1
+            }
+        }
+
+        let sliceChars = Array(line.characters[startIdx..<endIdx])
+        guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { return nil }
+
+        let lineQuad = PDFQuad(
+            ul: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.minY),
+            ur: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.minY),
+            ll: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.maxY),
+            lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
+        )
+
+        var wordText = ""
+        for (cIdx, char) in sliceChars.enumerated() {
+            wordText.append(char.char)
+            if cIdx < sliceChars.count - 1 {
+                let nextChar = sliceChars[cIdx + 1]
+                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
+                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
+                    wordText.append(" ")
+                }
+            }
+        }
+
+        return SelectionResult(
+            text: wordText,
+            highlightQuads: [lineQuad],
+            boundingRect: lineQuad.boundingRect,
+            mode: .readingOrder
+        )
+    }
+
+    public func selectLine(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard let pos = resolvePosition(at: point, in: textBlocks) else { return nil }
+        let block = textBlocks[pos.blockIndex]
+        guard pos.lineIndex < block.lines.count else { return nil }
+        let line = block.lines[pos.lineIndex]
+        guard !line.characters.isEmpty else { return nil }
+
+        let sliceChars = line.characters
+        guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { return nil }
+
+        let lineQuad = PDFQuad(
+            ul: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.minY),
+            ur: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.minY),
+            ll: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.maxY),
+            lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
+        )
+
+        var lineText = ""
+        for (cIdx, char) in sliceChars.enumerated() {
+            lineText.append(char.char)
+            if cIdx < sliceChars.count - 1 {
+                let nextChar = sliceChars[cIdx + 1]
+                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
+                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
+                    lineText.append(" ")
+                }
+            }
+        }
+
+        return SelectionResult(
+            text: lineText,
+            highlightQuads: [lineQuad],
+            boundingRect: lineQuad.boundingRect,
+            mode: .readingOrder
+        )
     }
 }

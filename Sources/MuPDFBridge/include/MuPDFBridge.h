@@ -95,6 +95,14 @@ int mupdf_pdf_stamp_image_annot(fz_context *ctx, fz_document *doc, int pageno, f
 int mupdf_pdf_page_has_stamp_near_rect(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, int *out_found, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
 
+// Page Manipulation
+int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error);
+int mupdf_pdf_delete_page(fz_context *ctx, fz_document *doc, int pageno, const char **out_error);
+int mupdf_pdf_reorder_page(fz_context *ctx, fz_document *doc, int from_page, int to_page, const char **out_error);
+int mupdf_pdf_reorder_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int dest_slot, const char **out_error);
+int mupdf_pdf_delete_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char **out_error);
+int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char *out_path, const char **out_error);
+
 // Store & Memory Management
 void mupdf_context_empty_store(fz_context *ctx);
 int mupdf_context_shrink_store(fz_context *ctx, unsigned int percent);

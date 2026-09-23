@@ -53,5 +53,29 @@ struct NativeSearchFieldTests {
             #expect(clip.bounds.origin.x <= 25.0)
         }
     }
+
+    @Test @MainActor func testSearchPageGroupsAndNavigation() {
+        let vm = PDFViewerViewModel()
+        let match1 = SearchResult(pageIndex: 0, matchedText: "foo", snippet: "foo snippet 1", highlightQuads: [])
+        let match2 = SearchResult(pageIndex: 0, matchedText: "foo", snippet: "foo snippet 2", highlightQuads: [])
+        let match3 = SearchResult(pageIndex: 2, matchedText: "foo", snippet: "foo snippet 3", highlightQuads: [])
+        let match4 = SearchResult(pageIndex: 5, matchedText: "foo", snippet: "foo snippet 4", highlightQuads: [])
+
+        vm.searchResults = [match1, match2, match3, match4]
+
+        let groups = vm.searchPageGroups
+        #expect(groups.count == 3)
+        #expect(groups[0].pageIndex == 0)
+        #expect(groups[0].matches.count == 2)
+        #expect(groups[1].pageIndex == 2)
+        #expect(groups[1].matches.count == 1)
+        #expect(groups[2].pageIndex == 5)
+        #expect(groups[2].matches.count == 1)
+
+        vm.navigateToMatch(match3)
+        #expect(vm.activeSearchMatchIndex == 2)
+        #expect(vm.activeSearchMatchId == match3.id)
+        #expect(vm.currentPageIndex == 2)
+    }
 }
 
