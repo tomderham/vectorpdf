@@ -216,6 +216,7 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeSnapshots: [SnapshotTarget] = []
     @Published public var activeSnapshotTarget: SnapshotTarget? = nil
     @Published public var selectedSnapshotId: UUID? = nil
+    @Published public var snapshotJumpToken: Int = 0
 
     // Agent Tab: semantic search (always available on-device) plus optional on-device
     // synthesis (Apple Intelligence-gated) over the currently open document only — see
@@ -1101,7 +1102,7 @@ public final class PDFViewerViewModel: ObservableObject {
     /// than one page, the target itself (page/rect/thumbnail) always anchors to the *first* page
     /// — "jump back to this snapshot" for a passage that crosses a page break most naturally means
     /// jumping to where it begins — but the label/snippet reflect the full combined text.
-    private func buildSnapshotTargetFromSelection() -> SnapshotTarget? {
+    public func buildSnapshotTargetFromSelection() -> SnapshotTarget? {
         guard let sel = activeSelection else { return nil }
         let pageIdx = sel.pageIndex
         let bounds = (document?.pageBounds.indices.contains(pageIdx) == true)
@@ -1135,7 +1136,17 @@ public final class PDFViewerViewModel: ObservableObject {
             thumbData = makeThumbnail(from: image, pageBounds: bounds, targetRect: sel.result.boundingRect)
         }
 
-        let targetRect = sel.result.boundingRect
+        let targetRect: CGRect
+        if sel.result.mode == .rectangularArea {
+            targetRect = sel.result.boundingRect
+        } else if let firstLineQuad = sel.result.highlightQuads.mergedLineQuads().first {
+            // For reading-order selections, anchor targetRect to the first line's quads so
+            // multi-line or multi-column selections don't create an inflated box covering unselected
+            // columns and gutters.
+            targetRect = firstLineQuad.boundingRect
+        } else {
+            targetRect = sel.result.boundingRect
+        }
         let targetPoint = CGPoint(x: targetRect.midX, y: targetRect.midY)
 
         return SnapshotTarget(
@@ -1473,13 +1484,32 @@ public final class PDFViewerViewModel: ObservableObject {
     /// the focus ring renderer and viewport scrolling share identical geometry.
     public func resolvedTargetRect(for snap: SnapshotTarget) -> CGRect {
         let pageIdx = snap.targetPage
-        guard let doc = document, pageIdx >= 0, pageIdx < doc.pageCount else {
-            return snap.targetRect ?? CGRect(x: 54, y: 36, width: 300, height: 40)
+        let doc = document
+        let pageBounds: CGRect
+        if let doc, pageIdx >= 0, pageIdx < doc.pageCount {
+            pageBounds = doc.pageBounds[pageIdx]
+        } else {
+            pageBounds = CGRect(x: 0, y: 0, width: 612, height: 792)
         }
-        let pageBounds = doc.pageBounds[pageIdx]
 
         if let rect = snap.targetRect, rect.width > 0, rect.height > 0 {
-            return rect
+            if snap.thumbnailFileName != nil {
+                // Exact user-drawn marquee area crop
+                return rect
+            }
+            // Text selections, search hits, and point snapshots receive breathable padding matching link targets
+            let padded = rect.insetBy(dx: -6, dy: -3)
+            let safeLeft = pageBounds.minX + 4
+            let safeRight = pageBounds.maxX - 4
+            let clampedX = max(safeLeft, min(padded.minX, safeRight - 24))
+            let clampedY = max(pageBounds.minY + 4, min(padded.minY, pageBounds.maxY - 20))
+            let clampedW = min(padded.width, safeRight - clampedX)
+            let clampedH = min(padded.height, pageBounds.maxY - clampedY)
+            return CGRect(x: clampedX, y: clampedY, width: max(clampedW, 24), height: max(clampedH, 20))
+        }
+
+        guard let doc, pageIdx >= 0, pageIdx < doc.pageCount else {
+            return snap.targetRect ?? CGRect(x: 54, y: 36, width: 300, height: 40)
         }
 
         // Ensure structured data is available for line resolution
@@ -1492,8 +1522,15 @@ public final class PDFViewerViewModel: ObservableObject {
         let hasValidX = (rawPoint != nil && !rawPoint!.x.isNaN)
         let hasValidY = (rawPoint != nil && !rawPoint!.y.isNaN)
 
-        let safeX = hasValidX ? rawPoint!.x : (pageBounds.minX + SpatialTextSelector.minColumnWidth)
-        let safeY = hasValidY ? rawPoint!.y : (pageBounds.minY + 40)
+        // If MuPDF returned (0, 0) or near-origin coords (e.g. for /Fit links with unspecified coordinates),
+        // anchor into the top body content rather than the top-left margin gutter.
+        let isOriginPoint = (hasValidX && hasValidY && rawPoint!.x <= pageBounds.minX + 10 && rawPoint!.y <= pageBounds.minY + 10)
+        let bodyLeftMargin = max(pageBounds.minX + 48, stext?.blocks
+            .filter { $0.type == .text && $0.bbox.width >= SpatialTextSelector.minColumnWidth }
+            .map { $0.bbox.minX }.min() ?? (pageBounds.minX + SpatialTextSelector.minColumnWidth))
+
+        let safeX = (hasValidX && !isOriginPoint) ? rawPoint!.x : bodyLeftMargin
+        let safeY = (hasValidY && !isOriginPoint) ? rawPoint!.y : (pageBounds.minY + 40)
         let safePoint = CGPoint(x: safeX, y: safeY)
 
         var resolvedLineRect: CGRect? = nil
@@ -1506,13 +1543,9 @@ public final class PDFViewerViewModel: ObservableObject {
             return lineRect
         }
 
-        if rawPoint != nil && (hasValidX || hasValidY) {
+        if rawPoint != nil && (hasValidX || hasValidY) && !isOriginPoint {
             // Fallback geometry when structured text is unavailable or non-textual.
-            let bodyLeftMargin = stext?.blocks
-                .filter { $0.type == .text && $0.bbox.width >= SpatialTextSelector.minColumnWidth }
-                .map { $0.bbox.minX }.min() ?? (pageBounds.minX + SpatialTextSelector.minColumnWidth)
-
-            let isLeftAnchored = safePoint.x <= pageBounds.minX + SpatialTextSelector.minColumnWidth
+            let isLeftAnchored = safePoint.x <= bodyLeftMargin + 10
             let desiredWidth: CGFloat = min(360, pageBounds.width - (bodyLeftMargin - pageBounds.minX) - 36)
             let desiredHeight: CGFloat = 36
 
@@ -1532,8 +1565,8 @@ public final class PDFViewerViewModel: ObservableObject {
             return CGRect(x: clampedX, y: clampedY, width: max(clampedW, 40), height: max(clampedH, 20))
         }
 
-        let minX = pageBounds.minX + 54
-        let width = max(pageBounds.width - 108, 100)
+        let minX = max(bodyLeftMargin, pageBounds.minX + 54)
+        let width = max(min(pageBounds.width - (minX - pageBounds.minX) - 36, 400), 100)
         let minY = pageBounds.minY + 36
         return CGRect(x: minX, y: minY, width: width, height: 40)
     }
@@ -1542,6 +1575,7 @@ public final class PDFViewerViewModel: ObservableObject {
         loadPageMetadata(snap.targetPage)
         self.selectedSnapshotId = snap.id
         self.activeSnapshotTarget = snap
+        self.snapshotJumpToken &+= 1
         self.currentPageIndex = snap.targetPage
         pruneCaches(around: snap.targetPage)
         

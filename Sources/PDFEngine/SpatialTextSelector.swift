@@ -368,6 +368,17 @@ public final class SpatialTextSelector: Sendable {
     }
 
     // MARK: - Point Target Resolution
+    /// Determines whether a line belongs to a margin line-number gutter (numeric/punctuation only and narrow or in left margin)
+    public static func isLineNumberGutter(line: TextLine, bodyLeftMargin: CGFloat) -> Bool {
+        // Line numbers sit in the margin gutter to the left of the body column
+        guard line.bbox.minX < bodyLeftMargin else { return false }
+        let isNumericOrPunct = line.characters.allSatisfy { ch in
+            ch.char.isNumber || ch.char.isWhitespace || ch.char == "." || ch.char == ":" || ch.char == "-" || ch.char == "—"
+        }
+        guard isNumericOrPunct else { return false }
+        return line.bbox.maxX <= bodyLeftMargin + 8 || line.bbox.width < 45
+    }
+
     /// Resolves the primary content line for a target location (such as a cross-reference destination or bookmark),
     /// consistent with mouse selection: filtering out narrow line-number gutters and margin annotations,
     /// identifying the appropriate body column, and accurately targeting figure/table titles and equations.
@@ -379,6 +390,7 @@ public final class SpatialTextSelector: Sendable {
         // Consistent with selectReadingOrder's minColumnWidth (60pt).
         let bodyBlocks = textBlocks.filter { $0.bbox.width >= Self.minColumnWidth }
         let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
+        let bodyLeftMargin = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
 
         // 2. Parse target reference intent from label (e.g. "Table 27-14", "Equation (27-19)", "Figure 3")
         let cleanLabel = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -427,6 +439,7 @@ public final class SpatialTextSelector: Sendable {
             for block in page.blocks where block.type == .text {
                 for line in block.lines {
                     // Strictly exclude margin line numbers: numeric-only with narrow width or far left
+                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
                     if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40 { continue }
                     if line.bbox.minX < page.bounds.minX + Self.minColumnWidth - 10 && line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) { continue }
 
@@ -458,9 +471,11 @@ public final class SpatialTextSelector: Sendable {
                 let rowMinY = eqNumLine.bbox.minY - 15
                 let rowMaxY = eqNumLine.bbox.maxY + 15
                 let rowLines = page.blocks.filter { $0.type == .text }.flatMap { $0.lines }.filter { line in
-                    // Exclude margin line numbers
-                    guard !(line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40) else { return false }
-                    guard line.bbox.minX >= page.bounds.minX + 75 else { return false }
+                    // Exclude margin line numbers: narrow numeric lines on the left, or in gutter
+                    if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 45 && line.bbox.minX < page.bounds.midX {
+                        return false
+                    }
+                    guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { return false }
                     return line.bbox.minY >= rowMinY && line.bbox.maxY <= rowMaxY
                 }
                 if !rowLines.isEmpty {
@@ -486,14 +501,25 @@ public final class SpatialTextSelector: Sendable {
             let maxDyAbove: CGFloat = (kind == "figure") ? 60 : 250
             let maxDyBelow: CGFloat = (kind == "figure") ? 500 : 250
 
+            let numPattern = #"(?:\b|\()\#(NSRegularExpression.escapedPattern(for: num))(?:\b|\))"#
+            let numRegex = try? NSRegularExpression(pattern: numPattern, options: .caseInsensitive)
+
             for block in candidateBlocks {
                 for line in block.lines {
+                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
                     guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 10 else { continue }
                     let lineLower = line.text.lowercased()
                     let containsKind = (kind == "figure")
                         ? (lineLower.contains("figure") || lineLower.contains("fig"))
                         : lineLower.contains("table")
-                    let containsNum = lineLower.contains(num)
+
+                    let containsNum: Bool
+                    if let numRegex {
+                        let nsLine = lineLower as NSString
+                        containsNum = numRegex.firstMatch(in: lineLower, range: NSRange(location: 0, length: nsLine.length)) != nil
+                    } else {
+                        containsNum = lineLower.contains(num)
+                    }
 
                     if containsKind && containsNum {
                         let dy = line.bbox.midY - point.y
@@ -511,17 +537,27 @@ public final class SpatialTextSelector: Sendable {
             if let titleLine = bestTitleLine {
                 // If title wraps across subsequent lines in the same block, frame the full title heading
                 if let block = candidateBlocks.first(where: { $0.lines.contains(where: { $0.bbox == titleLine.bbox }) }) {
-                    let titleLines = block.lines.filter {
-                        $0.bbox.minY >= titleLine.bbox.minY - 2 &&
-                        $0.bbox.maxY <= titleLine.bbox.maxY + 40
-                    }
-                    if titleLines.count > 1 {
-                        let minX = titleLines.map { $0.bbox.minX }.min() ?? titleLine.bbox.minX
-                        let maxX = titleLines.map { $0.bbox.maxX }.max() ?? titleLine.bbox.maxX
-                        let minY = titleLines.map { $0.bbox.minY }.min() ?? titleLine.bbox.minY
-                        let maxY = titleLines.map { $0.bbox.maxY }.max() ?? titleLine.bbox.maxY
-                        let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                        return TextLine(bbox: combinedBBox, characters: titleLines.flatMap { $0.characters })
+                    let sortedLines = block.lines.sorted { $0.bbox.minY < $1.bbox.minY }
+                    if let startIdx = sortedLines.firstIndex(where: { $0.bbox == titleLine.bbox }) {
+                        var captionLines: [TextLine] = [sortedLines[startIdx]]
+                        var prevMaxY = sortedLines[startIdx].bbox.maxY
+                        for i in (startIdx + 1)..<sortedLines.count {
+                            let l = sortedLines[i]
+                            if l.bbox.minY - prevMaxY <= 15 && l.bbox.minY - sortedLines[startIdx].bbox.minY <= 80 {
+                                captionLines.append(l)
+                                prevMaxY = l.bbox.maxY
+                            } else {
+                                break
+                            }
+                        }
+                        if captionLines.count > 1 {
+                            let minX = captionLines.map { $0.bbox.minX }.min() ?? titleLine.bbox.minX
+                            let maxX = captionLines.map { $0.bbox.maxX }.max() ?? titleLine.bbox.maxX
+                            let minY = captionLines.map { $0.bbox.minY }.min() ?? titleLine.bbox.minY
+                            let maxY = captionLines.map { $0.bbox.maxY }.max() ?? titleLine.bbox.maxY
+                            let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                            return TextLine(bbox: combinedBBox, characters: captionLines.flatMap { $0.characters })
+                        }
                     }
                 }
                 return titleLine
@@ -560,7 +596,8 @@ public final class SpatialTextSelector: Sendable {
 
             for line in block.lines {
                 guard !line.characters.isEmpty else { continue }
-                // Exclude narrow margin gutter line numbers (strictly numeric, width < 40)
+                // Exclude narrow margin gutter line numbers
+                guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { continue }
                 guard line.bbox.minX >= page.bounds.minX + 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
                 guard line.bbox.width >= 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
 
@@ -590,11 +627,13 @@ public final class SpatialTextSelector: Sendable {
                 }
 
                 // Restrict search to reasonable vertical proximity, unless the anchor is at the top of the page
-                let isTopAnchored = targetPoint.y <= page.bounds.minY + 45
+                let isTopAnchored = targetPoint.y <= page.bounds.minY + 60
                 if isTopAnchored && labelBoost > 0 {
                     // Allowed across the page when strongly matched by label
+                } else if isTopAnchored {
+                    guard dy <= 150 else { continue }
                 } else {
-                    guard dy <= 45 else { continue }
+                    guard dy <= 120 else { continue }
                 }
 
                 // Horizontal distance metric identical to resolvePosition:

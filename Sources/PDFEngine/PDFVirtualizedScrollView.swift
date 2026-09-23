@@ -115,7 +115,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastNavigatedPage: Int = -1
         private var lastSearchMatchIndex: Int = -1
         private var lastScrolledTargetId: String? = nil
-        private var lastSnapshotId: UUID? = nil
+        private var lastSnapshotJumpToken: Int = -1
         
         // Pinch-to-zoom tracking
         var isPinching: Bool = false
@@ -149,7 +149,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let isZoomChanged = (abs(lastZoomScale - viewModel.zoomScale) > 0.001)
             let isPageJump = (viewModel.currentPageIndex != lastNavigatedPage && !isProgrammaticScroll)
             let isMatchNavigation = (viewModel.activeScrollTargetId != nil && viewModel.activeScrollTargetId != lastScrolledTargetId && !viewModel.searchResults.isEmpty)
-            let isSnapshotJump = (viewModel.activeSnapshotTarget?.id != nil && viewModel.activeSnapshotTarget?.id != lastSnapshotId)
+            let isSnapshotJump = (viewModel.snapshotJumpToken != lastSnapshotJumpToken && viewModel.activeSnapshotTarget != nil)
             
             if isNewDocument {
                 lastDocumentPath = doc.filePath
@@ -157,11 +157,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastZoomScale = viewModel.zoomScale
                 lastSearchMatchIndex = -1
                 lastScrolledTargetId = nil
-                lastSnapshotId = nil
-            }
-            
-            if viewModel.activeSnapshotTarget == nil && lastSnapshotId != nil {
-                lastSnapshotId = nil
+                lastSnapshotJumpToken = -1
             }
             
             // 1. Calculate container bounds based on pre-computed document geometry. Width/height
@@ -229,7 +225,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             // 5. Handle Precise Snapshot Target Scroll
             if isSnapshotJump, let snap = viewModel.activeSnapshotTarget {
-                lastSnapshotId = snap.id
+                lastSnapshotJumpToken = viewModel.snapshotJumpToken
                 lastNavigatedPage = snap.targetPage
                 scrollToSnapshot(snap: snap, doc: doc, clipView: clipView, scrollView: scrollView)
             }

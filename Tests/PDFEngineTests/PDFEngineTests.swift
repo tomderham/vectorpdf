@@ -3016,6 +3016,150 @@ func createFormSamplePDF(at fileURL: URL) {
     let normalRenderScale = max(retinaTargetScale, 1.5)
     #expect(normalRenderScale == 2.0)
 }
+
+@Test @MainActor func testLineNumberGutterDetection() {
+    let dummyQuad = PDFQuad(ul: .zero, ur: .zero, ll: .zero, lr: .zero)
+    func makeLine(text: String, bbox: CGRect) -> TextLine {
+        let chars = text.map { TextCharacter(char: $0, quad: dummyQuad, origin: .zero, size: 10) }
+        return TextLine(bbox: bbox, characters: chars)
+    }
+
+    let bodyLeftMargin: CGFloat = 72.0
+
+    // 1. Genuine line numbers in left gutter: numeric only, width < 45, x in gutter
+    let lineNum1 = makeLine(text: "1", bbox: CGRect(x: 36, y: 100, width: 10, height: 12))
+    let lineNum2 = makeLine(text: "42", bbox: CGRect(x: 40, y: 200, width: 16, height: 12))
+    let lineNumWithDot = makeLine(text: "15.", bbox: CGRect(x: 38, y: 300, width: 18, height: 12))
+
+    #expect(SpatialTextSelector.isLineNumberGutter(line: lineNum1, bodyLeftMargin: bodyLeftMargin) == true)
+    #expect(SpatialTextSelector.isLineNumberGutter(line: lineNum2, bodyLeftMargin: bodyLeftMargin) == true)
+    #expect(SpatialTextSelector.isLineNumberGutter(line: lineNumWithDot, bodyLeftMargin: bodyLeftMargin) == true)
+
+    // 2. Real body content (equations, section headers, short text words) must NEVER be flagged as line numbers
+    let bodyText = makeLine(text: "Introduction", bbox: CGRect(x: 72, y: 100, width: 120, height: 14))
+    let equation = makeLine(text: "y = 2x + 1", bbox: CGRect(x: 72, y: 150, width: 180, height: 14))
+    let sectionNum = makeLine(text: "1.2", bbox: CGRect(x: 72, y: 180, width: 24, height: 14))
+    let equationNum = makeLine(text: "(1)", bbox: CGRect(x: 500, y: 150, width: 20, height: 14))
+
+    #expect(SpatialTextSelector.isLineNumberGutter(line: bodyText, bodyLeftMargin: bodyLeftMargin) == false)
+    #expect(SpatialTextSelector.isLineNumberGutter(line: equation, bodyLeftMargin: bodyLeftMargin) == false)
+    #expect(SpatialTextSelector.isLineNumberGutter(line: sectionNum, bodyLeftMargin: bodyLeftMargin) == false)
+    #expect(SpatialTextSelector.isLineNumberGutter(line: equationNum, bodyLeftMargin: bodyLeftMargin) == false)
+}
+
+@Test @MainActor func testRomanNumeralTableTargetResolution() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_roman_table_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    let font = NSFont.systemFont(ofSize: 12)
+
+    context.beginPDFPage(nil)
+    // Left-margin line number 1 at x=40
+    ("1" as NSString).draw(at: NSPoint(x: 40, y: 650), withAttributes: [.font: font])
+    // Prose containing "table" and "i"
+    ("In this table it is critical to observe the system results." as NSString).draw(at: NSPoint(x: 80, y: 650), withAttributes: [.font: font])
+    // Left-margin line number 2 at x=40
+    ("2" as NSString).draw(at: NSPoint(x: 40, y: 600), withAttributes: [.font: font])
+    // Actual table title: TABLE I
+    ("TABLE I: Execution Performance Benchmarks" as NSString).draw(at: NSPoint(x: 80, y: 600), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    guard let stext = doc.loadStructuredPage(for: 0) else {
+        #expect(Bool(false), "StructuredPage must load")
+        return
+    }
+
+    let selector = SpatialTextSelector()
+    // Target "Table I"
+    let target = selector.targetLine(on: stext, at: CGPoint(x: 80, y: 192), label: "Table I")
+    #expect(target != nil)
+    #expect(target?.text.contains("TABLE I") == true)
+    #expect(target?.text.contains("critical") == false) // Must not match the prose line with "table it is"
+    #expect((target?.bbox.minX ?? 0) >= 70) // Must not be on margin line numbers
+}
+
+@Test @MainActor func testMultiLineTextSelectionSnapshotTargetRect() {
+    let q1 = PDFQuad(
+        ul: CGPoint(x: 72, y: 100), ur: CGPoint(x: 300, y: 100),
+        ll: CGPoint(x: 72, y: 114), lr: CGPoint(x: 300, y: 114)
+    )
+    let q2 = PDFQuad(
+        ul: CGPoint(x: 72, y: 120), ur: CGPoint(x: 280, y: 120),
+        ll: CGPoint(x: 72, y: 134), lr: CGPoint(x: 280, y: 134)
+    )
+    let q3 = PDFQuad(
+        ul: CGPoint(x: 350, y: 100), ur: CGPoint(x: 550, y: 100),
+        ll: CGPoint(x: 350, y: 114), lr: CGPoint(x: 550, y: 114)
+    )
+
+    let selResult = SelectionResult(
+        text: "Line 1 in col 1\nLine 2 in col 1\nLine 1 in col 2",
+        highlightQuads: [q1, q2, q3],
+        boundingRect: CGRect(x: 72, y: 100, width: 478, height: 34),
+        mode: .readingOrder
+    )
+
+    let vm = PDFViewerViewModel()
+    vm.activeSelection = (pageIndex: 0, result: selResult)
+
+    // Snapshot from selection must focus on the first line rather than the full multi-column union
+    let target = vm.buildSnapshotTargetFromSelection()
+    #expect(target != nil)
+    #expect(target?.targetRect != nil)
+    // First line width should be ~228pt (300 - 72), not 478pt across both columns!
+    #expect((target?.targetRect?.width ?? 0) <= 250)
+    #expect(target?.targetRect?.minX == 72)
+}
+
+@Test @MainActor func testResolvedTargetRectAvoidsGutterAndAddsPadding() {
+    let vm = PDFViewerViewModel()
+    // Create a snapshot target with point near (0, 0)
+    let snapNearOrigin = SnapshotTarget(
+        label: "Top Bookmark",
+        targetPage: 0,
+        targetPoint: CGPoint(x: 0, y: 0),
+        sourcePage: 0
+    )
+    let resolved = vm.resolvedTargetRect(for: snapNearOrigin)
+    // Fallback or resolved rect must never be in margin gutter (< 48pt)
+    #expect(resolved.minX >= 48)
+
+    // Snapshot target with explicit text targetRect gets breathable padding
+    let rawRect = CGRect(x: 100, y: 200, width: 150, height: 20)
+    let snapText = SnapshotTarget(
+        label: "Search Hit",
+        targetPage: 0,
+        targetPoint: CGPoint(x: 175, y: 210),
+        targetRect: rawRect,
+        sourcePage: 0
+    )
+    let padded = vm.resolvedTargetRect(for: snapText)
+    #expect(padded.minX < rawRect.minX) // Has horizontal expansion padding
+    #expect(padded.minY < rawRect.minY) // Has vertical expansion padding
+    #expect(padded.width > rawRect.width)
+}
+
+@Test @MainActor func testSnapshotJumpTokenIncrementsOnEveryJump() {
+    let vm = PDFViewerViewModel()
+    let initialToken = vm.snapshotJumpToken
+    let snap = SnapshotTarget(
+        label: "Test",
+        targetPage: 0,
+        sourcePage: 0
+    )
+    vm.jumpToSnapshot(snap)
+    #expect(vm.snapshotJumpToken == initialToken + 1)
+    vm.jumpToSnapshot(snap)
+    #expect(vm.snapshotJumpToken == initialToken + 2)
+}
 }
 
 
