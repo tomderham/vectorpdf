@@ -221,10 +221,20 @@ public final class PDFViewerViewModel: ObservableObject {
     public var autoNavigateOnSearchResults: Bool = false
     
     // Cross References & Snapshots
-    @Published public var activeSnapshots: [SnapshotTarget] = []
+    @Published public var activeSnapshots: [SnapshotTarget] = [] {
+        didSet {
+            if PDFViewerAppCoordinator.shared.activeViewModel === self || PDFViewerViewModel.active === self || PDFViewerAppCoordinator.shared.activeViewModel == nil {
+                PDFViewerAppCoordinator.shared.activeAnchors = activeSnapshots
+            }
+        }
+    }
     @Published public var activeSnapshotTarget: SnapshotTarget? = nil
     @Published public var selectedSnapshotId: UUID? = nil
     @Published public var snapshotJumpToken: Int = 0
+
+    // Document Inspection & Metadata (Tier 2, Item 5)
+    @Published public var isShowingDocumentProperties: Bool = false
+    @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Agent Tab: semantic search (always available on-device) plus optional on-device
     // synthesis (Apple Intelligence-gated) over the currently open document only — see
@@ -2582,6 +2592,124 @@ public final class PDFViewerViewModel: ObservableObject {
             completion(panel.runModal())
         }
     }
+
+    public func duplicateSelectedThumbnails() {
+        guard let doc = document else { return }
+        let toDuplicate = selectedThumbnailPageIndices.sorted()
+        guard !toDuplicate.isEmpty else { return }
+
+        do {
+            let (insertedSlot, count) = try doc.duplicatePages(toDuplicate)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+
+                let newSelectedRange = Set(insertedSlot..<(insertedSlot + count))
+                self.selectedThumbnailPageIndices = newSelectedRange
+                self.selectionAnchorPageIndex = insertedSlot
+                self.currentPageIndex = insertedSlot
+
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, insertedSlot - 8)
+                let end = min(doc.pageCount, insertedSlot + count + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to duplicate pages \(toDuplicate): \(error)")
+        }
+    }
+
+    public func duplicatePage(_ pageIndex: Int) {
+        selectedThumbnailPageIndices = [pageIndex]
+        selectionAnchorPageIndex = pageIndex
+        duplicateSelectedThumbnails()
+    }
+
+    public func importPages(from fileURL: URL, toSlot: Int? = nil) {
+        guard let doc = document else { return }
+        let slot = toSlot ?? (selectedThumbnailPageIndices.max().map { $0 + 1 } ?? doc.pageCount)
+        let clampedSlot = max(0, min(slot, doc.pageCount))
+
+        do {
+            let (insertedSlot, count) = try doc.importPages(from: fileURL, atSlot: clampedSlot)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+
+                let newSelectedRange = Set(insertedSlot..<(insertedSlot + count))
+                self.selectedThumbnailPageIndices = newSelectedRange
+                self.selectionAnchorPageIndex = insertedSlot
+                self.currentPageIndex = insertedSlot
+
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, insertedSlot - 8)
+                let end = min(doc.pageCount, insertedSlot + count + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to import pages from \(fileURL.path): \(error)")
+        }
+    }
+
+    public func promptImportPDF(atSlot slot: Int? = nil) {
+        guard document != nil else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType.pdf]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.prompt = "Insert"
+        panel.message = "Choose a PDF file to insert into this document"
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.importPages(from: url, toSlot: slot)
+        }
+
+        if let window = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(panel.runModal())
+        }
+    }
     
     /// Prompts the user to Save, Don't Save, or Cancel when closing a document with unsaved edits.
     /// Returns true if closing should proceed (changes saved or discarded), or false if closing should abort.
@@ -2726,6 +2854,23 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
     
+    /// Adds an anchor for the current page location (or active selection if text is selected),
+    /// switching the sidebar tab to Anchors to provide immediate visual feedback.
+    public func addAnchorForCurrentPage() {
+        if let target = buildSnapshotTargetFromSelection() {
+            addSnapshotTarget(target)
+            NotificationCenter.default.post(name: .focusAnchorsCommand, object: nil)
+            return
+        }
+        guard let doc = document, doc.pageCount > 0 else { return }
+        let p = currentPageIndex
+        let bounds = doc.pageBounds[p]
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        let target = buildSnapshotTarget(at: center, pageIndex: p)
+        addSnapshotTarget(target)
+        NotificationCenter.default.post(name: .focusAnchorsCommand, object: nil)
+    }
+
     public func addSnapshotTarget(_ target: SnapshotTarget) {
         let isDuplicate = activeSnapshots.contains { existing in
             if existing.id == target.id { return true }
@@ -2738,6 +2883,9 @@ public final class PDFViewerViewModel: ObservableObject {
         activeSnapshots.append(target)
         selectedSnapshotId = target.id
         saveReadingStateIfNeeded()
+        if PDFViewerAppCoordinator.shared.activeViewModel === self || PDFViewerViewModel.active === self {
+            PDFViewerAppCoordinator.shared.activeAnchors = activeSnapshots
+        }
     }
 
     public func removeSnapshotTarget(_ target: SnapshotTarget) {
@@ -2747,6 +2895,9 @@ public final class PDFViewerViewModel: ObservableObject {
         activeSnapshots.removeAll(where: { $0.id == target.id })
         target.deleteThumbnailFile()
         saveReadingStateIfNeeded()
+        if PDFViewerAppCoordinator.shared.activeViewModel === self || PDFViewerViewModel.active === self {
+            PDFViewerAppCoordinator.shared.activeAnchors = activeSnapshots
+        }
     }
 
     public func clearAllSnapshots() {
@@ -2756,6 +2907,9 @@ public final class PDFViewerViewModel: ObservableObject {
         }
         activeSnapshots.removeAll()
         saveReadingStateIfNeeded()
+        if PDFViewerAppCoordinator.shared.activeViewModel === self || PDFViewerViewModel.active === self {
+            PDFViewerAppCoordinator.shared.activeAnchors = activeSnapshots
+        }
     }
 
     /// Persists this document's current page, zoom, and snapshots so they can be restored next
@@ -2770,6 +2924,19 @@ public final class PDFViewerViewModel: ObservableObject {
             zoomScale: zoomScale,
             snapshots: activeSnapshots
         )
+    }
+
+    // MARK: - Document Properties & Font Inspection
+
+    public func showDocumentProperties() {
+        guard let doc = document else { return }
+        self.documentInspectionReport = doc.generateInspectionReport(pageIndex: currentPageIndex)
+        self.isShowingDocumentProperties = true
+    }
+
+    public func refreshInspectionReport() {
+        guard let doc = document else { return }
+        self.documentInspectionReport = doc.generateInspectionReport(pageIndex: currentPageIndex)
     }
 
     // MARK: - Agent Tab

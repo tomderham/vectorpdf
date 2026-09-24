@@ -9,7 +9,9 @@ import Translation
 extension Notification.Name {
     public static let openFilePathCommand = Notification.Name("openFilePathCommand")
     public static let focusSearchCommand = Notification.Name("focusSearchCommand")
+    public static let focusAnchorsCommand = Notification.Name("focusAnchorsCommand")
     public static let formWidgetDidChange = Notification.Name("formWidgetDidChange")
+    public static let showDocumentPropertiesCommand = Notification.Name("showDocumentPropertiesCommand")
 }
 
 /// Standalone, reusable macOS SwiftUI PDF Document Viewer
@@ -472,11 +474,23 @@ public struct PDFViewerMainView: View {
             sidebarVisibility = .all
             selectedSidebarTab = 1
         }
+        .onReceive(NotificationCenter.default.publisher(for: .focusAnchorsCommand)) { _ in
+            guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
+            sidebarVisibility = .all
+            selectedSidebarTab = 2
+        }
         .onChange(of: viewModel.document?.filePath) { oldPath, newPath in
             guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
             overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
             selectedSidebarTab = 0
             tocSearchQuery = ""
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showDocumentPropertiesCommand)) { _ in
+            guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
+            viewModel.showDocumentProperties()
+        }
+        .sheet(isPresented: $viewModel.isShowingDocumentProperties) {
+            PDFDocumentPropertiesView(viewModel: viewModel)
         }
         .task {
             // Falls back to a buffered cold-launch open-file path (see

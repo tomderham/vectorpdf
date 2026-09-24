@@ -558,6 +558,38 @@ public final class PDFDocumentCore: @unchecked Sendable {
             throw PDFError.operationFailed(msg)
         }
     }
+
+    public func duplicatePages(_ pageIndices: [Int]) throws -> (insertedSlot: Int, count: Int) {
+        guard !pageIndices.isEmpty else { return (0, 0) }
+        lock.lock()
+        defer { lock.unlock() }
+        var insertedSlot: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        let int32Indices = pageIndices.map { Int32($0) }
+        let ret = int32Indices.withUnsafeBufferPointer { buf in
+            mupdf_pdf_duplicate_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &insertedSlot, &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to duplicate pages"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+        return (Int(insertedSlot), pageIndices.count)
+    }
+
+    public func importPages(from fileURL: URL, atSlot slot: Int) throws -> (insertedSlot: Int, count: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        var importedCount: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_import_pages(ctx, doc, fileURL.path, Int32(slot), &importedCount, &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to import pages from \(fileURL.lastPathComponent)"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+        return (slot, Int(importedCount))
+    }
 }
 
 extension PDFDocumentCore {
@@ -689,5 +721,203 @@ extension PDFDocumentCore {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to set form widget value"
             throw PDFError.saveFailed(msg)
         }
+    }
+
+    // MARK: - Document Metadata, Security & Font Inspection
+
+    public func getMetadata() -> DocumentMetadata {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var rawMeta = mupdf_document_metadata()
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_document_get_metadata(ctx, doc, &rawMeta, &errorMsg)
+
+        let format = ret == 0 ? withUnsafeBytes(of: rawMeta.format) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let encryption = ret == 0 ? withUnsafeBytes(of: rawMeta.encryption) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let title = ret == 0 ? withUnsafeBytes(of: rawMeta.title) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let author = ret == 0 ? withUnsafeBytes(of: rawMeta.author) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let subject = ret == 0 ? withUnsafeBytes(of: rawMeta.subject) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let keywords = ret == 0 ? withUnsafeBytes(of: rawMeta.keywords) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let creator = ret == 0 ? withUnsafeBytes(of: rawMeta.creator) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let producer = ret == 0 ? withUnsafeBytes(of: rawMeta.producer) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let creationDate = ret == 0 ? withUnsafeBytes(of: rawMeta.creation_date) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+        let modDate = ret == 0 ? withUnsafeBytes(of: rawMeta.mod_date) { ptr in
+            String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+        } : ""
+
+        let versionStr: String
+        if rawMeta.pdf_version > 0 {
+            versionStr = "PDF \(rawMeta.pdf_version / 10).\(rawMeta.pdf_version % 10)"
+        } else {
+            versionStr = format.isEmpty ? "PDF" : format
+        }
+
+        var fileSizeStr = "Unknown"
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: filePath),
+           let size = attrs[.size] as? Int64 {
+            fileSizeStr = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+        }
+
+        return DocumentMetadata(
+            format: format.isEmpty ? "PDF" : format,
+            pdfVersion: versionStr,
+            title: title,
+            author: author,
+            subject: subject,
+            keywords: keywords,
+            creator: creator,
+            producer: producer,
+            creationDate: creationDate,
+            modificationDate: modDate,
+            fileSizeDescription: fileSizeStr,
+            pageCount: pageCount,
+            isEncrypted: rawMeta.is_encrypted != 0,
+            encryptionMethod: encryption.isEmpty ? (rawMeta.is_encrypted != 0 ? "Standard" : "None") : encryption
+        )
+    }
+
+    public func getPermissions() -> DocumentSecurityPermissions {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var rawPerms = mupdf_document_permissions()
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_document_get_permissions(ctx, doc, &rawPerms, &errorMsg)
+        guard ret == 0 else {
+            return DocumentSecurityPermissions(
+                canPrint: true,
+                canModify: true,
+                canCopy: true,
+                canAnnotate: true,
+                canFillForms: true,
+                canAccessibility: true,
+                canAssemble: true,
+                canPrintHighQuality: true
+            )
+        }
+
+        return DocumentSecurityPermissions(
+            canPrint: rawPerms.can_print != 0,
+            canModify: rawPerms.can_modify != 0,
+            canCopy: rawPerms.can_copy != 0,
+            canAnnotate: rawPerms.can_annotate != 0,
+            canFillForms: rawPerms.can_fill_forms != 0,
+            canAccessibility: rawPerms.can_accessibility != 0,
+            canAssemble: rawPerms.can_assemble != 0,
+            canPrintHighQuality: rawPerms.can_print_high_quality != 0
+        )
+    }
+
+    public func getPageBoxes(for pageIndex: Int) -> PageBoxGeometry {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let clamped = max(0, min(pageIndex, max(0, pageCount - 1)))
+        var rawBoxes = mupdf_page_boxes()
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_page_get_boxes(ctx, doc, Int32(clamped), &rawBoxes, &errorMsg)
+
+        func toCGRect(_ r: fz_rect) -> CGRect {
+            CGRect(x: Double(r.x0), y: Double(r.y0), width: Double(r.x1 - r.x0), height: Double(r.y1 - r.y0))
+        }
+
+        guard ret == 0 else {
+            let fallback = pageBounds.indices.contains(clamped) ? pageBounds[clamped] : CGRect(x: 0, y: 0, width: 612, height: 792)
+            return PageBoxGeometry(
+                pageIndex: clamped,
+                mediaBox: fallback,
+                cropBox: fallback,
+                bleedBox: fallback,
+                trimBox: fallback,
+                artBox: fallback,
+                hasCropBox: true,
+                hasBleedBox: false,
+                hasTrimBox: false,
+                hasArtBox: false
+            )
+        }
+
+        return PageBoxGeometry(
+            pageIndex: clamped,
+            mediaBox: toCGRect(rawBoxes.media_box),
+            cropBox: toCGRect(rawBoxes.crop_box),
+            bleedBox: toCGRect(rawBoxes.bleed_box),
+            trimBox: toCGRect(rawBoxes.trim_box),
+            artBox: toCGRect(rawBoxes.art_box),
+            hasCropBox: rawBoxes.has_crop_box != 0,
+            hasBleedBox: rawBoxes.has_bleed_box != 0,
+            hasTrimBox: rawBoxes.has_trim_box != 0,
+            hasArtBox: rawBoxes.has_art_box != 0
+        )
+    }
+
+    public func getEmbeddedFonts() -> [PDFEmbeddedFont] {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var fontList = mupdf_font_list()
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_document_get_fonts(ctx, doc, &fontList, &errorMsg)
+        guard ret == 0, fontList.count > 0, let fontPtr = fontList.fonts else {
+            return []
+        }
+        defer { mupdf_free_font_list(ctx, &fontList) }
+
+        var result: [PDFEmbeddedFont] = []
+        result.reserveCapacity(Int(fontList.count))
+
+        for i in 0..<Int(fontList.count) {
+            let entry = fontPtr[i]
+            let name = withUnsafeBytes(of: entry.name) { ptr in
+                String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+            }
+            let subtype = withUnsafeBytes(of: entry.subtype) { ptr in
+                String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+            }
+            let encoding = withUnsafeBytes(of: entry.encoding) { ptr in
+                String(cString: ptr.baseAddress!.assumingMemoryBound(to: CChar.self))
+            }
+            result.append(PDFEmbeddedFont(
+                rawName: name,
+                subtype: subtype,
+                encoding: encoding,
+                isEmbedded: entry.is_embedded != 0,
+                isSubset: entry.is_subset != 0
+            ))
+        }
+
+        return result
+    }
+
+    public func generateInspectionReport(pageIndex: Int) -> PDFDocumentInspectionReport {
+        let meta = getMetadata()
+        let perms = getPermissions()
+        let boxes = (0..<pageCount).map { getPageBoxes(for: $0) }
+        let fonts = getEmbeddedFonts()
+        return PDFDocumentInspectionReport(
+            metadata: meta,
+            permissions: perms,
+            pageBoxes: boxes,
+            fonts: fonts
+        )
     }
 }

@@ -6,35 +6,35 @@ This document records prospective features identified during the competitive and
 
 ## Tier 2 Features: Core Productivity & Document Ergonomics
 
-### 1. Page Manipulation (Rotate, Reorder, Duplicate, Delete, Extract)
-- **Description**: Allow the reader to alter the page layout of the PDF document directly.
+### 1. Page Manipulation & PDF Import [COMPLETED]
+- **Description**: Alter page layout and assemble multi-document PDFs directly.
 - **Capabilities**:
-  - Rotate current page, selected pages, or all pages 90° clockwise/counterclockwise (persisting to PDF `/Rotate` dictionary).
-  - Drag-and-drop page reordering in the Thumbnail view (single-page and multi-page bulk moves).
-  - Duplicate individual pages or multiple selected pages within the PDF (e.g., via context menu or `⌘D`), inserting identical page copies directly adjacent to the selection for further annotation or editing.
+  - Rotate current page, selected pages, or all pages 90° CW/CCW/180° (persisting to PDF `/Rotate` dictionary).
+  - Drag-and-drop page reordering in the Thumbnail view with live insertion indicator and count badges (single-page and multi-page bulk moves).
+  - Duplicate individual pages or multiple selected pages (`⌘D` or context menu), inserting identical page copies directly adjacent to the selection with dirty tracking and temporary working copy.
   - Delete individual pages or bulk selected pages (safely preventing deletion of all pages).
-  - Extract/Export selected pages or page ranges to a new standalone PDF file.
-- **Implementation Notes**:
-  - MuPDF Fitz provides `pdf_rotate_page`, `pdf_delete_page`, and `pdf_graft_page` for lossless page operations without re-rasterizing vector streams. Duplication grafts a page back into the same document at a specified index.
+  - Extract/Export selected pages or page ranges to a new standalone PDF file via save panel.
+  - Insert pages from external PDF into opened documents via menu bar (File > **Insert Pages from PDF…** `⌥⌘I`), context menu, or **direct drag-and-drop from Finder** into the thumbnail grid at any drop insertion slot.
+- **Implementation Status**: Completed via `MuPDFBridge` (`mupdf_pdf_rotate_page`, `mupdf_pdf_delete_pages`, `mupdf_pdf_reorder_pages`, `mupdf_pdf_duplicate_pages`, `mupdf_pdf_import_pages`, `mupdf_pdf_extract_pages`), `PDFDocumentCore`, `PDFViewerViewModel`, and `PDFThumbnailGridView`.
 
 ---
 
-### 2. User Bookmarks (Independent of PDF Table of Contents)
-- **Description**: Allow users to drop personal, named bookmarks at specific page locations.
+### 2. User Bookmarks & Anchors [COMPLETED]
+- **Description**: Drop personal, named markers at specific page locations and spatial selections.
 - **Capabilities**:
-  - Press `⌘D` or click a ribbon icon to add a bookmark with an optional custom label.
-  - Sidebar section or menu listing all bookmarks for the current document.
-  - Fast jumping with keyboard shortcuts (`⌃1` - `⌃9`).
-- **Implementation Notes**:
-  - Can be persisted in user preferences/local application support SQLite or saved into the PDF as private metadata or standard PDF bookmark outline items.
+  - **Anchors Subsystem**: Supersedes simple page bookmarks by capturing exact target rects, section headings (matched deterministically from outline), and user notes.
+  - **Quick Bookmark/Anchor**: Press `⌘B` or select **Anchors > Add Anchor** to bookmark the currently visible page and position instantly.
+  - **Sidebar & Menu Navigation**: Dedicated Anchors tab (Tab 2 with custom vector anchor icon) and top-level **Anchors** menu bar listing all anchors for one-click jump with animated scrolling and visual flash highlight.
+- **Implementation Status**: Completed via `SnapshotTarget`, `PDFViewerViewModel`, `PDFUI`, and `Anchors` menu bar.
 
 ---
 
-### 3. macOS Native Look Up & Speech (Text-to-Speech)
-- **Description**: Integration with macOS linguistic and accessibility subsystems for highlighted/selected text.
+### 3. Native Selection Look Up & Translation [COMPLETED]
+- **Description**: Native macOS dictionary look up and on-device translation for highlighted/selected text.
 - **Capabilities**:
-  - Context menu item: **Look Up "..."** invoking native `NSDataDetector` / Quick Look Dictionary, Wikipedia, and Translation popover.
-  - Speech menu item: **Start Speaking / Stop Speaking** using `NSSpeechSynthesizer` or `AVSpeechSynthesizer` on the selected text or from current page forward.
+  - Context menu item: **Look Up "..."** invoking macOS Dictionary Services.
+  - Context menu item: **Translate "..."** invoking Apple's native system `Translation` framework (`translationPresentation` in macOS 15+ with fallback to web translation).
+- **Implementation Status**: Completed via `PDFViewerViewModel.translateSelection` and `TranslationPresentationHelper`. (Note: Text-to-Speech demoted to Tier 3 Item 10).
 
 ---
 
@@ -48,13 +48,15 @@ This document records prospective features identified during the competitive and
 
 ---
 
-### 5. Document Metadata & Font Inspector
-- **Description**: Inspector panel detailing technical document parameters.
+### 5. Document Metadata & Font Inspector [COMPLETED]
+- **Description**: Inspector panel detailing technical document parameters, cryptographic security permissions, page geometry boxes, and embedded fonts.
 - **Capabilities**:
-  - General info: Title, Author, Subject, Keywords, Producer, Creator, Creation Date, Modification Date, PDF version.
-  - Security info: Encryption type, permissions (printing allowed, copying allowed, modifying allowed).
-  - Font list: Embedded vs. system fonts, font format (Type 1, TrueType, OpenType, CIDFont), subsetting status.
-  - Page metrics: TrimBox, MediaBox, CropBox, BleedBox.
+  - **General Metadata**: Title, Author, Subject, Keywords, Producer, Creator, Creation Date, Modification Date, PDF version/format, File Size, Page Count.
+  - **Security & Permissions**: Encryption status and algorithm; individual permission flags (printing allowed, high quality printing, copying allowed, modifying allowed, annotations allowed, form filling allowed, accessibility extraction allowed, page assembly allowed).
+  - **Page Geometry**: Live dimensional breakdown of MediaBox, CropBox, BleedBox, TrimBox, and ArtBox per page with origin and width/height, switchable between Points (`pt`), Inches (`in`), and Millimeters (`mm`).
+  - **Font Inspector**: Complete searchable catalog of document fonts, detailing PostScript name, clean family name, subtype (Type 1, TrueType, Type 0/CID, etc.), encoding, and badges for Embedded Subset (`ABCDEF+`), Fully Embedded, or System Fallback.
+  - **macOS Native Access**: Standard `⌘I` shortcut, File > **Document Properties…**, and clean modal sheet without toolbar clutter.
+- **Implementation Status**: Completed via `MuPDFBridge` (`mupdf_document_get_metadata`, `mupdf_document_get_permissions`, `mupdf_page_get_boxes`, `mupdf_document_get_fonts`), `PDFDocumentCore`, `PDFViewerViewModel`, and `PDFDocumentPropertiesView`.
 
 ---
 
@@ -177,8 +179,9 @@ This document records prospective features identified during the competitive and
 
 ---
 
-### 7. Side-by-Side Specification Revision Diffing
+### 7. Side-by-Side Specification Revision Diffing [DEFERRED]
 - **Description**: Visual and semantic comparison between two versions of a technical document (e.g., comparing RFC draft revisions or hardware spec v1.0 against v1.1).
+- **Status Note**: Deferred / abandoned for now per user review due to pagination shift complexity in technical specifications and high engineering lift.
 - **Capabilities**:
   - Visual Vector XOR Overlay: Highlights pixel and vector differences between corresponding pages using color coding (e.g. red for removed elements, green for added elements).
   - Synchronized Dual-Pane Text Diff: Side-by-side locked scrolling of matching sections with line-by-line diff highlighting.
@@ -196,7 +199,11 @@ This document records prospective features identified during the competitive and
   - **Bounded Paragraph Reflow**: Recomputes line breaks within the structured text block boundary (`fz_stext_block`) so inserted words reflow naturally without spilling across columns or margins.
   - **Image Replacement & Extraction**: Right-click embedded diagrams or photos to replace them with an updated graphic (e.g. updated architecture block diagram or schematic) while preserving the original bounding box, or export the original lossless bitmap to disk.
 - **Implementation Notes**:
-  - Fitz supports low-level object stream rewriting via `pdf_page_contents`, stream token scanning (`pdf_lex`), and image XObject replacement (`pdf_replace_image`). Full paragraph reflow requires coupling Fitz structured text layout (`fz_stext_page`) with CoreText font metrics for layout calculation before serializing back to PDF content streams (`BT ... ET`).
+### 9. macOS Speech & Accessibility (Text-to-Speech)
+- **Description**: Text-to-speech audio reading for selected text or hands-free listening to technical specifications.
+- **Capabilities**:
+  - Context menu / shortcut: **Start Speaking / Stop Speaking** using `AVSpeechSynthesizer` or `NSSpeechSynthesizer`.
+  - Sentence-level audio playback with configurable speech rate and voice selection.
 
 ---
 
@@ -204,18 +211,18 @@ This document records prospective features identified during the competitive and
 
 To maintain VectorPDF's focus on professional readers navigating long, complex, and technical documents, features are prioritized into four sequential execution phases based on **User Impact for Technical Workflows**, **Implementation Complexity in MuPDF Fitz/Swift**, and **Competitive Differentiation against PDF Expert**.
 
-### Phase 1: High-Impact Essentials (Immediate Next Steps)
+### Phase 1: High-Impact Essentials
 *Features addressing everyday navigation and basic document management gaps with low-to-moderate engineering friction.*
 
-1. **User Bookmarks (`⌘D`)** — *Tier 2, Item 2*
+1. **User Bookmarks & Anchors (`⌘B`)** — *Tier 2, Item 2* **[COMPLETED]**
    - *Why*: Critical for bookmarking key chapters, registers, or proofs across 500+ page specs without modifying the author's outline.
-   - *Lift*: Low. SQLite/UserDefaults persistence + sidebar list.
-2. **Page Manipulation (Rotate, Reorder, Delete, Extract)** — *Tier 2, Item 1*
-   - *Why*: The #1 expected document ergonomics tool. Rotating landscape schematics or extracting a chapter are daily tasks.
-   - *Lift*: Moderate. MuPDF already provides `pdf_rotate_page`, `pdf_delete_page`, and `pdf_graft_page`.
-3. **Selection Translation (macOS Native Popover)** — *Tier 2, Item 10*
+   - *Status*: Complete. Unified into Anchors system with spatial bounding boxes, outline heading matching, dedicated sidebar tab, and `⌘B` quick anchor shortcut.
+2. **Page Manipulation & PDF Import** — *Tier 2, Item 1* **[COMPLETED]**
+   - *Why*: The #1 expected document ergonomics tool. Rotating landscape schematics, reordering pages, duplicating pages (`⌘D`), and importing external PDFs.
+   - *Status*: Complete. Full multi-page rotation, bulk drag-and-drop reordering, duplication, deletion, extraction, and direct Finder PDF drag-and-drop import.
+3. **Selection Translation & Look Up** — *Tier 2, Item 3* **[COMPLETED]**
    - *Why*: Immediate comprehension boost for engineers reading foreign patents, datasheets, or international standards.
-   - *Lift*: Low. Native AppKit context menu integration with Apple's Translation framework (`TranslationSession`).
+   - *Status*: Complete. Native Apple `Translation` framework popover and Dictionary Services integration.
 4. **Technical Leader-Line Callout Annotations & Review Export** — *Tier 2, Item 8*
    - *Why*: Directly serves engineering reviews (pointing to specific lines of code, diagram nodes, or register bits) with Markdown export for Jira/GitHub.
    - *Lift*: Moderate. Extends existing annotation subsystem with `/Callout` geometry.

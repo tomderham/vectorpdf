@@ -102,6 +102,8 @@ int mupdf_pdf_reorder_page(fz_context *ctx, fz_document *doc, int from_page, int
 int mupdf_pdf_reorder_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int dest_slot, const char **out_error);
 int mupdf_pdf_delete_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char **out_error);
 int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char *out_path, const char **out_error);
+int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int *out_inserted_slot, const char **out_error);
+int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_path, int insert_slot, int *out_imported_count, const char **out_error);
 
 // Store & Memory Management
 void mupdf_context_empty_store(fz_context *ctx);
@@ -124,6 +126,66 @@ int mupdf_document_reset_form(fz_context *ctx, fz_document *doc, const char **ou
 int mupdf_page_get_choice_options(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
                                   char ***out_options, int *out_count, const char **out_error);
 void mupdf_free_choice_options(fz_context *ctx, char **options, int count);
+
+// Document Metadata, Encryption & Security Permissions
+typedef struct {
+    char format[64];
+    char encryption[64];
+    char title[256];
+    char author[256];
+    char subject[256];
+    char keywords[512];
+    char creator[256];
+    char producer[256];
+    char creation_date[64];
+    char mod_date[64];
+    int is_encrypted;
+    int pdf_version;
+} mupdf_document_metadata;
+
+typedef struct {
+    int can_print;
+    int can_modify;
+    int can_copy;
+    int can_annotate;
+    int can_fill_forms;
+    int can_accessibility;
+    int can_assemble;
+    int can_print_high_quality;
+} mupdf_document_permissions;
+
+// Page Geometry Boxes
+typedef struct {
+    fz_rect media_box;
+    fz_rect crop_box;
+    fz_rect bleed_box;
+    fz_rect trim_box;
+    fz_rect art_box;
+    int has_crop_box;
+    int has_bleed_box;
+    int has_trim_box;
+    int has_art_box;
+} mupdf_page_boxes;
+
+// Embedded & Subset Font Catalog
+typedef struct {
+    char name[128];
+    char subtype[64];
+    char encoding[64];
+    int is_embedded;
+    int is_subset;
+} mupdf_font_entry;
+
+typedef struct {
+    mupdf_font_entry *fonts;
+    int count;
+} mupdf_font_list;
+
+int mupdf_document_get_metadata(fz_context *ctx, fz_document *doc, mupdf_document_metadata *out_meta, const char **out_error);
+int mupdf_document_get_permissions(fz_context *ctx, fz_document *doc, mupdf_document_permissions *out_perms, const char **out_error);
+int mupdf_page_get_boxes(fz_context *ctx, fz_document *doc, int pageno, mupdf_page_boxes *out_boxes, const char **out_error);
+int mupdf_document_get_fonts(fz_context *ctx, fz_document *doc, mupdf_font_list *out_fonts, const char **out_error);
+void mupdf_free_font_list(fz_context *ctx, mupdf_font_list *fonts);
 
 #ifdef __cplusplus
 }

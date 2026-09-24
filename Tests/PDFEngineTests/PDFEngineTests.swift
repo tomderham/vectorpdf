@@ -3674,6 +3674,207 @@ func createFormSamplePDF(at fileURL: URL) {
         try doc.deletePages([0, 1, 2])
     }
 }
+
+@Test @MainActor func testDuplicatePagesCore() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("dup_test.pdf")
+
+    // Create 3-page PDF
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create test PDF")
+    }
+    for i in 1...3 {
+        context.beginPDFPage(nil)
+        let text = "Page \(i) Content"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 3)
+
+    // Duplicate single page (page 0) -> should be inserted at slot 1, making 4 pages total
+    let (slot1, count1) = try doc.duplicatePages([0])
+    #expect(slot1 == 1)
+    #expect(count1 == 1)
+    #expect(doc.pageCount == 4)
+
+    // Duplicate multiple pages (pages 1 and 2) -> max index is 2, inserted at slot 3
+    let (slot2, count2) = try doc.duplicatePages([1, 2])
+    #expect(slot2 == 3)
+    #expect(count2 == 2)
+    #expect(doc.pageCount == 6)
+}
+
+@Test @MainActor func testImportPagesFromExternalPDF() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let primaryURL = tempDir.appendingPathComponent("primary.pdf")
+    let externalURL = tempDir.appendingPathComponent("external.pdf")
+
+    // Create 2-page primary PDF
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let ctxA = CGContext(primaryURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create primary PDF")
+    }
+    for i in 1...2 {
+        ctxA.beginPDFPage(nil)
+        let text = "Primary Page \(i)"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        ctxA.endPDFPage()
+    }
+    ctxA.closePDF()
+
+    // Create 3-page external PDF
+    guard let ctxB = CGContext(externalURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create external PDF")
+    }
+    for i in 1...3 {
+        ctxB.beginPDFPage(nil)
+        let text = "External Page \(i)"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        ctxB.endPDFPage()
+    }
+    ctxB.closePDF()
+
+    let docA = try PDFDocumentCore(filePath: primaryURL.path)
+    #expect(docA.pageCount == 2)
+
+    // Import external PDF at slot 1 (between page 0 and 1)
+    let (slot, importedCount) = try docA.importPages(from: externalURL, atSlot: 1)
+    #expect(slot == 1)
+    #expect(importedCount == 3)
+    #expect(docA.pageCount == 5)
+}
+
+@Test @MainActor func testQuickAnchorShortcut() async throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("anchor_test.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create test PDF")
+    }
+    context.beginPDFPage(nil)
+    let text = "Sample Chapter 1 Heading"
+    (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 18)])
+    context.endPDFPage()
+    context.closePDF()
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.activeSnapshots.isEmpty)
+
+    // Call quick anchor shortcut
+    vm.addAnchorForCurrentPage()
+    #expect(!vm.activeSnapshots.isEmpty)
+    #expect(vm.activeSnapshots.first?.targetPage == 0)
+}
+
+@Test @MainActor func testAnchorsMenuCoordinatorReactivity() async throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("reactivity_test.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create test PDF")
+    }
+    context.beginPDFPage(nil)
+    context.endPDFPage()
+    context.closePDF()
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    PDFViewerAppCoordinator.shared.registerActive(vm)
+
+    #expect(PDFViewerAppCoordinator.shared.activeAnchors.isEmpty)
+
+    // Add anchor
+    vm.addAnchorForCurrentPage()
+    #expect(!vm.activeSnapshots.isEmpty)
+    #expect(PDFViewerAppCoordinator.shared.activeAnchors.count == 1)
+
+    // Clear anchors
+    vm.clearAllSnapshots()
+    #expect(vm.activeSnapshots.isEmpty)
+    #expect(PDFViewerAppCoordinator.shared.activeAnchors.isEmpty)
+}
+
+@Test @MainActor func testDocumentMetadataAndProperties() async throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("metadata_test.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 500, height: 700)
+    let info: [CFString: Any] = [
+        kCGPDFContextTitle: "VectorPDF Engineering Spec" as CFString,
+        kCGPDFContextAuthor: "Engineering Team" as CFString,
+        kCGPDFContextSubject: "Technical Architecture" as CFString,
+        kCGPDFContextKeywords: "PDF, Vector, Architecture" as CFString,
+        kCGPDFContextCreator: "VectorPDF Test Generator" as CFString
+    ]
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, info as CFDictionary) else {
+        fatalError("Failed to create test PDF")
+    }
+    context.beginPDFPage(nil)
+    let font = CTFontCreateWithName("Helvetica" as CFString, 14, nil)
+    let attrStr = NSAttributedString(string: "Test Content For Inspection", attributes: [
+        kCTFontAttributeName as NSAttributedString.Key: font
+    ])
+    let line = CTLineCreateWithAttributedString(attrStr)
+    context.textPosition = CGPoint(x: 50, y: 500)
+    CTLineDraw(line, context)
+    context.endPDFPage()
+    context.closePDF()
+
+    let core = try PDFDocumentCore(filePath: pdfURL.path)
+    let meta = core.getMetadata()
+    #expect(meta.title == "VectorPDF Engineering Spec")
+    #expect(meta.author == "Engineering Team")
+    #expect(meta.subject == "Technical Architecture")
+    #expect(meta.keywords.contains("Vector"))
+    #expect(!meta.fileSizeDescription.isEmpty)
+    #expect(meta.pageCount == 1)
+
+    // Check Security
+    let perms = core.getPermissions()
+    #expect(perms.canPrint == true)
+    #expect(perms.canCopy == true)
+
+    // Check Geometry Boxes
+    let boxes = core.getPageBoxes(for: 0)
+    #expect(boxes.mediaBox.width == 500)
+    #expect(boxes.mediaBox.height == 700)
+    #expect(boxes.cropBox.width == 500)
+    #expect(boxes.cropBox.height == 700)
+
+    // Check Combined Report
+    let report = core.generateInspectionReport(pageIndex: 0)
+    #expect(report.metadata.title == "VectorPDF Engineering Spec")
+    #expect(report.pageBoxes.count == 1)
+    #expect(!report.fonts.isEmpty)
+
+    // Test ViewModel integration
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.isShowingDocumentProperties == false)
+    vm.showDocumentProperties()
+    #expect(vm.isShowingDocumentProperties == true)
+    #expect(vm.documentInspectionReport != nil)
+    #expect(vm.documentInspectionReport?.metadata.title == "VectorPDF Engineering Spec")
+}
 }
 
 

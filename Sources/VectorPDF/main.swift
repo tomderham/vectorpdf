@@ -147,7 +147,7 @@ struct DocumentWindowView: View {
 @main
 struct VectorPDF: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
+    @StateObject private var coordinator = PDFViewerAppCoordinator.shared
 
     // Uses coordinator.activeViewModel instead of @FocusedValue to prevent redundant
     // command-tree rebuilds while menus are open.
@@ -243,6 +243,12 @@ struct VectorPDF: App {
             }
             .keyboardShortcut("o", modifiers: [.command, .option])
 
+            Button("Insert Pages from PDF...") {
+                resolvedViewModel?.promptImportPDF(atSlot: nil)
+            }
+            .keyboardShortcut("i", modifiers: [.command, .option])
+            .disabled(!hasDocument)
+
             // Reads NSDocumentController's shared recent-documents list directly rather than
             // maintaining our own — its size already follows AppKit/system configuration, so
             // "how many are shown, or none at all" is handled for free rather than something we'd
@@ -292,6 +298,18 @@ struct VectorPDF: App {
                 resolvedViewModel?.printDocument()
             }
             .keyboardShortcut("p", modifiers: .command)
+            .disabled(!hasDocument)
+
+            Divider()
+
+            Button("Document Properties...") {
+                if let vm = resolvedViewModel {
+                    vm.showDocumentProperties()
+                } else {
+                    NotificationCenter.default.post(name: .showDocumentPropertiesCommand, object: nil)
+                }
+            }
+            .keyboardShortcut("i", modifiers: .command)
             .disabled(!hasDocument)
         }
         
@@ -360,6 +378,31 @@ struct VectorPDF: App {
             }
         }
         
+        CommandMenu("Anchors") {
+            Button("Add Anchor") {
+                resolvedViewModel?.addAnchorForCurrentPage()
+            }
+            .keyboardShortcut("b", modifiers: .command)
+            .disabled(!hasDocument)
+
+            Divider()
+
+            let anchors = !coordinator.activeAnchors.isEmpty ? coordinator.activeAnchors : (resolvedViewModel?.activeSnapshots ?? [])
+            if !anchors.isEmpty {
+                ForEach(anchors) { snap in
+                    Button(snap.label.isEmpty ? "Page \(snap.targetPage + 1)" : snap.label) {
+                        resolvedViewModel?.jumpToSnapshot(snap)
+                    }
+                }
+                Divider()
+                Button("Clear All Anchors", role: .destructive) {
+                    resolvedViewModel?.clearAllSnapshots()
+                }
+            } else {
+                Text("No Anchors Added")
+            }
+        }
+
         CommandGroup(after: .textEditing) {
             Menu("Find") {
                 Button("Find...") {

@@ -140,7 +140,9 @@ public struct ThumbnailPageDropDelegate: DropDelegate {
     let viewModel: PDFViewerViewModel
 
     public func validateDrop(info: DropInfo) -> Bool {
-        return !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
+        let isInternalDrag = !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
+        let hasExternalPDF = info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL])
+        return isInternalDrag || hasExternalPDF
     }
 
     public func dropEntered(info: DropInfo) {
@@ -148,14 +150,16 @@ public struct ThumbnailPageDropDelegate: DropDelegate {
     }
 
     public func dropUpdated(info: DropInfo) -> DropProposal? {
-        guard !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil else {
+        let isInternalDrag = !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
+        let hasExternalPDF = info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL])
+        guard isInternalDrag || hasExternalPDF else {
             if viewModel.activeThumbnailDropSlot != nil {
                 viewModel.activeThumbnailDropSlot = nil
             }
             return nil
         }
         updateSlot(at: info.location)
-        return DropProposal(operation: .move)
+        return DropProposal(operation: isInternalDrag ? .move : .copy)
     }
 
     public func dropExited(info: DropInfo) {
@@ -163,43 +167,135 @@ public struct ThumbnailPageDropDelegate: DropDelegate {
     }
 
     public func performDrop(info: DropInfo) -> Bool {
-        let draggedIndices = !viewModel.draggedThumbnailPageIndices.isEmpty ?
-            viewModel.draggedThumbnailPageIndices :
-            (viewModel.draggedThumbnailPageIndex.map { Set([$0]) } ?? [])
-
-        guard !draggedIndices.isEmpty else {
-            viewModel.endThumbnailDrag()
-            return false
-        }
-
         let isUpper = info.location.y < cardHeight * 0.5
         let currentItemSlot = isUpper ? pageIndex : (pageIndex + 1)
         let slot = viewModel.activeThumbnailDropSlot ?? currentItemSlot
 
-        viewModel.endThumbnailDrag()
+        let draggedIndices = !viewModel.draggedThumbnailPageIndices.isEmpty ?
+            viewModel.draggedThumbnailPageIndices :
+            (viewModel.draggedThumbnailPageIndex.map { Set([$0]) } ?? [])
 
-        guard ThumbnailDropLogic.isValidSlot(slot: slot, fromIndices: draggedIndices, pageCount: pageCount) else {
-            // Dropped back in original position: clean no-op, restore opacity immediately
+        if !draggedIndices.isEmpty {
+            viewModel.endThumbnailDrag()
+            guard ThumbnailDropLogic.isValidSlot(slot: slot, fromIndices: draggedIndices, pageCount: pageCount) else {
+                return true
+            }
+            viewModel.reorderPages(from: Array(draggedIndices).sorted(), toSlot: slot)
             return true
         }
 
-        viewModel.reorderPages(from: Array(draggedIndices).sorted(), toSlot: slot)
-        return true
+        if info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL]) {
+            viewModel.activeThumbnailDropSlot = nil
+            let providers = info.itemProviders(for: [UTType.pdf, UTType.fileURL])
+            for provider in providers {
+                if provider.canLoadObject(ofClass: URL.self) {
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                        if let url = url, url.pathExtension.lowercased() == "pdf" {
+                            DispatchQueue.main.async {
+                                self.viewModel.importPages(from: url, toSlot: slot)
+                            }
+                        }
+                    }
+                } else {
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                        var targetURL: URL?
+                        if let url = item as? URL {
+                            targetURL = url
+                        } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                            targetURL = url
+                        }
+                        if let targetURL = targetURL, targetURL.pathExtension.lowercased() == "pdf" {
+                            DispatchQueue.main.async {
+                                self.viewModel.importPages(from: targetURL, toSlot: slot)
+                            }
+                        }
+                    }
+                }
+            }
+            return true
+        }
+
+        viewModel.endThumbnailDrag()
+        return false
     }
 
     private func updateSlot(at location: CGPoint) {
-        let isDragging = !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
-        guard isDragging else {
-            if viewModel.activeThumbnailDropSlot != nil {
-                viewModel.activeThumbnailDropSlot = nil
-            }
-            return
-        }
         let isUpper = location.y < cardHeight * 0.5
         let slot = isUpper ? pageIndex : (pageIndex + 1)
         if viewModel.activeThumbnailDropSlot != slot {
             viewModel.activeThumbnailDropSlot = slot
         }
+    }
+}
+
+public struct BottomZoneDropDelegate: DropDelegate {
+    let pageCount: Int
+    let viewModel: PDFViewerViewModel
+
+    public func dropEntered(info: DropInfo) {
+        viewModel.activeThumbnailDropSlot = pageCount
+    }
+
+    public func dropUpdated(info: DropInfo) -> DropProposal? {
+        let isInternalDrag = !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
+        let hasExternalPDF = info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL])
+        guard isInternalDrag || hasExternalPDF else {
+            return nil
+        }
+        viewModel.activeThumbnailDropSlot = pageCount
+        return DropProposal(operation: isInternalDrag ? .move : .copy)
+    }
+
+    public func dropExited(info: DropInfo) {
+        if viewModel.activeThumbnailDropSlot == pageCount {
+            viewModel.activeThumbnailDropSlot = nil
+        }
+    }
+
+    public func performDrop(info: DropInfo) -> Bool {
+        viewModel.activeThumbnailDropSlot = nil
+        let draggedIndices = !viewModel.draggedThumbnailPageIndices.isEmpty ?
+            viewModel.draggedThumbnailPageIndices :
+            (viewModel.draggedThumbnailPageIndex.map { Set([$0]) } ?? [])
+
+        if !draggedIndices.isEmpty {
+            viewModel.reorderPages(from: Array(draggedIndices).sorted(), toSlot: pageCount)
+            viewModel.endThumbnailDrag()
+            return true
+        }
+
+        if info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL]) {
+            let providers = info.itemProviders(for: [UTType.pdf, UTType.fileURL])
+            for provider in providers {
+                if provider.canLoadObject(ofClass: URL.self) {
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                        if let url = url, url.pathExtension.lowercased() == "pdf" {
+                            DispatchQueue.main.async {
+                                self.viewModel.importPages(from: url, toSlot: pageCount)
+                            }
+                        }
+                    }
+                } else {
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                        var targetURL: URL?
+                        if let url = item as? URL {
+                            targetURL = url
+                        } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                            targetURL = url
+                        }
+                        if let targetURL = targetURL, targetURL.pathExtension.lowercased() == "pdf" {
+                            DispatchQueue.main.async {
+                                self.viewModel.importPages(from: targetURL, toSlot: pageCount)
+                            }
+                        }
+                    }
+                }
+            }
+            return true
+        }
+
+        viewModel.endThumbnailDrag()
+        return false
     }
 }
 
@@ -240,11 +336,15 @@ public struct PDFThumbnailGridView: View {
                             let h = cardHeight(for: pageIndex, doc: doc)
 
                             VStack(spacing: 0) {
-                                // Insertion indicator above this page (only while an active drag is in progress)
-                                if !activeDragged.isEmpty,
-                                   viewModel.activeThumbnailDropSlot == pageIndex,
-                                   ThumbnailDropLogic.isValidSlot(slot: pageIndex, fromIndices: activeDragged, pageCount: pageCount) {
-                                    DropInsertionIndicator(label: ThumbnailDropLogic.slotLabel(slot: pageIndex, fromIndices: activeDragged, pageCount: pageCount))
+                                // Insertion indicator above this page
+                                if !activeDragged.isEmpty {
+                                    if viewModel.activeThumbnailDropSlot == pageIndex,
+                                       ThumbnailDropLogic.isValidSlot(slot: pageIndex, fromIndices: activeDragged, pageCount: pageCount) {
+                                        DropInsertionIndicator(label: ThumbnailDropLogic.slotLabel(slot: pageIndex, fromIndices: activeDragged, pageCount: pageCount))
+                                            .padding(.vertical, 4)
+                                    }
+                                } else if viewModel.activeThumbnailDropSlot == pageIndex {
+                                    DropInsertionIndicator(label: "Insert Pages from PDF")
                                         .padding(.vertical, 4)
                                 }
 
@@ -269,13 +369,17 @@ public struct PDFThumbnailGridView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 4)
 
-                                // Insertion indicator after the last page (only while an active drag is in progress)
-                                if !activeDragged.isEmpty,
-                                   pageIndex == pageCount - 1,
-                                   viewModel.activeThumbnailDropSlot == pageCount,
-                                   ThumbnailDropLogic.isValidSlot(slot: pageCount, fromIndices: activeDragged, pageCount: pageCount) {
-                                    DropInsertionIndicator(label: ThumbnailDropLogic.slotLabel(slot: pageCount, fromIndices: activeDragged, pageCount: pageCount))
-                                        .padding(.vertical, 4)
+                                // Insertion indicator after the last page
+                                if pageIndex == pageCount - 1 {
+                                    if !activeDragged.isEmpty,
+                                       viewModel.activeThumbnailDropSlot == pageCount,
+                                       ThumbnailDropLogic.isValidSlot(slot: pageCount, fromIndices: activeDragged, pageCount: pageCount) {
+                                        DropInsertionIndicator(label: ThumbnailDropLogic.slotLabel(slot: pageCount, fromIndices: activeDragged, pageCount: pageCount))
+                                            .padding(.vertical, 4)
+                                    } else if activeDragged.isEmpty && viewModel.activeThumbnailDropSlot == pageCount {
+                                        DropInsertionIndicator(label: "Insert Pages from PDF")
+                                            .padding(.vertical, 4)
+                                    }
                                 }
                             }
                             .id(pageIndex)
@@ -321,6 +425,21 @@ public struct PDFThumbnailGridView: View {
                                     Divider()
 
                                     Button {
+                                        viewModel.duplicateSelectedThumbnails()
+                                    } label: {
+                                        Label("Duplicate \(count) Pages", systemImage: "plus.rectangle.on.rectangle")
+                                    }
+
+                                    Button {
+                                        let insertSlot = (viewModel.selectedThumbnailPageIndices.max() ?? pageIndex) + 1
+                                        viewModel.promptImportPDF(atSlot: insertSlot)
+                                    } label: {
+                                        Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
+                                    }
+
+                                    Divider()
+
+                                    Button {
                                         viewModel.extractSelectedThumbnails()
                                     } label: {
                                         Label("Extract \(count) Pages…", systemImage: "arrow.up.forward.square")
@@ -351,6 +470,20 @@ public struct PDFThumbnailGridView: View {
                                         viewModel.rotatePage(pageIndex, by: 180)
                                     } label: {
                                         Label("Rotate 180°", systemImage: "arrow.triangle.2.circlepath")
+                                    }
+
+                                    Divider()
+
+                                    Button {
+                                        viewModel.duplicatePage(pageIndex)
+                                    } label: {
+                                        Label("Duplicate Page", systemImage: "plus.rectangle.on.rectangle")
+                                    }
+
+                                    Button {
+                                        viewModel.promptImportPDF(atSlot: pageIndex + 1)
+                                    } label: {
+                                        Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
                                     }
 
                                     Divider()
@@ -394,7 +527,7 @@ public struct PDFThumbnailGridView: View {
                                 return NSItemProvider(object: String(pageIndex) as NSString)
                             }
                             .onDrop(
-                                of: [UTType.plainText],
+                                of: [UTType.plainText, UTType.pdf, UTType.fileURL],
                                 delegate: ThumbnailPageDropDelegate(
                                     pageIndex: pageIndex,
                                     cardHeight: h + 32,
@@ -409,22 +542,20 @@ public struct PDFThumbnailGridView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 60)
                             .contentShape(Rectangle())
-                            .onDrop(of: [UTType.plainText], isTargeted: nil) { _ in
-                                let draggedIndices = !viewModel.draggedThumbnailPageIndices.isEmpty ?
-                                    viewModel.draggedThumbnailPageIndices :
-                                    (viewModel.draggedThumbnailPageIndex.map { Set([$0]) } ?? [])
-
-                                if !draggedIndices.isEmpty {
-                                    viewModel.reorderPages(from: Array(draggedIndices).sorted(), toSlot: pageCount)
-                                    viewModel.endThumbnailDrag()
-                                    return true
-                                }
-                                viewModel.endThumbnailDrag()
-                                return false
-                            }
+                            .onDrop(
+                                of: [UTType.plainText, UTType.pdf, UTType.fileURL],
+                                delegate: BottomZoneDropDelegate(pageCount: pageCount, viewModel: viewModel)
+                            )
                     }
                     .animation(.easeInOut(duration: 0.15), value: viewModel.activeThumbnailDropSlot)
                     .padding(.vertical, 12)
+                }
+                .onKeyPress(.init("d"), phases: .down) { press in
+                    if press.modifiers.contains(.command) && !press.modifiers.contains(.shift) && !press.modifiers.contains(.option) {
+                        viewModel.duplicateSelectedThumbnails()
+                        return .handled
+                    }
+                    return .ignored
                 }
                 .onChange(of: viewModel.currentPageIndex) { _, newIndex in
                     withAnimation(.easeInOut(duration: 0.2)) {

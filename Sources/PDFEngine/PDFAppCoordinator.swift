@@ -61,6 +61,8 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     @Published public var documentTitle: String = ""
     @Published public var canZoomIn: Bool = false
     @Published public var canZoomOut: Bool = false
+    /// Published live anchors list of the active document, updating SwiftUI Commands immediately.
+    @Published public var activeAnchors: [SnapshotTarget] = []
     /// Bumped whenever a document is opened to signal SwiftUI Commands to refresh recent documents.
     @Published public var recentDocumentsRevision: Int = 0
     /// Global appearance override for rendered PDF content.
@@ -180,6 +182,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                     self.canZoomIn = hasDoc && (vm.zoomScale < Self.maxZoomScale)
                     self.canZoomOut = hasDoc && (vm.zoomScale > Self.minZoomScale)
                 }
+                if self.activeAnchors != vm.activeSnapshots {
+                    self.activeAnchors = vm.activeSnapshots
+                }
             }
     }
 
@@ -194,6 +199,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.documentTitle = activeViewModel?.documentTitle ?? ""
         self.canZoomIn = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) < Self.maxZoomScale)
         self.canZoomOut = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) > Self.minZoomScale)
+        self.activeAnchors = activeViewModel?.activeSnapshots ?? []
     }
 
     // MARK: - Reading State Lifecycle
