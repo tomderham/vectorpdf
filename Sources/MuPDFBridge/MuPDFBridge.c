@@ -234,6 +234,42 @@ int mupdf_render_page(fz_context *ctx, fz_page *page, float scale_x, float scale
     return 0;
 }
 
+int mupdf_render_page_rect(fz_context *ctx, fz_page *page, float scale_x, float scale_y,
+                           float x0, float y0, float x1, float y1,
+                           fz_pixmap **out_pixmap, const char **out_error) {
+    if (!ctx || !page || !out_pixmap) return -1;
+    fz_var(*out_pixmap);
+    *out_pixmap = NULL;
+    fz_device *dev = NULL;
+    fz_var(dev);
+    fz_try(ctx) {
+        float min_x = fminf(x0, x1);
+        float max_x = fmaxf(x0, x1);
+        float min_y = fminf(y0, y1);
+        float max_y = fmaxf(y0, y1);
+        fz_rect prect = fz_make_rect(min_x, min_y, max_x, max_y);
+        fz_matrix ctm = fz_scale(scale_x, scale_y);
+        fz_rect trect = fz_transform_rect(prect, ctm);
+        fz_irect ibbox = fz_round_rect(trect);
+        *out_pixmap = fz_new_pixmap_with_bbox(ctx, fz_device_rgb(ctx), ibbox, NULL, 0);
+        fz_clear_pixmap_with_value(ctx, *out_pixmap, 0xff);
+        dev = fz_new_draw_device(ctx, ctm, *out_pixmap);
+        fz_run_page(ctx, page, dev, fz_identity, NULL);
+        fz_close_device(ctx, dev);
+        fz_drop_device(ctx, dev);
+        dev = NULL;
+    } fz_always(ctx) {
+        if (dev) {
+            fz_try(ctx) { fz_close_device(ctx, dev); } fz_catch(ctx) {}
+            fz_drop_device(ctx, dev);
+        }
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 void mupdf_pixmap_drop(fz_context *ctx, fz_pixmap *pixmap) {
     if (ctx && pixmap) fz_drop_pixmap(ctx, pixmap);
 }
@@ -611,11 +647,36 @@ int mupdf_pdf_add_free_text_annot(fz_context *ctx, fz_document *doc, int pageno,
                     fz_append_printf(ctx, buf, "0 0 %g %g re\nW\nn\nBT\n", w, h);
                     fz_append_printf(ctx, buf, "%g %g %g rg\n", r, g, b);
                     fz_append_printf(ctx, buf, "/Helv %g Tf\n", fs);
-                    float baseline_y = h - fs * 0.85f;
+                    float leading = fs * 1.25f;
+                    fz_append_printf(ctx, buf, "%g TL\n", leading);
+                    float baseline_y = h - fs * 0.9f;
                     if (baseline_y < 2.0f) baseline_y = 2.0f;
                     fz_append_printf(ctx, buf, "2 %g Td\n", baseline_y);
-                    fz_append_pdf_string(ctx, buf, text);
-                    fz_append_string(ctx, buf, " Tj\nET\n");
+
+                    const char *p = text;
+                    int is_first_line = 1;
+                    while (*p) {
+                        const char *end = strchr(p, '\n');
+                        size_t line_len = end ? (size_t)(end - p) : strlen(p);
+                        if (line_len > 0 && p[line_len - 1] == '\r') line_len--;
+                        if (!is_first_line) {
+                            fz_append_string(ctx, buf, "T*\n");
+                        }
+                        char line_buf[1024];
+                        if (line_len < sizeof(line_buf)) {
+                            memcpy(line_buf, p, line_len);
+                            line_buf[line_len] = '\0';
+                            fz_append_pdf_string(ctx, buf, line_buf);
+                        } else {
+                            fz_append_string(ctx, buf, "(");
+                            fz_append_string(ctx, buf, ")");
+                        }
+                        fz_append_string(ctx, buf, " Tj\n");
+                        is_first_line = 0;
+                        if (!end) break;
+                        p = end + 1;
+                    }
+                    fz_append_string(ctx, buf, "ET\n");
                     pdf_update_stream(ctx, pdoc, n, buf, 0);
                     fz_drop_buffer(ctx, buf);
                     buf = NULL;
@@ -744,11 +805,36 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
 
                     // Text inside box
                     fz_append_printf(ctx, buf, "BT\n%g %g %g rg\n/Helv %g Tf\n", r, g, b, fs);
-                    float baseline_y = (min_by - oy) + bh - fs * 0.85f - 2.0f;
+                    float leading = fs * 1.25f;
+                    fz_append_printf(ctx, buf, "%g TL\n", leading);
+                    float baseline_y = (min_by - oy) + bh - fs * 0.9f - 2.0f;
                     if (baseline_y < (min_by - oy) + 2.0f) baseline_y = (min_by - oy) + 2.0f;
                     fz_append_printf(ctx, buf, "%g %g Td\n", (min_bx - ox) + 3.0f, baseline_y);
-                    fz_append_pdf_string(ctx, buf, text);
-                    fz_append_string(ctx, buf, " Tj\nET\n");
+
+                    const char *p = text;
+                    int is_first_line = 1;
+                    while (*p) {
+                        const char *end = strchr(p, '\n');
+                        size_t line_len = end ? (size_t)(end - p) : strlen(p);
+                        if (line_len > 0 && p[line_len - 1] == '\r') line_len--;
+                        if (!is_first_line) {
+                            fz_append_string(ctx, buf, "T*\n");
+                        }
+                        char line_buf[1024];
+                        if (line_len < sizeof(line_buf)) {
+                            memcpy(line_buf, p, line_len);
+                            line_buf[line_len] = '\0';
+                            fz_append_pdf_string(ctx, buf, line_buf);
+                        } else {
+                            fz_append_string(ctx, buf, "(");
+                            fz_append_string(ctx, buf, ")");
+                        }
+                        fz_append_string(ctx, buf, " Tj\n");
+                        is_first_line = 0;
+                        if (!end) break;
+                        p = end + 1;
+                    }
+                    fz_append_string(ctx, buf, "ET\n");
 
                     pdf_update_stream(ctx, pdoc, n, buf, 0);
                     fz_drop_buffer(ctx, buf);
@@ -846,6 +932,7 @@ int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, f
 int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error) {
     if (!ctx || !doc) return -1;
     pdf_page *ppage = NULL;
+    int deleted = 0;
     fz_var(ppage);
     fz_try(ctx) {
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
@@ -879,9 +966,43 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
                 }
             } else if (atype == PDF_ANNOT_FREE_TEXT || atype == PDF_ANNOT_REDACT) {
                 fz_rect r = pdf_bound_annot(ctx, annot);
-                float tol = 5.0f;
-                if (x >= r.x0 - tol && x <= r.x1 + tol && y >= r.y0 - tol && y <= r.y1 + tol) {
+                fz_rect ar = pdf_annot_rect(ctx, annot);
+                fz_rect dr = pdf_annot_display_rect(ctx, annot);
+                float tol = 8.0f;
+                if ((x >= r.x0 - tol && x <= r.x1 + tol && y >= r.y0 - tol && y <= r.y1 + tol) ||
+                    (x >= ar.x0 - tol && x <= ar.x1 + tol && y >= ar.y0 - tol && y <= ar.y1 + tol) ||
+                    (x >= dr.x0 - tol && x <= dr.x1 + tol && y >= dr.y0 - tol && y <= dr.y1 + tol)) {
                     hit = 1;
+                }
+                if (!hit && pdf_annot_has_callout(ctx, annot)) {
+                    fz_point cl[3];
+                    int n_cl = 0;
+                    pdf_annot_callout_line(ctx, annot, cl, &n_cl);
+                    for (int i = 0; i < n_cl; i++) {
+                        float dx = x - cl[i].x;
+                        float dy = y - cl[i].y;
+                        if (dx * dx + dy * dy <= tol * tol * 2.0f) {
+                            hit = 1;
+                            break;
+                        }
+                        if (i > 0) {
+                            float seg_dx = cl[i].x - cl[i-1].x;
+                            float seg_dy = cl[i].y - cl[i-1].y;
+                            float l2 = seg_dx * seg_dx + seg_dy * seg_dy;
+                            if (l2 > 0.0001f) {
+                                float t = ((x - cl[i-1].x) * seg_dx + (y - cl[i-1].y) * seg_dy) / l2;
+                                t = fmaxf(0.0f, fminf(1.0f, t));
+                                float proj_x = cl[i-1].x + t * seg_dx;
+                                float proj_y = cl[i-1].y + t * seg_dy;
+                                float dpx = x - proj_x;
+                                float dpy = y - proj_y;
+                                if (dpx * dpx + dpy * dpy <= tol * tol * 2.0f) {
+                                    hit = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             } else if (atype == PDF_ANNOT_INK) {
                 if (pdf_annot_has_ink_list(ctx, annot)) {
@@ -922,6 +1043,7 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
             }
             if (hit) {
                 pdf_delete_annot(ctx, ppage, annot);
+                deleted = 1;
                 break;
             }
         }
@@ -929,9 +1051,9 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
         if (ppage) pdf_drop_page(ctx, ppage);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
-        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+        return -1;
     }
-    return 0;
+    return deleted;
 }
 
 int mupdf_pdf_delete_highlight_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error) {

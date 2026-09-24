@@ -115,6 +115,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastNavigatedPage: Int = -1
         private var lastSearchMatchIndex: Int = -1
         private var lastScrolledTargetId: String? = nil
+        private var lastSearchJumpToken: Int = -1
         private var lastSnapshotJumpToken: Int = -1
         
         // Pinch-to-zoom tracking
@@ -148,7 +149,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let isNewDocument = (lastDocumentPath != doc.filePath)
             let isZoomChanged = (abs(lastZoomScale - viewModel.zoomScale) > 0.001)
             let isPageJump = (viewModel.currentPageIndex != lastNavigatedPage && !isProgrammaticScroll)
-            let isMatchNavigation = (viewModel.activeScrollTargetId != nil && viewModel.activeScrollTargetId != lastScrolledTargetId && !viewModel.searchResults.isEmpty)
+            let isMatchNavigation = (viewModel.searchJumpToken != lastSearchJumpToken && !viewModel.searchResults.isEmpty)
             let isSnapshotJump = (viewModel.snapshotJumpToken != lastSnapshotJumpToken && viewModel.activeSnapshotTarget != nil)
             
             if isNewDocument {
@@ -157,6 +158,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastZoomScale = viewModel.zoomScale
                 lastSearchMatchIndex = -1
                 lastScrolledTargetId = nil
+                lastSearchJumpToken = -1
                 lastSnapshotJumpToken = -1
             }
             
@@ -211,13 +213,12 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             // 4. Handle Precise Search Match Scroll
             if isMatchNavigation {
+                lastSearchJumpToken = viewModel.searchJumpToken
                 lastScrolledTargetId = viewModel.activeScrollTargetId
                 lastSearchMatchIndex = viewModel.activeSearchMatchIndex
-                if let match = viewModel.searchResults.first(where: { $0.id.uuidString == viewModel.activeScrollTargetId }) {
-                    lastNavigatedPage = match.pageIndex
-                    scrollToMatch(match: match, doc: doc, clipView: clipView, scrollView: scrollView)
-                } else if viewModel.searchResults.indices.contains(viewModel.activeSearchMatchIndex) {
-                    let match = viewModel.searchResults[viewModel.activeSearchMatchIndex]
+                let match = viewModel.searchResults.first(where: { $0.id.uuidString == viewModel.activeScrollTargetId })
+                    ?? (viewModel.searchResults.indices.contains(viewModel.activeSearchMatchIndex) ? viewModel.searchResults[viewModel.activeSearchMatchIndex] : nil)
+                if let match = match {
                     lastNavigatedPage = match.pageIndex
                     scrollToMatch(match: match, doc: doc, clipView: clipView, scrollView: scrollView)
                 }
@@ -236,23 +237,51 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         
         private func scrollToMatch(match: SearchResult, doc: PDFDocumentCore, clipView: NSClipView, scrollView: NSScrollView) {
             let pageIdx = match.pageIndex
-            guard pageIdx >= 0 && pageIdx < doc.pageCount, let canvasView = self.canvasView else { return }
-            
-            let pageY = viewModel.effectivePageYOffsets[pageIdx]
-            let matchRect = match.highlightQuads.first?.boundingRect ?? CGRect(x: 0, y: 0, width: 200, height: 20)
-            let absoluteY = (pageY + matchRect.midY) * viewModel.effectiveZoom + 16
-            let scrollY = max(0, absoluteY - (clipView.bounds.height / 2))
+            guard pageIdx >= 0 && pageIdx < doc.pageCount,
+                  let canvasView = self.canvasView,
+                  let pFrame = canvasView.pageFrame(for: pageIdx) else { return }
             
             let pageBounds = doc.pageBounds[pageIdx]
-            let pageX = max(32, (canvasView.bounds.width - (pageBounds.width * viewModel.effectiveZoom)) / 2)
-            let matchX = (matchRect.midX - pageBounds.minX) * viewModel.effectiveZoom
-            let absoluteX = pageX + matchX
-            // Upper-clamped too, not just lower: centering a match near the page's right edge could
-            // otherwise request a scroll position beyond how far the content can actually scroll
-            // (e.g. at a zoom level where the page already fits within the viewport width), which
-            // pans the page's own left edge out of view instead.
+            let matchRect = match.highlightQuads.first?.boundingRect ?? CGRect(x: pageBounds.midX - 100, y: pageBounds.midY - 10, width: 200, height: 20)
+            
+            // Map matchRect to canvas coordinates matching highlightQuads in draw()
+            let targetCanvasX = pFrame.minX + (matchRect.minX - pageBounds.minX) * viewModel.effectiveZoom
+            let targetCanvasY = pFrame.minY + (matchRect.minY - pageBounds.minY) * viewModel.effectiveZoom
+            let targetCanvasW = max(matchRect.width * viewModel.effectiveZoom, 20)
+            let targetCanvasH = max(matchRect.height * viewModel.effectiveZoom, 16)
+            let targetCanvasRect = NSRect(x: targetCanvasX, y: targetCanvasY, width: targetCanvasW, height: targetCanvasH)
+
+            // 1. Vertical Scrolling — center match in viewport
+            let maxScrollY = max(0, canvasView.bounds.height - clipView.bounds.height)
+            var scrollY: CGFloat
+            if targetCanvasRect.height >= clipView.bounds.height {
+                scrollY = targetCanvasRect.minY - 24
+            } else {
+                scrollY = targetCanvasRect.midY - (clipView.bounds.height / 2)
+                if scrollY > targetCanvasRect.minY - 24 {
+                    scrollY = targetCanvasRect.minY - 24
+                }
+                if scrollY + clipView.bounds.height < targetCanvasRect.maxY + 24 {
+                    scrollY = targetCanvasRect.maxY + 24 - clipView.bounds.height
+                }
+            }
+            scrollY = min(max(0, scrollY), maxScrollY)
+
+            // 2. Horizontal Scrolling — center match in viewport
             let maxScrollX = max(0, canvasView.bounds.width - clipView.bounds.width)
-            let scrollX = min(max(0, absoluteX - (clipView.bounds.width / 2)), maxScrollX)
+            var scrollX: CGFloat
+            if targetCanvasRect.width >= clipView.bounds.width {
+                scrollX = targetCanvasRect.minX - 32
+            } else {
+                scrollX = targetCanvasRect.midX - (clipView.bounds.width / 2)
+                if scrollX > targetCanvasRect.minX - 32 {
+                    scrollX = targetCanvasRect.minX - 32
+                }
+                if scrollX + clipView.bounds.width < targetCanvasRect.maxX + 32 {
+                    scrollX = targetCanvasRect.maxX + 32 - clipView.bounds.width
+                }
+            }
+            scrollX = min(max(0, scrollX), maxScrollX)
 
             isProgrammaticScroll = true
             clipView.scroll(to: NSPoint(x: scrollX, y: scrollY))

@@ -223,6 +223,7 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeSearchMatchId: UUID? = nil
     @Published public var searchScrollRevision: Int = 0
     @Published public var activeScrollTargetId: String? = nil
+    @Published public var searchJumpToken: Int = 0
     @Published public var hasNavigatedToActiveSearchMatch: Bool = false
     public var autoNavigateOnSearchResults: Bool = false
     
@@ -778,16 +779,8 @@ public final class PDFViewerViewModel: ObservableObject {
             navigateToMatch(at: activeSearchMatchIndex, shouldScrollList: false)
             return
         }
-        activeSearchMatchIndex = (activeSearchMatchIndex + 1) % searchResults.count
-        let match = searchResults[activeSearchMatchIndex]
-        self.activeSearchMatchId = match.id
-        self.searchScrollRevision += 1
-        self.currentPageIndex = match.pageIndex
-        self.activeScrollTargetId = match.id.uuidString
-        pruneCaches(around: match.pageIndex)
-        Task {
-            await renderPage(match.pageIndex)
-        }
+        let nextIndex = (activeSearchMatchIndex + 1) % searchResults.count
+        navigateToMatch(at: nextIndex, shouldScrollList: true)
     }
     
     public func previousSearchMatch() {
@@ -796,16 +789,8 @@ public final class PDFViewerViewModel: ObservableObject {
             navigateToMatch(at: activeSearchMatchIndex, shouldScrollList: false)
             return
         }
-        activeSearchMatchIndex = (activeSearchMatchIndex - 1 + searchResults.count) % searchResults.count
-        let match = searchResults[activeSearchMatchIndex]
-        self.activeSearchMatchId = match.id
-        self.searchScrollRevision += 1
-        self.currentPageIndex = match.pageIndex
-        self.activeScrollTargetId = match.id.uuidString
-        pruneCaches(around: match.pageIndex)
-        Task {
-            await renderPage(match.pageIndex)
-        }
+        let prevIndex = (activeSearchMatchIndex - 1 + searchResults.count) % searchResults.count
+        navigateToMatch(at: prevIndex, shouldScrollList: true)
     }
     
     public func navigateToMatch(at index: Int, shouldScrollList: Bool = false) {
@@ -819,6 +804,7 @@ public final class PDFViewerViewModel: ObservableObject {
         }
         self.currentPageIndex = match.pageIndex
         self.activeScrollTargetId = match.id.uuidString
+        self.searchJumpToken &+= 1
         pruneCaches(around: match.pageIndex)
         Task {
             await renderPage(match.pageIndex)
@@ -1931,34 +1917,40 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     public func removeAnnotation(_ annotation: PDFAnnotation) {
-        guard let doc = document else { return }
         let pIdx = annotation.pageIndex
         if let idx = pageAnnotations[pIdx]?.firstIndex(where: { $0.id == annotation.id }) {
             pageAnnotations[pIdx]?.remove(at: idx)
-            let testPoint: CGPoint
-            if annotation.type == .ink, let firstPt = annotation.inkPoints.first {
-                testPoint = firstPt
-            } else if annotation.type == .freeText, let r = annotation.rect {
-                testPoint = CGPoint(x: r.midX, y: r.midY)
-            } else if annotation.type == .callout, let tp = annotation.targetPoint {
-                testPoint = tp
-            } else if annotation.type == .redact, let r = annotation.rect {
-                testPoint = CGPoint(x: r.midX, y: r.midY)
-            } else {
-                testPoint = CGPoint(x: annotation.boundingRect.midX, y: annotation.boundingRect.midY)
-            }
-            try? doc.deleteAnnotation(pageIndex: pIdx, at: testPoint)
             isDocumentEdited = true
             currentWindow?.isDocumentEdited = true
+        }
+        // Also remove any accidental duplicate matching same type, text, and rect
+        if let r = annotation.rect, !annotation.text.isEmpty {
+            pageAnnotations[pIdx]?.removeAll(where: { $0.type == annotation.type && $0.text == annotation.text && $0.rect == r })
+        }
+        guard let doc = document else { return }
+        let testPoint: CGPoint
+        if annotation.type == .ink, let firstPt = annotation.inkPoints.first {
+            testPoint = firstPt
+        } else if annotation.type == .freeText, let r = annotation.rect {
+            testPoint = CGPoint(x: r.midX, y: r.midY)
+        } else if annotation.type == .callout, let tp = annotation.targetPoint {
+            testPoint = tp
+        } else if annotation.type == .redact, let r = annotation.rect {
+            testPoint = CGPoint(x: r.midX, y: r.midY)
+        } else {
+            testPoint = CGPoint(x: annotation.boundingRect.midX, y: annotation.boundingRect.midY)
+        }
+        _ = try? doc.deleteAnnotation(pageIndex: pIdx, at: testPoint)
+        if annotation.type == .callout, let r = annotation.rect {
+            _ = try? doc.deleteAnnotation(pageIndex: pIdx, at: CGPoint(x: r.midX, y: r.midY))
         }
     }
 
     public func removeAnnotation(at pagePoint: CGPoint, pageIndex: Int) {
-        guard let doc = document else { return }
         if let list = pageAnnotations[pageIndex], let annot = list.first(where: { $0.contains(pagePoint: pagePoint) }) {
             removeAnnotation(annot)
-        } else {
-            try? doc.deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
+        } else if let doc = document {
+            _ = try? doc.deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
         }
     }
 
@@ -2189,13 +2181,52 @@ public final class PDFViewerViewModel: ObservableObject {
         }
 
         do {
-            let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: 300.0 / 72.0)
             let pageBounds = doc.pageBounds[pageIndex]
-            let result = try await PDFOCREngine.shared.recognizeText(
-                in: rendered.image,
-                pageIndex: pageIndex,
-                pageBounds: pageBounds
-            )
+            let maxDim = max(pageBounds.width, pageBounds.height)
+            let result: PDFOCRPageResult
+
+            if maxDim > 1200 {
+                // Tiled high-resolution OCR for large schematics, posters, and technical drawings
+                var tileResults: [PDFOCRPageResult] = []
+                let targetTileSize: CGFloat = 1100.0
+                let overlap: CGFloat = 60.0
+                let step = targetTileSize - overlap
+
+                var y = pageBounds.minY
+                while y < pageBounds.maxY {
+                    let tileH = min(targetTileSize, pageBounds.maxY - y)
+                    var x = pageBounds.minX
+                    while x < pageBounds.maxX {
+                        let tileW = min(targetTileSize, pageBounds.maxX - x)
+                        let tileRect = CGRect(x: x, y: y, width: tileW, height: tileH)
+
+                        let tileImage = try await renderActor.renderPageRect(
+                            pageIndex: pageIndex,
+                            rect: tileRect,
+                            scale: 300.0 / 72.0
+                        )
+                        let res = try await PDFOCREngine.shared.recognizeText(
+                            in: tileImage,
+                            pageIndex: pageIndex,
+                            pageBounds: tileRect
+                        )
+                        tileResults.append(res)
+
+                        if x + tileW >= pageBounds.maxX { break }
+                        x += step
+                    }
+                    if y + tileH >= pageBounds.maxY { break }
+                    y += step
+                }
+                result = await PDFOCREngine.shared.mergeOCRResults(pageIndex: pageIndex, results: tileResults)
+            } else {
+                let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: 300.0 / 72.0)
+                result = try await PDFOCREngine.shared.recognizeText(
+                    in: rendered.image,
+                    pageIndex: pageIndex,
+                    pageBounds: pageBounds
+                )
+            }
             await MainActor.run {
                 self.ocrResults[pageIndex] = result
                 self.detectedScannedPages.remove(pageIndex)

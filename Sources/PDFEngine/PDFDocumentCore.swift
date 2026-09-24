@@ -483,22 +483,26 @@ public final class PDFDocumentCore: @unchecked Sendable {
         return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// Deletes any user annotation (highlight, underline, strikethrough, or ink) located near a point on a page
-    public func deleteAnnotation(pageIndex: Int, at pagePoint: CGPoint) throws {
+    /// Deletes any user annotation (highlight, underline, strikethrough, ink, free text, or callout)
+    /// located near a point on a page. Returns true if an annotation was found and removed.
+    @discardableResult
+    public func deleteAnnotation(pageIndex: Int, at pagePoint: CGPoint) throws -> Bool {
         lock.lock()
         defer { lock.unlock() }
 
         var errorMsg: UnsafePointer<CChar>?
         let ret = mupdf_pdf_delete_annot_near_point(ctx, doc, Int32(pageIndex), Float(pagePoint.x), Float(pagePoint.y), &errorMsg)
-        if ret != 0 {
+        if ret < 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete annotation"
             throw PDFError.saveFailed(msg)
         }
+        return ret == 1
     }
 
     /// Deletes a highlight annotation located near a point on a page
-    public func deleteHighlight(pageIndex: Int, at pagePoint: CGPoint) throws {
-        try deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
+    @discardableResult
+    public func deleteHighlight(pageIndex: Int, at pagePoint: CGPoint) throws -> Bool {
+        return try deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
     }
     
     /// Stamps `imageData` (PNG or JPEG bytes) into `rect` (native bottom-up PDF coordinates) on a

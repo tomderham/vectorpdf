@@ -47,6 +47,7 @@ void mupdf_display_list_drop(fz_context *ctx, fz_display_list *list);
 // Pixmap Rendering
 int mupdf_render_display_list(fz_context *ctx, fz_display_list *list, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
 int mupdf_render_page(fz_context *ctx, fz_page *page, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
+int mupdf_render_page_rect(fz_context *ctx, fz_page *page, float scale_x, float scale_y, float x0, float y0, float x1, float y1, fz_pixmap **out_pixmap, const char **out_error);
 void mupdf_pixmap_drop(fz_context *ctx, fz_pixmap *pixmap);
 int mupdf_pixmap_width(fz_pixmap *pixmap);
 int mupdf_pixmap_height(fz_pixmap *pixmap);

@@ -4177,6 +4177,224 @@ func createFormSamplePDF(at fileURL: URL) {
     // Misses far away point
     #expect(!callout.contains(pagePoint: CGPoint(x: 50, y: 50)))
 }
+
+@Test func testFreeTextAddAndDeleteInDocumentCore() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_freetext_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    let rect = CGRect(x: 100, y: 200, width: 150, height: 40)
+    // Add multi-line free text
+    try doc.addFreeText(pageIndex: 0, rect: rect, text: "Line 1\nLine 2", fontSize: 13, red: 0, green: 0, blue: 0)
+
+    let midPoint = CGPoint(x: rect.midX, y: rect.midY)
+    let deleted = try doc.deleteAnnotation(pageIndex: 0, at: midPoint)
+    #expect(deleted == true)
+
+    // Deleting again at the same point must return false (already removed)
+    let deletedAgain = try doc.deleteAnnotation(pageIndex: 0, at: midPoint)
+    #expect(deletedAgain == false)
+
+    // Test Callout addition and deletion
+    let target = CGPoint(x: 80, y: 350)
+    let knee = CGPoint(x: 120, y: 320)
+    let noteBox = CGRect(x: 120, y: 300, width: 100, height: 36)
+    try doc.addCallout(
+        pageIndex: 0,
+        targetPoint: target,
+        kneePoint: knee,
+        textBoxRect: noteBox,
+        text: "Callout\nMulti-line",
+        fontSize: 11,
+        red: 0.8,
+        green: 0.1,
+        blue: 0.1
+    )
+
+    // Deleting near target arrow tip or note box returns true
+    let calloutDeleted = try doc.deleteAnnotation(pageIndex: 0, at: target)
+    #expect(calloutDeleted == true)
+}
+
+@Test @MainActor func testSnugTextBoxSizingAndMultiLine() async throws {
+    let vm = PDFViewerViewModel()
+    let canvas = PDFCanvasView(viewModel: vm)
+
+    // Short technical annotation: "R12" or "47k"
+    let shortSize = canvas.computeTextBoxSize(text: "R12", fontSize: 11.0, maxWidth: 200)
+    #expect(shortSize.width < 45.0, "Short technical annotation should have snug width, got \(shortSize.width)")
+    #expect(shortSize.height < 25.0)
+
+    // Multi-line annotation: height must expand proportionally
+    let multiLineSize = canvas.computeTextBoxSize(text: "Line 1\nLine 2\nLine 3", fontSize: 11.0, maxWidth: 200)
+    #expect(multiLineSize.height > shortSize.height * 2.0, "Multi-line annotation should have taller height")
+}
+
+@Test @MainActor func testCornerResizeHandleHitTestingAndResizing() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_resize_handles_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    let canvas = PDFCanvasView(viewModel: vm)
+    canvas.frame = NSRect(x: 0, y: 0, width: 800, height: 1000)
+
+    let box = CGRect(x: 100, y: 200, width: 120, height: 40)
+    // With 1.0 zoom and page at (0, 0), canvas coordinates match page coordinates
+    let delta = CGSize(width: 20, height: 10)
+
+    // Test resizeBottomRight expands width and shifts bottom
+    let resizedBR = canvas.updatedRect(from: box, part: .resizeBottomRight, delta: delta)
+    #expect(resizedBR.width == 140)
+    #expect(resizedBR.minY == 210)
+
+    // Test resizeTopLeft shifts origin x and expands top y
+    let resizedTL = canvas.updatedRect(from: box, part: .resizeTopLeft, delta: delta)
+    #expect(resizedTL.minX == 120)
+    #expect(resizedTL.maxY == 250)
+
+    // Ensure resizing respects minimum bounds floor
+    let shrinkDelta = CGSize(width: -200, height: -200)
+    let minRect = canvas.updatedRect(from: box, part: .resizeBottomLeft, delta: shrinkDelta)
+    #expect(minRect.width >= 24)
+    #expect(minRect.height >= 16)
+}
+
+@Test func testTiledSchematicOCR() async throws {
+    let schematicPath = "/Users/td958143/Downloads/fender-studio-85-schematic.pdf"
+    guard FileManager.default.fileExists(atPath: schematicPath) else { return }
+
+    let vm = await PDFViewerViewModel()
+    await vm.loadDocument(from: schematicPath)
+
+    try await Task.sleep(nanoseconds: 500_000_000)
+    await vm.runOCR(onPageIndex: 0)
+
+    let ocr = await MainActor.run { vm.ocrResults[0] }
+    #expect(ocr != nil)
+    let lineCount = ocr?.lines.count ?? 0
+    print("Total recognized lines in schematic: \(lineCount)")
+    #expect(lineCount > 50)
+}
+
+@Test func testSearchJumpTokenIncrementsOnNavigation() async throws {
+    let vm = await PDFViewerViewModel()
+    let initialToken = await MainActor.run { vm.searchJumpToken }
+
+    // Mock search results
+    let match1 = SearchResult(
+        pageIndex: 0,
+        matchedText: "test1",
+        snippet: "test1",
+        highlightQuads: [PDFQuad(ul: .zero, ur: .zero, ll: .zero, lr: .zero)]
+    )
+    let match2 = SearchResult(
+        pageIndex: 1,
+        matchedText: "test2",
+        snippet: "test2",
+        highlightQuads: [PDFQuad(ul: .zero, ur: .zero, ll: .zero, lr: .zero)]
+    )
+
+    await MainActor.run {
+        vm.searchResults = [match1, match2]
+        vm.navigateToMatch(at: 0)
+    }
+
+    let tokenAfterFirstNav = await MainActor.run { vm.searchJumpToken }
+    #expect(tokenAfterFirstNav == initialToken + 1)
+
+    await MainActor.run {
+        vm.nextSearchMatch()
+    }
+    let tokenAfterNext = await MainActor.run { vm.searchJumpToken }
+    #expect(tokenAfterNext == tokenAfterFirstNav + 1)
+
+    await MainActor.run {
+        vm.previousSearchMatch()
+    }
+    let tokenAfterPrev = await MainActor.run { vm.searchJumpToken }
+    #expect(tokenAfterPrev == tokenAfterNext + 1)
+}
+
+@Test func testRemoveAnnotationDeduplication() async throws {
+    let vm = await PDFViewerViewModel()
+    let rect = CGRect(x: 100, y: 100, width: 120, height: 30)
+    let annot1 = PDFAnnotation(
+        id: UUID(),
+        pageIndex: 0,
+        type: .freeText,
+        rect: rect,
+        fontSize: 13.0,
+        color: .red,
+        text: "Duplicate Test"
+    )
+    let annot2 = PDFAnnotation(
+        id: UUID(),
+        pageIndex: 0,
+        type: .freeText,
+        rect: rect,
+        fontSize: 13.0,
+        color: .red,
+        text: "Duplicate Test"
+    )
+
+    await MainActor.run {
+        vm.pageAnnotations[0] = [annot1, annot2]
+        #expect(vm.pageAnnotations[0]?.count == 2)
+        vm.removeAnnotation(annot1)
+        #expect(vm.pageAnnotations[0]?.count == 0)
+    }
+}
+
+@Test func testOCRSearchYieldsDistinctBoundingBoxesForEachMatch() async throws {
+    let schematicPath = "/Users/td958143/Downloads/fender-studio-85-schematic.pdf"
+    guard FileManager.default.fileExists(atPath: schematicPath) else { return }
+
+    let searchActor = PDFSearchActor()
+    try await searchActor.openDocument(filePath: schematicPath)
+
+    // Construct mock OCR lines at different positions on page 0
+    let line1 = PDFOCRLine(text: "R10 47k", confidence: 0.9, boundingBox: CGRect(x: 100, y: 200, width: 80, height: 20))
+    let line2 = PDFOCRLine(text: "R10 100k", confidence: 0.9, boundingBox: CGRect(x: 800, y: 1200, width: 85, height: 20))
+    let line3 = PDFOCRLine(text: "R10 1M", confidence: 0.9, boundingBox: CGRect(x: 1500, y: 2100, width: 75, height: 20))
+    let ocrResult = PDFOCRPageResult(pageIndex: 0, lines: [line1, line2, line3], fullText: "R10 47k\nR10 100k\nR10 1M")
+
+    let stream = await searchActor.searchStream(query: "R10", nearPage: 0, options: SearchOptions(), ocrPages: [0: ocrResult])
+    var results: [SearchResult] = []
+    for await r in stream {
+        results.append(r)
+    }
+
+    #expect(results.count == 3)
+    // Verify each result has exactly its own quad
+    for r in results {
+        #expect(r.highlightQuads.count == 1)
+    }
+    // Verify each result has a distinct bounding box matching its line position
+    let r0Box = try #require(results[0].highlightQuads.first?.boundingRect)
+    let r1Box = try #require(results[1].highlightQuads.first?.boundingRect)
+    let r2Box = try #require(results[2].highlightQuads.first?.boundingRect)
+
+    #expect(abs(r0Box.minX - 100) < 5)
+    #expect(abs(r0Box.minY - 200) < 5)
+
+    #expect(abs(r1Box.minX - 800) < 5)
+    #expect(abs(r1Box.minY - 1200) < 5)
+
+    #expect(abs(r2Box.minX - 1500) < 5)
+    #expect(abs(r2Box.minY - 2100) < 5)
+
+    // They must all have completely different positions (not all pointing to line 1)
+    #expect(r0Box.minX != r1Box.minX)
+    #expect(r1Box.minX != r2Box.minX)
+    #expect(r0Box.minY != r1Box.minY)
+    #expect(r1Box.minY != r2Box.minY)
+}
 }
 
 

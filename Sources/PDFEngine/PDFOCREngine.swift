@@ -95,4 +95,46 @@ public actor PDFOCREngine {
             }
         }
     }
+
+    /// Merges multiple OCR results for the same page (e.g. from high-resolution tiled passes),
+    /// deduplicating overlapping line observations and ordering in natural reading order.
+    public func mergeOCRResults(pageIndex: Int, results: [PDFOCRPageResult]) -> PDFOCRPageResult {
+        var allLines: [PDFOCRLine] = []
+        for r in results {
+            for line in r.lines {
+                let isDuplicate = allLines.contains { existing in
+                    if existing.text.caseInsensitiveCompare(line.text) == .orderedSame {
+                        let inter = existing.boundingBox.intersection(line.boundingBox)
+                        if !inter.isNull {
+                            let minArea = min(existing.boundingBox.width * existing.boundingBox.height, line.boundingBox.width * line.boundingBox.height)
+                            if minArea > 0 && (inter.width * inter.height) / minArea > 0.3 {
+                                return true
+                            }
+                        }
+                        let c1 = CGPoint(x: existing.boundingBox.midX, y: existing.boundingBox.midY)
+                        let c2 = CGPoint(x: line.boundingBox.midX, y: line.boundingBox.midY)
+                        if hypot(c1.x - c2.x, c1.y - c2.y) < 15.0 {
+                            return true
+                        }
+                    }
+                    return false
+                }
+                if !isDuplicate {
+                    allLines.append(line)
+                }
+            }
+        }
+
+        allLines.sort { a, b in
+            let rowA = Int(a.boundingBox.minY / 15.0)
+            let rowB = Int(b.boundingBox.minY / 15.0)
+            if rowA != rowB {
+                return rowA < rowB
+            }
+            return a.boundingBox.minX < b.boundingBox.minX
+        }
+
+        let fullText = allLines.map { $0.text }.joined(separator: "\n")
+        return PDFOCRPageResult(pageIndex: pageIndex, lines: allLines, fullText: fullText)
+    }
 }

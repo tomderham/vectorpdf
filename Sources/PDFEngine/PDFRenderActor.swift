@@ -160,6 +160,41 @@ public actor PDFRenderActor {
         }
     }
 
+    /// Renders a specific rectangular sub-region of a page (in native PDF point coordinates) at the specified scale.
+    public func renderPageRect(pageIndex: Int, rect: CGRect, scale: CGFloat) throws -> CGImage {
+        guard let doc = self.resource.doc else {
+            throw PDFError.openFailed("No document opened in render actor")
+        }
+
+        let ctx = resource.ctx
+        let scaleF = Float(scale)
+        var pixmapPtr: FZPixmap?
+        var errorMsg: UnsafePointer<CChar>?
+
+        var pagePtr: FZPage?
+        let loadRet = mupdf_page_load(ctx, doc, Int32(pageIndex), &pagePtr, &errorMsg)
+        guard loadRet == 0, let page = pagePtr else {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to load page"
+            throw PDFError.pageLoadFailed(pageIndex, msg)
+        }
+        defer { mupdf_page_drop(ctx, page) }
+
+        let ret = mupdf_render_page_rect(
+            ctx, page, scaleF, scaleF,
+            Float(rect.minX), Float(rect.minY), Float(rect.maxX), Float(rect.maxY),
+            &pixmapPtr, &errorMsg
+        )
+        guard ret == 0, let pix = pixmapPtr else {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Render page rect failed"
+            throw PDFError.renderFailed(msg)
+        }
+        defer {
+            mupdf_pixmap_drop(ctx, pix)
+            _ = mupdf_context_shrink_store(ctx, 50)
+        }
+        return try makeCGImage(from: pix)
+    }
+
     /// Scales down `requestedScale` (never up) so the resulting bitmap's longest edge doesn't
     /// exceed maxRenderDimension.
     private static func clampedScale(_ requestedScale: Float, pageBounds: CGRect) -> Float {

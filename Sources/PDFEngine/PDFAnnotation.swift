@@ -193,7 +193,12 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
             }
             // Check line segments: targetPoint -> kneePoint, kneePoint -> rect attachment
             if let tp = targetPoint, let kp = kneePoint {
-                let segments = [(tp, kp)]
+                var segments = [(tp, kp)]
+                if let r = rect {
+                    let attachX = (kp.x <= r.minX) ? r.minX : ((kp.x >= r.maxX) ? r.maxX : kp.x)
+                    let attachY = (kp.y <= r.minY) ? r.minY : ((kp.y >= r.maxY) ? r.maxY : (r.minY + r.maxY) * 0.5)
+                    segments.append((kp, CGPoint(x: attachX, y: attachY)))
+                }
                 for (a, b) in segments {
                     let dx = b.x - a.x
                     let dy = b.y - a.y

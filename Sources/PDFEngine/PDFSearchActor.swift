@@ -146,27 +146,35 @@ public actor PDFSearchActor {
 
                         if !hasStextMatch {
                             if let ocr = ocrPages[pageIdx] {
-                                let nsOCR = ocr.fullText as NSString
-                                let ocrMatches = regex.matches(in: ocr.fullText, options: [], range: NSRange(location: 0, length: nsOCR.length))
-                                for match in ocrMatches {
+                                for line in ocr.lines {
                                     if Task.isCancelled { break }
-                                    let matchedStr = nsOCR.substring(with: match.range)
-                                    let start = max(0, match.range.location - 35)
-                                    let end = min(nsOCR.length, match.range.location + match.range.length + 35)
-                                    let snippet = "..." + nsOCR.substring(with: NSRange(location: start, length: end - start)).replacingOccurrences(of: "\n", with: " ") + "..."
+                                    let lineString = line.text as NSString
+                                    guard lineString.length > 0 else { continue }
+                                    let lineMatches = regex.matches(in: line.text, options: [], range: NSRange(location: 0, length: lineString.length))
+                                    for match in lineMatches {
+                                        if Task.isCancelled { break }
+                                        let matchedStr = lineString.substring(with: match.range)
+                                        let start = max(0, match.range.location - 30)
+                                        let end = min(lineString.length, match.range.location + match.range.length + 30)
+                                        var snippet = lineString.substring(with: NSRange(location: start, length: end - start))
+                                        if start > 0 { snippet = "..." + snippet }
+                                        if end < lineString.length { snippet = snippet + "..." }
 
-                                    var matchedQuads: [PDFQuad] = []
-                                    for line in ocr.lines {
-                                        if line.text.localizedCaseInsensitiveContains(matchedStr) {
-                                            matchedQuads.append(PDFQuad(rect: line.boundingBox))
-                                        }
+                                        let totalLen = CGFloat(max(1, lineString.length))
+                                        let startRatio = CGFloat(match.range.location) / totalLen
+                                        let lenRatio = CGFloat(match.range.length) / totalLen
+
+                                        let matchX = line.boundingBox.minX + startRatio * line.boundingBox.width
+                                        let matchW = max(line.boundingBox.width * lenRatio, 6.0)
+                                        let matchRect = CGRect(x: matchX, y: line.boundingBox.minY, width: matchW, height: line.boundingBox.height)
+
+                                        continuation.yield(SearchResult(
+                                            pageIndex: pageIdx,
+                                            matchedText: matchedStr,
+                                            snippet: snippet,
+                                            highlightQuads: [PDFQuad(rect: matchRect)]
+                                        ))
                                     }
-                                    continuation.yield(SearchResult(
-                                        pageIndex: pageIdx,
-                                        matchedText: matchedStr,
-                                        snippet: snippet,
-                                        highlightQuads: matchedQuads
-                                    ))
                                 }
                             }
                             return

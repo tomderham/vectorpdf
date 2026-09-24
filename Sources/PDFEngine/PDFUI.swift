@@ -667,8 +667,47 @@ public struct PDFViewerMainView: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.top, 4)
-                        
-                        if !viewModel.searchResults.isEmpty || (!viewModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSearching) {
+
+                        if viewModel.isRunningOCR {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Recognizing text in scanned pages...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                            .cornerRadius(6)
+                            .padding(.horizontal, 8)
+                        } else if !viewModel.detectedScannedPages.isEmpty {
+                            HStack(spacing: 6) {
+                                Image(systemName: "text.viewfinder")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("\(viewModel.detectedScannedPages.count) scanned page(s)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Run OCR") {
+                                    Task {
+                                        await viewModel.runOCROnAllScannedPages()
+                                    }
+                                }
+                                .buttonStyle(.borderless)
+                                .font(.caption.weight(.medium))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                            .cornerRadius(6)
+                            .padding(.horizontal, 8)
+                        }
+                        let hasQuery = !viewModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        let shouldShowCount = !viewModel.searchResults.isEmpty || (hasQuery && !viewModel.isSearching && !viewModel.isRunningOCR)
+                        if shouldShowCount {
                             HStack {
                                 Text(viewModel.searchResults.isEmpty ? "0 results" : "\(viewModel.activeSearchMatchIndex + 1) of \(viewModel.searchResults.count)")
                                     .font(.caption2.monospacedDigit().weight(.medium))
