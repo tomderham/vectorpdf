@@ -3875,6 +3875,28 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.documentInspectionReport != nil)
     #expect(vm.documentInspectionReport?.metadata.title == "VectorPDF Engineering Spec")
 }
+
+@Test func testAnchorMenuDisplayTitleFormatting() {
+    // 1. Text snippet selection on page 345 (0-indexed 344)
+    let snap1 = SnapshotTarget(label: "This event is made for engineers", snippet: "This event is made for engineers", targetPage: 344)
+    #expect(snap1.menuDisplayTitle == "Page 345 “This event is made for engineers”")
+
+    // 2. Default page anchor with empty label
+    let snap2 = SnapshotTarget(label: "", snippet: "", targetPage: 12)
+    #expect(snap2.menuDisplayTitle == "Page 13")
+
+    // 3. Label identical to "Page 13"
+    let snap3 = SnapshotTarget(label: "Page 13", snippet: "Page 13", targetPage: 12)
+    #expect(snap3.menuDisplayTitle == "Page 13")
+
+    // 4. Label already starting with "Page 13: Section 4"
+    let snap4 = SnapshotTarget(label: "Page 13: Section 4 Architecture", snippet: "Section 4", targetPage: 12)
+    #expect(snap4.menuDisplayTitle == "Page 13 “Section 4 Architecture”")
+
+    // 5. Section outline heading
+    let snap5 = SnapshotTarget(label: "Section 2.1 Overview", snippet: "Section 2.1 Overview", targetPage: 5)
+    #expect(snap5.menuDisplayTitle == "Page 6 “Section 2.1 Overview”")
+}
 }
 
 

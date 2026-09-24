@@ -275,19 +275,23 @@ public struct PDFDocumentPropertiesView: View {
                     Text("Page:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .fixedSize()
                     Stepper("\(safeIndex + 1) of \(totalPages)", value: $geometryPageIndex, in: 0...(totalPages - 1))
                         .font(.subheadline.bold())
+                        .fixedSize()
                 }
 
                 Spacer()
 
-                Picker("Units:", selection: $geometryUnit) {
-                    ForEach(BoxUnit.allCases) { u in
-                        Text(u.rawValue).tag(u)
-                    }
+                HStack(spacing: 8) {
+                    Text("Units:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .fixedSize()
+
+                    EqualWidthUnitPicker(units: BoxUnit.allCases, selectedUnit: $geometryUnit)
+                        .frame(width: 255, height: 24)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
             }
             .padding(.horizontal, 20)
             .padding(.top, 14)
@@ -521,3 +525,51 @@ public struct PDFDocumentPropertiesView: View {
         }
     }
 }
+
+/// An AppKit-backed segmented control that guarantees all unit buttons have identical equal width.
+struct EqualWidthUnitPicker: NSViewRepresentable {
+    let units: [PDFDocumentPropertiesView.BoxUnit]
+    @Binding var selectedUnit: PDFDocumentPropertiesView.BoxUnit
+
+    func makeNSView(context: Context) -> NSSegmentedControl {
+        let control = NSSegmentedControl(
+            labels: units.map { $0.rawValue },
+            trackingMode: .selectOne,
+            target: context.coordinator,
+            action: #selector(Coordinator.segmentChanged(_:))
+        )
+        control.segmentDistribution = .fillEqually
+        control.controlSize = .small
+        if let idx = units.firstIndex(of: selectedUnit) {
+            control.selectedSegment = idx
+        }
+        return control
+    }
+
+    func updateNSView(_ nsView: NSSegmentedControl, context: Context) {
+        if let idx = units.firstIndex(of: selectedUnit), nsView.selectedSegment != idx {
+            nsView.selectedSegment = idx
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    @MainActor
+    class Coordinator: NSObject {
+        var parent: EqualWidthUnitPicker
+        init(_ parent: EqualWidthUnitPicker) {
+            self.parent = parent
+        }
+
+        @objc func segmentChanged(_ sender: NSSegmentedControl) {
+            let idx = sender.selectedSegment
+            if idx >= 0 && idx < parent.units.count {
+                parent.selectedUnit = parent.units[idx]
+            }
+        }
+    }
+}
+
+

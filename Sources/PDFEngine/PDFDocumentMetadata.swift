@@ -174,3 +174,4 @@ public struct PDFDocumentInspectionReport: Sendable, Equatable {
         self.fonts = fonts
     }
 }
+

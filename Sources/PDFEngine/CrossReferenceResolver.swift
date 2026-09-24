@@ -27,7 +27,7 @@ public struct SnapshotTarget: Sendable, Identifiable, Equatable, Codable {
         targetPoint: CGPoint? = nil,
         targetRect: CGRect? = nil,
         sourceRect: CGRect? = nil,
-        sourcePage: Int,
+        sourcePage: Int = 0,
         uri: String? = nil,
         thumbnailData: Data? = nil,
         createdAt: Date = Date()
@@ -66,6 +66,46 @@ public struct SnapshotTarget: Sendable, Identifiable, Equatable, Codable {
         guard let thumbnailFileName else { return nil }
         guard let data = try? Data(contentsOf: SnapshotTarget.cacheDirectory.appendingPathComponent(thumbnailFileName)) else { return nil }
         return NSImage(data: data)
+    }
+
+    /// Formatted display title for the macOS application menu bar:
+    /// Always preceded by the 1-based page number, followed by the anchor text in quotes.
+    /// E.g. 'Page 345 "This event is made..."' or 'Page 12 "Section 4.2 Architecture"'
+    public var menuDisplayTitle: String {
+        let pageNum = targetPage + 1
+        let pagePrefix = "Page \(pageNum)"
+
+        // Pick the most informative descriptive text: label first, fallback to snippet
+        let rawDesc = !label.isEmpty ? label : snippet
+        let trimmed = rawDesc.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // If empty or purely "Page X", just show "Page X"
+        if trimmed.isEmpty || trimmed.lowercased() == pagePrefix.lowercased() {
+            return pagePrefix
+        }
+
+        // If it already starts with "Page X", strip or format cleanly
+        if trimmed.lowercased().hasPrefix(pagePrefix.lowercased()) {
+            let afterPrefix = trimmed.dropFirst(pagePrefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
+            if afterPrefix.isEmpty {
+                return pagePrefix
+            }
+            var cleanDesc = afterPrefix
+            if cleanDesc.hasPrefix(":") || cleanDesc.hasPrefix("-") || cleanDesc.hasPrefix("•") {
+                cleanDesc = cleanDesc.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if cleanDesc.hasPrefix("“") || cleanDesc.hasPrefix("\"") {
+                return "\(pagePrefix) \(cleanDesc)"
+            }
+            let maxLen = 45
+            let truncated = cleanDesc.count > maxLen ? String(cleanDesc.prefix(maxLen)) + "…" : cleanDesc
+            return "\(pagePrefix) “\(truncated)”"
+        }
+
+        // Otherwise, format as: Page X "Description"
+        let maxLen = 45
+        let truncated = trimmed.count > maxLen ? String(trimmed.prefix(maxLen)) + "…" : trimmed
+        return "\(pagePrefix) “\(truncated)”"
     }
 
     /// Deletes this snapshot's cached thumbnail file, if any. Called when a snapshot is removed so

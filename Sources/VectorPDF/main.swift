@@ -390,7 +390,7 @@ struct VectorPDF: App {
             let anchors = !coordinator.activeAnchors.isEmpty ? coordinator.activeAnchors : (resolvedViewModel?.activeSnapshots ?? [])
             if !anchors.isEmpty {
                 ForEach(anchors) { snap in
-                    Button(snap.label.isEmpty ? "Page \(snap.targetPage + 1)" : snap.label) {
+                    Button(snap.menuDisplayTitle) {
                         resolvedViewModel?.jumpToSnapshot(snap)
                     }
                 }
