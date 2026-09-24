@@ -982,6 +982,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
         }
 
+        // Handle clicks on or outside the active inline text field
+        if let tf = activeInlineTextField {
+            if tf.frame.contains(point) {
+                return
+            } else {
+                commitActiveInlineTextField()
+            }
+        }
+
         // In redact mode: capture start point for draft redaction box
         if viewModel.canvasMode == .redact {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -993,9 +1002,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
 
-        // In callout mode: capture target arrow point
+        // In callout mode:
         if viewModel.canvasMode == .callout {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                // If clicked an existing callout (especially its text box rect or leader line), edit it
+                if let list = viewModel.pageAnnotations[pageIdx],
+                   let hit = list.first(where: { $0.type == .callout && ($0.rect?.insetBy(dx: -6, dy: -6).contains(pagePoint) == true || $0.contains(pagePoint: pagePoint)) }) {
+                    startInlineEditing(annotation: hit, pageIndex: pageIdx)
+                    return
+                }
+
                 currentCalloutPage = pageIdx
                 currentCalloutStart = pagePoint
                 currentCalloutEnd = pagePoint
@@ -1023,30 +1039,27 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
 
-        // In text mode: create new or edit existing text box
+        // In text mode: create new or edit existing text box or callout
         if viewModel.canvasMode == .text {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
-                if let tf = activeInlineTextField, tf.frame.contains(point) {
-                    return
-                }
-                commitActiveInlineTextField()
                 if let list = viewModel.pageAnnotations[pageIdx],
-                   let hit = list.first(where: { $0.type == .freeText && $0.contains(pagePoint: pagePoint) }) {
+                   let hit = list.first(where: { ($0.type == .freeText || $0.type == .callout) && ($0.rect?.insetBy(dx: -6, dy: -6).contains(pagePoint) == true || $0.contains(pagePoint: pagePoint)) }) {
                     startInlineEditing(annotation: hit, pageIndex: pageIdx)
                 } else {
                     startInlineEditing(newAt: pagePoint, pageIndex: pageIdx)
                 }
                 return
             }
-        } else {
-            if activeInlineTextField != nil {
-                commitActiveInlineTextField()
-            }
         }
 
-        // Double-click to select word, triple-click to select line
+        // Double-click to edit existing text box/callout, or select word
         if event.clickCount == 2 {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                if let list = viewModel.pageAnnotations[pageIdx],
+                   let hit = list.first(where: { ($0.type == .freeText || $0.type == .callout) && ($0.rect?.insetBy(dx: -6, dy: -6).contains(pagePoint) == true || $0.contains(pagePoint: pagePoint)) }) {
+                    startInlineEditing(annotation: hit, pageIndex: pageIdx)
+                    return
+                }
                 viewModel.selectWord(at: pagePoint, pageIndex: pageIdx)
                 isDraggingSelection = false
                 needsDisplay = true
@@ -1057,6 +1070,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 viewModel.selectLine(at: pagePoint, pageIndex: pageIdx)
                 isDraggingSelection = false
                 needsDisplay = true
+                return
+            }
+        }
+
+        // In select mode: single click on callout text box or freeText box opens inline editing directly
+        if viewModel.canvasMode == .select {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point),
+               let list = viewModel.pageAnnotations[pageIdx],
+               let hit = list.first(where: { ($0.type == .callout || $0.type == .freeText) && $0.rect?.insetBy(dx: -4, dy: -4).contains(pagePoint) == true }) {
+                startInlineEditing(annotation: hit, pageIndex: pageIdx)
                 return
             }
         }
@@ -1779,18 +1802,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                     let r = existing.rect ?? CGRect(x: 50, y: 50, width: 140, height: 26)
                     let tp = existing.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
                     let kp = existing.kneePoint ?? CGPoint(x: r.minX - 10, y: r.midY)
+                    let neededW = max(r.width, CGFloat(text.count) * fontSize * 0.65 + 20)
+                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: max(r.height, fontSize * 1.5 + 8))
                     viewModel.addCalloutAnnotation(
                         pageIndex: pIdx,
                         targetPoint: tp,
                         kneePoint: kp,
-                        textBoxRect: r,
+                        textBoxRect: updatedRect,
                         text: text,
                         fontSize: fontSize,
                         color: color
                     )
                 } else {
                     let r = existing.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
-                    viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+                    let neededW = max(r.width, CGFloat(text.count) * fontSize * 0.65 + 20)
+                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: max(r.height, fontSize * 1.5 + 8))
+                    viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: updatedRect, text: text, fontSize: fontSize, color: color)
                 }
             }
         } else if !text.isEmpty, let pagePt = activeEditingPagePoint {
@@ -1832,7 +1859,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
         let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
         tf.stringValue = annotation.text
-        tf.font = NSFont.systemFont(ofSize: max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.effectiveZoom, 10.0))
+        let fSize = max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.effectiveZoom, 10.0)
+        tf.font = NSFont.systemFont(ofSize: fSize)
         tf.textColor = annotation.color.nsColor
         tf.backgroundColor = isDarkMode ? NSColor.windowBackgroundColor : NSColor.white
         tf.drawsBackground = true
@@ -1841,6 +1869,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         tf.delegate = self
         addSubview(tf)
         window?.makeFirstResponder(tf)
+        tf.selectText(nil)
 
         activeInlineTextField = tf
         activeEditingAnnotation = annotation
@@ -1871,6 +1900,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         tf.delegate = self
         addSubview(tf)
         window?.makeFirstResponder(tf)
+        tf.selectText(nil)
 
         activeInlineTextField = tf
         activeEditingAnnotation = nil

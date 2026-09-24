@@ -1947,21 +1947,10 @@ public final class PDFViewerViewModel: ObservableObject {
         return annot
     }
 
-    public func applyAllPendingRedactions(skipConfirmation: Bool = false) {
+    public func applyAllPendingRedactions() {
         guard let doc = document else { return }
         let count = pendingRedactionsCount
         guard count > 0 else { return }
-
-        if !skipConfirmation {
-            let alert = NSAlert()
-            alert.alertStyle = .critical
-            alert.messageText = "Permanently Redact Content?"
-            alert.informativeText = "This will physically scrub and delete all underlying text glyphs, vector paths, and raster bitmap pixels covered by the \(count) redaction box(es) from the PDF file stream. Solid black redaction boxes will replace the content. This action cannot be undone."
-            alert.addButton(withTitle: "Redact Permanently")
-            alert.addButton(withTitle: "Cancel")
-
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-        }
 
         var affectedPages = Set<Int>()
         for (pIdx, annots) in pageAnnotations {
@@ -1976,15 +1965,37 @@ public final class PDFViewerViewModel: ObservableObject {
             pageAnnotations[pIdx]?.removeAll(where: { $0.type == .redact })
         }
 
-        // Invalidate rendered page caches for affected pages so newly redacted content is reflected
-        for pIdx in affectedPages {
-            renderedPages.removeValue(forKey: pIdx)
-            thumbnailImages.removeValue(forKey: pIdx)
-            requestThumbnail(for: pIdx)
+        guard !affectedPages.isEmpty else { return }
+
+        // Save to working copy so background render and search actors can reload the scrubbed content
+        if workingCopyPath == nil {
+            workingCopyPath = FileManager.default.temporaryDirectory
+                .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+        }
+        guard let workingPath = workingCopyPath else { return }
+
+        do {
+            try doc.save(to: workingPath)
+        } catch {
+            print("Failed to save redacted working copy: \(error)")
         }
 
-        isDocumentEdited = true
-        currentWindow?.isDocumentEdited = true
+        self.isDocumentEdited = true
+        self.currentWindow?.isDocumentEdited = true
+
+        Task { @MainActor in
+            try? await self.renderActor.openDocument(filePath: workingPath)
+            try? await self.searchActor.openDocument(filePath: workingPath)
+            self.thumbnailVersion = UUID()
+            for pIdx in affectedPages {
+                self.renderedPages.removeValue(forKey: pIdx)
+                self.thumbnailImages.removeValue(forKey: pIdx)
+                self.pageStructuredData.removeValue(forKey: pIdx)
+                self.requestThumbnail(for: pIdx)
+                await self.renderPage(pIdx)
+            }
+            self.objectWillChange.send()
+        }
     }
 
     // MARK: - Technical Callout Annotations (Tier 2, Item 6)
@@ -2499,6 +2510,9 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public func saveDocument() {
         guard let doc = document else { return }
+        if pendingRedactionsCount > 0 {
+            applyAllPendingRedactions()
+        }
         flushPendingFormEdits()
         // Suspend for our own write (an atomic replace, indistinguishable from an external change)
         // to avoid a pointless self-triggered reload; re-arm right after.
@@ -2525,6 +2539,9 @@ public final class PDFViewerViewModel: ObservableObject {
     
     public func saveDocumentAs() {
         guard let doc = document else { return }
+        if pendingRedactionsCount > 0 {
+            applyAllPendingRedactions()
+        }
         flushPendingFormEdits()
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType.pdf]

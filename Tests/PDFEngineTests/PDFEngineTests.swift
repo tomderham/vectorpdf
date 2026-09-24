@@ -3923,8 +3923,8 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(redactAnnot != nil)
     #expect(vm.pendingRedactionsCount == 1)
 
-    // 3. Apply redactions permanently with skipConfirmation: true
-    vm.applyAllPendingRedactions(skipConfirmation: true)
+    // 3. Apply redactions permanently
+    vm.applyAllPendingRedactions()
     #expect(vm.pendingRedactionsCount == 0)
 
     // 4. Save document
@@ -3971,6 +3971,26 @@ func createFormSamplePDF(at fileURL: URL) {
 
     let pageAnnots = vm.pageAnnotations[0] ?? []
     #expect(pageAnnots.contains(where: { $0.type == .callout && $0.text == note }))
+
+    // Test that the callout is hit-testable at its text box and leader line
+    #expect(callout?.contains(pagePoint: CGPoint(x: 160, y: 610)) == true)
+    #expect(callout?.contains(pagePoint: CGPoint(x: 125, y: 645)) == true)
+
+    // Test editing / updating callout note
+    vm.removeAnnotation(callout!)
+    let updatedCallout = vm.addCalloutAnnotation(
+        pageIndex: 0,
+        targetPoint: target,
+        kneePoint: knee,
+        textBoxRect: CGRect(x: 150, y: 600, width: 220, height: 40),
+        text: "Updated engineering leader line note",
+        fontSize: 11.0,
+        color: .blue
+    )
+    #expect(updatedCallout != nil)
+    #expect(updatedCallout?.text == "Updated engineering leader line note")
+    #expect(vm.pageAnnotations[0]?.contains(where: { $0.text == "Updated engineering leader line note" }) == true)
+    #expect(vm.pageAnnotations[0]?.contains(where: { $0.text == note }) == false)
 }
 
 @Test @MainActor func testReviewSummaryExportMarkdownAndCSV() async throws {

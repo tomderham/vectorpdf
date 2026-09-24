@@ -127,7 +127,7 @@ public struct PDFMarkupToolbarView: View {
                     Text("\(Int(viewModel.selectedFontSize)) pt")
                         .font(.caption.monospacedDigit())
                         .frame(width: 28, alignment: .leading)
-                    Text("• Drag target to note")
+                    Text("• Drag target to note; click note to edit")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
