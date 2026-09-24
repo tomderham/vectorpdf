@@ -291,6 +291,14 @@ struct VectorPDF: App {
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
             .disabled(!hasDocument)
+
+            Divider()
+
+            Button("Export Review Summary...") {
+                resolvedViewModel?.exportReviewSummary()
+            }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
+            .disabled(!hasDocument)
         }
         
         CommandGroup(replacing: .printItem) {
@@ -430,6 +438,21 @@ struct VectorPDF: App {
             }
             .keyboardShortcut("h", modifiers: [.command, .shift])
             .disabled(resolvedViewModel?.activeSelection == nil)
+
+            Divider()
+
+            Button("Recognize Text on Scanned Pages...") {
+                Task {
+                    await resolvedViewModel?.runOCROnAllScannedPages()
+                }
+            }
+            .keyboardShortcut("o", modifiers: [.command, .control])
+            .disabled(!hasDocument)
+
+            Button("Permanently Apply Redactions...") {
+                resolvedViewModel?.applyAllPendingRedactions()
+            }
+            .disabled(!hasDocument || (resolvedViewModel?.pendingRedactionsCount ?? 0) == 0)
         }
         
         CommandGroup(replacing: .toolbar) {

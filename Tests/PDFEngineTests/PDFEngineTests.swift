@@ -2445,10 +2445,12 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 150), tolerance: 3.0))
 
     // 3. Test CanvasMode enum
-    #expect(CanvasMode.allCases.count == 4)
+    #expect(CanvasMode.allCases.count == 6)
     #expect(CanvasMode.select.rawValue == "select")
     #expect(CanvasMode.draw.rawValue == "draw")
     #expect(CanvasMode.text.rawValue == "text")
+    #expect(CanvasMode.callout.rawValue == "callout")
+    #expect(CanvasMode.redact.rawValue == "redact")
     #expect(CanvasMode.eraser.rawValue == "eraser")
 }
 
@@ -3897,7 +3899,170 @@ func createFormSamplePDF(at fileURL: URL) {
     let snap5 = SnapshotTarget(label: "Section 2.1 Overview", snippet: "Section 2.1 Overview", targetPage: 5)
     #expect(snap5.menuDisplayTitle == "Page 6 “Section 2.1 Overview”")
 }
+
+@Test @MainActor func testTruePDFRedactionContentScrubbing() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_redact_scrub_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    // 1. Initial verification: page 0 contains "Architecture Specification"
+    let initialCore = try PDFDocumentCore(filePath: pdfURL.path)
+    let initialText = initialCore.extractText(pageIndex: 0) ?? ""
+    #expect(initialText.contains("MuPDF Architecture Specification"))
+    #expect(initialText.contains("First column text"))
+    #expect(initialCore.isScannedPage(pageIndex: 0) == false)
+
+    // 2. Load into PDFViewerViewModel and add redaction covering the title (54, 50.6)
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.pendingRedactionsCount == 0)
+
+    // In VectorPDF / MuPDF page coordinates (top-down): (50, 40, 350, 40) covers (54, 50.6)
+    let redactAnnot = vm.addRedaction(pageIndex: 0, rect: CGRect(x: 50, y: 40, width: 350, height: 40))
+    #expect(redactAnnot != nil)
+    #expect(vm.pendingRedactionsCount == 1)
+
+    // 3. Apply redactions permanently with skipConfirmation: true
+    vm.applyAllPendingRedactions(skipConfirmation: true)
+    #expect(vm.pendingRedactionsCount == 0)
+
+    // 4. Save document
+    let redactedURL = tempDir.appendingPathComponent("test_redacted_out_\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: redactedURL) }
+    try vm.document?.save(to: redactedURL.path)
+
+    // 5. Open new document from the saved file and verify underlying stream is scrubbed
+    let scrubbedCore = try PDFDocumentCore(filePath: redactedURL.path)
+    let scrubbedText = scrubbedCore.extractText(pageIndex: 0) ?? ""
+    #expect(!scrubbedText.contains("Architecture Specification"))
+    #expect(!scrubbedText.contains("MuPDF Architecture"))
+    #expect(scrubbedText.contains("First column text"))
 }
+
+@Test @MainActor func testTechnicalCalloutAnnotationCreation() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_callout_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    let target = CGPoint(x: 100, y: 670)
+    let knee = CGPoint(x: 150, y: 620)
+    let box = CGRect(x: 150, y: 600, width: 140, height: 40)
+    let note = "Critical engineering leader line note"
+
+    let callout = vm.addCalloutAnnotation(
+        pageIndex: 0,
+        targetPoint: target,
+        kneePoint: knee,
+        textBoxRect: box,
+        text: note,
+        fontSize: 11.0,
+        color: .red
+    )
+    #expect(callout != nil)
+    #expect(callout?.type == .callout)
+    #expect(callout?.targetPoint == target)
+    #expect(callout?.kneePoint == knee)
+    #expect(callout?.text == note)
+
+    let pageAnnots = vm.pageAnnotations[0] ?? []
+    #expect(pageAnnots.contains(where: { $0.type == .callout && $0.text == note }))
+}
+
+@Test @MainActor func testReviewSummaryExportMarkdownAndCSV() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_review_export_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    // Add a callout
+    _ = vm.addCalloutAnnotation(
+        pageIndex: 0,
+        targetPoint: CGPoint(x: 100, y: 670),
+        kneePoint: CGPoint(x: 140, y: 630),
+        textBoxRect: CGRect(x: 140, y: 600, width: 120, height: 40),
+        text: "Important callout feedback",
+        fontSize: 12.0,
+        color: .blue
+    )
+
+    // 1. Test Markdown generation
+    let md = vm.generateReviewSummaryMarkdown()
+    #expect(md.contains("# Review Summary"))
+    #expect(md.contains("Page 1"))
+    #expect(md.contains("Callout"))
+    #expect(md.contains("Important callout feedback"))
+
+    // 2. Test CSV generation
+    let csv = vm.generateReviewSummaryCSV()
+    #expect(csv.hasPrefix("Page,Type,Color,Content,Coordinates,Date\n"))
+    #expect(csv.contains("1,Callout,Blue,\"Important callout feedback\""))
+}
+
+@Test func testOnDeviceVisionOCRTextRecognition() async throws {
+    // 1. Create a synthetic bitmap image containing known text
+    let width = 600
+    let height = 200
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+    guard let cgContext = CGContext(
+        data: nil,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: width * 4,
+        space: colorSpace,
+        bitmapInfo: bitmapInfo
+    ) else {
+        Issue.record("Failed to create CGContext for OCR test")
+        return
+    }
+
+    // Fill background white
+    cgContext.setFillColor(NSColor.white.cgColor)
+    cgContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
+
+    // Draw text in high-contrast black
+    let text = "VECTOR_PDF_OCR_RECOGNITION"
+    let font = NSFont.boldSystemFont(ofSize: 28)
+    let attrStr = NSAttributedString(string: text, attributes: [
+        .font: font,
+        .foregroundColor: NSColor.black
+    ])
+    let line = CTLineCreateWithAttributedString(attrStr)
+    cgContext.textPosition = CGPoint(x: 40, y: 80)
+    CTLineDraw(line, cgContext)
+
+    guard let cgImage = cgContext.makeImage() else {
+        Issue.record("Failed to make CGImage")
+        return
+    }
+
+    // 2. Run Apple Vision OCR engine
+    let ocrEngine = PDFOCREngine.shared
+    let ocrResult = try await ocrEngine.recognizeText(
+        in: cgImage,
+        pageIndex: 0,
+        pageBounds: CGRect(x: 0, y: 0, width: width, height: height)
+    )
+
+    #expect(!ocrResult.fullText.isEmpty)
+    #expect(ocrResult.fullText.contains("VECTOR_PDF_OCR"))
+    #expect(!ocrResult.lines.isEmpty)
+    if let firstLine = ocrResult.lines.first {
+        #expect(firstLine.boundingBox.width > 0)
+        #expect(firstLine.boundingBox.height > 0)
+    }
+}
+}
+
 
 
 

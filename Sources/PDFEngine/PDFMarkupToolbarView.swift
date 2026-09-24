@@ -17,7 +17,7 @@ public struct PDFMarkupToolbarView: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            // 1. Tool Mode Picker [Text Select | Draw | Text | Eraser]
+            // 1. Tool Mode Picker [Text Select | Draw | Text | Callout | Redact | Eraser]
             Picker("Mode", selection: $viewModel.canvasMode) {
                 Image(systemName: "text.cursor")
                     .tag(CanvasMode.select)
@@ -28,6 +28,12 @@ public struct PDFMarkupToolbarView: View {
                 Image(systemName: "character.textbox")
                     .tag(CanvasMode.text)
                     .help("Add Text Box")
+                Image(systemName: "bubble.left.and.exclamationmark.bubble.right")
+                    .tag(CanvasMode.callout)
+                    .help("Callout Annotation (Leader arrow pointer to text note)")
+                Image(systemName: "lock.slash.fill")
+                    .tag(CanvasMode.redact)
+                    .help("Redact Content (Permanent - scrubs underlying text & pixels)")
                 Image(systemName: "eraser")
                     .tag(CanvasMode.eraser)
                     .help("Eraser (Click or Drag to remove annotations)")
@@ -35,7 +41,7 @@ public struct PDFMarkupToolbarView: View {
             .labelsHidden()
             .pickerStyle(.segmented)
             .controlSize(.small)
-            .frame(width: 130)
+            .frame(width: 195)
 
             // 2. Context-Sensitive Tool Controls
             switch viewModel.canvasMode {
@@ -107,6 +113,54 @@ public struct PDFMarkupToolbarView: View {
                 }
                 .help("Text Box Font Size (6–32 pt)")
 
+            case .callout:
+                Divider()
+                    .frame(height: 16)
+
+                HStack(spacing: 6) {
+                    Text("Size")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Slider(value: $viewModel.selectedFontSize, in: 8...24, step: 1)
+                        .frame(width: 75)
+                        .controlSize(.small)
+                    Text("\(Int(viewModel.selectedFontSize)) pt")
+                        .font(.caption.monospacedDigit())
+                        .frame(width: 28, alignment: .leading)
+                    Text("• Drag target to note")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .help("Callout Note Font Size")
+
+            case .redact:
+                Divider()
+                    .frame(height: 16)
+
+                HStack(spacing: 8) {
+                    Label("Permanent Action", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.bold())
+                        .foregroundColor(.orange)
+                        .help("Redactions physically scrub underlying text, graphics, and image pixels from the PDF stream.")
+
+                    Text("Drag box over area")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    let count = viewModel.pendingRedactionsCount
+                    Button {
+                        viewModel.applyAllPendingRedactions()
+                    } label: {
+                        Text(count > 0 ? "Apply Redactions (\(count))" : "Apply Redactions")
+                            .font(.caption.bold())
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .disabled(count == 0)
+                    .help("Permanently apply pending redactions and scrub PDF content stream (cannot be undone)")
+                }
+
             case .eraser:
                 Divider()
                     .frame(height: 16)
@@ -116,8 +170,8 @@ public struct PDFMarkupToolbarView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // 3. Color Palette Swatches (shown for Select, Draw, and Text modes)
-            if viewModel.canvasMode != .eraser {
+            // 3. Color Palette Swatches (shown for Select, Draw, Text, and Callout modes)
+            if viewModel.canvasMode != .eraser && viewModel.canvasMode != .redact {
                 Divider()
                     .frame(height: 16)
 

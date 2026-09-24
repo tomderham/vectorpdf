@@ -93,6 +93,15 @@ int mupdf_pdf_delete_highlight_near_point(fz_context *ctx, fz_document *doc, int
 int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error);
 int mupdf_pdf_stamp_image_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const unsigned char *image_data, size_t image_len, const char **out_error);
 int mupdf_pdf_page_has_stamp_near_rect(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, int *out_found, const char **out_error);
+int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                float target_x, float target_y,
+                                float knee_x, float knee_y,
+                                float box_x0, float box_y0, float box_x1, float box_y1,
+                                const char *text, float font_size,
+                                float r, float g, float b,
+                                const char **out_error);
+int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);
+int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
 
 // Page Manipulation

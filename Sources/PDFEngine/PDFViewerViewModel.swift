@@ -236,6 +236,17 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var isShowingDocumentProperties: Bool = false
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
+    // Redaction, Callout & On-Device OCR (Tier 2)
+    @Published public var ocrResults: [Int: PDFOCRPageResult] = [:]
+    @Published public var isRunningOCR: Bool = false
+    @Published public var detectedScannedPages: Set<Int> = []
+    
+    public var pendingRedactionsCount: Int {
+        pageAnnotations.values.reduce(0) { count, list in
+            count + list.filter { $0.type == .redact }.count
+        }
+    }
+
     // Agent Tab: semantic search (always available on-device) plus optional on-device
     // synthesis (Apple Intelligence-gated) over the currently open document only — see
     // DocumentAgentService.swift and SemanticSearch.swift.
@@ -395,6 +406,13 @@ public final class PDFViewerViewModel: ObservableObject {
             self.activeSelection = nil
             self.additionalSelectionPages = []
             self.pageAnnotations = [:]
+            self.ocrResults = [:]
+            self.detectedScannedPages = []
+            for p in 0..<min(doc.pageCount, 15) {
+                if doc.isScannedPage(pageIndex: p) {
+                    self.detectedScannedPages.insert(p)
+                }
+            }
             self.navigationHistory = [0]
             self.navigationHistoryIndex = 0
             self.canGoBack = false
@@ -827,7 +845,7 @@ public final class PDFViewerViewModel: ObservableObject {
             try? await Task.sleep(nanoseconds: 120_000_000)
             guard !Task.isCancelled else { return }
 
-            let stream = await searchActor.searchStream(query: query, nearPage: currentNear, options: options)
+            let stream = await searchActor.searchStream(query: query, nearPage: currentNear, options: options, ocrPages: ocrResults)
             var buffer: [SearchResult] = []
             var earlyResultsBuffer: [SearchResult] = []
             var lastFlushTime = Date()
@@ -1889,6 +1907,10 @@ public final class PDFViewerViewModel: ObservableObject {
                 testPoint = firstPt
             } else if annotation.type == .freeText, let r = annotation.rect {
                 testPoint = CGPoint(x: r.midX, y: r.midY)
+            } else if annotation.type == .callout, let tp = annotation.targetPoint {
+                testPoint = tp
+            } else if annotation.type == .redact, let r = annotation.rect {
+                testPoint = CGPoint(x: r.midX, y: r.midY)
             } else {
                 testPoint = CGPoint(x: annotation.boundingRect.midX, y: annotation.boundingRect.midY)
             }
@@ -1904,6 +1926,246 @@ public final class PDFViewerViewModel: ObservableObject {
             removeAnnotation(annot)
         } else {
             try? doc.deleteAnnotation(pageIndex: pageIndex, at: pagePoint)
+        }
+    }
+
+    // MARK: - Redaction & Security Scrubbing (Tier 2, Item 4)
+
+    @discardableResult
+    public func addRedaction(pageIndex: Int, rect: CGRect) -> PDFAnnotation? {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let annot = PDFAnnotation(
+            pageIndex: pageIndex,
+            type: .redact,
+            rect: rect,
+            color: .red,
+            text: "REDACTED"
+        )
+        pageAnnotations[pageIndex, default: []].append(annot)
+        isDocumentEdited = true
+        currentWindow?.isDocumentEdited = true
+        return annot
+    }
+
+    public func applyAllPendingRedactions(skipConfirmation: Bool = false) {
+        guard let doc = document else { return }
+        let count = pendingRedactionsCount
+        guard count > 0 else { return }
+
+        if !skipConfirmation {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = "Permanently Redact Content?"
+            alert.informativeText = "This will physically scrub and delete all underlying text glyphs, vector paths, and raster bitmap pixels covered by the \(count) redaction box(es) from the PDF file stream. Solid black redaction boxes will replace the content. This action cannot be undone."
+            alert.addButton(withTitle: "Redact Permanently")
+            alert.addButton(withTitle: "Cancel")
+
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+
+        var affectedPages = Set<Int>()
+        for (pIdx, annots) in pageAnnotations {
+            let redactRects = annots.filter { $0.type == .redact }.compactMap { $0.rect }
+            guard !redactRects.isEmpty else { continue }
+            do {
+                try doc.applyRedactions(pageIndex: pIdx, rects: redactRects, blackBoxes: true)
+                affectedPages.insert(pIdx)
+            } catch {
+                print("Failed to apply redactions on page \(pIdx): \(error)")
+            }
+            pageAnnotations[pIdx]?.removeAll(where: { $0.type == .redact })
+        }
+
+        // Invalidate rendered page caches for affected pages so newly redacted content is reflected
+        for pIdx in affectedPages {
+            renderedPages.removeValue(forKey: pIdx)
+            thumbnailImages.removeValue(forKey: pIdx)
+            requestThumbnail(for: pIdx)
+        }
+
+        isDocumentEdited = true
+        currentWindow?.isDocumentEdited = true
+    }
+
+    // MARK: - Technical Callout Annotations (Tier 2, Item 6)
+
+    @discardableResult
+    public func addCalloutAnnotation(
+        pageIndex: Int,
+        targetPoint: CGPoint,
+        kneePoint: CGPoint,
+        textBoxRect: CGRect,
+        text: String,
+        fontSize: CGFloat = 11.0,
+        color: AnnotationColor = .red
+    ) -> PDFAnnotation? {
+        guard !text.isEmpty, let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let annot = PDFAnnotation(
+            pageIndex: pageIndex,
+            type: .callout,
+            rect: textBoxRect,
+            targetPoint: targetPoint,
+            kneePoint: kneePoint,
+            fontSize: fontSize,
+            color: color,
+            text: text
+        )
+        do {
+            try doc.addCallout(
+                pageIndex: pageIndex,
+                targetPoint: targetPoint,
+                kneePoint: kneePoint,
+                textBoxRect: textBoxRect,
+                text: text,
+                fontSize: fontSize,
+                red: color.rgb.red,
+                green: color.rgb.green,
+                blue: color.rgb.blue
+            )
+            pageAnnotations[pageIndex, default: []].append(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return annot
+        } catch {
+            print("Failed to add callout annotation on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
+    // MARK: - Review Summary Export (Tier 2, Item 6)
+
+    public func generateReviewSummaryMarkdown() -> String {
+        let title = documentInspectionReport?.metadata.title.isEmpty == false ? documentInspectionReport!.metadata.title : (document?.filePath != nil ? URL(fileURLWithPath: document!.filePath).lastPathComponent : "Document")
+        
+        var md = "# Review Summary: \(title)\n\n"
+        let df = DateFormatter()
+        df.dateStyle = .medium
+        df.timeStyle = .short
+        md += "**Generated:** \(df.string(from: Date()))  \n"
+        let totalCount = pageAnnotations.values.reduce(0) { $0 + $1.count }
+        md += "**Total Annotations:** \(totalCount)  \n\n"
+        md += "---\n\n"
+
+        let sortedPages = pageAnnotations.keys.sorted()
+        if sortedPages.isEmpty {
+            md += "*No annotations found in this document.*\n"
+            return md
+        }
+
+        for pIdx in sortedPages {
+            guard let annots = pageAnnotations[pIdx], !annots.isEmpty else { continue }
+            md += "## Page \(pIdx + 1)\n\n"
+            for annot in annots {
+                let colorName = annot.color.displayName
+                switch annot.type {
+                case .highlight:
+                    let quoted = annot.text.isEmpty ? "*(Highlighted area)*" : "\"\(annot.text)\""
+                    md += "- **[Highlight]** *(\(colorName))*: \(quoted)\n"
+                case .underline:
+                    let quoted = annot.text.isEmpty ? "*(Underlined area)*" : "\"\(annot.text)\""
+                    md += "- **[Underline]** *(\(colorName))*: \(quoted)\n"
+                case .strikeout:
+                    let quoted = annot.text.isEmpty ? "*(Strikethrough area)*" : "\"\(annot.text)\""
+                    md += "- **[Strikethrough]** *(\(colorName))*: \(quoted)\n"
+                case .freeText:
+                    md += "- **[Note / Free Text]** *(\(colorName))*: \(annot.text)\n"
+                case .callout:
+                    var loc = ""
+                    if let tp = annot.targetPoint {
+                        loc = " pointing at (\(Int(tp.x)), \(Int(tp.y)))"
+                    }
+                    md += "- **[Callout]** *(\(colorName)\(loc))*: \(annot.text)\n"
+                case .ink:
+                    md += "- **[Ink Drawing]** *(\(colorName))*: \(annot.inkPoints.count) points\n"
+                case .redact:
+                    md += "- **[Draft Redaction]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
+                }
+            }
+            md += "\n"
+        }
+        return md
+    }
+
+    public func generateReviewSummaryCSV() -> String {
+        var csv = "Page,Type,Color,Content,Coordinates,Date\n"
+        let df = ISO8601DateFormatter()
+        let sortedPages = pageAnnotations.keys.sorted()
+        for pIdx in sortedPages {
+            guard let annots = pageAnnotations[pIdx] else { continue }
+            for annot in annots {
+                let pageStr = "\(pIdx + 1)"
+                let typeStr = annot.type.rawValue.capitalized
+                let colorStr = annot.color.displayName
+                let contentEscaped = annot.text.replacingOccurrences(of: "\"", with: "\"\"")
+                var coordStr = ""
+                if let r = annot.rect {
+                    coordStr = "(\(Int(r.minX)) \(Int(r.minY)) \(Int(r.width))x\(Int(r.height)))"
+                } else if let tp = annot.targetPoint {
+                    coordStr = "(\(Int(tp.x)) \(Int(tp.y)))"
+                }
+                let dateStr = df.string(from: annot.dateCreated)
+                csv += "\(pageStr),\(typeStr),\(colorStr),\"\(contentEscaped)\",\"\(coordStr)\",\(dateStr)\n"
+            }
+        }
+        return csv
+    }
+
+    public func exportReviewSummary() {
+        let savePanel = NSSavePanel()
+        savePanel.title = "Export Review Summary"
+        savePanel.prompt = "Export"
+        let baseName = (document?.filePath != nil ? URL(fileURLWithPath: document!.filePath).deletingPathExtension().lastPathComponent : "Document")
+        savePanel.nameFieldStringValue = "\(baseName)_Review_Summary.md"
+        savePanel.allowedContentTypes = [.plainText, .commaSeparatedText]
+
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            let isCSV = url.pathExtension.lowercased() == "csv"
+            let content = isCSV ? generateReviewSummaryCSV() : generateReviewSummaryMarkdown()
+            try? content.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    // MARK: - On-Device Apple Vision OCR (Tier 2, Item 7)
+
+    public func isScannedPage(_ pageIndex: Int) -> Bool {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return false }
+        if ocrResults[pageIndex] != nil { return false }
+        return doc.isScannedPage(pageIndex: pageIndex)
+    }
+
+    public func runOCR(onPageIndex pageIndex: Int) async {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        guard ocrResults[pageIndex] == nil else { return }
+
+        isRunningOCR = true
+        defer { isRunningOCR = false }
+
+        do {
+            let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: 300.0 / 72.0)
+            let pageBounds = doc.pageBounds[pageIndex]
+            let result = try await PDFOCREngine.shared.recognizeText(
+                in: rendered.image,
+                pageIndex: pageIndex,
+                pageBounds: pageBounds
+            )
+            await MainActor.run {
+                self.ocrResults[pageIndex] = result
+                self.detectedScannedPages.remove(pageIndex)
+            }
+        } catch {
+            print("OCR failed on page \(pageIndex): \(error)")
+        }
+    }
+
+    public func runOCROnAllScannedPages() async {
+        guard let doc = document else { return }
+        isRunningOCR = true
+        defer { isRunningOCR = false }
+
+        for pIdx in 0..<doc.pageCount {
+            if isScannedPage(pIdx) {
+                await runOCR(onPageIndex: pIdx)
+            }
         }
     }
 

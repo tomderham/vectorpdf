@@ -635,6 +635,214 @@ int mupdf_pdf_add_free_text_annot(fz_context *ctx, fz_document *doc, int pageno,
     return 0;
 }
 
+int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                float target_x, float target_y,
+                                float knee_x, float knee_y,
+                                float box_x0, float box_y0, float box_x1, float box_y1,
+                                const char *text, float font_size,
+                                float r, float g, float b,
+                                const char **out_error) {
+    if (!ctx || !doc || !text) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_buffer *buf = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_var(buf);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        if (!ppage) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to load PDF page for callout annotation");
+
+        float min_bx = fminf(box_x0, box_x1);
+        float max_bx = fmaxf(box_x0, box_x1);
+        float min_by = fminf(box_y0, box_y1);
+        float max_by = fmaxf(box_y0, box_y1);
+        fz_rect box_rect = fz_make_rect(min_bx, min_by, max_bx, max_by);
+
+        // Attachment point on text box closest to knee point
+        float attach_x = (knee_x <= min_bx) ? min_bx : ((knee_x >= max_bx) ? max_bx : knee_x);
+        float attach_y = (knee_y <= min_by) ? min_by : ((knee_y >= max_by) ? max_by : (min_by + max_by) * 0.5f);
+        fz_point target_pt = fz_make_point(target_x, target_y);
+        fz_point knee_pt = fz_make_point(knee_x, knee_y);
+        fz_point attach_pt = fz_make_point(attach_x, attach_y);
+
+        // Enclosing rect
+        fz_rect union_rect = box_rect;
+        union_rect = fz_include_point_in_rect(union_rect, target_pt);
+        union_rect = fz_include_point_in_rect(union_rect, knee_pt);
+        union_rect = fz_include_point_in_rect(union_rect, attach_pt);
+        union_rect = fz_expand_rect(union_rect, 6.0f);
+
+        annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_FREE_TEXT);
+        pdf_set_annot_intent(ctx, annot, PDF_ANNOT_IT_FREETEXT_CALLOUT);
+        pdf_set_annot_rect(ctx, annot, union_rect);
+
+        fz_point cl[3] = { target_pt, knee_pt, attach_pt };
+        pdf_set_annot_callout_line(ctx, annot, cl, 3);
+        pdf_set_annot_callout_style(ctx, annot, PDF_ANNOT_LE_OPEN_ARROW);
+
+        float color[3] = {r, g, b};
+        float fs = font_size > 0.0f ? font_size : 11.0f;
+        pdf_set_annot_default_appearance(ctx, annot, "Helv", fs, 3, color);
+        pdf_set_annot_contents(ctx, annot, text);
+        pdf_set_annot_border_width(ctx, annot, 1.0f);
+        pdf_set_annot_color(ctx, annot, 3, color);
+        pdf_update_annot(ctx, annot);
+
+        // Build appearance stream /AP /N so all standard viewers render leader arrow and box
+        pdf_obj *annot_obj = pdf_annot_obj(ctx, annot);
+        if (annot_obj) {
+            pdf_obj *ap = pdf_dict_get(ctx, annot_obj, PDF_NAME(AP));
+            if (ap) {
+                pdf_obj *n = pdf_dict_get(ctx, ap, PDF_NAME(N));
+                if (n) {
+                    float w = union_rect.x1 - union_rect.x0;
+                    float h = union_rect.y1 - union_rect.y0;
+                    fz_rect bbox = fz_make_rect(0, 0, w, h);
+                    pdf_dict_put_rect(ctx, n, PDF_NAME(BBox), bbox);
+                    pdf_dict_put_matrix(ctx, n, PDF_NAME(Matrix), fz_identity);
+
+                    float ox = union_rect.x0;
+                    float oy = union_rect.y0;
+
+                    buf = fz_new_buffer(ctx, 512);
+                    fz_append_printf(ctx, buf, "%g %g %g RG\n", r, g, b);
+                    fz_append_printf(ctx, buf, "%g %g %g rg\n", r, g, b);
+                    fz_append_printf(ctx, buf, "1 w 1 J 1 j\n");
+
+                    // Leader line from target to knee to attach
+                    fz_append_printf(ctx, buf, "%g %g m\n", target_x - ox, target_y - oy);
+                    fz_append_printf(ctx, buf, "%g %g l\n", knee_x - ox, knee_y - oy);
+                    fz_append_printf(ctx, buf, "%g %g l\nS\n", attach_x - ox, attach_y - oy);
+
+                    // Arrow head at target_pt
+                    float dx = knee_x - target_x;
+                    float dy = knee_y - target_y;
+                    float len = hypotf(dx, dy);
+                    if (len > 0.001f) {
+                        float ux = dx / len;
+                        float uy = dy / len;
+                        float arrow_len = 8.0f;
+                        float arrow_w = 4.0f;
+                        float ax = (target_x - ox) + ux * arrow_len;
+                        float ay = (target_y - oy) + uy * arrow_len;
+                        float px = -uy * arrow_w;
+                        float py = ux * arrow_w;
+                        fz_append_printf(ctx, buf, "%g %g m\n", target_x - ox, target_y - oy);
+                        fz_append_printf(ctx, buf, "%g %g l\n", ax + px, ay + py);
+                        fz_append_printf(ctx, buf, "%g %g l\n", ax - px, ay - py);
+                        fz_append_printf(ctx, buf, "h\nf\n");
+                    }
+
+                    // Text box rectangle outline and white background
+                    float bw = max_bx - min_bx;
+                    float bh = max_by - min_by;
+                    fz_append_printf(ctx, buf, "1 1 1 rg\n");
+                    fz_append_printf(ctx, buf, "%g %g %g %g re\nB\n", min_bx - ox, min_by - oy, bw, bh);
+
+                    // Text inside box
+                    fz_append_printf(ctx, buf, "BT\n%g %g %g rg\n/Helv %g Tf\n", r, g, b, fs);
+                    float baseline_y = (min_by - oy) + bh - fs * 0.85f - 2.0f;
+                    if (baseline_y < (min_by - oy) + 2.0f) baseline_y = (min_by - oy) + 2.0f;
+                    fz_append_printf(ctx, buf, "%g %g Td\n", (min_bx - ox) + 3.0f, baseline_y);
+                    fz_append_pdf_string(ctx, buf, text);
+                    fz_append_string(ctx, buf, " Tj\nET\n");
+
+                    pdf_update_stream(ctx, pdoc, n, buf, 0);
+                    fz_drop_buffer(ctx, buf);
+                    buf = NULL;
+                }
+            }
+        }
+        ensure_annot_appearance_resources(ctx, pdoc, annot);
+        pdf_set_annot_resynthesised(ctx, annot);
+    } fz_always(ctx) {
+        if (buf) fz_drop_buffer(ctx, buf);
+        if (annot) pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *ppage = NULL;
+    fz_var(ppage);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        if (!ppage) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to load PDF page for redaction");
+
+        if (rects && n_rects > 0) {
+            for (int i = 0; i < n_rects; i++) {
+                fz_rect r = rects[i];
+                float min_x = fminf(r.x0, r.x1);
+                float max_x = fmaxf(r.x0, r.x1);
+                float min_y = fminf(r.y0, r.y1);
+                float max_y = fmaxf(r.y0, r.y1);
+                fz_rect norm_rect = fz_make_rect(min_x, min_y, max_x, max_y);
+                pdf_annot *annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_REDACT);
+                pdf_set_annot_rect(ctx, annot, norm_rect);
+                pdf_update_annot(ctx, annot);
+                pdf_drop_annot(ctx, annot);
+            }
+        }
+
+        pdf_redact_options opts;
+        memset(&opts, 0, sizeof(opts));
+        opts.black_boxes = black_boxes ? 1 : 0;
+        opts.image_method = PDF_REDACT_IMAGE_PIXELS;
+        opts.line_art = PDF_REDACT_LINE_ART_REMOVE_IF_COVERED;
+        opts.text = PDF_REDACT_TEXT_REMOVE;
+
+        pdf_redact_page(ctx, pdoc, ppage, &opts);
+    } fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        if (!ppage) fz_throw(ctx, FZ_ERROR_GENERIC, "Failed to load PDF page for redaction annotation");
+        float min_x = fminf(x0, x1);
+        float max_x = fmaxf(x0, x1);
+        float min_y = fminf(y0, y1);
+        float max_y = fmaxf(y0, y1);
+        fz_rect rect = fz_make_rect(min_x, min_y, max_x, max_y);
+        annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_REDACT);
+        pdf_set_annot_rect(ctx, annot, rect);
+        float border_color[3] = {1.0f, 0.0f, 0.0f};
+        pdf_set_annot_color(ctx, annot, 3, border_color);
+        pdf_set_annot_border_width(ctx, annot, 1.5f);
+        pdf_update_annot(ctx, annot);
+    } fz_always(ctx) {
+        if (annot) pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error) {
     if (!ctx || !doc) return -1;
     pdf_page *ppage = NULL;
@@ -669,7 +877,7 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
                         hit = 1;
                     }
                 }
-            } else if (atype == PDF_ANNOT_FREE_TEXT) {
+            } else if (atype == PDF_ANNOT_FREE_TEXT || atype == PDF_ANNOT_REDACT) {
                 fz_rect r = pdf_bound_annot(ctx, annot);
                 float tol = 5.0f;
                 if (x >= r.x0 - tol && x <= r.x1 + tol && y >= r.y0 - tol && y <= r.y1 + tol) {

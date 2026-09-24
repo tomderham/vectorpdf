@@ -26,6 +26,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     private var currentDrawingPoints: [CGPoint] = []
     private var currentDrawingPageIndex: Int?
 
+    // Redaction drafting in-progress state
+    private var currentRedactionPage: Int?
+    private var currentRedactionStart: CGPoint?
+    private var currentRedactionEnd: CGPoint?
+
+    // Callout drafting in-progress state
+    private var currentCalloutPage: Int?
+    private var currentCalloutStart: CGPoint?
+    private var currentCalloutEnd: CGPoint?
+
     // Inline text box editing state
     private var activeInlineTextField: NSTextField?
     private var activeEditingAnnotation: PDFAnnotation?
@@ -594,6 +604,111 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         ]
                         let str = annot.text as NSString
                         str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
+
+                    case .callout:
+                        guard let rect = annot.rect, let targetPt = annot.targetPoint, let kneePt = annot.kneePoint else { continue }
+                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
+                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+                        let rw = max(rect.width * viewModel.effectiveZoom, 80)
+                        let rh = max(rect.height * viewModel.effectiveZoom, 22)
+                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+
+                        let tx = pFrame.minX + (targetPt.x - pBounds.minX) * viewModel.effectiveZoom
+                        let ty = pFrame.minY + (targetPt.y - pBounds.minY) * viewModel.effectiveZoom
+                        let kx = pFrame.minX + (kneePt.x - pBounds.minX) * viewModel.effectiveZoom
+                        let ky = pFrame.minY + (kneePt.y - pBounds.minY) * viewModel.effectiveZoom
+
+                        let attachX = (kx <= boxRect.minX) ? boxRect.minX : ((kx >= boxRect.maxX) ? boxRect.maxX : kx)
+                        let attachY = (ky <= boxRect.minY) ? boxRect.minY : ((ky >= boxRect.maxY) ? boxRect.maxY : boxRect.midY)
+
+                        // Leader line
+                        let leaderPath = NSBezierPath()
+                        leaderPath.lineWidth = 1.5
+                        annot.color.nsColor.setStroke()
+                        leaderPath.move(to: NSPoint(x: tx, y: ty))
+                        leaderPath.line(to: NSPoint(x: kx, y: ky))
+                        leaderPath.line(to: NSPoint(x: attachX, y: attachY))
+                        leaderPath.stroke()
+
+                        // Arrow head at target point
+                        let dx = kx - tx
+                        let dy = ky - ty
+                        let len = hypot(dx, dy)
+                        if len > 0.1 {
+                            let ux = dx / len
+                            let uy = dy / len
+                            let arrowLen: CGFloat = 8.0
+                            let arrowW: CGFloat = 4.0
+                            let ax = tx + ux * arrowLen
+                            let ay = ty + uy * arrowLen
+                            let px = -uy * arrowW
+                            let py = ux * arrowW
+
+                            let arrowPath = NSBezierPath()
+                            arrowPath.move(to: NSPoint(x: tx, y: ty))
+                            arrowPath.line(to: NSPoint(x: ax + px, y: ay + py))
+                            arrowPath.line(to: NSPoint(x: ax - px, y: ay - py))
+                            arrowPath.close()
+                            annot.color.nsColor.setFill()
+                            arrowPath.fill()
+                        }
+
+                        // Text box background and border
+                        let borderPath = NSBezierPath(roundedRect: boxRect, xRadius: 3, yRadius: 3)
+                        (isDarkMode ? NSColor.windowBackgroundColor : NSColor.white).setFill()
+                        borderPath.fill()
+                        borderPath.lineWidth = 1.0
+                        annot.color.nsColor.setStroke()
+                        borderPath.stroke()
+
+                        if activeEditingAnnotation?.id == annot.id {
+                            continue
+                        }
+
+                        if !annot.text.isEmpty {
+                            let fSize = max((annot.fontSize ?? 11.0) * viewModel.effectiveZoom, 8.0)
+                            let font = NSFont.systemFont(ofSize: fSize)
+                            let attrs: [NSAttributedString.Key: Any] = [
+                                .font: font,
+                                .foregroundColor: annot.color.nsColor
+                            ]
+                            let textInset = boxRect.insetBy(dx: 4, dy: 3)
+                            let str = annot.text as NSString
+                            str.draw(with: textInset, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
+                        }
+
+                    case .redact:
+                        guard let rect = annot.rect else { continue }
+                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
+                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+                        let rw = rect.width * viewModel.effectiveZoom
+                        let rh = rect.height * viewModel.effectiveZoom
+                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+
+                        NSColor.black.withAlphaComponent(0.80).setFill()
+                        boxRect.fill()
+
+                        let borderPath = NSBezierPath(rect: boxRect)
+                        borderPath.lineWidth = 1.5
+                        let dashes: [CGFloat] = [4.0, 3.0]
+                        borderPath.setLineDash(dashes, count: 2, phase: 0)
+                        NSColor.systemRed.setStroke()
+                        borderPath.stroke()
+
+                        if rw > 40 && rh > 14 {
+                            let badgeText = "REDACTED" as NSString
+                            let badgeFontSize = max(min(rh * 0.4, 12.0), 8.0)
+                            let badgeAttrs: [NSAttributedString.Key: Any] = [
+                                .font: NSFont.boldSystemFont(ofSize: badgeFontSize),
+                                .foregroundColor: NSColor.white.withAlphaComponent(0.9)
+                            ]
+                            let textSize = badgeText.size(withAttributes: badgeAttrs)
+                            let textOrigin = NSPoint(
+                                x: boxRect.midX - textSize.width * 0.5,
+                                y: boxRect.midY - textSize.height * 0.5
+                            )
+                            badgeText.draw(at: textOrigin, withAttributes: badgeAttrs)
+                        }
                     }
                 }
             }
@@ -628,6 +743,91 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                     }
                     path.stroke()
                 }
+            }
+
+            // 2.7 Live Redaction Dragging in Progress
+            if currentRedactionPage == pageIdx,
+               let start = currentRedactionStart,
+               let end = currentRedactionEnd {
+                let p1 = CGPoint(
+                    x: pFrame.minX + (start.x - pBounds.minX) * viewModel.effectiveZoom,
+                    y: pFrame.minY + (start.y - pBounds.minY) * viewModel.effectiveZoom
+                )
+                let p2 = CGPoint(
+                    x: pFrame.minX + (end.x - pBounds.minX) * viewModel.effectiveZoom,
+                    y: pFrame.minY + (end.y - pBounds.minY) * viewModel.effectiveZoom
+                )
+                let liveRect = NSRect(
+                    x: min(p1.x, p2.x),
+                    y: min(p1.y, p2.y),
+                    width: abs(p2.x - p1.x),
+                    height: abs(p2.y - p1.y)
+                )
+                NSColor.red.withAlphaComponent(0.15).setFill()
+                liveRect.fill()
+
+                let border = NSBezierPath(rect: liveRect)
+                border.lineWidth = 1.5
+                let dashes: [CGFloat] = [4.0, 3.0]
+                border.setLineDash(dashes, count: 2, phase: 0)
+                NSColor.systemRed.setStroke()
+                border.stroke()
+            }
+
+            // 2.8 Live Callout Dragging in Progress
+            if currentCalloutPage == pageIdx,
+               let start = currentCalloutStart,
+               let end = currentCalloutEnd {
+                let tx = pFrame.minX + (start.x - pBounds.minX) * viewModel.effectiveZoom
+                let ty = pFrame.minY + (start.y - pBounds.minY) * viewModel.effectiveZoom
+                let ex = pFrame.minX + (end.x - pBounds.minX) * viewModel.effectiveZoom
+                let ey = pFrame.minY + (end.y - pBounds.minY) * viewModel.effectiveZoom
+                let kx = ex
+                let ky = ty
+
+                let liveLeader = NSBezierPath()
+                liveLeader.lineWidth = 1.5
+                let dashes: [CGFloat] = [3.0, 2.0]
+                liveLeader.setLineDash(dashes, count: 2, phase: 0)
+                viewModel.selectedAnnotationColor.nsColor.setStroke()
+                liveLeader.move(to: NSPoint(x: tx, y: ty))
+                liveLeader.line(to: NSPoint(x: kx, y: ky))
+                liveLeader.line(to: NSPoint(x: ex, y: ey))
+                liveLeader.stroke()
+
+                let previewBox = NSRect(x: ex, y: ey - 10, width: 100, height: 22)
+                let boxBorder = NSBezierPath(roundedRect: previewBox, xRadius: 2, yRadius: 2)
+                (isDarkMode ? NSColor.windowBackgroundColor : NSColor.white).withAlphaComponent(0.8).setFill()
+                boxBorder.fill()
+                viewModel.selectedAnnotationColor.nsColor.setStroke()
+                boxBorder.stroke()
+            }
+
+            // 2.9 Scanned Page OCR Floating Badge (Tier 2, Item 7)
+            if viewModel.isScannedPage(pageIdx) {
+                let badgeW: CGFloat = 136
+                let badgeH: CGFloat = 22
+                let badgeRect = NSRect(
+                    x: pFrame.maxX - badgeW - 10,
+                    y: pFrame.maxY - badgeH - 10,
+                    width: badgeW,
+                    height: badgeH
+                )
+                let bgPath = NSBezierPath(roundedRect: badgeRect, xRadius: 4, yRadius: 4)
+                NSColor.controlAccentColor.withAlphaComponent(0.18).setFill()
+                bgPath.fill()
+                NSColor.controlAccentColor.withAlphaComponent(0.4).setStroke()
+                bgPath.lineWidth = 1.0
+                bgPath.stroke()
+
+                let label = (viewModel.isRunningOCR ? "Running OCR..." : "Scanned • Run OCR") as NSString
+                let font = NSFont.systemFont(ofSize: 10, weight: .medium)
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: NSColor.controlAccentColor
+                ]
+                let textSize = label.size(withAttributes: attrs)
+                label.draw(at: NSPoint(x: badgeRect.midX - textSize.width * 0.5, y: badgeRect.midY - textSize.height * 0.5), withAttributes: attrs)
             }
 
             // 3. Search Highlights
@@ -764,6 +964,46 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         guard viewModel.isInteractiveViewingMode else { return }
         let point = convert(event.locationInWindow, from: nil)
 
+        // Check if clicked the Scanned Page OCR floating badge
+        if let (pageIdx, pFrame, _) = pageInfo(at: point), viewModel.isScannedPage(pageIdx) {
+            let badgeW: CGFloat = 136
+            let badgeH: CGFloat = 22
+            let badgeRect = NSRect(
+                x: pFrame.maxX - badgeW - 10,
+                y: pFrame.maxY - badgeH - 10,
+                width: badgeW,
+                height: badgeH
+            )
+            if badgeRect.contains(point) {
+                Task {
+                    await viewModel.runOCR(onPageIndex: pageIdx)
+                }
+                return
+            }
+        }
+
+        // In redact mode: capture start point for draft redaction box
+        if viewModel.canvasMode == .redact {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                currentRedactionPage = pageIdx
+                currentRedactionStart = pagePoint
+                currentRedactionEnd = pagePoint
+                needsDisplay = true
+            }
+            return
+        }
+
+        // In callout mode: capture target arrow point
+        if viewModel.canvasMode == .callout {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                currentCalloutPage = pageIdx
+                currentCalloutStart = pagePoint
+                currentCalloutEnd = pagePoint
+                needsDisplay = true
+            }
+            return
+        }
+
         // In draw mode: capture start point for freehand ink stroke
         if viewModel.canvasMode == .draw {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -845,6 +1085,34 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
     
     public override func mouseDragged(with event: NSEvent) {
+        if viewModel.canvasMode == .redact {
+            guard let dragPageIdx = currentRedactionPage,
+                  let pFrame = pageFrame(for: dragPageIdx),
+                  let doc = viewModel.document else { return }
+            let currentCanvas = convert(event.locationInWindow, from: nil)
+            let pBounds = doc.pageBounds[dragPageIdx]
+            currentRedactionEnd = CGPoint(
+                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
+            )
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .callout {
+            guard let dragPageIdx = currentCalloutPage,
+                  let pFrame = pageFrame(for: dragPageIdx),
+                  let doc = viewModel.document else { return }
+            let currentCanvas = convert(event.locationInWindow, from: nil)
+            let pBounds = doc.pageBounds[dragPageIdx]
+            currentCalloutEnd = CGPoint(
+                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
+            )
+            needsDisplay = true
+            return
+        }
+
         if viewModel.canvasMode == .draw {
             guard let dragPageIdx = currentDrawingPageIndex,
                   let pFrame = pageFrame(for: dragPageIdx),
@@ -936,6 +1204,55 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
     
     public override func mouseUp(with event: NSEvent) {
+        if viewModel.canvasMode == .redact {
+            if let pIdx = currentRedactionPage,
+               let start = currentRedactionStart,
+               let end = currentRedactionEnd {
+                let minX = min(start.x, end.x)
+                let maxX = max(start.x, end.x)
+                let minY = min(start.y, end.y)
+                let maxY = max(start.y, end.y)
+                if (maxX - minX) > 4 && (maxY - minY) > 4 {
+                    viewModel.addRedaction(pageIndex: pIdx, rect: CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY))
+                }
+            }
+            currentRedactionPage = nil
+            currentRedactionStart = nil
+            currentRedactionEnd = nil
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .callout {
+            if let pIdx = currentCalloutPage,
+               let start = currentCalloutStart,
+               let end = currentCalloutEnd {
+                let dist = hypot(end.x - start.x, end.y - start.y)
+                if dist > 8 {
+                    let target = start
+                    let knee = CGPoint(x: end.x, y: start.y)
+                    let boxRect = CGRect(x: end.x, y: end.y - 12, width: 140, height: 26)
+                    let annot = viewModel.addCalloutAnnotation(
+                        pageIndex: pIdx,
+                        targetPoint: target,
+                        kneePoint: knee,
+                        textBoxRect: boxRect,
+                        text: "Note",
+                        fontSize: viewModel.selectedFontSize,
+                        color: viewModel.selectedAnnotationColor
+                    )
+                    if let a = annot {
+                        startInlineEditing(annotation: a, pageIndex: pIdx)
+                    }
+                }
+            }
+            currentCalloutPage = nil
+            currentCalloutStart = nil
+            currentCalloutEnd = nil
+            needsDisplay = true
+            return
+        }
+
         if viewModel.canvasMode == .draw {
             if let pIdx = currentDrawingPageIndex, !currentDrawingPoints.isEmpty {
                 viewModel.addInkAnnotation(
@@ -1129,8 +1446,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
            let annots = viewModel.pageAnnotations[pIdx],
            let hitAnnot = annots.first(where: { $0.contains(pagePoint: pPoint) }) {
             let menu = NSMenu(title: "Annotation")
-            if hitAnnot.type == .freeText {
-                let editItem = NSMenuItem(title: "Edit Text Box", action: #selector(editHitAnnotationAction(_:)), keyEquivalent: "")
+            if hitAnnot.type == .freeText || hitAnnot.type == .callout {
+                let editTitle = hitAnnot.type == .callout ? "Edit Callout Note" : "Edit Text Box"
+                let editItem = NSMenuItem(title: editTitle, action: #selector(editHitAnnotationAction(_:)), keyEquivalent: "")
                 editItem.image = NSImage(systemSymbolName: "pencil", accessibilityDescription: nil)
                 editItem.target = self
                 editItem.representedObject = hitAnnot
@@ -1144,6 +1462,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             case .strikeout: removeTitle = "Remove Strikethrough"
             case .ink: removeTitle = "Delete Drawing"
             case .freeText: removeTitle = "Delete Text Box"
+            case .callout: removeTitle = "Delete Callout"
+            case .redact: removeTitle = "Delete Redaction Box"
             }
             let removeItem = NSMenuItem(title: removeTitle, action: #selector(removeHitAnnotationAction(_:)), keyEquivalent: "")
             removeItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
@@ -1455,8 +1775,23 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 viewModel.removeAnnotation(existing)
             } else if text != existing.text || color != existing.color || fontSize != (existing.fontSize ?? 13.0) {
                 viewModel.removeAnnotation(existing)
-                let r = existing.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
-                viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+                if existing.type == .callout {
+                    let r = existing.rect ?? CGRect(x: 50, y: 50, width: 140, height: 26)
+                    let tp = existing.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
+                    let kp = existing.kneePoint ?? CGPoint(x: r.minX - 10, y: r.midY)
+                    viewModel.addCalloutAnnotation(
+                        pageIndex: pIdx,
+                        targetPoint: tp,
+                        kneePoint: kp,
+                        textBoxRect: r,
+                        text: text,
+                        fontSize: fontSize,
+                        color: color
+                    )
+                } else {
+                    let r = existing.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
+                    viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+                }
             }
         } else if !text.isEmpty, let pagePt = activeEditingPagePoint {
             let pBounds = doc.pageBounds[pIdx]

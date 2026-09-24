@@ -64,7 +64,7 @@ public actor PDFSearchActor {
     
     /// Streams search results page-by-page as they are discovered in real time,
     /// prioritizing a local ±50 page window around `nearPage` first for instant (<30ms) nearby hits.
-    public func searchStream(query: String, nearPage: Int = 0, options: SearchOptions = SearchOptions()) -> AsyncStream<SearchResult> {
+    public func searchStream(query: String, nearPage: Int = 0, options: SearchOptions = SearchOptions(), ocrPages: [Int: PDFOCRPageResult] = [:]) -> AsyncStream<SearchResult> {
         AsyncStream<SearchResult> { continuation in
             let task = Task {
                 guard let doc = self.resource.doc else {
@@ -133,12 +133,42 @@ public actor PDFSearchActor {
                         defer { mupdf_stext_page_drop(ctx, stext) }
                         
                         // Fast plain text extraction in C to filter non-matching pages
-                        guard let cText = mupdf_stext_page_text(ctx, stext) else { return }
-                        let pageText = String(cString: cText)
-                        mupdf_free(ctx, cText)
+                        let pageText: String
+                        if let cText = mupdf_stext_page_text(ctx, stext) {
+                            pageText = String(cString: cText)
+                            mupdf_free(ctx, cText)
+                        } else {
+                            pageText = ""
+                        }
                         
                         let nsString = pageText as NSString
-                        guard regex.firstMatch(in: pageText, options: [], range: NSRange(location: 0, length: nsString.length)) != nil else {
+                        let hasStextMatch = regex.firstMatch(in: pageText, options: [], range: NSRange(location: 0, length: nsString.length)) != nil
+
+                        if !hasStextMatch {
+                            if let ocr = ocrPages[pageIdx] {
+                                let nsOCR = ocr.fullText as NSString
+                                let ocrMatches = regex.matches(in: ocr.fullText, options: [], range: NSRange(location: 0, length: nsOCR.length))
+                                for match in ocrMatches {
+                                    if Task.isCancelled { break }
+                                    let matchedStr = nsOCR.substring(with: match.range)
+                                    let start = max(0, match.range.location - 35)
+                                    let end = min(nsOCR.length, match.range.location + match.range.length + 35)
+                                    let snippet = "..." + nsOCR.substring(with: NSRange(location: start, length: end - start)).replacingOccurrences(of: "\n", with: " ") + "..."
+
+                                    var matchedQuads: [PDFQuad] = []
+                                    for line in ocr.lines {
+                                        if line.text.localizedCaseInsensitiveContains(matchedStr) {
+                                            matchedQuads.append(PDFQuad(rect: line.boundingBox))
+                                        }
+                                    }
+                                    continuation.yield(SearchResult(
+                                        pageIndex: pageIdx,
+                                        matchedText: matchedStr,
+                                        snippet: snippet,
+                                        highlightQuads: matchedQuads
+                                    ))
+                                }
+                            }
                             return
                         }
                         

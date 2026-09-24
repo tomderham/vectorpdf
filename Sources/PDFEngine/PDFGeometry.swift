@@ -21,6 +21,13 @@ public struct PDFQuad: Sendable, Equatable, Codable {
         self.ll = CGPoint(x: CGFloat(q.ll.x), y: CGFloat(q.ll.y))
         self.lr = CGPoint(x: CGFloat(q.lr.x), y: CGFloat(q.lr.y))
     }
+
+    public init(rect: CGRect) {
+        self.ul = CGPoint(x: rect.minX, y: rect.minY)
+        self.ur = CGPoint(x: rect.maxX, y: rect.minY)
+        self.ll = CGPoint(x: rect.minX, y: rect.maxY)
+        self.lr = CGPoint(x: rect.maxX, y: rect.maxY)
+    }
     
     public var boundingRect: CGRect {
         let minX = min(ul.x, ur.x, ll.x, lr.x)

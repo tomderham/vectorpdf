@@ -305,7 +305,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText: return
+        case .ink, .freeText, .callout, .redact: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -374,6 +374,113 @@ public final class PDFDocumentCore: @unchecked Sendable {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add free text annotation"
             throw PDFError.saveFailed(msg)
         }
+    }
+
+    /// Adds a technical leader-line callout annotation (/IT /FreeTextCallout) with an arrow pointer, knee elbow, and text note box.
+    public func addCallout(
+        pageIndex: Int,
+        targetPoint: CGPoint,
+        kneePoint: CGPoint,
+        textBoxRect: CGRect,
+        text: String,
+        fontSize: CGFloat = 11.0,
+        red: Float,
+        green: Float,
+        blue: Float
+    ) throws {
+        guard !text.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = text.withCString { cText in
+            mupdf_pdf_add_callout_annot(
+                ctx,
+                doc,
+                Int32(pageIndex),
+                Float(targetPoint.x),
+                Float(targetPoint.y),
+                Float(kneePoint.x),
+                Float(kneePoint.y),
+                Float(textBoxRect.minX),
+                Float(textBoxRect.minY),
+                Float(textBoxRect.maxX),
+                Float(textBoxRect.maxY),
+                cText,
+                Float(fontSize),
+                red,
+                green,
+                blue,
+                &errorMsg
+            )
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add callout annotation"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Permanently redacts (scrubs and deletes) all text glyphs, vector line art, and bitmap pixels
+    /// covered by the given rectangles on `pageIndex`, replacing the redacted regions with solid black boxes.
+    public func applyRedactions(pageIndex: Int, rects: [CGRect], blackBoxes: Bool = true) throws {
+        guard !rects.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+
+        let fzRects = rects.map { r in
+            fz_rect(
+                x0: Float(r.minX),
+                y0: Float(r.minY),
+                x1: Float(r.maxX),
+                y1: Float(r.maxY)
+            )
+        }
+
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = fzRects.withUnsafeBufferPointer { buf in
+            mupdf_page_apply_redaction_rects(
+                ctx,
+                doc,
+                Int32(pageIndex),
+                buf.baseAddress,
+                Int32(buf.count),
+                blackBoxes ? 1 : 0,
+                &errorMsg
+            )
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to apply redactions"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Extracts plain text from the specified page.
+    public func extractText(pageIndex: Int) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var pagePtr: FZPage?
+        guard mupdf_page_load(ctx, doc, Int32(pageIndex), &pagePtr, nil) == 0, let page = pagePtr else {
+            return nil
+        }
+        defer { mupdf_page_drop(ctx, page) }
+
+        var stextPtr: FZStextPage?
+        guard mupdf_stext_page_load(ctx, page, &stextPtr, nil) == 0, let stext = stextPtr else {
+            return nil
+        }
+        defer { mupdf_stext_page_drop(ctx, stext) }
+
+        guard let cText = mupdf_stext_page_text(ctx, stext) else { return nil }
+        let text = String(cString: cText)
+        mupdf_free(ctx, cText)
+        return text
+    }
+
+    /// Checks whether `pageIndex` is a scanned page (i.e. containing 0 extractable structured text characters).
+    public func isScannedPage(pageIndex: Int) -> Bool {
+        guard let text = extractText(pageIndex: pageIndex) else { return true }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Deletes any user annotation (highlight, underline, strikethrough, or ink) located near a point on a page

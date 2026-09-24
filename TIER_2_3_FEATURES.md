@@ -38,13 +38,13 @@ This document records prospective features identified during the competitive and
 
 ---
 
-### 4. Interactive Form Flattening
-- **Description**: Permanently bake filled AcroForm fields into the vector page graphics.
+### 4. True PDF Content Redaction & Security Scrubbing [COMPLETED]
+- **Description**: Permanent removal of sensitive, proprietary, classified, or PII text and vector content from technical documents.
 - **Capabilities**:
-  - File > **Flatten Form Fields...** or Save As option.
-  - Replaces interactive widget annotations with static appearance streams (`/AP`), preventing further accidental edits when emailing or submitting signed documents.
-- **Implementation Notes**:
-  - MuPDF Fitz has native `pdf_flatten_inheritable_page_items` and `pdf_drop_widgets` support.
+  - **Redaction Tool in Markup Toolbar**: Draw redaction bounding boxes to mark areas for redaction with distinct red dashed borders, semi-transparent dark fill, and "REDACTED" badges. The toolbar displays a permanent warning badge and an "Apply Redactions (N)" action button.
+  - **Permanent Stream Scrubbing**: When applied (or via Edit > **Permanently Apply Redactions…**), presents a native confirmation dialog warning of permanent deletion. Under the hood, invokes MuPDF low-level redaction (`mupdf_page_apply_redaction_rects` calling `pdf_redact_page` with `black_boxes=1`, `text=PDF_REDACT_TEXT_REMOVE`, `image_method=PDF_REDACT_IMAGE_PIXELS`, `line_art=PDF_REDACT_LINE_ART_REMOVE_IF_COVERED`), completely eliminating the underlying text glyphs, vector paths, and bitmap pixels from the PDF object stream and replacing them with solid black boxes.
+  - **Context Menu & Reversibility Prior to Apply**: Pending draft redactions can be removed or deleted via right-click before permanently burning into the stream.
+- **Implementation Status**: Completed via `MuPDFBridge` (`mupdf_page_apply_redaction_rects`, `mupdf_page_add_redact_annot`), `PDFDocumentCore.applyRedactions`, `PDFViewerViewModel`, and `PDFCanvasView`.
 
 ---
 
@@ -60,65 +60,42 @@ This document records prospective features identified during the competitive and
 
 ---
 
-### 6. True PDF Content Redaction & Security Scrubbing
-- **Description**: Permanent removal of sensitive, proprietary, classified, or PII text and vector content from technical documents.
+### 6. On-Device OCR & Searchable Text Generation for Scanned Documents [COMPLETED]
+- **Description**: 100% on-device text recognition pipeline for scanned technical datasheets, legacy patents, paper RFC archives, and legacy hardware manuals.
 - **Capabilities**:
-  - Search & Redact: Batch-redact all occurrences of a confidential string, API key, email address, or regex pattern across a multi-thousand-page document.
-  - Rectangular Box Redaction: Blackout or whiteout of proprietary schematics, register tables, or author identities for double-blind review.
-  - Permanent Stream Scrubbing: Unlike cosmetic overlay rectangles, underlying vector paths, text glyphs, and character quads are completely purged from the PDF stream so they cannot be extracted by scrapers or CLI tools.
-  - Metadata Sanitization: One-click option to strip creator metadata, edit histories, embedded thumbnails, and XML attachments.
-- **Implementation Notes**:
-  - MuPDF Fitz provides native low-level redaction functions (`pdf_redact_page`, `pdf_clean_page`) that physically rewrite the content stream and rebuild the xref table.
+  - **Scanned Page Auto-Detection**: Analyzes pages on load for empty structured text streams (`isScannedPage(pageIndex:)`).
+  - **Floating UI Overlay**: Discretely notifies reader on scanned pages with a "Scanned Page Detected" HUD overlay and one-click "Recognize Text" button, or via Edit > **Recognize Text on Scanned Pages…** (`⌃⌘O`).
+  - **Apple Silicon Neural Engine OCR**: Actor-isolated `PDFOCREngine` executing Apple's `VNRecognizeTextRequest` (.accurate recognition, multi-language support), converting normalized Vision bounding coordinates to native PDF points.
+  - **Search & Selection Integration**: Injects OCR-recognized words and lines directly into search streams (`PDFSearchActor`) and spatial text selection, allowing scanned documents to be searched via `⌘F` and referenced by the AI assistant with zero cloud transmission.
+- **Implementation Status**: Completed via `PDFOCREngine`, `PDFSearchActor`, `PDFDocumentCore.isScannedPage`, `PDFViewerViewModel`, and `PDFCanvasView`.
 
 ---
 
-### 7. On-Device OCR & Searchable Text Generation for Scanned Documents
-- **Description**: Generate an invisible, searchable text layer for scanned technical datasheets, legacy patents, paper RFC archives, and legacy hardware manuals.
+### 7. Technical Leader-Line Callout Annotations & Review Export [COMPLETED]
+- **Description**: Precision engineering review annotations for schematics, architecture diagrams, and code snippets, plus structured review export.
 - **Capabilities**:
-  - Auto-detection of image-only/raster pages lacking extractable text streams.
-  - Local Apple Silicon Neural Engine OCR via Apple's Vision framework (`VNRecognizeTextRequest`).
-  - Synthesizes an invisible structured text layer (`fz_stext_page`) aligned precisely with character bounding quads.
-  - Enables VectorPDF's instant search, column-aware selection, and semantic indexer on scanned documents without sending data to cloud servers.
-- **Implementation Notes**:
-  - OCR results can be injected as an invisible text layer (PDF text rendering mode 3) or stored in an adjacent local cache file.
+  - **Markup Toolbar Callout Tool**: Click-and-drag leader line with elbow knee bend pointing to a specific circuit node, code line, or diagram element, connecting seamlessly to an inline editable text box (`/IT /FreeTextCallout`).
+  - **PDF ISO 32000 Compliance**: Encoded via standard `/CL [target knee attach]` coordinates, `/LE /OpenArrow`, and synthetic `/AP /N` appearance stream for universal fidelity in Apple Preview, Adobe Acrobat, and VectorPDF.
+  - **Review Summary Export**: File > **Export Review Summary…** (`⇧⌘E`) generating structured Markdown summaries or CSV review logs (Page, Type, Color, Content, Coordinates, ISO-8601 Date) for GitHub Issues, Jira tickets, or architectural RFC review.
+- **Implementation Status**: Completed via `MuPDFBridge` (`mupdf_pdf_add_callout_annot`), `PDFAnnotation`, `PDFDocumentCore.addCallout`, `PDFViewerViewModel` (`generateReviewSummaryMarkdown`, `generateReviewSummaryCSV`), and `PDFCanvasView`.
 
 ---
 
-### 8. Technical Leader-Line Callout Annotations & Review Export
-- **Description**: Precision engineering review annotations for schematics, architecture diagrams, and code snippets.
-- **Capabilities**:
-  - Two-Segment Leader Callouts: Text callout boxes with adjustable elbow lines and arrow pointers directing attention to specific circuit components, memory registers, or code lines.
-  - Dimension Arrows: Double-headed measurement arrows with centered dimension text.
-  - Review Summary Export: One-click export of all annotations, highlights, and comments into a structured Markdown review log, CSV issue table, or BibTeX notes file for Jira/GitHub ticketing.
-- **Implementation Notes**:
-  - Leverages standard PDF `/Callout` annotation dictionaries (`pdf_annot`) supported in Fitz.
-
----
-
-### 9. Lossless Multi-Document Merging & PDF Import into Opened Documents
+### 8. Lossless Multi-Document Merging & PDF Import into Opened Documents [COMPLETED]
 - **Description**: Assemble comprehensive specification packages by importing and combining independent PDFs directly into an already-opened document without losing vector fidelity or re-encoding.
 - **Capabilities**:
-  - **Import / Insert File into Opened PDF**: Menu item (File > **Insert Pages from PDF...**) or dragging a PDF file from Finder directly into the Thumbnail Grid at any designated drop insertion slot.
+  - **Import / Insert File into Opened PDF**: Menu item (File > **Insert Pages from PDF...** `⌥⌘I`), context menu in the thumbnail grid, or dragging a PDF file from Finder directly into the Thumbnail Grid at any designated drop insertion slot.
   - **Post-Import Manipulation**: All imported pages seamlessly become part of the active working copy, immediately eligible for thumbnail reordering, rotation, annotation, duplication, or deletion.
-  - Append or insert pages from another PDF (e.g., attaching an errata sheet, schematic addendum, or appendix to an existing standard).
-  - Batch merging of chapter PDFs into a unified manual.
-  - Split multi-part specifications into standalone volumes.
-- **Implementation Notes**:
-  - MuPDF provides `pdf_graft_page` to copy page dictionaries and stream objects directly between documents without rasterization. Drop handling accepts `UTType.pdf` / file URLs in `ThumbnailPageDropDelegate`.
+- **Implementation Status**: Completed via `mupdf_pdf_import_pages`, `PDFDocumentCore.importPages`, `PDFViewerViewModel.importPages`, and `PDFThumbnailGridView` drag-and-drop.
 
 ---
 
-### 10. Native Text & Document Translation
+### 9. Native Selection Translation & Look Up [COMPLETED]
 - **Description**: Translation subsystem for foreign-language datasheets, patents, research papers, and international technical standards.
 - **Capabilities**:
-  - **Selection Translation (Native macOS Popover)**: Select any passage in the PDF and choose **Translate "..."** from the context menu or press a keyboard shortcut (`⌃⌥T`). Invokes macOS's native system translation UI (via Apple's `TranslationSession` / `translationPresentation` or `NSWorkspace`), supporting instant pronunciation, dictionary lookup, and language auto-detection.
+  - **Selection Translation (Native macOS Popover)**: Select any passage in the PDF and choose **Translate "..."** from the context menu or press a keyboard shortcut (`⌃⌥T`). Invokes macOS's native system translation UI (via Apple's `TranslationSession` / `translationPresentation`), supporting instant pronunciation, dictionary lookup, and language auto-detection.
   - **In-App On-Device Translation**: Utilizes Apple's native Translation framework (`import Translation` in macOS 15+ / Apple Foundation Models) for private, zero-latency on-device translation without sending document contents to third-party cloud servers.
-  - **Full Document Translation (Dual-Pane / Export)**:
-    - Extracts structured text blocks (`fz_stext_page`) across all pages.
-    - Displays a synchronized dual-pane reading view with the original PDF in the primary pane and translated text paragraphs aligned side-by-side in the secondary pane.
-    - Optional export to a translated PDF document or bilingual Markdown reference file.
-- **Implementation Notes**:
-  - Selection translation is readily achievable using macOS native popover presentation. Full document batch translation can run asynchronously via `PDFSearchActor`-like background actors and cached locally.
+- **Implementation Status**: Completed via `TranslationPresentationHelper` and `PDFViewerViewModel.translateSelection`.
 
 ---
 
@@ -198,12 +175,22 @@ This document records prospective features identified during the competitive and
   - **Font Matching & Subset Handling**: Automatically detects font family, point size, and weight from the text block. For embedded font subsets that lack glyphs for new characters, seamlessly substitutes matching system fonts (SF Pro, Helvetica, New York, Courier) and embeds new `/Font` descriptors into page `/Resources`.
   - **Bounded Paragraph Reflow**: Recomputes line breaks within the structured text block boundary (`fz_stext_block`) so inserted words reflow naturally without spilling across columns or margins.
   - **Image Replacement & Extraction**: Right-click embedded diagrams or photos to replace them with an updated graphic (e.g. updated architecture block diagram or schematic) while preserving the original bounding box, or export the original lossless bitmap to disk.
-- **Implementation Notes**:
 ### 9. macOS Speech & Accessibility (Text-to-Speech)
 - **Description**: Text-to-speech audio reading for selected text or hands-free listening to technical specifications.
 - **Capabilities**:
   - Context menu / shortcut: **Start Speaking / Stop Speaking** using `AVSpeechSynthesizer` or `NSSpeechSynthesizer`.
   - Sentence-level audio playback with configurable speech rate and voice selection.
+
+---
+
+### 10. Interactive Form Flattening (AcroForms to Static Graphics)
+- **Description**: Permanently bake filled AcroForm fields into the vector page graphics.
+- **Status Note**: Deprioritized from Tier 2 to Tier 3 backlog per user review (low relevance for technical/spec reading).
+- **Capabilities**:
+  - File > **Flatten Form Fields...** or Save As option.
+  - Replaces interactive widget annotations with static appearance streams (`/AP`), preventing further accidental edits when emailing or submitting signed documents.
+- **Implementation Notes**:
+  - MuPDF Fitz has native `pdf_flatten_inheritable_page_items` and `pdf_drop_widgets` support.
 
 ---
 
@@ -223,9 +210,9 @@ To maintain VectorPDF's focus on professional readers navigating long, complex, 
 3. **Selection Translation & Look Up** — *Tier 2, Item 3* **[COMPLETED]**
    - *Why*: Immediate comprehension boost for engineers reading foreign patents, datasheets, or international standards.
    - *Status*: Complete. Native Apple `Translation` framework popover and Dictionary Services integration.
-4. **Technical Leader-Line Callout Annotations & Review Export** — *Tier 2, Item 8*
+4. **Technical Leader-Line Callout Annotations & Review Export** — *Tier 2, Item 7* **[COMPLETED]**
    - *Why*: Directly serves engineering reviews (pointing to specific lines of code, diagram nodes, or register bits) with Markdown export for Jira/GitHub.
-   - *Lift*: Moderate. Extends existing annotation subsystem with `/Callout` geometry.
+   - *Status*: Complete. Callout tool with leader arrow/knee bend, standard `/IT /FreeTextCallout`, and Markdown/CSV review summary export (`⇧⌘E`).
 
 ---
 
@@ -235,18 +222,18 @@ To maintain VectorPDF's focus on professional readers navigating long, complex, 
 5. **In-Window Split View (`⌘\`)** — *Tier 3, Item 2*
    - *Why*: Essential for technical reading—viewing an appendix, circuit schematic, or equation proof in one pane while tracking the narrative in the other.
    - *Lift*: Moderate. Two synchronized `PDFCanvasView` viewports over the existing shared core engine.
-6. **On-Device Apple Vision OCR for Scanned Documents** — *Tier 2, Item 7*
+6. **On-Device Apple Vision OCR for Scanned Documents** — *Tier 2, Item 6* **[COMPLETED]**
    - *Why*: Eliminates the frustration of unsearchable scanned legacy manuals and patents, running 100% locally on Apple Silicon.
-   - *Lift*: Moderate. `VNRecognizeTextRequest` pipeline generating structured text quads.
-7. **True PDF Content Redaction & Security Scrubbing** — *Tier 2, Item 6*
+   - *Status*: Complete. Actor-isolated `PDFOCREngine` with Apple Vision Neural Engine, automatic scanned page detection HUD, search integration (`⌘F`), and Edit > Recognize Text on Scanned Pages… (`⌃⌘O`).
+7. **True PDF Content Redaction & Security Scrubbing** — *Tier 2, Item 4* **[COMPLETED]**
    - *Why*: Vital for corporate, legal, defense, and academic peer review (double-blind submissions). MuPDF actually scrubs vector streams rather than drawing cosmetic masks.
-   - *Lift*: Moderate. MuPDF `pdf_redact_page` and `pdf_clean_page`.
-8. **Document Metadata & Font Inspector** — *Tier 2, Item 5*
+   - *Status*: Complete. Redaction tool in markup toolbar with permanent-action warnings, confirmation modal, and physical stream scrubbing via MuPDF `pdf_redact_page`.
+8. **Document Metadata & Font Inspector (`⌘I`)** — *Tier 2, Item 5* **[COMPLETED]**
    - *Why*: Immediate technical insight into PDF version, embedded font subsets, security permissions, and page geometry boxes.
-   - *Lift*: Low. Direct Fitz document dictionary queries.
-9. **Lossless Document Merging & Page Grafting** — *Tier 2, Item 9*
+   - *Status*: Complete. Full 4-tab native macOS inspector sheet (`⌘I`) detailing general metadata, permissions, page boxes with unit switcher, and font catalog with subset detection.
+9. **Lossless Document Merging & Page Grafting** — *Tier 2, Item 8* **[COMPLETED]**
    - *Why*: Assembling master manuals by merging errata, addenda, and appendices.
-   - *Lift*: Moderate. Fitz `pdf_graft_page`.
+   - *Status*: Complete. File > Insert Pages from PDF… (`⌥⌘I`), context menu, and Finder drag-and-drop.
 
 ---
 
