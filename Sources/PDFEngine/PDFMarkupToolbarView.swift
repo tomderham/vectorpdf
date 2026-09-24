@@ -121,17 +121,17 @@ public struct PDFMarkupToolbarView: View {
                     Text("Size")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Slider(value: $viewModel.selectedFontSize, in: 8...24, step: 1)
-                        .frame(width: 75)
+                    Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
+                        .frame(width: 80)
                         .controlSize(.small)
                     Text("\(Int(viewModel.selectedFontSize)) pt")
                         .font(.caption.monospacedDigit())
-                        .frame(width: 28, alignment: .leading)
+                        .frame(width: 32, alignment: .leading)
                     Text("• Drag target to note; click note to edit")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .help("Callout Note Font Size")
+                .help("Callout Note Font Size (6–32 pt)")
 
             case .redact:
                 Divider()

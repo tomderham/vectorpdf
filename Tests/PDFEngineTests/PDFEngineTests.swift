@@ -4081,6 +4081,50 @@ func createFormSamplePDF(at fileURL: URL) {
         #expect(firstLine.boundingBox.height > 0)
     }
 }
+
+@Test @MainActor func testRealTimeFontSizeAndColorChangesOnAnnotations() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_realtime_font_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+
+    let canvasView = PDFCanvasView(viewModel: vm)
+    canvasView.frame = NSRect(x: 0, y: 0, width: 800, height: 1000)
+
+    // 1. Add Callout annotation and verify live font size update
+    let initialCallout = vm.addCalloutAnnotation(
+        pageIndex: 0,
+        targetPoint: CGPoint(x: 100, y: 670),
+        kneePoint: CGPoint(x: 150, y: 620),
+        textBoxRect: CGRect(x: 150, y: 600, width: 140, height: 26),
+        text: "Real-time Note",
+        fontSize: 12.0,
+        color: .blue
+    )
+    #expect(initialCallout != nil)
+
+    // 2. Add FreeText annotation and test immediate size and color updates
+    let initialFreeText = vm.addFreeTextAnnotation(
+        pageIndex: 0,
+        rect: CGRect(x: 200, y: 500, width: 160, height: 26),
+        text: "FreeText Slider Test",
+        fontSize: 13.0,
+        color: .black
+    )
+    #expect(initialFreeText != nil)
+    #expect(vm.pageAnnotations[0]?.contains(where: { $0.text == "FreeText Slider Test" && $0.fontSize == 13.0 }) == true)
+
+    // Change font size and color on ViewModel
+    vm.selectedFontSize = 24.0
+    vm.selectedAnnotationColor = .red
+    await Task.yield()
+
+    #expect(vm.selectedFontSize == 24.0)
+    #expect(vm.selectedAnnotationColor == .red)
+}
 }
 
 

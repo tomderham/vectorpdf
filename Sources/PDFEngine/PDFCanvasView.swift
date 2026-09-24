@@ -41,6 +41,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     private var activeEditingAnnotation: PDFAnnotation?
     private var activeEditingPageIndex: Int?
     private var activeEditingPagePoint: CGPoint?
+    private var lastInteractedAnnotation: (id: UUID, pageIndex: Int)?
     
     // Visible AcroForm controls cache (keyed by widget.id, e.g. "p0_w1")
     private var activeFormControls: [String: NSView] = [:]
@@ -220,6 +221,21 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .sink { [weak self] _ in
                 self?.needsDisplay = true
                 self?.syncFormControls()
+            }
+            .store(in: &cancellables)
+
+        // React immediately in real-time when font size or annotation color changes
+        viewModel.$selectedFontSize
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newSize in
+                self?.handleFontSizeChanged(newSize)
+            }
+            .store(in: &cancellables)
+
+        viewModel.$selectedAnnotationColor
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newColor in
+                self?.handleAnnotationColorChanged(newColor)
             }
             .store(in: &cancellables)
     }
@@ -583,7 +599,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
                         let rw = max(rect.width * viewModel.effectiveZoom, 60)
                         let rh = max(rect.height * viewModel.effectiveZoom, 20)
-                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+                        var boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+                        if activeEditingAnnotation?.id == annot.id, let tf = activeInlineTextField {
+                            boxRect = tf.frame
+                        }
+
+                        let effectiveColor = (activeEditingAnnotation?.id == annot.id ? viewModel.selectedAnnotationColor : annot.color)
 
                         // If currently editing this annotation inline, draw dashed focus outline
                         if activeEditingAnnotation?.id == annot.id {
@@ -591,7 +612,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             borderPath.lineWidth = 1.0
                             let dashes: [CGFloat] = [3.0, 3.0]
                             borderPath.setLineDash(dashes, count: 2, phase: 0)
-                            annot.color.nsColor.setStroke()
+                            effectiveColor.nsColor.setStroke()
                             borderPath.stroke()
                             continue
                         }
@@ -600,7 +621,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         let font = NSFont.systemFont(ofSize: fSize)
                         let attrs: [NSAttributedString.Key: Any] = [
                             .font: font,
-                            .foregroundColor: annot.color.nsColor
+                            .foregroundColor: effectiveColor.nsColor
                         ]
                         let str = annot.text as NSString
                         str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
@@ -611,7 +632,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
                         let rw = max(rect.width * viewModel.effectiveZoom, 80)
                         let rh = max(rect.height * viewModel.effectiveZoom, 22)
-                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+                        var boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+                        if activeEditingAnnotation?.id == annot.id, let tf = activeInlineTextField {
+                            boxRect = tf.frame
+                        }
 
                         let tx = pFrame.minX + (targetPt.x - pBounds.minX) * viewModel.effectiveZoom
                         let ty = pFrame.minY + (targetPt.y - pBounds.minY) * viewModel.effectiveZoom
@@ -621,10 +645,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         let attachX = (kx <= boxRect.minX) ? boxRect.minX : ((kx >= boxRect.maxX) ? boxRect.maxX : kx)
                         let attachY = (ky <= boxRect.minY) ? boxRect.minY : ((ky >= boxRect.maxY) ? boxRect.maxY : boxRect.midY)
 
+                        let effectiveColor = (activeEditingAnnotation?.id == annot.id ? viewModel.selectedAnnotationColor : annot.color)
+
                         // Leader line
                         let leaderPath = NSBezierPath()
                         leaderPath.lineWidth = 1.5
-                        annot.color.nsColor.setStroke()
+                        effectiveColor.nsColor.setStroke()
                         leaderPath.move(to: NSPoint(x: tx, y: ty))
                         leaderPath.line(to: NSPoint(x: kx, y: ky))
                         leaderPath.line(to: NSPoint(x: attachX, y: attachY))
@@ -649,7 +675,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             arrowPath.line(to: NSPoint(x: ax + px, y: ay + py))
                             arrowPath.line(to: NSPoint(x: ax - px, y: ay - py))
                             arrowPath.close()
-                            annot.color.nsColor.setFill()
+                            effectiveColor.nsColor.setFill()
                             arrowPath.fill()
                         }
 
@@ -658,7 +684,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         (isDarkMode ? NSColor.windowBackgroundColor : NSColor.white).setFill()
                         borderPath.fill()
                         borderPath.lineWidth = 1.0
-                        annot.color.nsColor.setStroke()
+                        effectiveColor.nsColor.setStroke()
                         borderPath.stroke()
 
                         if activeEditingAnnotation?.id == annot.id {
@@ -670,7 +696,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             let font = NSFont.systemFont(ofSize: fSize)
                             let attrs: [NSAttributedString.Key: Any] = [
                                 .font: font,
-                                .foregroundColor: annot.color.nsColor
+                                .foregroundColor: effectiveColor.nsColor
                             ]
                             let textInset = boxRect.insetBy(dx: 4, dy: 3)
                             let str = annot.text as NSString
@@ -1078,7 +1104,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         if viewModel.canvasMode == .select {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
                let list = viewModel.pageAnnotations[pageIdx],
-               let hit = list.first(where: { ($0.type == .callout || $0.type == .freeText) && $0.rect?.insetBy(dx: -4, dy: -4).contains(pagePoint) == true }) {
+               let hit = list.first(where: { ($0.type == .callout || $0.type == .freeText) && ($0.rect?.insetBy(dx: -6, dy: -6).contains(pagePoint) == true || $0.contains(pagePoint: pagePoint)) }) {
                 startInlineEditing(annotation: hit, pageIndex: pageIdx)
                 return
             }
@@ -1265,6 +1291,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         color: viewModel.selectedAnnotationColor
                     )
                     if let a = annot {
+                        lastInteractedAnnotation = (id: a.id, pageIndex: pIdx)
                         startInlineEditing(annotation: a, pageIndex: pIdx)
                     }
                 }
@@ -1796,15 +1823,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         if let existing = activeEditingAnnotation {
             if text.isEmpty {
                 viewModel.removeAnnotation(existing)
+                if lastInteractedAnnotation?.id == existing.id {
+                    lastInteractedAnnotation = nil
+                }
             } else if text != existing.text || color != existing.color || fontSize != (existing.fontSize ?? 13.0) {
                 viewModel.removeAnnotation(existing)
                 if existing.type == .callout {
                     let r = existing.rect ?? CGRect(x: 50, y: 50, width: 140, height: 26)
                     let tp = existing.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
                     let kp = existing.kneePoint ?? CGPoint(x: r.minX - 10, y: r.midY)
-                    let neededW = max(r.width, CGFloat(text.count) * fontSize * 0.65 + 20)
-                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: max(r.height, fontSize * 1.5 + 8))
-                    viewModel.addCalloutAnnotation(
+                    let neededW = max(CGFloat(text.count) * fontSize * 0.65 + 24, 100)
+                    let neededH = max(fontSize * 1.5 + 8, 24)
+                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: neededH)
+                    if let updated = viewModel.addCalloutAnnotation(
                         pageIndex: pIdx,
                         targetPoint: tp,
                         kneePoint: kp,
@@ -1812,20 +1843,29 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         text: text,
                         fontSize: fontSize,
                         color: color
-                    )
+                    ) {
+                        lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    }
                 } else {
                     let r = existing.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
-                    let neededW = max(r.width, CGFloat(text.count) * fontSize * 0.65 + 20)
-                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: max(r.height, fontSize * 1.5 + 8))
-                    viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: updatedRect, text: text, fontSize: fontSize, color: color)
+                    let neededW = max(CGFloat(text.count) * fontSize * 0.65 + 24, 80)
+                    let neededH = max(fontSize * 1.5 + 8, 24)
+                    let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: neededH)
+                    if let updated = viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: updatedRect, text: text, fontSize: fontSize, color: color) {
+                        lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    }
                 }
+            } else {
+                lastInteractedAnnotation = (id: existing.id, pageIndex: pIdx)
             }
         } else if !text.isEmpty, let pagePt = activeEditingPagePoint {
             let pBounds = doc.pageBounds[pIdx]
-            let approxWidth = min(max(CGFloat(text.count) * fontSize * 0.65 + 16, 80), pBounds.width - pagePt.x)
-            let approxHeight = max(fontSize * 1.5, 20)
+            let approxWidth = min(max(CGFloat(text.count) * fontSize * 0.65 + 24, 80), pBounds.width - pagePt.x)
+            let approxHeight = max(fontSize * 1.5 + 8, 24)
             let r = CGRect(x: pagePt.x, y: pagePt.y, width: approxWidth, height: approxHeight)
-            viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color)
+            if let updated = viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: color) {
+                lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+            }
         }
 
         tf.removeFromSuperview()
@@ -1850,6 +1890,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         guard let pFrame = pageFrame(for: pageIndex),
               let doc = viewModel.document,
               let rect = annotation.rect else { return }
+
+        lastInteractedAnnotation = (id: annotation.id, pageIndex: pageIndex)
+        if let fs = annotation.fontSize {
+            viewModel.selectedFontSize = fs
+        }
+        if annotation.color != viewModel.selectedAnnotationColor {
+            viewModel.selectedAnnotationColor = annotation.color
+        }
+        if annotation.type == .callout && viewModel.canvasMode != .callout {
+            viewModel.canvasMode = .callout
+        } else if annotation.type == .freeText && viewModel.canvasMode != .text {
+            viewModel.canvasMode = .text
+        }
 
         let pBounds = doc.pageBounds[pageIndex]
         let canvasX = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
@@ -1909,7 +1962,130 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         needsDisplay = true
     }
 
+    private func handleFontSizeChanged(_ newSize: CGFloat) {
+        guard let doc = viewModel.document else { return }
+
+        // 1. If an active inline text field is currently open and editing, resize it live in real time
+        if let tf = activeInlineTextField, let pIdx = activeEditingPageIndex {
+            let fSize = max(newSize * viewModel.effectiveZoom, 10.0)
+            tf.font = NSFont.systemFont(ofSize: fSize)
+
+            let str = tf.stringValue.isEmpty ? (tf.placeholderString ?? "Note") : tf.stringValue
+            let textLen = max(str.count, 4)
+            let pBounds = doc.pageBounds[pIdx]
+            let availableWidth = max((pBounds.maxX - (activeEditingPagePoint?.x ?? pBounds.minX)) * viewModel.effectiveZoom, 120)
+            let approxW = min(max(CGFloat(textLen) * newSize * viewModel.effectiveZoom * 0.65 + 24, 120), availableWidth)
+            let approxH = max(newSize * viewModel.effectiveZoom * 1.5 + 8, 26)
+            tf.frame = NSRect(x: tf.frame.minX, y: tf.frame.minY, width: approxW, height: approxH)
+
+            needsDisplay = true
+        }
+
+        // 2. If an annotation was recently edited/selected (and no active inline text field is open),
+        // update its font size and bounding geometry immediately without waiting for click-away
+        if activeInlineTextField == nil,
+           let (targetId, pIdx) = lastInteractedAnnotation,
+           pIdx >= 0, pIdx < doc.pageCount,
+           let list = viewModel.pageAnnotations[pIdx],
+           let annot = list.first(where: { $0.id == targetId }),
+           (annot.type == .callout || annot.type == .freeText) {
+
+            viewModel.removeAnnotation(annot)
+            let text = annot.text
+            let color = annot.color
+            let fontSize = newSize
+
+            if annot.type == .callout {
+                let r = annot.rect ?? CGRect(x: 50, y: 50, width: 140, height: 26)
+                let tp = annot.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
+                let kp = annot.kneePoint ?? CGPoint(x: r.minX - 10, y: r.midY)
+                let neededW = max(CGFloat(text.count) * fontSize * 0.65 + 24, 100)
+                let neededH = max(fontSize * 1.5 + 8, 24)
+                let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: neededH)
+                if let updated = viewModel.addCalloutAnnotation(
+                    pageIndex: pIdx,
+                    targetPoint: tp,
+                    kneePoint: kp,
+                    textBoxRect: updatedRect,
+                    text: text,
+                    fontSize: fontSize,
+                    color: color
+                ) {
+                    lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else {
+                let r = annot.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
+                let neededW = max(CGFloat(text.count) * fontSize * 0.65 + 24, 80)
+                let neededH = max(fontSize * 1.5 + 8, 24)
+                let updatedRect = CGRect(x: r.minX, y: r.minY, width: neededW, height: neededH)
+                if let updated = viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: updatedRect, text: text, fontSize: fontSize, color: color) {
+                    lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            }
+            needsDisplay = true
+        }
+    }
+
+    private func handleAnnotationColorChanged(_ newColor: AnnotationColor) {
+        guard let doc = viewModel.document else { return }
+
+        if let tf = activeInlineTextField {
+            tf.textColor = newColor.nsColor
+            needsDisplay = true
+        }
+
+        if activeInlineTextField == nil,
+           let (targetId, pIdx) = lastInteractedAnnotation,
+           pIdx >= 0, pIdx < doc.pageCount,
+           let list = viewModel.pageAnnotations[pIdx],
+           let annot = list.first(where: { $0.id == targetId }),
+           (annot.type == .callout || annot.type == .freeText) {
+
+            viewModel.removeAnnotation(annot)
+            let text = annot.text
+            let fontSize = annot.fontSize ?? viewModel.selectedFontSize
+
+            if annot.type == .callout {
+                let r = annot.rect ?? CGRect(x: 50, y: 50, width: 140, height: 26)
+                let tp = annot.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
+                let kp = annot.kneePoint ?? CGPoint(x: r.minX - 10, y: r.midY)
+                if let updated = viewModel.addCalloutAnnotation(
+                    pageIndex: pIdx,
+                    targetPoint: tp,
+                    kneePoint: kp,
+                    textBoxRect: r,
+                    text: text,
+                    fontSize: fontSize,
+                    color: newColor
+                ) {
+                    lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else {
+                let r = annot.rect ?? CGRect(x: 50, y: 50, width: 200, height: fontSize * 1.5)
+                if let updated = viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: newColor) {
+                    lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            }
+            needsDisplay = true
+        }
+    }
+
     // MARK: - NSTextFieldDelegate
+
+    public func controlTextDidChange(_ obj: Notification) {
+        guard let tf = activeInlineTextField,
+              let pIdx = activeEditingPageIndex,
+              let doc = viewModel.document else { return }
+        let newSize = viewModel.selectedFontSize
+        let str = tf.stringValue.isEmpty ? (tf.placeholderString ?? "Note") : tf.stringValue
+        let textLen = max(str.count, 4)
+        let pBounds = doc.pageBounds[pIdx]
+        let availableWidth = max((pBounds.maxX - (activeEditingPagePoint?.x ?? pBounds.minX)) * viewModel.effectiveZoom, 120)
+        let approxW = min(max(CGFloat(textLen) * newSize * viewModel.effectiveZoom * 0.65 + 24, 120), availableWidth)
+        let approxH = max(newSize * viewModel.effectiveZoom * 1.5 + 8, 26)
+        tf.frame = NSRect(x: tf.frame.minX, y: tf.frame.minY, width: approxW, height: approxH)
+        needsDisplay = true
+    }
 
     public func controlTextDidEndEditing(_ obj: Notification) {
         commitActiveInlineTextField()
