@@ -435,7 +435,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
         @objc private func openLinkAction(_ sender: NSMenuItem) {
             guard let url = sender.representedObject as? URL else { return }
-            NSWorkspace.shared.open(url)
+            PDFViewerAppCoordinator.shared.openExternalURL(url)
         }
     }
 }

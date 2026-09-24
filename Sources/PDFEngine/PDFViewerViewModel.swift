@@ -1048,7 +1048,30 @@ public final class PDFViewerViewModel: ObservableObject {
         #endif
         if let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
            let url = URL(string: "https://translate.google.com/?sl=auto&tl=en&text=\(encoded)") {
-            NSWorkspace.shared.open(url)
+            PDFViewerAppCoordinator.shared.openExternalURL(url)
+        }
+    }
+
+    // MARK: - Speech Support
+    public var isSpeaking: Bool {
+        PDFSpeechCoordinator.shared.isSpeaking
+    }
+
+    public func startSpeakingSelection() {
+        let text = activeSelectionCombinedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        PDFSpeechCoordinator.shared.startSpeaking(text)
+    }
+
+    public func stopSpeaking() {
+        PDFSpeechCoordinator.shared.stopSpeaking()
+    }
+
+    public func toggleSpeakingSelection() {
+        if isSpeaking {
+            stopSpeaking()
+        } else {
+            startSpeakingSelection()
         }
     }
 
@@ -2146,12 +2169,12 @@ public final class PDFViewerViewModel: ObservableObject {
         return csv
     }
 
-    public func exportReviewSummary() {
+    public func exportAnnotationsSummary() {
         let savePanel = NSSavePanel()
-        savePanel.title = "Export Review Summary"
+        savePanel.title = "Export Annotations Summary"
         savePanel.prompt = "Export"
         let baseName = (document?.filePath != nil ? URL(fileURLWithPath: document!.filePath).deletingPathExtension().lastPathComponent : "Document")
-        savePanel.nameFieldStringValue = "\(baseName)_Review_Summary.md"
+        savePanel.nameFieldStringValue = "\(baseName)_Annotations_Summary.md"
         savePanel.allowedContentTypes = [.plainText, .commaSeparatedText]
 
         if savePanel.runModal() == .OK, let url = savePanel.url {
@@ -2159,6 +2182,10 @@ public final class PDFViewerViewModel: ObservableObject {
             let content = isCSV ? generateReviewSummaryCSV() : generateReviewSummaryMarkdown()
             try? content.write(to: url, atomically: true, encoding: .utf8)
         }
+    }
+
+    public func exportReviewSummary() {
+        exportAnnotationsSummary()
     }
 
     // MARK: - On-Device Apple Vision OCR (Tier 2, Item 7)

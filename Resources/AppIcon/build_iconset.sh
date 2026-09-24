@@ -30,7 +30,8 @@ for spec in "${SPECS[@]}"; do
     name="${spec#* }"
     $SWIFT_CMD generate_icon.swift "$APP_ICONSET/$name" "$px"
 done
-$SWIFT_CMD build_icns.swift "$APP_ICONSET" AppIcon.icns
+rm -f AppIcon.icns
+iconutil -c icns "$APP_ICONSET" -o AppIcon.icns
 
 # 2. DocumentIcon.icns
 DOC_ICONSET="DocumentIcon.iconset"
@@ -42,4 +43,6 @@ for spec in "${SPECS[@]}"; do
     name="${spec#* }"
     $SWIFT_CMD generate_document_icon.swift "$DOC_ICONSET/$name" "$px"
 done
-$SWIFT_CMD build_icns.swift "$DOC_ICONSET" DocumentIcon.icns
+rm -f DocumentIcon.icns
+iconutil -c icns "$DOC_ICONSET" -o DocumentIcon.icns
+

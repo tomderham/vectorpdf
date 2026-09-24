@@ -8,6 +8,29 @@ public enum PDFColorAppearance: String, CaseIterable, Codable, Sendable {
     case system
     case light
     case dark
+    case sepia
+
+    public var displayName: String {
+        switch self {
+        case .system: return "Follow System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        case .sepia: return "Sepia"
+        }
+    }
+}
+
+/// Information about an installed web browser for opening external links.
+public struct InstalledBrowser: Identifiable, Hashable, Sendable {
+    public let id: String
+    public let name: String
+    public let appURL: URL?
+
+    public init(id: String, name: String, appURL: URL? = nil) {
+        self.id = id
+        self.name = name
+        self.appURL = appURL
+    }
 }
 
 /// Backend preference for Agent synthesis.
@@ -130,6 +153,45 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         return pendingOpenFilePath
     }
 
+    /// Preferred browser bundle identifier for opening external links ("system" uses macOS default).
+    @Published public var preferredBrowserBundleID: String = "system" {
+        didSet {
+            UserDefaults.standard.set(preferredBrowserBundleID, forKey: Self.preferredBrowserKey)
+        }
+    }
+    private static let preferredBrowserKey = "com.vectorpdf.app.preferredBrowser"
+
+    /// Scans the system for installed web browsers capable of opening http/https links.
+    public var installedBrowsers: [InstalledBrowser] {
+        var results: [InstalledBrowser] = [
+            InstalledBrowser(id: "system", name: "System Default", appURL: nil)
+        ]
+        guard let dummyURL = URL(string: "https://apple.com") else { return results }
+        let appURLs = NSWorkspace.shared.urlsForApplications(toOpen: dummyURL)
+        var seenBundleIDs = Set<String>()
+        for appURL in appURLs {
+            if let bundle = Bundle(url: appURL), let bundleID = bundle.bundleIdentifier {
+                if seenBundleIDs.insert(bundleID).inserted {
+                    let name = bundle.infoDictionary?["CFBundleDisplayName"] as? String
+                        ?? bundle.infoDictionary?["CFBundleName"] as? String
+                        ?? appURL.deletingPathExtension().lastPathComponent
+                    results.append(InstalledBrowser(id: bundleID, name: name, appURL: appURL))
+                }
+            }
+        }
+        return results
+    }
+
+    /// Opens an external URL according to the user's preferred browser setting.
+    public func openExternalURL(_ url: URL) {
+        if preferredBrowserBundleID != "system",
+           let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: preferredBrowserBundleID) {
+            NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+        } else {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     private init() {
         if let raw = UserDefaults.standard.string(forKey: Self.pdfColorAppearanceKey),
            let restored = PDFColorAppearance(rawValue: raw) {
@@ -145,6 +207,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         if let scaleRaw = UserDefaults.standard.string(forKey: Self.scaleModeKey),
            let mode = PDFScaleMode(rawValue: scaleRaw) {
             scaleMode = mode
+        }
+        if let browser = UserDefaults.standard.string(forKey: Self.preferredBrowserKey) {
+            preferredBrowserBundleID = browser
         }
     }
 
@@ -270,9 +335,15 @@ public struct AppSettingsView: View {
             // someone keep the app in Dark Mode for comfort while still seeing a document's true,
             // un-inverted colors when color accuracy matters, e.g. filling out a color-coded form.
             Picker("PDF Color", selection: $coordinator.pdfColorAppearance) {
-                Text("Follow System").tag(PDFColorAppearance.system)
-                Text("Light").tag(PDFColorAppearance.light)
-                Text("Dark").tag(PDFColorAppearance.dark)
+                ForEach(PDFColorAppearance.allCases, id: \.self) { appearance in
+                    Text(appearance.displayName).tag(appearance)
+                }
+            }
+
+            Picker("Open Links In", selection: $coordinator.preferredBrowserBundleID) {
+                ForEach(coordinator.installedBrowsers) { browser in
+                    Text(browser.name).tag(browser.id)
+                }
             }
 
             Divider()

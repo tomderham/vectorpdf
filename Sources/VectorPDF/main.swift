@@ -294,8 +294,8 @@ struct VectorPDF: App {
 
             Divider()
 
-            Button("Export Review Summary...") {
-                resolvedViewModel?.exportReviewSummary()
+            Button("Export Annotations Summary...") {
+                resolvedViewModel?.exportAnnotationsSummary()
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .disabled(!hasDocument)
@@ -441,18 +441,26 @@ struct VectorPDF: App {
 
             Divider()
 
-            Button("Recognize Text on Scanned Pages...") {
-                Task {
-                    await resolvedViewModel?.runOCROnAllScannedPages()
-                }
-            }
-            .keyboardShortcut("o", modifiers: [.command, .control])
-            .disabled(!hasDocument)
-
             Button("Permanently Apply Redactions...") {
                 resolvedViewModel?.applyAllPendingRedactions()
             }
             .disabled(!hasDocument || (resolvedViewModel?.pendingRedactionsCount ?? 0) == 0)
+
+            Divider()
+
+            Menu("Speech") {
+                Button("Start Speaking") {
+                    resolvedViewModel?.startSpeakingSelection()
+                }
+                .keyboardShortcut("s", modifiers: [.option, .command])
+                .disabled(resolvedViewModel?.activeSelection == nil)
+
+                Button("Stop Speaking") {
+                    resolvedViewModel?.stopSpeaking()
+                }
+                .keyboardShortcut(".", modifiers: [.option, .command])
+                .disabled(!PDFSpeechCoordinator.shared.isSpeaking)
+            }
         }
         
         CommandGroup(replacing: .toolbar) {
@@ -495,6 +503,21 @@ struct VectorPDF: App {
             .disabled(!hasDocument)
 
             Divider()
+
+            Menu("PDF Color") {
+                ForEach(PDFColorAppearance.allCases, id: \.self) { appearance in
+                    Button {
+                        PDFViewerAppCoordinator.shared.pdfColorAppearance = appearance
+                    } label: {
+                        HStack {
+                            Text(appearance.displayName)
+                            if PDFViewerAppCoordinator.shared.pdfColorAppearance == appearance {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
 
             Menu("Define 100% Scale As") {
                 ForEach(PDFScaleMode.allCases, id: \.self) { mode in

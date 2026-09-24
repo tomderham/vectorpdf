@@ -73,24 +73,37 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     // storing the source image alongside its inverted counterpart so a page only gets reprocessed
     // when its actual rendered bitmap changes (e.g. after a zoom-triggered re-render) — not on
     // every redraw.
-    private var invertedPageCache: [Int: (source: NSImage, inverted: NSImage)] = [:]
+    private struct CachedThemedPage {
+        let source: NSImage
+        let appearance: PDFColorAppearance
+        let transformed: NSImage
+    }
+    private var themedPageCache: [Int: CachedThemedPage] = [:]
 
-    /// Whether *this page's rendering* should be dark, which follows PDFViewerAppCoordinator's
-    /// global PDF Color setting (View menu) rather than the system appearance directly — that
-    /// setting defaults to following the system, but can be pinned to Light or Dark independent of
-    /// it, e.g. to keep the app's own UI dark while still seeing a document's true colors.
-    private var isDarkMode: Bool {
+    /// Resolves the effective color appearance for page rendering:
+    /// - .light: un-inverted original page bitmap
+    /// - .dark: dark gray background with brightened text
+    /// - .sepia: warm parchment background with dark espresso text
+    /// - .system: follows macOS aqua/darkAqua
+    private var activeColorAppearance: PDFColorAppearance {
         switch PDFViewerAppCoordinator.shared.pdfColorAppearance {
-        case .light: return false
-        case .dark: return true
-        case .system: return effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        case .light: return .light
+        case .dark: return .dark
+        case .sepia: return .sepia
+        case .system:
+            let isDarkAqua = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return isDarkAqua ? .dark : .light
         }
+    }
+
+    private var isDarkMode: Bool {
+        activeColorAppearance == .dark
     }
 
     public override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
-        // The cache keys off the *source* image identity, not light/dark state, so it doesn't
-        // need clearing here — only a redraw, so the newly-current isDarkMode value takes effect.
+        // The cache keys off source image identity and active appearance mode, so a redraw
+        // updates the view with the newly-current effective appearance.
         needsDisplay = true
     }
 
@@ -108,28 +121,36 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
 
     /// The image actually drawn on screen for a page — the rendered bitmap as-is in light mode,
-    /// or a cached inverted version in dark mode. Falls back to the un-inverted image if inversion
-    /// fails for any reason (never worth blocking the page from showing at all).
+    /// or a cached themed version in dark or sepia modes.
     private func displayImage(for pageIdx: Int, source: NSImage) -> NSImage {
-        guard isDarkMode else { return source }
-        if let cached = invertedPageCache[pageIdx], cached.source === source {
-            return cached.inverted
+        let appearance = activeColorAppearance
+        guard appearance != .light else { return source }
+        if let cached = themedPageCache[pageIdx], cached.source === source, cached.appearance == appearance {
+            return cached.transformed
         }
-        guard let inverted = Self.invertedImage(from: source) else { return source }
-        invertedPageCache[pageIdx] = (source: source, inverted: inverted)
-        return inverted
+        let transformed: NSImage?
+        switch appearance {
+        case .dark:
+            transformed = Self.invertedImage(from: source)
+        case .sepia:
+            transformed = Self.sepiaImage(from: source)
+        case .light, .system:
+            transformed = source
+        }
+        guard let result = transformed else { return source }
+        themedPageCache[pageIdx] = CachedThemedPage(source: source, appearance: appearance, transformed: result)
+        return result
     }
 
-    /// Drops any cached inversion whose page is no longer in viewModel.renderedPages (already
+    /// Drops any cached themed page whose page is no longer in viewModel.renderedPages (already
     /// bounded to a handful of pages around the current one — see PDFViewerViewModel.pruneCaches)
-    /// or whose cached source no longer matches the current render (e.g. re-rendered after a
-    /// zoom change), so this cache tracks the render cache instead of growing unboundedly while
-    /// scrolling through a long document in dark mode.
-    private func pruneInvertedPageCache() {
-        guard !invertedPageCache.isEmpty else { return }
-        for (pageIdx, cached) in invertedPageCache {
-            if viewModel.renderedPages[pageIdx] !== cached.source {
-                invertedPageCache.removeValue(forKey: pageIdx)
+    /// or whose cached appearance mode no longer matches the current active mode.
+    private func pruneThemedPageCache() {
+        guard !themedPageCache.isEmpty else { return }
+        let currentMode = activeColorAppearance
+        for (pageIdx, cached) in themedPageCache {
+            if viewModel.renderedPages[pageIdx] !== cached.source || cached.appearance != currentMode {
+                themedPageCache.removeValue(forKey: pageIdx)
             }
         }
     }
@@ -208,7 +229,88 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         guard let outputCG = context.makeImage() else { return nil }
         return NSImage(cgImage: outputCG, size: image.size)
     }
-    
+
+    /// Fixed target colors for the warm paper Sepia reading theme:
+    /// Background: Warm parchment ivory (#F6EED9)
+    /// Text: Deep warm charcoal / espresso (#3A2E24)
+    private static let sepiaBackgroundR: UInt8 = 246
+    private static let sepiaBackgroundG: UInt8 = 238
+    private static let sepiaBackgroundB: UInt8 = 217
+    private static let sepiaLabelR: UInt8 = 58
+    private static let sepiaLabelG: UInt8 = 46
+    private static let sepiaLabelB: UInt8 = 36
+
+    /// Remaps the page bitmap into warm sepia paper tones using SIMD-accelerated vImage table lookups.
+    private static func sepiaImage(from image: NSImage) -> NSImage? {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return nil }
+
+        let bytesPerPixel = 4
+        let bytesPerRow = bytesPerPixel * width
+        guard let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let data = context.data else { return nil }
+        let buffer = data.bindMemory(to: UInt8.self, capacity: height * bytesPerRow)
+
+        var lookupR = [UInt8](repeating: 0, count: 256)
+        var lookupG = [UInt8](repeating: 0, count: 256)
+        var lookupB = [UInt8](repeating: 0, count: 256)
+        var identity = [UInt8](repeating: 0, count: 256)
+
+        let labelR = Double(sepiaLabelR), bgR = Double(sepiaBackgroundR)
+        let labelG = Double(sepiaLabelG), bgG = Double(sepiaBackgroundG)
+        let labelB = Double(sepiaLabelB), bgB = Double(sepiaBackgroundB)
+        let scaleR = (bgR - labelR) / 255.0
+        let scaleG = (bgG - labelG) / 255.0
+        let scaleB = (bgB - labelB) / 255.0
+
+        for input in 0...255 {
+            lookupR[input] = UInt8(max(0, min(255, (labelR + scaleR * Double(input)).rounded())))
+            lookupG[input] = UInt8(max(0, min(255, (labelG + scaleG * Double(input)).rounded())))
+            lookupB[input] = UInt8(max(0, min(255, (labelB + scaleB * Double(input)).rounded())))
+            identity[input] = UInt8(input)
+        }
+
+        var vImageBuffer = vImage_Buffer(
+            data: UnsafeMutableRawPointer(buffer),
+            height: vImagePixelCount(height),
+            width: vImagePixelCount(width),
+            rowBytes: bytesPerRow
+        )
+
+        let error = lookupR.withUnsafeBufferPointer { lutR in
+            lookupG.withUnsafeBufferPointer { lutG in
+                lookupB.withUnsafeBufferPointer { lutB in
+                    identity.withUnsafeBufferPointer { identityLut in
+                        vImageTableLookUp_ARGB8888(
+                            &vImageBuffer, &vImageBuffer,
+                            lutR.baseAddress, lutG.baseAddress, lutB.baseAddress, identityLut.baseAddress,
+                            vImage_Flags(kvImageNoFlags)
+                        )
+                    }
+                }
+            }
+        }
+        if error != kvImageNoError {
+            let totalBytes = height * bytesPerRow
+            var offset = 0
+            while offset < totalBytes {
+                buffer[offset] = lookupR[Int(buffer[offset])]
+                buffer[offset + 1] = lookupG[Int(buffer[offset + 1])]
+                buffer[offset + 2] = lookupB[Int(buffer[offset + 2])]
+                offset += bytesPerPixel
+            }
+        }
+
+        guard let outputCG = context.makeImage() else { return nil }
+        return NSImage(cgImage: outputCG, size: image.size)
+    }
+
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
         super.init(frame: .zero)
@@ -418,7 +520,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         NSColor.windowBackgroundColor.setFill()
         dirtyRect.fill()
 
-        pruneInvertedPageCache()
+        pruneThemedPageCache()
 
         // Determine visible page range intersecting dirtyRect via binary search
         let unscaledMinY = max(0, (dirtyRect.minY - 16) / viewModel.effectiveZoom)
@@ -436,14 +538,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             
             let pBounds = doc.pageBounds[pageIdx]
             
-            // Page fill color follows dark mode too — matters mainly while a page is still
-            // rendering (below) and briefly shows just this background. Uses the same fixed gray
-            // the inverted page itself resolves to (see Self.darkModeBackgroundGray), not plain
-            // black, so there's no visible mismatch between this placeholder and the actual page
-            // once it finishes rendering.
-            let pageFillColor: NSColor = isDarkMode
-                ? NSColor(calibratedWhite: CGFloat(Self.darkModeBackgroundGray) / 255.0, alpha: 1.0)
-                : .white
+            // Page fill color follows the active theme (dark or sepia) — matters mainly while a
+            // page is still rendering (below) and briefly shows just this background.
+            let pageFillColor: NSColor
+            switch activeColorAppearance {
+            case .dark:
+                pageFillColor = NSColor(calibratedWhite: CGFloat(Self.darkModeBackgroundGray) / 255.0, alpha: 1.0)
+            case .sepia:
+                pageFillColor = NSColor(
+                    calibratedRed: CGFloat(Self.sepiaBackgroundR) / 255.0,
+                    green: CGFloat(Self.sepiaBackgroundG) / 255.0,
+                    blue: CGFloat(Self.sepiaBackgroundB) / 255.0,
+                    alpha: 1.0
+                )
+            case .light, .system:
+                pageFillColor = .white
+            }
 
             // 1. Page Background & Drop Shadow
             NSGraphicsContext.saveGraphicsState()
@@ -1522,7 +1632,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
 
             if let uri = pending.target.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
-                NSWorkspace.shared.open(url)
+                PDFViewerAppCoordinator.shared.openExternalURL(url)
                 return
             } else if pending.target.targetPage >= 0 {
                 // Option-click opens the target in a separate snapshot window instead of
@@ -1815,6 +1925,18 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 translateItem.target = self
                 menu.addItem(translateItem)
 
+                if PDFSpeechCoordinator.shared.isSpeaking {
+                    let stopItem = NSMenuItem(title: "Stop Speaking", action: #selector(stopSpeakingAction(_:)), keyEquivalent: "")
+                    stopItem.image = NSImage(systemSymbolName: "speaker.slash.fill", accessibilityDescription: nil)
+                    stopItem.target = self
+                    menu.addItem(stopItem)
+                } else {
+                    let startItem = NSMenuItem(title: "Start Speaking", action: #selector(startSpeakingAction(_:)), keyEquivalent: "")
+                    startItem.image = NSImage(systemSymbolName: "speaker.wave.2.fill", accessibilityDescription: nil)
+                    startItem.target = self
+                    menu.addItem(startItem)
+                }
+
                 menu.addItem(NSMenuItem.separator())
 
                 // Highlight submenu with colors
@@ -1905,6 +2027,22 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
     @objc private func translateSelectionAction(_ sender: NSMenuItem) {
         viewModel.translateSelection()
+    }
+
+    @objc private func startSpeakingAction(_ sender: NSMenuItem) {
+        viewModel.startSpeakingSelection()
+    }
+
+    @objc private func stopSpeakingAction(_ sender: NSMenuItem) {
+        viewModel.stopSpeaking()
+    }
+
+    @objc public func startSpeaking(_ sender: Any?) {
+        viewModel.startSpeakingSelection()
+    }
+
+    @objc public func stopSpeaking(_ sender: Any?) {
+        viewModel.stopSpeaking()
     }
 
     private func currentSelectionAnchorPoint() -> CGPoint {
