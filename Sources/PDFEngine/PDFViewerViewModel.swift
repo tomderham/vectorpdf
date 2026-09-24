@@ -182,7 +182,13 @@ public final class PDFViewerViewModel: ObservableObject {
 
     // Annotations & Markup
     @Published public var pageAnnotations: [Int: [PDFAnnotation]] = [:]
-    @Published public var isMarkupBarVisible: Bool = false
+    @Published public var isMarkupBarVisible: Bool = false {
+        didSet {
+            if !isMarkupBarVisible {
+                canvasMode = .select
+            }
+        }
+    }
     @Published public var canvasMode: CanvasMode = .select
     @Published public var selectedAnnotationColor: AnnotationColor = .yellow
     @Published public var drawStrokeWidth: CGFloat = 2.5
@@ -239,6 +245,14 @@ public final class PDFViewerViewModel: ObservableObject {
     // Redaction, Callout & On-Device OCR (Tier 2)
     @Published public var ocrResults: [Int: PDFOCRPageResult] = [:]
     @Published public var isRunningOCR: Bool = false
+    private var activeOCRCount: Int = 0 {
+        didSet {
+            let running = activeOCRCount > 0
+            if isRunningOCR != running {
+                isRunningOCR = running
+            }
+        }
+    }
     @Published public var detectedScannedPages: Set<Int> = []
     
     public var pendingRedactionsCount: Int {
@@ -408,9 +422,15 @@ public final class PDFViewerViewModel: ObservableObject {
             self.pageAnnotations = [:]
             self.ocrResults = [:]
             self.detectedScannedPages = []
-            for p in 0..<min(doc.pageCount, 15) {
+            let checkPageCount = min(doc.pageCount, 50)
+            for p in 0..<checkPageCount {
                 if doc.isScannedPage(pageIndex: p) {
                     self.detectedScannedPages.insert(p)
+                }
+            }
+            if !self.detectedScannedPages.isEmpty {
+                Task { [weak self] in
+                    await self?.runOCROnAllScannedPages()
                 }
             }
             self.navigationHistory = [0]
@@ -840,6 +860,12 @@ public final class PDFViewerViewModel: ObservableObject {
         let currentNear = self.currentPageIndex
         let localStart = max(0, currentNear - 50)
         let options = self.searchOptions
+
+        if !detectedScannedPages.isEmpty && !isRunningOCR {
+            Task { [weak self] in
+                await self?.runOCROnAllScannedPages()
+            }
+        }
 
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 120_000_000)
@@ -1808,6 +1834,13 @@ public final class PDFViewerViewModel: ObservableObject {
         setZoom(round(clamped * 100) / 100)
     }
 
+    public func toggleMarkupToolbar() {
+        isMarkupBarVisible.toggle()
+        if !isMarkupBarVisible {
+            canvasMode = .select
+        }
+    }
+
     // MARK: - Annotations
 
     @discardableResult
@@ -2148,8 +2181,12 @@ public final class PDFViewerViewModel: ObservableObject {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
         guard ocrResults[pageIndex] == nil else { return }
 
-        isRunningOCR = true
-        defer { isRunningOCR = false }
+        await MainActor.run { self.activeOCRCount += 1 }
+        defer {
+            Task { @MainActor in
+                self.activeOCRCount = max(0, self.activeOCRCount - 1)
+            }
+        }
 
         do {
             let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: 300.0 / 72.0)
@@ -2162,6 +2199,10 @@ public final class PDFViewerViewModel: ObservableObject {
             await MainActor.run {
                 self.ocrResults[pageIndex] = result
                 self.detectedScannedPages.remove(pageIndex)
+                let query = self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !query.isEmpty {
+                    self.performSearch(autoNavigate: false)
+                }
             }
         } catch {
             print("OCR failed on page \(pageIndex): \(error)")
@@ -2170,8 +2211,6 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public func runOCROnAllScannedPages() async {
         guard let doc = document else { return }
-        isRunningOCR = true
-        defer { isRunningOCR = false }
 
         for pIdx in 0..<doc.pageCount {
             if isScannedPage(pIdx) {

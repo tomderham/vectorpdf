@@ -79,6 +79,22 @@ public struct PDFMarkupToolbarView: View {
                     .help("Strikethrough Selected Text")
                 }
 
+                Divider()
+                    .frame(height: 16)
+
+                HStack(spacing: 6) {
+                    Text("Size")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
+                        .frame(width: 80)
+                        .controlSize(.small)
+                    Text("\(Int(viewModel.selectedFontSize)) pt")
+                        .font(.caption.monospacedDigit())
+                        .frame(width: 32, alignment: .leading)
+                }
+                .help("Annotation Font Size (6–32 pt)")
+
             case .draw:
                 Divider()
                     .frame(height: 16)

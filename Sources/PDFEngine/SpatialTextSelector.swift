@@ -309,8 +309,10 @@ public final class SpatialTextSelector: Sendable {
     
     // MARK: - Position Resolution
     private func resolvePosition(at point: CGPoint, in textBlocks: [TextBlock]) -> TextPosition? {
-        var bestBlockIdx = 0
-        var bestLineIdx = 0
+        guard !textBlocks.isEmpty else { return nil }
+
+        var bestBlockIdx = -1
+        var bestLineIdx = -1
         var bestScore: CGFloat = .infinity
         
         for bIdx in 0..<textBlocks.count {
@@ -347,6 +349,12 @@ public final class SpatialTextSelector: Sendable {
             }
         }
         
+        guard bestScore < .infinity,
+              bestBlockIdx >= 0, bestBlockIdx < textBlocks.count,
+              bestLineIdx >= 0, bestLineIdx < textBlocks[bestBlockIdx].lines.count else {
+            return nil
+        }
+
         let line = textBlocks[bestBlockIdx].lines[bestLineIdx]
         guard !line.characters.isEmpty else {
             return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: 0)
@@ -356,7 +364,7 @@ public final class SpatialTextSelector: Sendable {
         if point.x <= line.characters[0].boundingRect.minX {
             return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: 0)
         }
-        if point.x >= line.characters.last!.boundingRect.maxX {
+        if let lastChar = line.characters.last, point.x >= lastChar.boundingRect.maxX {
             return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: line.characters.count)
         }
         
@@ -671,7 +679,8 @@ public final class SpatialTextSelector: Sendable {
     // MARK: - Word & Line Selection
     public func selectWord(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
         let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
-        guard let pos = resolvePosition(at: point, in: textBlocks) else { return nil }
+        guard let pos = resolvePosition(at: point, in: textBlocks),
+              pos.blockIndex < textBlocks.count else { return nil }
         let block = textBlocks[pos.blockIndex]
         guard pos.lineIndex < block.lines.count else { return nil }
         let line = block.lines[pos.lineIndex]
@@ -733,7 +742,8 @@ public final class SpatialTextSelector: Sendable {
 
     public func selectLine(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
         let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
-        guard let pos = resolvePosition(at: point, in: textBlocks) else { return nil }
+        guard let pos = resolvePosition(at: point, in: textBlocks),
+              pos.blockIndex < textBlocks.count else { return nil }
         let block = textBlocks[pos.blockIndex]
         guard pos.lineIndex < block.lines.count else { return nil }
         let line = block.lines[pos.lineIndex]

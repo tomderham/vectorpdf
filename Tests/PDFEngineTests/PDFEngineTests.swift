@@ -4125,6 +4125,58 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.selectedFontSize == 24.0)
     #expect(vm.selectedAnnotationColor == .red)
 }
+
+@Test func testSpatialTextSelectorEmptyBlocksNoCrash() {
+    let selector = SpatialTextSelector()
+    let pt = CGPoint(x: 100, y: 100)
+
+    // Ensure word and line selection on empty structured page (which invokes resolvePosition)
+    // return nil gracefully without SIGTRAP or out-of-bounds assertion failure
+    let emptyPage = StructuredPage(pageIndex: 0, bounds: CGRect(x: 0, y: 0, width: 612, height: 792), blocks: [])
+    let wordSel = selector.selectWord(at: pt, on: emptyPage)
+    #expect(wordSel == nil)
+
+    let lineSel = selector.selectLine(at: pt, on: emptyPage)
+    #expect(lineSel == nil)
+}
+
+@Test @MainActor func testMarkupToolbarDismissalResetsSelectMode() {
+    let vm = PDFViewerViewModel()
+    vm.isMarkupBarVisible = true
+    vm.canvasMode = .callout
+    #expect(vm.canvasMode == .callout)
+
+    // Closing markup toolbar must automatically reset canvasMode to .select
+    vm.isMarkupBarVisible = false
+    #expect(vm.canvasMode == .select)
+
+    // Toggling markup toolbar off also resets to .select
+    vm.isMarkupBarVisible = true
+    vm.canvasMode = .draw
+    vm.toggleMarkupToolbar()
+    #expect(vm.isMarkupBarVisible == false)
+    #expect(vm.canvasMode == .select)
+}
+
+@Test func testAnnotationHitTestingAndDragBounds() {
+    let callout = PDFAnnotation(
+        pageIndex: 0,
+        type: .callout,
+        rect: CGRect(x: 150, y: 300, width: 120, height: 26),
+        targetPoint: CGPoint(x: 100, y: 350),
+        kneePoint: CGPoint(x: 150, y: 313),
+        text: "Important section"
+    )
+
+    // Hits inside text box
+    #expect(callout.contains(pagePoint: CGPoint(x: 160, y: 310)))
+    // Hits target arrow tip
+    #expect(callout.contains(pagePoint: CGPoint(x: 100, y: 350)))
+    // Hits near knee elbow
+    #expect(callout.contains(pagePoint: CGPoint(x: 150, y: 313)))
+    // Misses far away point
+    #expect(!callout.contains(pagePoint: CGPoint(x: 50, y: 50)))
+}
 }
 
 
