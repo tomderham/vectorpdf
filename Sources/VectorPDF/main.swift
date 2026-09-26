@@ -300,6 +300,15 @@ struct VectorPDF: App {
 
             Divider()
 
+            Button("Split PDF...") {
+                if let vm = resolvedViewModel {
+                    vm.showSplitPDF()
+                } else {
+                    NotificationCenter.default.post(name: .showSplitPDFCommand, object: nil)
+                }
+            }
+            .disabled(!hasDocument)
+
             Button("Export Annotations Summary...") {
                 resolvedViewModel?.exportAnnotationsSummary()
             }

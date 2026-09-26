@@ -725,6 +725,41 @@ public final class PDFDocumentCore: @unchecked Sendable {
         rebuildPageLayoutAndOutline()
         return (slot, Int(importedCount))
     }
+
+    public func insertBlankPage(atSlot slot: Int, width: CGFloat? = nil, height: CGFloat? = nil) throws -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let w = Float(width ?? 0)
+        let h = Float(height ?? 0)
+        let ret = mupdf_pdf_insert_blank_page(ctx, doc, Int32(slot), w, h, &errorMsg)
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to insert blank page"
+            throw PDFError.operationFailed(msg)
+        }
+        rebuildPageLayoutAndOutline()
+        return slot
+    }
+
+    public func split(
+        pageRanges: [[Int]],
+        outputDirectory: URL,
+        fileNames: [String],
+        onProgress: (@Sendable (Double, String) -> Void)? = nil
+    ) throws -> [URL] {
+        var generatedURLs: [URL] = []
+        let total = pageRanges.count
+        for (i, pages) in pageRanges.enumerated() {
+            guard !pages.isEmpty else { continue }
+            let fileName = fileNames[i]
+            let fileURL = outputDirectory.appendingPathComponent(fileName)
+            onProgress?(Double(i) / Double(max(1, total)), "Writing \(fileName)...")
+            try extractPages(pages, to: fileURL)
+            generatedURLs.append(fileURL)
+        }
+        onProgress?(1.0, "Complete")
+        return generatedURLs
+    }
 }
 
 extension PDFDocumentCore {

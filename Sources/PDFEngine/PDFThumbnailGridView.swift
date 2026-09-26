@@ -431,6 +431,12 @@ public struct PDFThumbnailGridView: View {
                                     }
 
                                     Button {
+                                        viewModel.insertBlankPageAtSelection()
+                                    } label: {
+                                        Label("Insert Blank Page", systemImage: "plus.rectangle")
+                                    }
+
+                                    Button {
                                         let insertSlot = (viewModel.selectedThumbnailPageIndices.max() ?? pageIndex) + 1
                                         viewModel.promptImportPDF(atSlot: insertSlot)
                                     } label: {
@@ -442,7 +448,7 @@ public struct PDFThumbnailGridView: View {
                                     Button {
                                         viewModel.extractSelectedThumbnails()
                                     } label: {
-                                        Label("Extract \(count) Pages…", systemImage: "arrow.up.forward.square")
+                                        Label("Save \(count) selected pages as a PDF…", systemImage: "arrow.up.forward.square")
                                     }
 
                                     Divider()
@@ -481,6 +487,12 @@ public struct PDFThumbnailGridView: View {
                                     }
 
                                     Button {
+                                        viewModel.insertBlankPage(after: pageIndex)
+                                    } label: {
+                                        Label("Insert Blank Page", systemImage: "plus.rectangle")
+                                    }
+
+                                    Button {
                                         viewModel.promptImportPDF(atSlot: pageIndex + 1)
                                     } label: {
                                         Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
@@ -491,7 +503,7 @@ public struct PDFThumbnailGridView: View {
                                     Button {
                                         viewModel.extractPage(pageIndex)
                                     } label: {
-                                        Label("Extract Page…", systemImage: "arrow.up.forward.square")
+                                        Label("Save selected page as a PDF…", systemImage: "arrow.up.forward.square")
                                     }
 
                                     Divider()

@@ -3859,6 +3859,108 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(doc.pageCount == 6)
 }
 
+@Test @MainActor func testInsertBlankPage() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("test_blank_page.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create PDF context")
+    }
+    for i in 1...3 {
+        context.beginPDFPage(nil)
+        let text = "Page \(i) Content"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 3)
+
+    // Insert blank page after page 0 (at slot 1)
+    let slot1 = try doc.insertBlankPage(atSlot: 1)
+    #expect(slot1 == 1)
+    #expect(doc.pageCount == 4)
+
+    // Verify blank page has valid geometry (inherited from adjacent page)
+    let boxes = doc.getPageBoxes(for: 1)
+    #expect(boxes.mediaBox.width == 612)
+    #expect(boxes.mediaBox.height == 792)
+
+    // Insert blank page at the end (slot 4)
+    let slot2 = try doc.insertBlankPage(atSlot: doc.pageCount)
+    #expect(slot2 == 4)
+    #expect(doc.pageCount == 5)
+
+    // Verify document can be saved and reopened
+    let savedURL = tempDir.appendingPathComponent("saved_blank_page.pdf")
+    try doc.save(to: savedURL.path)
+    let reopenedDoc = try PDFDocumentCore(filePath: savedURL.path)
+    #expect(reopenedDoc.pageCount == 5)
+}
+
+@Test @MainActor func testSplitPDFDocument() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let pdfURL = tempDir.appendingPathComponent("source_doc.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
+        fatalError("Failed to create PDF context")
+    }
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    for i in 1...7 {
+        context.beginPDFPage(nil)
+        let text = "Page \(i) Body"
+        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
+        context.endPDFPage()
+    }
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: pdfURL.path)
+    #expect(doc.pageCount == 7)
+
+    // Split 7 pages into 3-page chunks: [0, 1, 2], [3, 4, 5], [6]
+    let ranges = [[0, 1, 2], [3, 4, 5], [6]]
+    let fileNames = ["split_part_1.pdf", "split_part_2.pdf", "split_part_3.pdf"]
+
+    final class ProgressCounter: @unchecked Sendable {
+        var count = 0
+    }
+    let tracker = ProgressCounter()
+
+    let generated = try doc.split(
+        pageRanges: ranges,
+        outputDirectory: tempDir,
+        fileNames: fileNames
+    ) { progress, status in
+        tracker.count += 1
+    }
+
+    #expect(generated.count == 3)
+    #expect(tracker.count > 0)
+
+    // Verify each generated file exists and has the correct page count
+    let doc1 = try PDFDocumentCore(filePath: generated[0].path)
+    #expect(doc1.pageCount == 3)
+    let text1 = doc1.extractText(pageIndex: 0) ?? ""
+    #expect(text1.contains("Page 1"))
+
+    let doc2 = try PDFDocumentCore(filePath: generated[1].path)
+    #expect(doc2.pageCount == 3)
+    let text2 = doc2.extractText(pageIndex: 0) ?? ""
+    #expect(text2.contains("Page 4"))
+
+    let doc3 = try PDFDocumentCore(filePath: generated[2].path)
+    #expect(doc3.pageCount == 1)
+    let text3 = doc3.extractText(pageIndex: 0) ?? ""
+    #expect(text3.contains("Page 7"))
+}
+
 @Test @MainActor func testImportPagesFromExternalPDF() throws {
     let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)

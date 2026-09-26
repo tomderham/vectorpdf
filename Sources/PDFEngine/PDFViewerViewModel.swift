@@ -243,6 +243,7 @@ public final class PDFViewerViewModel: ObservableObject {
 
     // Document Inspection & Metadata (Tier 2, Item 5)
     @Published public var isShowingDocumentProperties: Bool = false
+    @Published public var isShowingSplitPDF: Bool = false
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Redaction, Callout & On-Device OCR (Tier 2)
@@ -3093,9 +3094,9 @@ public final class PDFViewerViewModel: ObservableObject {
         if pageIndices.count == 1 {
             panel.nameFieldStringValue = "\(baseName)_Page_\(pageIndices[0] + 1).pdf"
         } else {
-            panel.nameFieldStringValue = "\(baseName)_Extracted.pdf"
+            panel.nameFieldStringValue = "\(baseName)_Selected_Pages.pdf"
         }
-        panel.prompt = "Extract"
+        panel.prompt = "Save"
 
         let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
@@ -3162,6 +3163,63 @@ public final class PDFViewerViewModel: ObservableObject {
         selectedThumbnailPageIndices = [pageIndex]
         selectionAnchorPageIndex = pageIndex
         duplicateSelectedThumbnails()
+    }
+
+    public func insertBlankPage(after pageIndex: Int) {
+        guard let doc = document else { return }
+        let targetSlot = min(max(0, pageIndex + 1), doc.pageCount)
+        insertBlankPage(atSlot: targetSlot)
+    }
+
+    public func insertBlankPageAtSelection() {
+        guard let doc = document else { return }
+        let maxSelected = selectedThumbnailPageIndices.max() ?? currentPageIndex
+        let targetSlot = min(max(0, maxSelected + 1), doc.pageCount)
+        insertBlankPage(atSlot: targetSlot)
+    }
+
+    public func insertBlankPage(atSlot slot: Int, width: CGFloat? = nil, height: CGFloat? = nil) {
+        guard let doc = document else { return }
+        let clampedSlot = max(0, min(slot, doc.pageCount))
+
+        do {
+            let insertedSlot = try doc.insertBlankPage(atSlot: clampedSlot, width: width, height: height)
+            if workingCopyPath == nil {
+                workingCopyPath = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("working_\(UUID().uuidString).pdf").path
+            }
+            guard let workingPath = workingCopyPath else { return }
+            try doc.save(to: workingPath)
+            self.isDocumentEdited = true
+            self.currentWindow?.isDocumentEdited = true
+            self.recomputeEffectiveLayout()
+            Task { @MainActor in
+                try? await self.renderActor.openDocument(filePath: workingPath)
+                try? await self.searchActor.openDocument(filePath: workingPath)
+                self.thumbnailVersion = UUID()
+                self.renderedPages.removeAll()
+                self.thumbnailImages.removeAll()
+                self.pageAnnotations.removeAll()
+                self.pageStructuredData.removeAll()
+                self.pageLinks.removeAll()
+
+                let newSelectedRange: Set<Int> = [insertedSlot]
+                self.selectedThumbnailPageIndices = newSelectedRange
+                self.selectionAnchorPageIndex = insertedSlot
+                self.currentPageIndex = insertedSlot
+
+                self.objectWillChange.send()
+                await self.renderPage(self.currentPageIndex)
+                self.loadPageMetadata(self.currentPageIndex)
+                let start = max(0, insertedSlot - 8)
+                let end = min(doc.pageCount, insertedSlot + 12)
+                for p in start..<end {
+                    self.requestThumbnail(for: p)
+                }
+            }
+        } catch {
+            print("Failed to insert blank page at slot \(clampedSlot): \(error)")
+        }
     }
 
     public func importPages(from fileURL: URL, toSlot: Int? = nil) {
@@ -3457,6 +3515,11 @@ public final class PDFViewerViewModel: ObservableObject {
     public func refreshInspectionReport() {
         guard let doc = document else { return }
         self.documentInspectionReport = doc.generateInspectionReport(pageIndex: currentPageIndex)
+    }
+
+    public func showSplitPDF() {
+        guard document != nil else { return }
+        self.isShowingSplitPDF = true
     }
 
     // MARK: - Agent Tab

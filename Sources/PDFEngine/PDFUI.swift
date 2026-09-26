@@ -12,6 +12,7 @@ extension Notification.Name {
     public static let focusAnchorsCommand = Notification.Name("focusAnchorsCommand")
     public static let formWidgetDidChange = Notification.Name("formWidgetDidChange")
     public static let showDocumentPropertiesCommand = Notification.Name("showDocumentPropertiesCommand")
+    public static let showSplitPDFCommand = Notification.Name("showSplitPDFCommand")
 }
 
 /// Standalone, reusable macOS SwiftUI PDF Document Viewer
@@ -491,6 +492,13 @@ public struct PDFViewerMainView: View {
         }
         .sheet(isPresented: $viewModel.isShowingDocumentProperties) {
             PDFDocumentPropertiesView(viewModel: viewModel)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showSplitPDFCommand)) { _ in
+            guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
+            viewModel.showSplitPDF()
+        }
+        .sheet(isPresented: $viewModel.isShowingSplitPDF) {
+            PDFSplitPDFView(viewModel: viewModel)
         }
         .task {
             // Falls back to a buffered cold-launch open-file path (see

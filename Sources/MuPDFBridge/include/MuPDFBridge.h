@@ -115,6 +115,7 @@ int mupdf_pdf_delete_pages(fz_context *ctx, fz_document *doc, const int *page_in
 int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char *out_path, const char **out_error);
 int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int *out_inserted_slot, const char **out_error);
 int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_path, int insert_slot, int *out_imported_count, const char **out_error);
+int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_slot, float width, float height, const char **out_error);
 
 // Store & Memory Management
 void mupdf_context_empty_store(fz_context *ctx);

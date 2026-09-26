@@ -1503,6 +1503,65 @@ int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_pa
     return 0;
 }
 
+int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_slot, float width, float height, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_obj *page_obj = NULL;
+    pdf_obj *resources = NULL;
+    fz_buffer *contents = NULL;
+    fz_device *dev = NULL;
+    fz_var(page_obj);
+    fz_var(resources);
+    fz_var(contents);
+    fz_var(dev);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Target document is not a PDF");
+        int total_pages = pdf_count_pages(ctx, pdoc);
+        if (insert_slot < 0 || insert_slot > total_pages) {
+            fz_throw(ctx, FZ_ERROR_GENERIC, "Insert slot out of bounds");
+        }
+
+        float w = width;
+        float h = height;
+        if (w <= 0.0f || h <= 0.0f) {
+            int ref_page = (insert_slot > 0) ? (insert_slot - 1) : 0;
+            if (total_pages > 0 && ref_page >= 0 && ref_page < total_pages) {
+                pdf_obj *ref_page_obj = pdf_lookup_page_obj(ctx, pdoc, ref_page);
+                if (ref_page_obj) {
+                    pdf_obj *media_obj = pdf_dict_get_inheritable(ctx, ref_page_obj, PDF_NAME(MediaBox));
+                    if (media_obj) {
+                        fz_rect r = pdf_to_rect(ctx, media_obj);
+                        w = fabsf(r.x1 - r.x0);
+                        h = fabsf(r.y1 - r.y0);
+                    }
+                }
+            }
+        }
+        if (w <= 0.0f || h <= 0.0f) {
+            w = 612.0f;
+            h = 792.0f;
+        }
+
+        fz_rect mediabox = fz_make_rect(0, 0, w, h);
+        dev = pdf_page_write(ctx, pdoc, mediabox, &resources, &contents);
+        fz_close_device(ctx, dev);
+        fz_drop_device(ctx, dev);
+        dev = NULL;
+
+        page_obj = pdf_add_page(ctx, pdoc, mediabox, 0, resources, contents);
+        pdf_insert_page(ctx, pdoc, insert_slot, page_obj);
+    } fz_always(ctx) {
+        if (dev) fz_drop_device(ctx, dev);
+        if (page_obj) pdf_drop_obj(ctx, page_obj);
+        if (resources) pdf_drop_obj(ctx, resources);
+        if (contents) fz_drop_buffer(ctx, contents);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 // Store & Memory Management
 void mupdf_context_empty_store(fz_context *ctx) {
     if (ctx) fz_empty_store(ctx);
