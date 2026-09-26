@@ -87,6 +87,7 @@ public enum PDFAnnotationType: String, Codable, Sendable {
     case freeText
     case callout
     case redact
+    case stamp
 }
 
 /// Canvas interaction modes for the markup toolbar
@@ -97,6 +98,7 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     case callout
     case redact
     case eraser
+    case stamp
 }
 
 /// Represents a user or document annotation in VectorPDF
@@ -113,6 +115,7 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     public let fontSize: CGFloat?
     public let color: AnnotationColor
     public let text: String
+    public let stampImageData: Data?
     public let dateCreated: Date
 
     public init(
@@ -128,6 +131,7 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         fontSize: CGFloat? = nil,
         color: AnnotationColor = .yellow,
         text: String = "",
+        stampImageData: Data? = nil,
         dateCreated: Date = Date()
     ) {
         self.id = id
@@ -142,12 +146,13 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         self.fontSize = fontSize
         self.color = color
         self.text = text
+        self.stampImageData = stampImageData
         self.dateCreated = dateCreated
     }
 
     /// Union bounding rect across quads, ink points, or freeText rect in page coordinates.
     public var boundingRect: CGRect {
-        if type == .freeText || type == .redact {
+        if type == .freeText || type == .redact || type == .stamp {
             return rect ?? .zero
         }
         if type == .callout {
@@ -183,7 +188,7 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Checks whether a given page-space point hits this annotation (with a small hit-test margin).
     public func contains(pagePoint: CGPoint, tolerance: CGFloat = 3.0) -> Bool {
-        if type == .freeText || type == .redact {
+        if type == .freeText || type == .redact || type == .stamp {
             guard let r = rect else { return false }
             return r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint)
         }

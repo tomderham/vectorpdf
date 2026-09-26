@@ -317,7 +317,7 @@ public struct PDFViewerMainView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(minWidth: 700, idealWidth: 960, maxWidth: .infinity, minHeight: 450, idealHeight: 650, maxHeight: .infinity)
+        .frame(minWidth: 640, idealWidth: 1150, maxWidth: .infinity, minHeight: 460, idealHeight: 780, maxHeight: .infinity)
         .overlay(alignment: .bottom) {
             if let msg = undoToastMessage, let action = undoAction {
                 UndoToastView(message: msg) {
@@ -394,7 +394,7 @@ public struct PDFViewerMainView: View {
                 navigationSplitBody
             }
         }
-        .frame(minWidth: isSnapshotWindow ? 600 : 700, idealWidth: isSnapshotWindow ? 960 : 1080, minHeight: isSnapshotWindow ? 450 : 500, idealHeight: isSnapshotWindow ? 720 : 720)
+        .frame(minWidth: isSnapshotWindow ? 540 : 640, idealWidth: isSnapshotWindow ? 960 : 1150, minHeight: isSnapshotWindow ? 420 : 480, idealHeight: isSnapshotWindow ? 720 : 780)
         .background(
             WindowAccessor { window in
                 viewModel.currentWindow = window

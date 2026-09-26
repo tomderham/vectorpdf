@@ -65,6 +65,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         currentDelta: CGSize
     )?
     
+    // Tracks mouse position for live ghost stamp previews
+    private var currentHoverCanvasPoint: CGPoint? = nil
+
     // Visible AcroForm controls cache (keyed by widget.id, e.g. "p0_w1")
     private var activeFormControls: [String: NSView] = [:]
 
@@ -958,6 +961,46 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                             )
                             badgeText.draw(at: textOrigin, withAttributes: badgeAttrs)
                         }
+
+                    case .stamp:
+                        guard let initialRect = annot.rect, let data = annot.stampImageData, let img = NSImage(data: data) else { continue }
+                        var rect = initialRect
+                        if let drag = activeAnnotationDrag, drag.id == annot.id {
+                            rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
+                        }
+
+                        let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
+                        let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+                        let rw = max(rect.width * viewModel.effectiveZoom, 20)
+                        let rh = max(rect.height * viewModel.effectiveZoom, 10)
+                        let boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
+
+                        img.draw(in: boxRect)
+
+                        // If selected, draw selection outline and corner handles
+                        if selectedAnnotation?.id == annot.id {
+                            let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
+                            let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
+                            selPath.lineWidth = 1.5
+                            NSColor.controlAccentColor.setStroke()
+                            selPath.stroke()
+
+                            let handleSize: CGFloat = 6.0
+                            let corners = [
+                                NSPoint(x: selRect.minX - handleSize/2, y: selRect.minY - handleSize/2),
+                                NSPoint(x: selRect.maxX - handleSize/2, y: selRect.minY - handleSize/2),
+                                NSPoint(x: selRect.minX - handleSize/2, y: selRect.maxY - handleSize/2),
+                                NSPoint(x: selRect.maxX - handleSize/2, y: selRect.maxY - handleSize/2)
+                            ]
+                            for pt in corners {
+                                let hPath = NSBezierPath(roundedRect: NSRect(origin: pt, size: CGSize(width: handleSize, height: handleSize)), xRadius: 1, yRadius: 1)
+                                NSColor.white.setFill()
+                                hPath.fill()
+                                NSColor.controlAccentColor.setStroke()
+                                hPath.lineWidth = 1.0
+                                hPath.stroke()
+                            }
+                        }
                     }
                 }
             }
@@ -1050,6 +1093,33 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 boxBorder.fill()
                 viewModel.selectedAnnotationColor.nsColor.setStroke()
                 boxBorder.stroke()
+            }
+
+            // 2.9 Live Ghost Stamp Preview in Progress
+            if viewModel.canvasMode == .stamp,
+               let data = viewModel.pendingSignatureData,
+               let img = NSImage(data: data),
+               let hoverPt = currentHoverCanvasPoint,
+               pFrame.contains(hoverPt) {
+                let imgSize = img.size
+                let stampW: CGFloat = 140 * viewModel.effectiveZoom
+                let stampH: CGFloat = stampW * (imgSize.height / max(imgSize.width, 1))
+                let ghostRect = NSRect(
+                    x: max(pFrame.minX, min(hoverPt.x - stampW / 2, pFrame.maxX - stampW)),
+                    y: max(pFrame.minY, min(hoverPt.y - stampH / 2, pFrame.maxY - stampH)),
+                    width: stampW,
+                    height: stampH
+                )
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current?.cgContext.setAlpha(0.6)
+                img.draw(in: ghostRect)
+                NSGraphicsContext.restoreGraphicsState()
+                let ghostPath = NSBezierPath(roundedRect: ghostRect, xRadius: 3, yRadius: 3)
+                ghostPath.lineWidth = 1.0
+                let dashes: [CGFloat] = [3.0, 3.0]
+                ghostPath.setLineDash(dashes, count: 2, phase: 0)
+                NSColor.controlAccentColor.setStroke()
+                ghostPath.stroke()
             }
 
             // 3. Search Highlights
@@ -1216,6 +1286,34 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
 
+        // In stamp mode: place signature at clicked location
+        if viewModel.canvasMode == .stamp {
+            if let data = viewModel.pendingSignatureData,
+               let (pageIdx, _, pagePoint) = pageInfo(at: point),
+               let doc = viewModel.document {
+                let pBounds = doc.pageBounds[pageIdx]
+                let img = NSImage(data: data)
+                let imgSize = img?.size ?? CGSize(width: 360, height: 140)
+                let stampW: CGFloat = 140
+                let stampH: CGFloat = stampW * (imgSize.height / max(imgSize.width, 1))
+                let stampRect = CGRect(
+                    x: max(pBounds.minX, min(pagePoint.x - stampW / 2, pBounds.maxX - stampW)),
+                    y: max(pBounds.minY, min(pagePoint.y - stampH / 2, pBounds.maxY - stampH)),
+                    width: stampW,
+                    height: stampH
+                )
+                if let annot = viewModel.addStampAnnotation(pageIndex: pageIdx, rect: stampRect, imageData: data) {
+                    selectedAnnotation = (id: annot.id, pageIndex: pageIdx)
+                    lastInteractedAnnotation = (id: annot.id, pageIndex: pageIdx)
+                }
+                viewModel.canvasMode = .select
+                viewModel.pendingSignatureData = nil
+                currentHoverCanvasPoint = nil
+                needsDisplay = true
+            }
+            return
+        }
+
         // In eraser mode: remove annotation at clicked point
         if viewModel.canvasMode == .eraser {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -1225,7 +1323,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return
         }
 
-        // For .select, .text, and .callout modes: Check if clicked on an existing freeText or callout annotation
+        // For .select, .text, and .callout modes: Check if clicked on an existing freeText, callout, or stamp annotation
         if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
                let list = viewModel.pageAnnotations[pageIdx] {
@@ -1248,8 +1346,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 }
 
                 // 2. Check if clicked on an annotation body or callout target/knee
-                if let hit = list.reversed().first(where: { ($0.type == .callout || $0.type == .freeText) && $0.contains(pagePoint: pagePoint, tolerance: 6.0) }) {
-                    if event.clickCount == 2 {
+                if let hit = list.reversed().first(where: { ($0.type == .callout || $0.type == .freeText || $0.type == .stamp) && $0.contains(pagePoint: pagePoint, tolerance: 6.0) }) {
+                    if event.clickCount == 2 && hit.type != .stamp {
                         startInlineEditing(annotation: hit, pageIndex: pageIdx)
                         return
                     } else {
@@ -1260,7 +1358,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         }
                         viewModel.selectedAnnotationColor = hit.color
 
-                        let part = calloutDragPart(for: hit, at: pagePoint)
+                        let part = hit.type == .callout ? calloutDragPart(for: hit, at: pagePoint) : .entireAnnotation
                         activeAnnotationDrag = (
                             id: hit.id,
                             pageIndex: pageIdx,
@@ -1532,6 +1630,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                         lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
                     }
+                } else if orig.type == .stamp {
+                    let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 140, height: 50), part: drag.part, delta: drag.currentDelta)
+                    if let data = orig.stampImageData, let updated = viewModel.addStampAnnotation(pageIndex: pIdx, rect: rect, imageData: data, color: orig.color) {
+                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                        lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    }
                 }
             }
             needsDisplay = true
@@ -1686,6 +1790,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             NSCursor.crosshair.set()
             return
         }
+        if viewModel.canvasMode == .stamp {
+            if hoveredLink != nil {
+                hoveredLink = nil
+            }
+            currentHoverCanvasPoint = convert(event.locationInWindow, from: nil)
+            NSCursor.crosshair.set()
+            needsDisplay = true
+            return
+        }
         let point = convert(event.locationInWindow, from: nil)
 
         // Hover feedback over annotations or callout handles in interactive modes
@@ -1714,7 +1827,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                         break
                     }
                 }
-                if list.contains(where: { ($0.type == .freeText || $0.type == .callout) && $0.contains(pagePoint: pagePoint, tolerance: 4.0) }) {
+                if list.contains(where: { ($0.type == .freeText || $0.type == .callout || $0.type == .stamp) && $0.contains(pagePoint: pagePoint, tolerance: 4.0) }) {
                     if hoveredLink != nil { hoveredLink = nil; needsDisplay = true }
                     NSCursor.openHand.set()
                     return
@@ -1738,7 +1851,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             NSCursor.arrow.set()
         }
     }
-    
+
     public override func cursorUpdate(with event: NSEvent) {
         if hoveredLink != nil {
             NSCursor.pointingHand.set()
@@ -1749,6 +1862,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     
     public override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        if currentHoverCanvasPoint != nil {
+            currentHoverCanvasPoint = nil
+            needsDisplay = true
+        }
         if hoveredLink != nil {
             hoveredLink = nil
             needsDisplay = true
@@ -1834,6 +1951,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             case .freeText: removeTitle = "Delete Text Box"
             case .callout: removeTitle = "Delete Callout"
             case .redact: removeTitle = "Delete Redaction Box"
+            case .stamp: removeTitle = "Delete Signature"
             }
             let removeItem = NSMenuItem(title: removeTitle, action: #selector(removeHitAnnotationAction(_:)), keyEquivalent: "")
             removeItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
@@ -2043,6 +2161,21 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
     @objc public func stopSpeaking(_ sender: Any?) {
         viewModel.stopSpeaking()
+    }
+
+    @objc public func highlightSelection(_ sender: Any?) {
+        viewModel.highlightSelection(color: viewModel.selectedAnnotationColor)
+        needsDisplay = true
+    }
+
+    @objc public func underlineSelection(_ sender: Any?) {
+        viewModel.underlineSelection(color: viewModel.selectedAnnotationColor)
+        needsDisplay = true
+    }
+
+    @objc public func strikethroughSelection(_ sender: Any?) {
+        viewModel.strikethroughSelection(color: viewModel.selectedAnnotationColor)
+        needsDisplay = true
     }
 
     private func currentSelectionAnchorPoint() -> CGPoint {
@@ -2406,6 +2539,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
                 lastInteractedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
             }
+        } else if orig.type == .stamp {
+            let rect = (orig.rect ?? .zero).offsetBy(dx: dx, dy: dy)
+            if let data = orig.stampImageData, let updated = viewModel.addStampAnnotation(pageIndex: sel.pageIndex, rect: rect, imageData: data, color: orig.color) {
+                selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
+                lastInteractedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
+            }
         }
         needsDisplay = true
     }
@@ -2578,8 +2717,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText) {
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp) {
 
+            guard annot.color != newColor else { return }
             viewModel.removeAnnotation(annot)
             let text = annot.text
             let fontSize = annot.fontSize ?? viewModel.selectedFontSize
@@ -2600,9 +2740,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                     lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
-            } else {
+            } else if annot.type == .freeText {
                 let r = annot.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22)
                 if let updated = viewModel.addFreeTextAnnotation(pageIndex: pIdx, rect: r, text: text, fontSize: fontSize, color: newColor) {
+                    lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if annot.type == .stamp, let origData = annot.stampImageData, let origImg = NSImage(data: origData), let r = annot.rect {
+                let tintedImg = origImg.tinted(with: newColor.nsColor)
+                if let tintedData = tintedImg.pdfStampPNGData,
+                   let updated = viewModel.addStampAnnotation(pageIndex: pIdx, rect: r, imageData: tintedData, color: newColor) {
                     lastInteractedAnnotation = (id: updated.id, pageIndex: pIdx)
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
@@ -2815,6 +2962,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             if viewModel.canvasMode != .select {
                 viewModel.canvasMode = .select
+                viewModel.pendingSignatureData = nil
+                currentHoverCanvasPoint = nil
                 needsDisplay = true
                 return
             }

@@ -292,12 +292,31 @@ struct VectorPDF: App {
             .keyboardShortcut("s", modifiers: [.command, .shift])
             .disabled(!hasDocument)
 
+            Button("Save Encrypted with Password...") {
+                resolvedViewModel?.saveDocumentEncryptedAs()
+            }
+            .keyboardShortcut("s", modifiers: [.command, .option])
+            .disabled(!hasDocument)
+
             Divider()
 
             Button("Export Annotations Summary...") {
                 resolvedViewModel?.exportAnnotationsSummary()
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
+            .disabled(!hasDocument)
+
+            Divider()
+
+            Button("Share...") {
+                resolvedViewModel?.shareDocument()
+            }
+            .disabled(!hasDocument)
+
+            Button("Show in Finder") {
+                resolvedViewModel?.showInFinder()
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
             .disabled(!hasDocument)
         }
         
@@ -433,18 +452,81 @@ struct VectorPDF: App {
 
             Divider()
 
-            Button("Highlight Selection") {
-                resolvedViewModel?.highlightSelection(color: .yellow)
+            Menu("Highlight Selection") {
+                Button("Highlight") {
+                    resolvedViewModel?.highlightSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
+
+                Divider()
+
+                ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
+                    Button {
+                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.highlightSelection(color: color)
+                    } label: {
+                        Label {
+                            Text(color.displayName)
+                        } icon: {
+                            Image(nsImage: color.menuIcon)
+                        }
+                    }
+                }
             }
-            .keyboardShortcut("h", modifiers: [.command, .shift])
-            .disabled(resolvedViewModel?.activeSelection == nil)
+            .disabled(!coordinator.hasActiveSelection)
+
+            Menu("Underline Selection") {
+                Button("Underline") {
+                    resolvedViewModel?.underlineSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
+
+                Divider()
+
+                ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
+                    Button {
+                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.underlineSelection(color: color)
+                    } label: {
+                        Label {
+                            Text(color.displayName)
+                        } icon: {
+                            Image(nsImage: color.menuIcon)
+                        }
+                    }
+                }
+            }
+            .disabled(!coordinator.hasActiveSelection)
+
+            Menu("Strikethrough Selection") {
+                Button("Strikethrough") {
+                    resolvedViewModel?.strikethroughSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                }
+                .keyboardShortcut("x", modifiers: [.command, .shift])
+
+                Divider()
+
+                ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
+                    Button {
+                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.strikethroughSelection(color: color)
+                    } label: {
+                        Label {
+                            Text(color.displayName)
+                        } icon: {
+                            Image(nsImage: color.menuIcon)
+                        }
+                    }
+                }
+            }
+            .disabled(!coordinator.hasActiveSelection)
 
             Divider()
 
             Button("Permanently Apply Redactions...") {
                 resolvedViewModel?.applyAllPendingRedactions()
             }
-            .disabled(!hasDocument || (resolvedViewModel?.pendingRedactionsCount ?? 0) == 0)
+            .disabled(!hasDocument || coordinator.pendingRedactionsCount == 0)
 
             Divider()
 
@@ -453,13 +535,13 @@ struct VectorPDF: App {
                     resolvedViewModel?.startSpeakingSelection()
                 }
                 .keyboardShortcut("s", modifiers: [.option, .command])
-                .disabled(resolvedViewModel?.activeSelection == nil)
+                .disabled(!coordinator.hasActiveSelection)
 
                 Button("Stop Speaking") {
                     resolvedViewModel?.stopSpeaking()
                 }
                 .keyboardShortcut(".", modifiers: [.option, .command])
-                .disabled(!PDFSpeechCoordinator.shared.isSpeaking)
+                .disabled(!coordinator.isSpeaking)
             }
         }
         
@@ -567,10 +649,11 @@ struct VectorPDF: App {
     var body: some Scene {
         WindowGroup {
             DocumentWindowView(initialFilePath: initialPath, initialURL: nil)
-                .frame(minWidth: 960, minHeight: 650)
+                .frame(minWidth: 640, minHeight: 480)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+        .defaultSize(width: 1150, height: 780)
         .commands {
             appCommands
         }

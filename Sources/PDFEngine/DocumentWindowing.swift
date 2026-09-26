@@ -72,16 +72,26 @@ public enum DocumentWindowing {
         class_addMethod(NSWindow.self, sel, imp, "v@:@")
     }
 
+    private static func defaultWindowRect() -> NSRect {
+        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let defaultWidth: CGFloat = 1150
+        let defaultHeight: CGFloat = 780
+        let targetWidth = min(defaultWidth, max(640, screenFrame.width - 40))
+        let targetHeight = min(defaultHeight, max(480, screenFrame.height - 40))
+        return NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+    }
+
     /// The bare window shell shared by every variant below — same style mask, ARC-safety flag,
     /// and tab-bar identity handling, whether or not it ends up showing a document.
     private static func makeBareWindow(tabbingIdentifier: String?) -> NSWindow {
+        let initialRect = defaultWindowRect()
         let window = PDFViewerWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 960, height: 650),
+            contentRect: initialRect,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        window.minSize = NSSize(width: 600, height: 400)
+        window.minSize = NSSize(width: 640, height: 480)
         // NSWindow defaults isReleasedWhenClosed to true, a pre-ARC behavior that double-frees a
         // manually constructed window under ARC — required for any NSWindow(...) created
         // directly like this, or closing it can crash later.

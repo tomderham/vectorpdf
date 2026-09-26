@@ -104,6 +104,7 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);
 int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
+int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path, const char *password, const char **out_error);
 
 // Page Manipulation
 int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error);

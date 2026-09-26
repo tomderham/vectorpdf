@@ -84,6 +84,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     @Published public var documentTitle: String = ""
     @Published public var canZoomIn: Bool = false
     @Published public var canZoomOut: Bool = false
+    @Published public var hasActiveSelection: Bool = false
+    @Published public var isSpeaking: Bool = false
+    @Published public var pendingRedactionsCount: Int = 0
     /// Published live anchors list of the active document, updating SwiftUI Commands immediately.
     @Published public var activeAnchors: [SnapshotTarget] = []
     /// Bumped whenever a document is opened to signal SwiftUI Commands to refresh recent documents.
@@ -211,7 +214,15 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         if let browser = UserDefaults.standard.string(forKey: Self.preferredBrowserKey) {
             preferredBrowserBundleID = browser
         }
+        speechCancellable = PDFSpeechCoordinator.shared.$isSpeaking
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] speaking in
+                self?.isSpeaking = speaking
+            }
     }
+
+    private var speechCancellable: AnyCancellable?
+    private var selCancellable: AnyCancellable?
 
     /// Registers `url` with the system's shared recent-documents list (File > Open Recent, and
     /// the Dock icon's right-click menu) — the same list every other recent-items-aware app uses,
@@ -225,7 +236,11 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         guard let viewModel = viewModel else {
             activeViewModel = nil
             hasActiveDocument = false
+            hasActiveSelection = false
+            pendingRedactionsCount = 0
             PDFViewerViewModel.active = nil
+            docCancellable = nil
+            selCancellable = nil
             return
         }
         // Re-registering the same, already-active view model is a legitimate no-op call (e.g. a
@@ -235,6 +250,11 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         PDFViewerViewModel.active = viewModel
         activeViewModel = viewModel
         updateDocumentStatus()
+        
+        selCancellable = viewModel.$activeSelection
+            .sink { [weak self] sel in
+                self?.hasActiveSelection = (sel != nil)
+            }
         
         docCancellable = viewModel.objectWillChange
             .receive(on: DispatchQueue.main)
@@ -249,6 +269,14 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                 }
                 if self.activeAnchors != vm.activeSnapshots {
                     self.activeAnchors = vm.activeSnapshots
+                }
+                let hasSel = (vm.activeSelection != nil)
+                if self.hasActiveSelection != hasSel {
+                    self.hasActiveSelection = hasSel
+                }
+                let redactions = vm.pendingRedactionsCount
+                if self.pendingRedactionsCount != redactions {
+                    self.pendingRedactionsCount = redactions
                 }
             }
     }
@@ -265,6 +293,8 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.canZoomIn = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) < Self.maxZoomScale)
         self.canZoomOut = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) > Self.minZoomScale)
         self.activeAnchors = activeViewModel?.activeSnapshots ?? []
+        self.hasActiveSelection = (activeViewModel?.activeSelection != nil)
+        self.pendingRedactionsCount = activeViewModel?.pendingRedactionsCount ?? 0
     }
 
     // MARK: - Reading State Lifecycle
@@ -303,10 +333,115 @@ public final class PDFViewerAppCoordinator: ObservableObject {
 #endif
 }
 
+/// Manages the floating, modal behavior of the Settings window to keep it on top of document windows
+/// and prevent accidental clicks into background windows while settings are being adjusted.
+@MainActor
+public final class SettingsModalManager {
+    public static let shared = SettingsModalManager()
+    private var eventMonitor: Any?
+    private var closeObserver: NSObjectProtocol?
+    private weak var currentSettingsWindow: NSWindow?
+
+    private init() {}
+
+    public func configure(window: NSWindow) {
+        currentSettingsWindow = window
+        window.level = .floating
+        window.hidesOnDeactivate = false
+        window.collectionBehavior.insert([.fullScreenAuxiliary, .transient])
+
+        if closeObserver == nil {
+            closeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.cleanup()
+                }
+            }
+        }
+
+        if eventMonitor == nil {
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]) { [weak self] event in
+                guard let self = self, let settingsWin = self.currentSettingsWindow else { return event }
+
+                // Allow menu bar interactions and non-window events
+                guard let evWin = event.window else { return event }
+
+                // Check if the event is destined for the settings window or any of its attached sheets/child windows
+                if evWin == settingsWin || evWin.sheetParent == settingsWin || settingsWin.sheets.contains(evWin) || settingsWin.childWindows?.contains(evWin) == true {
+                    return event
+                }
+
+                // If it's a key event like Escape, Command-W, or Command-Comma, allow closing settings
+                if event.type == .keyDown {
+                    if event.keyCode == 53 { // Escape
+                        settingsWin.performClose(nil)
+                        return nil
+                    }
+                    if event.modifierFlags.contains(.command) {
+                        let chars = event.charactersIgnoringModifiers ?? ""
+                        if chars == "w" || chars == "," {
+                            settingsWin.performClose(nil)
+                            return nil
+                        }
+                    }
+                }
+
+                // Any click outside the settings window and its sheets is intercepted modally
+                if event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown {
+                    NSSound.beep()
+                    settingsWin.makeKeyAndOrderFront(nil)
+                    return nil
+                }
+
+                return event
+            }
+        }
+    }
+
+    public func cleanup() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
+        if let observer = closeObserver {
+            NotificationCenter.default.removeObserver(observer)
+            closeObserver = nil
+        }
+        currentSettingsWindow = nil
+    }
+}
+
+private struct SettingsWindowAccessor: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                onWindow(window)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            if let window = nsView.window {
+                onWindow(window)
+            }
+        }
+    }
+}
+
 /// The app's Settings window (⌘,).
 public struct AppSettingsView: View {
     @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
     @ObservedObject private var updater = GitHubUpdater.shared
+    @ObservedObject private var signatureStore = SignatureStore.shared
+    @State private var isShowingSignatureEditor = false
 
     public init() {}
 
@@ -331,6 +466,9 @@ public struct AppSettingsView: View {
             }
 #endif
 
+            Divider()
+                .padding(.vertical, 8)
+
             // Independent of the app's own UI theme (which always follows the system) — lets
             // someone keep the app in Dark Mode for comfort while still seeing a document's true,
             // un-inverted colors when color accuracy matters, e.g. filling out a color-coded form.
@@ -340,9 +478,77 @@ public struct AppSettingsView: View {
                 }
             }
 
+            Divider()
+                .padding(.vertical, 8)
+
             Picker("Open Links In", selection: $coordinator.preferredBrowserBundleID) {
                 ForEach(coordinator.installedBrowsers) { browser in
                     Text(browser.name).tag(browser.id)
+                }
+            }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Digital Stamp")
+                    .font(.subheadline.bold())
+
+                if let data = signatureStore.savedSignatureData, let img = NSImage(data: data) {
+                    HStack(spacing: 12) {
+                        Image(nsImage: img)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 140, height: 48)
+                            .padding(4)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Button {
+                                isShowingSignatureEditor = true
+                            } label: {
+                                Text("Modify Stamp…")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .controlSize(.small)
+                            .frame(width: 115)
+
+                            Button(role: .destructive) {
+                                signatureStore.clear()
+                            } label: {
+                                Text("Delete Stamp")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .controlSize(.small)
+                            .frame(width: 115)
+                        }
+                    }
+                } else {
+                    HStack {
+                        Text("No stamp saved.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button("Create Stamp…") {
+                            isShowingSignatureEditor = true
+                        }
+                        .controlSize(.small)
+                    }
+                }
+            }
+            .sheet(isPresented: $isShowingSignatureEditor) {
+                SignatureCaptureView { image in
+                    isShowingSignatureEditor = false
+                    if let image = image, let data = image.pdfStampPNGData {
+                        signatureStore.save(data: data)
+                    }
                 }
             }
 
@@ -373,6 +579,14 @@ public struct AppSettingsView: View {
         }
         .padding(20)
         .frame(width: 420)
+        .background(
+            SettingsWindowAccessor { window in
+                SettingsModalManager.shared.configure(window: window)
+            }
+        )
+        .onDisappear {
+            SettingsModalManager.shared.cleanup()
+        }
     }
 }
 

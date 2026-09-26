@@ -964,14 +964,16 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
                         hit = 1;
                     }
                 }
-            } else if (atype == PDF_ANNOT_FREE_TEXT || atype == PDF_ANNOT_REDACT) {
+            } else if (atype == PDF_ANNOT_FREE_TEXT || atype == PDF_ANNOT_REDACT || atype == PDF_ANNOT_STAMP) {
                 fz_rect r = pdf_bound_annot(ctx, annot);
                 fz_rect ar = pdf_annot_rect(ctx, annot);
                 fz_rect dr = pdf_annot_display_rect(ctx, annot);
+                fz_rect rr = pdf_dict_get_rect(ctx, pdf_annot_obj(ctx, annot), PDF_NAME(Rect));
                 float tol = 8.0f;
                 if ((x >= r.x0 - tol && x <= r.x1 + tol && y >= r.y0 - tol && y <= r.y1 + tol) ||
                     (x >= ar.x0 - tol && x <= ar.x1 + tol && y >= ar.y0 - tol && y <= ar.y1 + tol) ||
-                    (x >= dr.x0 - tol && x <= dr.x1 + tol && y >= dr.y0 - tol && y <= dr.y1 + tol)) {
+                    (x >= dr.x0 - tol && x <= dr.x1 + tol && y >= dr.y0 - tol && y <= dr.y1 + tol) ||
+                    (x >= rr.x0 - tol && x <= rr.x1 + tol && y >= rr.y0 - tol && y <= rr.y1 + tol)) {
                     hit = 1;
                 }
                 if (!hit && pdf_annot_has_callout(ctx, annot)) {
@@ -1176,6 +1178,51 @@ int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const ch
             }
         }
         pdf_save_document(ctx, pdoc, path, &pdf_default_write_options);
+    } fz_always(ctx) {
+        if (page) pdf_drop_page(ctx, page);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path, const char *password, const char **out_error) {
+    if (!ctx || !doc || !path) return -1;
+    pdf_page *page = NULL;
+    fz_var(page);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        pdf_calculate_form(ctx, pdoc);
+        int page_count = pdf_count_pages(ctx, pdoc);
+        for (int p = 0; p < page_count; p++) {
+            page = pdf_load_page(ctx, pdoc, p);
+            if (page) {
+                pdf_update_page(ctx, page);
+                for (pdf_annot *annot = pdf_first_annot(ctx, page); annot; annot = pdf_next_annot(ctx, annot)) {
+                    ensure_annot_appearance_resources(ctx, pdoc, annot);
+                    pdf_obj *annot_obj = pdf_annot_obj(ctx, annot);
+                    if (annot_obj) {
+                        pdf_dict_del(ctx, annot_obj, PDF_NAME(CL));
+                        if (pdf_annot_type(ctx, annot) == PDF_ANNOT_INK) {
+                            pdf_dict_del(ctx, annot_obj, PDF_NAME(RD));
+                        }
+                    }
+                }
+                pdf_drop_page(ctx, page);
+                page = NULL;
+            }
+        }
+        pdf_write_options opts = pdf_default_write_options;
+        if (password && *password) {
+            opts.do_encrypt = PDF_ENCRYPT_AES_256;
+            strncpy(opts.upwd_utf8, password, sizeof(opts.upwd_utf8) - 1);
+            opts.upwd_utf8[sizeof(opts.upwd_utf8) - 1] = '\0';
+            strncpy(opts.opwd_utf8, password, sizeof(opts.opwd_utf8) - 1);
+            opts.opwd_utf8[sizeof(opts.opwd_utf8) - 1] = '\0';
+        }
+        pdf_save_document(ctx, pdoc, path, &opts);
     } fz_always(ctx) {
         if (page) pdf_drop_page(ctx, page);
     } fz_catch(ctx) {

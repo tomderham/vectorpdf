@@ -186,6 +186,7 @@ public final class PDFViewerViewModel: ObservableObject {
         didSet {
             if !isMarkupBarVisible {
                 canvasMode = .select
+                pendingSignatureData = nil
             }
         }
     }
@@ -193,6 +194,7 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var selectedAnnotationColor: AnnotationColor = .yellow
     @Published public var drawStrokeWidth: CGFloat = 2.5
     @Published public var selectedFontSize: CGFloat = 13.0
+    @Published public var pendingSignatureData: Data? = nil
 
     // Navigation History
     @Published public private(set) var canGoBack: Bool = false
@@ -1182,28 +1184,24 @@ public final class PDFViewerViewModel: ObservableObject {
         return NSImage(cgImage: cropped, size: NSSize(width: targetRect.width, height: targetRect.height))
     }
     
-    /// Copies the active rectangular selection as high-DPI image (PNG + TIFF + NSImage) to NSPasteboard.general
+    /// Copies the active rectangular selection as high-DPI image (PNG primary, TIFF fallback, and extracted text) to NSPasteboard.general
     public func copyActiveScreenshot() {
         guard let image = renderCroppedSelection() else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
-        
-        let objectsToCopy: [NSPasteboardWriting] = [image]
-        
-        if let tiffData = image.tiffRepresentation {
-            if let rep = NSBitmapImageRep(data: tiffData),
-               let pngData = rep.representation(using: .png, properties: [:]) {
-                pb.setData(pngData, forType: .png)
+
+        let item = NSPasteboardItem()
+        if let tiffData = image.tiffRepresentation,
+           let rep = NSBitmapImageRep(data: tiffData) {
+            if let pngData = rep.representation(using: .png, properties: [:]) {
+                item.setData(pngData, forType: .png)
             }
-            pb.setData(tiffData, forType: .tiff)
+            item.setData(tiffData, forType: .tiff)
         }
-        
-        // Also provide extracted text if available so text destinations receive text
         if let sel = activeSelection, !sel.result.text.isEmpty {
-            pb.setString(sel.result.text, forType: .string)
+            item.setString(sel.result.text, forType: .string)
         }
-        
-        pb.writeObjects(objectsToCopy)
+        pb.writeObjects([item])
     }
     
     /// Prompts an AppKit NSSavePanel to save the active screenshot as a PNG file.
@@ -1939,6 +1937,24 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    @discardableResult
+    public func addStampAnnotation(pageIndex: Int, rect: CGRect, imageData: Data, color: AnnotationColor = .black) -> PDFAnnotation? {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let pageTopY = doc.pageBounds[pageIndex].maxY
+        let nativeRect = CGRect(x: rect.minX, y: pageTopY - rect.maxY, width: rect.width, height: rect.height)
+        let annot = PDFAnnotation(pageIndex: pageIndex, type: .stamp, rect: rect, color: color, stampImageData: imageData)
+        do {
+            try doc.stampImage(pageIndex: pageIndex, rect: nativeRect, imageData: imageData)
+            pageAnnotations[pageIndex, default: []].append(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return annot
+        } catch {
+            print("Failed to add stamp annotation on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
     public func removeAnnotation(_ annotation: PDFAnnotation) {
         let pIdx = annotation.pageIndex
         if let idx = pageAnnotations[pIdx]?.firstIndex(where: { $0.id == annotation.id }) {
@@ -1960,10 +1976,17 @@ public final class PDFViewerViewModel: ObservableObject {
             testPoint = tp
         } else if annotation.type == .redact, let r = annotation.rect {
             testPoint = CGPoint(x: r.midX, y: r.midY)
+        } else if annotation.type == .stamp, let r = annotation.rect {
+            let pageTopY = (pIdx >= 0 && pIdx < doc.pageBounds.count) ? doc.pageBounds[pIdx].maxY : 0
+            testPoint = CGPoint(x: r.midX, y: pageTopY - r.midY)
         } else {
             testPoint = CGPoint(x: annotation.boundingRect.midX, y: annotation.boundingRect.midY)
         }
         _ = try? doc.deleteAnnotation(pageIndex: pIdx, at: testPoint)
+        if annotation.type == .stamp, let r = annotation.rect {
+            // Also try top-down center in case annot rect was recorded top-down
+            _ = try? doc.deleteAnnotation(pageIndex: pIdx, at: CGPoint(x: r.midX, y: r.midY))
+        }
         if annotation.type == .callout, let r = annotation.rect {
             _ = try? doc.deleteAnnotation(pageIndex: pIdx, at: CGPoint(x: r.midX, y: r.midY))
         }
@@ -2138,6 +2161,8 @@ public final class PDFViewerViewModel: ObservableObject {
                     md += "- **[Ink Drawing]** *(\(colorName))*: \(annot.inkPoints.count) points\n"
                 case .redact:
                     md += "- **[Draft Redaction]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
+                case .stamp:
+                    md += "- **[Signature / Stamp]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
                 }
             }
             md += "\n"
@@ -2678,6 +2703,125 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
         panel.begin(completionHandler: completion)
+    }
+
+    /// Prompts the user for a destination and password, then saves the current PDF encrypted with AES-256.
+    public func saveDocumentEncryptedAs() {
+        guard let doc = document else { return }
+        if pendingRedactionsCount > 0 {
+            applyAllPendingRedactions()
+        }
+        flushPendingFormEdits()
+        
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType.pdf]
+        panel.canCreateDirectories = true
+        let originalName = (doc.filePath as NSString).lastPathComponent
+        let baseName = (originalName as NSString).deletingPathExtension
+        panel.nameFieldStringValue = "\(baseName) (Encrypted).pdf"
+        panel.prompt = "Save Encrypted"
+        
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .OK, let targetURL = panel.url else { return }
+            Task { @MainActor in
+                guard let self = self, let doc = self.document else { return }
+                
+                let alert = NSAlert()
+                alert.messageText = "Set Document Password"
+                alert.informativeText = "Enter a password to encrypt “\(targetURL.lastPathComponent)”. A password will be required to open this document."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "Encrypt & Save")
+                alert.addButton(withTitle: "Cancel")
+                
+                let container = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 75))
+                let passwordLabel = NSTextField(labelWithString: "Password:")
+                passwordLabel.frame = NSRect(x: 0, y: 48, width: 80, height: 18)
+                let passwordField = NSSecureTextField(frame: NSRect(x: 85, y: 46, width: 215, height: 22))
+                
+                let verifyLabel = NSTextField(labelWithString: "Verify:")
+                verifyLabel.frame = NSRect(x: 0, y: 16, width: 80, height: 18)
+                let verifyField = NSSecureTextField(frame: NSRect(x: 85, y: 14, width: 215, height: 22))
+                
+                container.addSubview(passwordLabel)
+                container.addSubview(passwordField)
+                container.addSubview(verifyLabel)
+                container.addSubview(verifyField)
+                alert.accessoryView = container
+                
+                let modalResponse: NSApplication.ModalResponse
+                if let window = self.currentWindow ?? NSApplication.shared.keyWindow, window.attachedSheet == nil {
+                    modalResponse = await withCheckedContinuation { continuation in
+                        alert.beginSheetModal(for: window) { resp in
+                            continuation.resume(returning: resp)
+                        }
+                    }
+                } else {
+                    modalResponse = alert.runModal()
+                }
+                
+                guard modalResponse == .alertFirstButtonReturn else { return }
+                let password = passwordField.stringValue
+                let verify = verifyField.stringValue
+                
+                guard !password.isEmpty else {
+                    self.showErrorAlert(title: "Password Cannot Be Empty", message: "Please provide a non-empty password to encrypt the document.")
+                    return
+                }
+                
+                guard password == verify else {
+                    self.showErrorAlert(title: "Passwords Do Not Match", message: "The entered passwords do not match. Please try again.")
+                    return
+                }
+                
+                do {
+                    try doc.saveEncrypted(to: targetURL.path, password: password)
+                    PDFViewerAppCoordinator.shared.noteRecentDocument(targetURL)
+                } catch {
+                    print("Failed to save encrypted document: \(error)")
+                    self.showErrorAlert(title: "Failed to Encrypt Document", message: error.localizedDescription)
+                }
+            }
+        }
+        
+        if let window = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow {
+            if window.attachedSheet == nil {
+                panel.beginSheetModal(for: window, completionHandler: completion)
+                return
+            }
+        }
+        panel.begin(completionHandler: completion)
+    }
+
+    /// Displays the native macOS sharing pane (AirDrop, Mail, Messages, etc.) for the current document.
+    public func shareDocument(from positioningView: NSView? = nil) {
+        guard let doc = document, !doc.filePath.isEmpty else { return }
+        let fileURL = URL(fileURLWithPath: doc.filePath)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        
+        let picker = NSSharingServicePicker(items: [fileURL])
+        if let targetView = positioningView ?? currentWindow?.contentView {
+            let rect = NSRect(x: targetView.bounds.midX, y: targetView.bounds.maxY - 10, width: 1, height: 1)
+            picker.show(relativeTo: rect, of: targetView, preferredEdge: .minY)
+        }
+    }
+
+    /// Reveals the current PDF document file in Finder.
+    public func showInFinder() {
+        guard let doc = document, !doc.filePath.isEmpty else { return }
+        let fileURL = URL(fileURLWithPath: doc.filePath)
+        NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+    }
+
+    private func showErrorAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            alert.beginSheetModal(for: window, completionHandler: nil)
+        } else {
+            alert.runModal()
+        }
     }
 
     // MARK: - Page Manipulation

@@ -5,6 +5,8 @@ import AppKit
 /// text markup actions (highlight, underline, strikethrough), color swatches, and stroke widths.
 public struct PDFMarkupToolbarView: View {
     @ObservedObject var viewModel: PDFViewerViewModel
+    @StateObject private var signatureStore = SignatureStore.shared
+    @State private var showSignatureCaptureSheet: Bool = false
 
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
@@ -17,7 +19,7 @@ public struct PDFMarkupToolbarView: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            // 1. Tool Mode Picker [Text Select | Draw | Text | Callout | Redact | Eraser]
+            // 1. Tool Mode Picker [Text Select | Draw | Text | Callout | Redact | Eraser | Stamp]
             Picker("Mode", selection: $viewModel.canvasMode) {
                 Image(systemName: "text.cursor")
                     .tag(CanvasMode.select)
@@ -37,11 +39,14 @@ public struct PDFMarkupToolbarView: View {
                 Image(systemName: "eraser")
                     .tag(CanvasMode.eraser)
                     .help("Eraser (Click or Drag to remove annotations)")
+                Image(systemName: "signature")
+                    .tag(CanvasMode.stamp)
+                    .help("Stamp")
             }
             .labelsHidden()
             .pickerStyle(.segmented)
             .controlSize(.small)
-            .frame(width: 195)
+            .frame(width: 228)
 
             // 2. Context-Sensitive Tool Controls
             switch viewModel.canvasMode {
@@ -184,10 +189,22 @@ public struct PDFMarkupToolbarView: View {
                 Text("Click or drag annotations to erase")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+            case .stamp:
+                Divider()
+                    .frame(height: 16)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "signature")
+                        .foregroundColor(.accentColor)
+                    Text("Click anywhere on the document to place stamp")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             // 3. Color Palette Swatches (shown for Select, Draw, Text, and Callout modes)
-            if viewModel.canvasMode != .eraser && viewModel.canvasMode != .redact {
+            if viewModel.canvasMode != .eraser && viewModel.canvasMode != .redact && viewModel.canvasMode != .stamp {
                 Divider()
                     .frame(height: 16)
 
@@ -234,6 +251,38 @@ public struct PDFMarkupToolbarView: View {
         .padding(.vertical, 4)
         .frame(height: 32)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            if viewModel.canvasMode == .stamp {
+                if let data = signatureStore.savedSignatureData {
+                    viewModel.pendingSignatureData = data
+                } else {
+                    showSignatureCaptureSheet = true
+                }
+            }
+        }
+        .onChange(of: viewModel.canvasMode) { _, newMode in
+            if newMode == .stamp {
+                if let data = signatureStore.savedSignatureData {
+                    viewModel.pendingSignatureData = data
+                } else {
+                    showSignatureCaptureSheet = true
+                }
+            } else {
+                viewModel.pendingSignatureData = nil
+            }
+        }
+        .sheet(isPresented: $showSignatureCaptureSheet) {
+            SignatureCaptureView { image in
+                showSignatureCaptureSheet = false
+                if let image = image, let data = image.pdfStampPNGData {
+                    viewModel.pendingSignatureData = data
+                    viewModel.canvasMode = .stamp
+                } else {
+                    viewModel.canvasMode = .select
+                    viewModel.pendingSignatureData = nil
+                }
+            }
+        }
     }
 }
 

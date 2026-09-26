@@ -305,7 +305,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText, .callout, .redact: return
+        case .ink, .freeText, .callout, .redact, .stamp: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -564,6 +564,30 @@ public final class PDFDocumentCore: @unchecked Sendable {
         if ret != 0 {
             if isSameFile { try? FileManager.default.removeItem(at: tempURL) }
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to save PDF"
+            throw PDFError.saveFailed(msg)
+        }
+        
+        if isSameFile {
+            _ = try FileManager.default.replaceItemAt(destinationURL, withItemAt: tempURL)
+        }
+    }
+
+    /// Saves the modified PDF encrypted with a password using AES-256 encryption.
+    public func saveEncrypted(to path: String, password: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        let destinationURL = URL(fileURLWithPath: path)
+        let isSameFile = (path == self.filePath)
+        
+        let tempURL = destinationURL.deletingLastPathComponent().appendingPathComponent(".~\(destinationURL.lastPathComponent).tmp")
+        let targetSavePath = isSameFile ? tempURL.path : path
+        
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_save_encrypted(ctx, doc, targetSavePath, password, &errorMsg)
+        if ret != 0 {
+            if isSameFile { try? FileManager.default.removeItem(at: tempURL) }
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to save encrypted PDF"
             throw PDFError.saveFailed(msg)
         }
         

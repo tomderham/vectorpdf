@@ -91,6 +91,66 @@ struct PDFEngineTests {
     #expect(doc.pageCount == 1)
 }
 
+@Test func testSaveEncryptedDocumentWithPassword() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let srcURL = tempDir.appendingPathComponent("test_plain_\(UUID().uuidString).pdf")
+    let encURL = tempDir.appendingPathComponent("test_encrypted_\(UUID().uuidString).pdf")
+    createSamplePDF(at: srcURL)
+    defer {
+        try? FileManager.default.removeItem(at: srcURL)
+        try? FileManager.default.removeItem(at: encURL)
+    }
+
+    let doc = try PDFDocumentCore(filePath: srcURL.path)
+    #expect(doc.pageCount == 2)
+
+    // Save with AES-256 encryption password
+    let password = "vector-super-secret"
+    try doc.saveEncrypted(to: encURL.path, password: password)
+    #expect(FileManager.default.fileExists(atPath: encURL.path))
+
+    // Must fail without password
+    do {
+        _ = try PDFDocumentCore(filePath: encURL.path)
+        Issue.record("Expected PDFError.passwordRequired when opening encrypted document without password")
+    } catch PDFError.passwordRequired {
+        // expected
+    } catch {
+        Issue.record("Expected PDFError.passwordRequired, got \(error)")
+    }
+
+    // Must fail with incorrect password
+    do {
+        _ = try PDFDocumentCore(filePath: encURL.path, password: "incorrect-pass")
+        Issue.record("Expected PDFError.incorrectPassword")
+    } catch PDFError.incorrectPassword {
+        // expected
+    } catch {
+        Issue.record("Expected PDFError.incorrectPassword, got \(error)")
+    }
+
+    // Must succeed with correct password
+    let encDoc = try PDFDocumentCore(filePath: encURL.path, password: password)
+    #expect(encDoc.pageCount == 2)
+}
+
+@Test @MainActor func testCoordinatorTracksActiveSelection() throws {
+    let coordinator = PDFViewerAppCoordinator.shared
+    let vm = PDFViewerViewModel()
+    coordinator.registerActive(vm)
+
+    #expect(coordinator.hasActiveSelection == false)
+
+    let quad = PDFQuad(rect: CGRect(x: 0, y: 0, width: 10, height: 10))
+    let result = SelectionResult(text: "Selected text", highlightQuads: [quad], mode: .readingOrder)
+    vm.activeSelection = (pageIndex: 0, result: result)
+
+    #expect(coordinator.hasActiveSelection == true)
+
+    vm.clearSelection()
+    #expect(coordinator.hasActiveSelection == false)
+}
+
 @Test func testDocumentCoreAndRapidLayout() throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_core_\(UUID().uuidString).pdf")
@@ -892,7 +952,8 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     await viewModel.copyActiveScreenshot()
     let pb = NSPasteboard.general
     let availableTypes = pb.types ?? []
-    #expect(availableTypes.contains(.png) || availableTypes.contains(.tiff))
+    #expect(availableTypes.contains(.png))
+    #expect(pb.data(forType: .png) != nil)
 }
 
 @Test func testDocumentTitleAndEditableToolbarControls() async throws {
@@ -2445,13 +2506,14 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 150), tolerance: 3.0))
 
     // 3. Test CanvasMode enum
-    #expect(CanvasMode.allCases.count == 6)
+    #expect(CanvasMode.allCases.count == 7)
     #expect(CanvasMode.select.rawValue == "select")
     #expect(CanvasMode.draw.rawValue == "draw")
     #expect(CanvasMode.text.rawValue == "text")
     #expect(CanvasMode.callout.rawValue == "callout")
     #expect(CanvasMode.redact.rawValue == "redact")
     #expect(CanvasMode.eraser.rawValue == "eraser")
+    #expect(CanvasMode.stamp.rawValue == "stamp")
 }
 
 @Test func testMuPDFTextMarkupAndInkPersistence() throws {
@@ -2669,6 +2731,90 @@ func createFormSamplePDF(at fileURL: URL) {
         vm.removeAnnotation(annot)
         #expect(vm.pageAnnotations[0]?.isEmpty == true)
     }
+}
+
+@Test @MainActor func testSignatureStampAnywhere() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let pdfURL = tempDir.appendingPathComponent("test_sig_stamp_\(UUID().uuidString).pdf")
+    createSamplePDF(at: pdfURL)
+    defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+    // Test SignatureStore
+    let store = SignatureStore.shared
+    store.clear()
+    #expect(store.savedSignatureData == nil)
+
+    let dummyImage = NSImage(size: NSSize(width: 100, height: 40))
+    dummyImage.lockFocus()
+    NSColor.black.setStroke()
+    NSBezierPath.strokeLine(from: NSPoint(x: 10, y: 10), to: NSPoint(x: 90, y: 30))
+    dummyImage.unlockFocus()
+    guard let dummyData = dummyImage.pdfStampPNGData else {
+        Issue.record("Failed to generate test signature PNG data")
+        return
+    }
+
+    store.save(data: dummyData)
+    #expect(store.savedSignatureData != nil)
+
+    // Test PDFAnnotation model for .stamp
+    let stampRect = CGRect(x: 100, y: 200, width: 140, height: 50)
+    let stampAnnot = PDFAnnotation(
+        pageIndex: 0,
+        type: .stamp,
+        rect: stampRect,
+        stampImageData: dummyData
+    )
+    #expect(stampAnnot.type == .stamp)
+    #expect(stampAnnot.boundingRect == stampRect)
+    #expect(stampAnnot.contains(pagePoint: CGPoint(x: 150, y: 225)))
+    #expect(!stampAnnot.contains(pagePoint: CGPoint(x: 50, y: 50)))
+
+    // Test adding stamp annotation through PDFViewerViewModel with color
+    let vm = PDFViewerViewModel()
+    await vm.loadDocument(from: pdfURL.path)
+    #expect(vm.document != nil)
+
+    let addedStamp = vm.addStampAnnotation(pageIndex: 0, rect: stampRect, imageData: dummyData, color: .blue)
+    #expect(addedStamp != nil)
+    #expect(addedStamp?.color == .blue)
+    #expect(vm.pageAnnotations[0]?.count == 1)
+    #expect(vm.pageAnnotations[0]?.first?.type == .stamp)
+    #expect(vm.isDocumentEdited == true)
+
+    // Test stamp image tinting
+    let tintedImage = dummyImage.tinted(with: NSColor.systemRed)
+    #expect(tintedImage.size == dummyImage.size)
+    guard let tintedData = tintedImage.pdfStampPNGData else {
+        Issue.record("Failed to generate tinted stamp PNG data")
+        return
+    }
+    #expect(!tintedData.isEmpty)
+
+    let tintedStamp = vm.addStampAnnotation(pageIndex: 0, rect: stampRect, imageData: tintedData, color: .red)
+    #expect(tintedStamp != nil)
+    #expect(tintedStamp?.color == .red)
+    #expect(vm.pageAnnotations[0]?.count == 2)
+
+    // Save and verify document persistence
+    vm.saveDocument()
+    #expect(vm.isDocumentEdited == false)
+
+    // Remove stamp annotations
+    if let annot = addedStamp {
+        vm.removeAnnotation(annot)
+    }
+    if let annot = tintedStamp {
+        vm.removeAnnotation(annot)
+    }
+    #expect(vm.pageAnnotations[0]?.isEmpty == true)
+
+    // Test presets & CanvasMode.stamp
+    #expect(signatureFontPresets.count >= 5)
+    #expect(SignatureCreationMode.allCases.count == 3)
+    #expect(CanvasMode.stamp.rawValue == "stamp")
+
+    store.clear()
 }
 
 @Test @MainActor func testTenAnnotationColorsAndIcons() async throws {
