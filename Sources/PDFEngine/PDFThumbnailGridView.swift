@@ -312,6 +312,12 @@ public struct BottomZoneDropDelegate: DropDelegate {
 public struct PDFThumbnailGridView: View {
     @ObservedObject var viewModel: PDFViewerViewModel
     @State private var hoveredPageIndex: Int? = nil
+    @State private var isWindowKey = true
+
+    /// Selection colour: accent while the window is active, neutral grey otherwise (as in Preview).
+    private var selectionColor: Color {
+        isWindowKey ? Color.accentColor : Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
+    }
 
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
@@ -332,6 +338,8 @@ public struct PDFThumbnailGridView: View {
         let pageCount = doc.pageCount
 
         return AnyView(
+            ZStack {
+            Color.clear.trackWindowActive($isWindowKey)
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 4) {
@@ -363,18 +371,18 @@ public struct PDFThumbnailGridView: View {
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 3)
                                                 .stroke(
-                                                    isSelected ? Color.accentColor : (isHovered ? Color.secondary.opacity(0.6) : Color.gray.opacity(0.3)),
+                                                    isSelected ? selectionColor : (isHovered ? Color.secondary.opacity(0.6) : Color.gray.opacity(0.3)),
                                                     lineWidth: isSelected ? 2.5 : 1
                                                 )
                                         )
-                                        .shadow(color: isSelected ? Color.accentColor.opacity(0.3) : Color.black.opacity(0.12), radius: isSelected ? 4 : 2, x: 0, y: 1)
+                                        .shadow(color: isSelected ? selectionColor.opacity(0.3) : Color.black.opacity(0.12), radius: isSelected ? 4 : 2, x: 0, y: 1)
                                         .opacity(isDragged ? 0.35 : 1.0)
                                         .scaleEffect(isDragged ? 0.96 : 1.0)
                                         .animation(.easeInOut(duration: 0.15), value: isDragged)
 
                                     Text("\(pageIndex + 1)")
                                         .font(isSelected ? .caption.bold() : .caption)
-                                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                                        .foregroundColor(isSelected ? (isWindowKey ? .accentColor : .primary) : .secondary)
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 4)
@@ -587,6 +595,7 @@ public struct PDFThumbnailGridView: View {
                 .onAppear {
                     proxy.scrollTo(viewModel.currentPageIndex, anchor: .center)
                 }
+            }
             }
         )
     }

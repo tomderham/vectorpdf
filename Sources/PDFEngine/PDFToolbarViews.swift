@@ -653,16 +653,13 @@ public struct ToolbarPillContainer<Content: View>: View {
 
 /// An icon button inside a toolbar pill with hover highlighting that respects inactive window focus
 struct PillIconButton: View {
-    @Environment(\.controlActiveState) private var controlActiveState
+    @State private var isWindowKey = true
     let icon: String
     let action: () -> Void
     var isEnabled: Bool = true
     var helpText: String? = nil
     @State private var isHovered = false
 
-    private var isWindowKey: Bool {
-        controlActiveState == .key
-    }
 
     var body: some View {
         Button(action: action) {
@@ -684,12 +681,14 @@ struct PillIconButton: View {
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .onHover { isHovered = $0 }
+        .trackWindowActive($isWindowKey)
         .help(helpText ?? "")
     }
 }
 
 /// Interactive zoom percentage field allowing click-to-edit with custom zoom levels in a continuous glass pill
 public struct EditableZoomField: View {
+    @State private var isWindowKey = true
     @ObservedObject var viewModel: PDFViewerViewModel
     @State private var isEditing: Bool = false
     @State private var editValue: String = ""
@@ -732,12 +731,13 @@ public struct EditableZoomField: View {
                     } label: {
                         Text("\(Int((viewModel.zoomScale * 100).rounded()))%")
                             .font(.caption.monospacedDigit().bold())
+                            .foregroundStyle(isWindowKey ? Color.primary : Color.secondary)
                             .frame(minWidth: 42)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
                             .background(
                                 Capsule(style: .continuous)
-                                    .fill(Color.primary.opacity(0.06))
+                                    .fill(Color.primary.opacity(isWindowKey ? 0.06 : 0.03))
                             )
                     }
                     .buttonStyle(.plain)
@@ -757,6 +757,7 @@ public struct EditableZoomField: View {
             .padding(.horizontal, 2)
         }
         .fixedSize()
+        .trackWindowActive($isWindowKey)
     }
     
     private func commit(with value: String) {
@@ -770,15 +771,12 @@ public struct EditableZoomField: View {
 
 /// Interactive Page X of Y pill allowing click-to-edit to jump directly to any page, with stepping chevrons
 public struct EditablePagePill: View {
-    @Environment(\.controlActiveState) private var controlActiveState
+    @State private var isWindowKey = true
     @ObservedObject var viewModel: PDFViewerViewModel
     let pageCount: Int
     @State private var isEditing: Bool = false
     @State private var editValue: String = ""
 
-    private var isWindowKey: Bool {
-        controlActiveState == .key
-    }
     
     public init(viewModel: PDFViewerViewModel, pageCount: Int) {
         self.viewModel = viewModel
@@ -850,6 +848,7 @@ public struct EditablePagePill: View {
             .padding(.horizontal, 2)
         }
         .fixedSize()
+        .trackWindowActive($isWindowKey)
     }
     
     private func commit(with value: String) {
@@ -1188,7 +1187,7 @@ public struct FloatingReaderHUD: View {
 
 /// Toolbar button supporting hover and active selection styling.
 public struct PreviewToolbarButton<Label: View>: View {
-    @Environment(\.controlActiveState) private var controlActiveState
+    @State private var isWindowKey = true
     public let isSelected: Bool
     public var helpText: String?
     public var width: CGFloat
@@ -1197,9 +1196,6 @@ public struct PreviewToolbarButton<Label: View>: View {
     @ViewBuilder public let label: Label
     @State private var isHovered = false
 
-    private var isWindowKey: Bool {
-        controlActiveState == .key
-    }
 
     public init(
         isSelected: Bool = false,
@@ -1235,6 +1231,7 @@ public struct PreviewToolbarButton<Label: View>: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .trackWindowActive($isWindowKey)
 
         if let help = helpText {
             btn.help(help)

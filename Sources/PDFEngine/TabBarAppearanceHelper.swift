@@ -183,6 +183,19 @@ public final class TabBarAppearanceHelper {
             }
         }
 
+        for name in [NSWindow.didResignMainNotification, NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] notif in
+                guard let self else { return }
+                if let window = notif.object as? NSWindow {
+                    MainActor.assumeIsolated { self.refreshTabs(for: window) }
+                } else {
+                    MainActor.assumeIsolated {
+                        for window in NSApp.windows where window.tabGroup != nil { self.refreshTabs(for: window) }
+                    }
+                }
+            }
+        }
+
         NotificationCenter.default.addObserver(
             forName: NSWindow.didResizeNotification,
             object: nil,
@@ -335,7 +348,14 @@ public final class TabBarAppearanceHelper {
             window.titleVisibility = .hidden
         }
         let font = NSFont.systemFont(ofSize: 11, weight: isSelected ? .medium : .regular)
-        let color = isSelected ? NSColor.labelColor : NSColor.secondaryLabelColor
+        // Unselected tabs stay legible; everything dims when the window group is inactive.
+        let groupActive = NSApp.isActive && (window.tabGroup?.windows ?? [window]).contains { $0.isKeyWindow }
+        let color: NSColor
+        if isSelected {
+            color = groupActive ? NSColor.labelColor : NSColor.secondaryLabelColor
+        } else {
+            color = NSColor.labelColor.withAlphaComponent(groupActive ? 0.72 : 0.5)
+        }
 
         let attrTitle = NSAttributedString(string: title, attributes: [
             .font: font,

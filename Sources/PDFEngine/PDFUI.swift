@@ -41,16 +41,13 @@ extension Notification.Name {
 /// An individual button inside a toolbar pill or group.
 /// Follows standard macOS Preview button styling with hover and active selection states.
 private struct PillBarButton<Label: View>: View {
-    @Environment(\.controlActiveState) private var controlActiveState
+    @State private var isWindowKey = true
     let action: () -> Void
     var isSelected: Bool = false
     var helpText: String? = nil
     @ViewBuilder let label: Label
     @State private var isHovered = false
 
-    private var isWindowKey: Bool {
-        controlActiveState == .key
-    }
 
     var body: some View {
         let btn = Button(action: action) {
@@ -75,6 +72,7 @@ private struct PillBarButton<Label: View>: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .trackWindowActive($isWindowKey)
 
         if let help = helpText {
             btn.help(help)
@@ -1645,29 +1643,23 @@ private struct TranslationPresentationHelper: ViewModifier {
 
 /// Principal toolbar title view displaying the compact document name with right-click context menu
 public struct ToolbarTitleView: NSViewRepresentable {
-    @Environment(\.controlActiveState) private var controlActiveState
     @ObservedObject var viewModel: PDFViewerViewModel
 
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
     }
 
-    private var isWindowKey: Bool {
-        controlActiveState == .key
-    }
-
     public func makeNSView(context: Context) -> TitleContainerView {
         let view = TitleContainerView()
         view.viewModel = viewModel
         view.updateTitle(viewModel.documentTitle)
-        view.updateFocusState(isKey: isWindowKey)
         return view
     }
 
     public func updateNSView(_ nsView: TitleContainerView, context: Context) {
         nsView.viewModel = viewModel
         nsView.updateTitle(viewModel.documentTitle)
-        nsView.updateFocusState(isKey: isWindowKey)
+        nsView.updateFocusState(isKey: nsView.window.map { $0.isKeyWindow } ?? true)
     }
 }
 
@@ -1716,17 +1708,20 @@ public final class TitleContainerView: NSControl {
 
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        NotificationCenter.default.removeObserver(self)
         if let window {
-            updateFocusState(isKey: window.isKeyWindow)
-            NotificationCenter.default.addObserver(self, selector: #selector(handleWindowFocusChange), name: NSWindow.didBecomeKeyNotification, object: window)
-            NotificationCenter.default.addObserver(self, selector: #selector(handleWindowFocusChange), name: NSWindow.didResignKeyNotification, object: window)
+            handleWindowFocusChange(Notification(name: NSWindow.didBecomeKeyNotification))
+            for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification, NSWindow.didBecomeMainNotification, NSWindow.didResignMainNotification] {
+                NotificationCenter.default.addObserver(self, selector: #selector(handleWindowFocusChange), name: name, object: window)
+            }
+            for name in [NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification] {
+                NotificationCenter.default.addObserver(self, selector: #selector(handleWindowFocusChange), name: name, object: nil)
+            }
         }
     }
 
     @objc private func handleWindowFocusChange(_ notification: Notification) {
-        updateFocusState(isKey: window?.isKeyWindow ?? false)
+        updateFocusState(isKey: window.map { $0.isKeyWindow } ?? false)
     }
 
     func updateTitle(_ title: String) {
@@ -1747,6 +1742,23 @@ public final class TitleContainerView: NSControl {
             return self
         }
         return nil
+    }
+
+    public override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    // Behaves like blank title bar: activates an inactive window, drags, double-click zooms.
+    public override func mouseDown(with event: NSEvent) {
+        guard let window else { return super.mouseDown(with: event) }
+        if !window.isKeyWindow {
+            if !NSApp.isActive { NSApp.activate(ignoringOtherApps: true) }
+            window.makeKeyAndOrderFront(nil)
+            window.makeMain()
+        }
+        if event.clickCount == 2 {
+            window.zoom(nil)
+        } else {
+            window.performDrag(with: event)
+        }
     }
 
     public override func menu(for event: NSEvent) -> NSMenu? {

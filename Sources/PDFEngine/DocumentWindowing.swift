@@ -32,15 +32,28 @@ final class PDFViewerWindow: NSWindow {
     }
 
     override func sendEvent(_ event: NSEvent) {
+        let wasKey = isKeyWindow
         if event.type == .leftMouseDown {
             let loc = event.locationInWindow
             let effectiveTitlebarHeight = max(frame.height - contentLayoutRect.height, 28.0)
             if loc.y >= frame.height - effectiveTitlebarHeight {
+                // Inactive window: activate, then deliver the click with background-drag off so it can't start a window move.
+                if !wasKey, attachedSheet == nil {
+                    activateAndMakeKey()
+                    let wasMovable = isMovableByWindowBackground
+                    isMovableByWindowBackground = false
+                    super.sendEvent(event)
+                    isMovableByWindowBackground = wasMovable
+                    if !isKeyWindow {
+                        DispatchQueue.main.async { [weak self] in self?.activateAndMakeKey() }
+                    }
+                    return
+                }
                 // If an interactive control inside contentView was clicked (e.g. the sidebar mode picker in Row 2),
                 // forward the click directly to that control rather than intercepting with window drag.
                 if let contentHit = contentView?.hitTest(loc), isInteractiveControl(contentHit, stopAtContentView: true) {
                     if !isKeyWindow {
-                        makeKeyAndOrderFront(nil)
+                        activateAndMakeKey()
                     }
                     var targetView: NSView = contentHit
                     var curr: NSView? = contentHit
@@ -61,7 +74,7 @@ final class PDFViewerWindow: NSWindow {
                         // When the window does not have focus, clicking a toolbar button in other macOS apps
                         // activates the window and triggers the control on first mouse click.
                         if !isKeyWindow {
-                            makeKeyAndOrderFront(nil)
+                            activateAndMakeKey()
                             if !hitView.acceptsFirstMouse(for: event) {
                                 hitView.mouseDown(with: event)
                                 return
@@ -72,14 +85,27 @@ final class PDFViewerWindow: NSWindow {
                             handleTitleBarDoubleClick(event)
                             return
                         } else if event.clickCount == 1 {
-                            performDrag(with: event)
-                            return
+                            if isKeyWindow {
+                                performDrag(with: event)
+                                return
+                            }
                         }
                     }
                 }
             }
         }
+        // Backstop: ensure a first click anywhere activates the window.
         super.sendEvent(event)
+        if event.type == .leftMouseDown, !wasKey, !isKeyWindow, attachedSheet == nil {
+            activateAndMakeKey()
+        }
+    }
+
+    /// Activates the app (makeKey is deferred while inactive), then makes this window key and main.
+    private func activateAndMakeKey() {
+        if !NSApp.isActive { NSApp.activate(ignoringOtherApps: true) }
+        makeKeyAndOrderFront(nil)
+        makeMain()
     }
 
     private func handleTitleBarDoubleClick(_ event: NSEvent) {
