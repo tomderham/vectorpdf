@@ -1,0 +1,23 @@
+module MuPDFBridge {
+    umbrella header "MuPDFBridge.h"
+    export *
+
+    // name-table.h is an X-macro snippet (no include guard) meant to be
+    // textually inlined mid-declaration by mupdf/pdf/object.h — not a
+    // standalone header. Marking it `textual` exempts it from Clang's
+    // module header validation/caching, which otherwise corrupts that
+    // inclusion (see: "expected identifier" parse errors in object.h's enum).
+    textual header "mupdf/pdf/name-table.h"
+
+    // These headers are vendored (present under mupdf/, so an `umbrella header`
+    // sweeps them in by default) but never #included by fitz.h/pdf.h and unused
+    // by MuPDFBridge — HTML/EPUB rendering, PKCS7/OpenSSL signing, and office/
+    // threading integration helpers, plus the standalone Unicode database
+    // header. Explicitly excluding them (rather than leaving Clang to warn)
+    // documents that the omission is intentional, not an oversight.
+    exclude header "mupdf/html.h"
+    exclude header "mupdf/ucdn.h"
+    exclude header "mupdf/helpers/mu-office-lib.h"
+    exclude header "mupdf/helpers/mu-threads.h"
+    exclude header "mupdf/helpers/pkcs7-openssl.h"
+}

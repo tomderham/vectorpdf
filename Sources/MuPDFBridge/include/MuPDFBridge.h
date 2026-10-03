@@ -1,0 +1,281 @@
+//
+// VectorPDF
+// Copyright (c) 2026 Thomas Derham
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or (at your
+// option) any later version.
+//
+// This application links to and incorporates the MuPDF framework, which is
+// Copyright (c) 2006-2026 Artifex Software, Inc.
+//
+// VECTORPDF IS PROVIDED "AS IS" WITHOUT ANY WARRANTY, AND ALL
+// WARRANTIES, WHETHER EXPRESSED OR IMPLIED, INCLUDING WARRANTY OF
+// MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ARE DISCLAIMED.
+//
+
+#ifndef MuPDFBridge_h
+#define MuPDFBridge_h
+
+#include <mupdf/fitz.h>
+#include <mupdf/pdf.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Context Lifecycle
+fz_context *mupdf_context_create(size_t max_store_bytes);
+fz_context *mupdf_context_clone(fz_context *base);
+void mupdf_context_drop(fz_context *ctx);
+
+// Document Lifecycle
+int mupdf_document_open(fz_context *ctx, const char *path, fz_document **out_doc, const char **out_error);
+int mupdf_document_count_pages(fz_context *ctx, fz_document *doc, int *out_count, const char **out_error);
+void mupdf_document_drop(fz_context *ctx, fz_document *doc);
+
+// Password Authentication — must be checked/resolved immediately after mupdf_document_open and
+// before any other document access (page count, rendering, etc.), which can fail or return
+// incorrect results on an unauthenticated encrypted document.
+int mupdf_document_needs_password(fz_context *ctx, fz_document *doc, int *out_needs_password, const char **out_error);
+int mupdf_document_authenticate_password(fz_context *ctx, fz_document *doc, const char *password, int *out_authenticated, const char **out_error);
+
+// Outline (Table of Contents)
+int mupdf_document_load_outline(fz_context *ctx, fz_document *doc, fz_outline **out_outline, const char **out_error);
+void mupdf_outline_drop(fz_context *ctx, fz_outline *outline);
+const char *mupdf_outline_title(fz_outline *outline);
+const char *mupdf_outline_uri(fz_outline *outline);
+int mupdf_outline_page(fz_outline *outline);
+fz_outline *mupdf_outline_next(fz_outline *outline);
+fz_outline *mupdf_outline_down(fz_outline *outline);
+
+// Page Lifecycle
+int mupdf_page_load(fz_context *ctx, fz_document *doc, int pageno, fz_page **out_page, const char **out_error);
+int mupdf_page_bounds(fz_context *ctx, fz_page *page, fz_rect *out_rect, const char **out_error);
+void mupdf_page_drop(fz_context *ctx, fz_page *page);
+
+// Display List
+int mupdf_display_list_create(fz_context *ctx, fz_page *page, fz_display_list **out_list, const char **out_error);
+void mupdf_display_list_drop(fz_context *ctx, fz_display_list *list);
+
+// Pixmap Rendering
+int mupdf_render_display_list(fz_context *ctx, fz_display_list *list, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
+int mupdf_render_page(fz_context *ctx, fz_page *page, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
+int mupdf_render_page_rect(fz_context *ctx, fz_page *page, float scale_x, float scale_y, float x0, float y0, float x1, float y1, fz_pixmap **out_pixmap, const char **out_error);
+void mupdf_pixmap_drop(fz_context *ctx, fz_pixmap *pixmap);
+int mupdf_pixmap_width(fz_pixmap *pixmap);
+int mupdf_pixmap_height(fz_pixmap *pixmap);
+ptrdiff_t mupdf_pixmap_stride(fz_pixmap *pixmap);
+unsigned char *mupdf_pixmap_samples(fz_pixmap *pixmap);
+int mupdf_pixmap_n(fz_pixmap *pixmap);
+
+// Structured Text
+int mupdf_stext_page_load(fz_context *ctx, fz_page *page, fz_stext_page **out_stext, const char **out_error);
+int mupdf_stext_page_load_from_display_list(fz_context *ctx, fz_display_list *list, fz_stext_page **out_stext, const char **out_error);
+void mupdf_stext_page_drop(fz_context *ctx, fz_stext_page *stext);
+
+fz_stext_block *mupdf_stext_first_block(fz_stext_page *page);
+fz_stext_block *mupdf_stext_next_block(fz_stext_block *block);
+int mupdf_stext_block_type(fz_stext_block *block);
+fz_rect mupdf_stext_block_bbox(fz_stext_block *block);
+uint32_t mupdf_stext_block_vector_flags(fz_stext_block *block);
+uint32_t mupdf_stext_block_vector_argb(fz_stext_block *block);
+
+fz_stext_line *mupdf_stext_block_first_line(fz_stext_block *block);
+fz_stext_line *mupdf_stext_next_line(fz_stext_line *line);
+fz_rect mupdf_stext_line_bbox(fz_stext_line *line);
+
+fz_stext_char *mupdf_stext_line_first_char(fz_stext_line *line);
+fz_stext_char *mupdf_stext_next_char(fz_stext_char *ch);
+int mupdf_stext_char_c(fz_stext_char *ch);
+fz_quad mupdf_stext_char_quad(fz_stext_char *ch);
+fz_point mupdf_stext_char_origin(fz_stext_char *ch);
+float mupdf_stext_char_size(fz_stext_char *ch);
+int mupdf_stext_char_is_bold(fz_context *ctx, fz_stext_char *ch);
+int mupdf_stext_char_is_italic(fz_context *ctx, fz_stext_char *ch);
+const char *mupdf_stext_char_font_name(fz_context *ctx, fz_stext_char *ch);
+uint32_t mupdf_stext_char_color(fz_stext_char *ch);
+
+// Links & Cross-References
+int mupdf_links_load(fz_context *ctx, fz_page *page, fz_link **out_links, const char **out_error);
+void mupdf_links_drop(fz_context *ctx, fz_link *links);
+fz_link *mupdf_link_next(fz_link *link);
+fz_rect mupdf_link_rect(fz_link *link);
+const char *mupdf_link_uri(fz_link *link);
+int mupdf_resolve_link_page(fz_context *ctx, fz_document *doc, const char *uri, int *out_page, float *out_x, float *out_y);
+
+// Annotations & PDF Saving
+int mupdf_pdf_highlight_annot(fz_context *ctx, fz_document *doc, int pageno, fz_quad quad, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_highlight(fz_context *ctx, fz_document *doc, int pageno, const fz_quad *quads, int n_quads, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_text_markup(fz_context *ctx, fz_document *doc, int pageno, int type, const fz_quad *quads, int n_quads, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_ink_stroke(fz_context *ctx, fz_document *doc, int pageno, const fz_point *points, int n_points, float stroke_width, float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_free_text_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char *text, float font_size, float r, float g, float b, const char **out_error);
+int mupdf_pdf_delete_highlight_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error);
+int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, const char **out_error);
+int mupdf_pdf_last_annot_objnum(fz_context *ctx, fz_document *doc, int pageno, int *out_objnum, const char **out_error);
+int mupdf_pdf_delete_annot_by_objnum(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char **out_error);
+
+#define MUPDF_MEASUREMENT_MAX_POINTS 512
+typedef struct {
+    int kind;      /* 1 = length, 2 = perimeter, 3 = area, 4 = angle */
+    int objnum;
+    float r, g, b;
+    int n_points;
+    float xy[2 * MUPDF_MEASUREMENT_MAX_POINTS]; /* page (top-down) coordinates */
+    char text[256]; /* /Contents, UTF-8, truncated */
+} mupdf_measurement_annot;
+int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int pageno,
+                                     mupdf_measurement_annot *out, int capacity, int *out_count,
+                                     const char **out_error);
+int mupdf_pdf_stamp_image_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const unsigned char *image_data, size_t image_len, const char **out_error);
+int mupdf_pdf_page_has_stamp_near_rect(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, int *out_found, const char **out_error);
+int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                float target_x, float target_y,
+                                float knee_x, float knee_y,
+                                float box_x0, float box_y0, float box_x1, float box_y1,
+                                const char *text, float font_size,
+                                float r, float g, float b,
+                                const char **out_error);
+int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                       float x0, float y0, float x1, float y1,
+                                       float leader_offset, const char *text,
+                                       float r, float g, float b,
+                                       const char **out_error);
+int mupdf_pdf_add_polyline_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                           const fz_point *vertices, int n_vertices,
+                                           const char *text,
+                                           float r, float g, float b,
+                                           const char **out_error);
+int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                          const fz_point *vertices, int n_vertices,
+                                          const char *text,
+                                          float r, float g, float b, float fill_alpha,
+                                          const char **out_error);
+int mupdf_pdf_add_angle_annot(fz_context *ctx, fz_document *doc, int pageno,
+                              const fz_point *vertices, int n_vertices,
+                              const char *text,
+                              float r, float g, float b,
+                              const char **out_error);
+int mupdf_pdf_set_page_scale(fz_context *ctx, fz_document *doc, int pageno,
+                             const char *ratio_str, const char *unit_str,
+                             float pts_per_unit, const char **out_error);
+int mupdf_pdf_get_page_scale(fz_context *ctx, fz_document *doc, int pageno,
+                             char *out_ratio, size_t ratio_cap,
+                             char *out_unit, size_t unit_cap,
+                             float *out_pts_per_unit, int *out_found,
+                             const char **out_error);
+int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);
+int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error);
+int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
+int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path, const char *password, const char **out_error);
+int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path, int bake_annots, int bake_widgets, const char **out_error);
+
+// Page Manipulation
+int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error);
+int mupdf_pdf_delete_page(fz_context *ctx, fz_document *doc, int pageno, const char **out_error);
+int mupdf_pdf_reorder_page(fz_context *ctx, fz_document *doc, int from_page, int to_page, const char **out_error);
+int mupdf_pdf_reorder_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int dest_slot, const char **out_error);
+int mupdf_pdf_delete_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char **out_error);
+int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, const char *out_path, const char **out_error);
+int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int *out_inserted_slot, const char **out_error);
+int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_path, int insert_slot, int *out_imported_count, const char **out_error);
+int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_slot, float width, float height, const char **out_error);
+
+// Store & Memory Management
+void mupdf_context_empty_store(fz_context *ctx);
+int mupdf_context_shrink_store(fz_context *ctx, unsigned int percent);
+void mupdf_free(fz_context *ctx, void *ptr);
+
+// Fast Plain Text Extraction
+char *mupdf_stext_page_text(fz_context *ctx, fz_stext_page *page);
+
+// AcroForms & Interactive Form Widgets
+int mupdf_page_count_widgets(fz_context *ctx, fz_document *doc, int pageno, int *out_count, const char **out_error);
+int mupdf_page_get_widget_info(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
+                               int *out_type, fz_rect *out_rect, char **out_name, char **out_value,
+                               int *out_flags, float *out_font_size,
+                               int *out_max_len, int *out_text_align,
+                               const char **out_error);
+int mupdf_page_widget_is_reset_button(fz_context *ctx, fz_document *doc, int pageno, int widget_index, int *out_is_reset, const char **out_error);
+int mupdf_page_set_widget_value(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
+                                const char *value, const char **out_error);
+int mupdf_document_reset_form(fz_context *ctx, fz_document *doc, const char **out_error);
+int mupdf_page_get_choice_options(fz_context *ctx, fz_document *doc, int pageno, int widget_index,
+                                  char ***out_options, int *out_count, const char **out_error);
+void mupdf_free_choice_options(fz_context *ctx, char **options, int count);
+
+// Document Metadata, Encryption & Security Permissions
+typedef struct {
+    char format[64];
+    char encryption[64];
+    char title[256];
+    char author[256];
+    char subject[256];
+    char keywords[512];
+    char creator[256];
+    char producer[256];
+    char creation_date[64];
+    char mod_date[64];
+    int is_encrypted;
+    int pdf_version;
+} mupdf_document_metadata;
+
+typedef struct {
+    int can_print;
+    int can_modify;
+    int can_copy;
+    int can_annotate;
+    int can_fill_forms;
+    int can_accessibility;
+    int can_assemble;
+    int can_print_high_quality;
+} mupdf_document_permissions;
+
+// Page Geometry Boxes
+typedef struct {
+    fz_rect media_box;
+    fz_rect crop_box;
+    fz_rect bleed_box;
+    fz_rect trim_box;
+    fz_rect art_box;
+    int has_crop_box;
+    int has_bleed_box;
+    int has_trim_box;
+    int has_art_box;
+} mupdf_page_boxes;
+
+// Embedded & Subset Font Catalog
+typedef struct {
+    char name[128];
+    char subtype[64];
+    char encoding[64];
+    int is_embedded;
+    int is_subset;
+} mupdf_font_entry;
+
+typedef struct {
+    mupdf_font_entry *fonts;
+    int count;
+} mupdf_font_list;
+
+int mupdf_document_get_metadata(fz_context *ctx, fz_document *doc, mupdf_document_metadata *out_meta, const char **out_error);
+int mupdf_document_get_permissions(fz_context *ctx, fz_document *doc, mupdf_document_permissions *out_perms, const char **out_error);
+int mupdf_page_get_boxes(fz_context *ctx, fz_document *doc, int pageno, mupdf_page_boxes *out_boxes, const char **out_error);
+int mupdf_document_get_fonts(fz_context *ctx, fz_document *doc, mupdf_font_list *out_fonts, const char **out_error);
+void mupdf_free_font_list(fz_context *ctx, mupdf_font_list *fonts);
+
+// SVG Page Export
+int mupdf_page_to_svg(fz_context *ctx, fz_document *doc, int pageno, int text_as_path, char **out_svg, const char **out_error);
+int mupdf_page_export_svg(fz_context *ctx, fz_document *doc, int pageno, const char *out_path, int text_as_path, const char **out_error);
+
+// Reading theme (dark/sepia) applied in place to an RGB(A) buffer
+int mupdf_apply_color_appearance(fz_context *ctx, unsigned char *samples, int width, int height, int stride, int n, int appearance_mode);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* MuPDFBridge_h */

@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Swift Package Manager & Xcode
+.build/
+.module-cache/
+.swiftpm/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+
+# Application Bundles
+*.app/
+
+# Editor / Scratch
+.claude/
+*.swp
+*~
+*.orig
+*.code-workspace
+
+# Vendor Binaries & Scratch
+Vendor/MuPDF.xcframework/
+Vendor/.build-tmp/
+
+# Packaging & Release
+prepare_publish.sh
+*.dmg
+Scripts/release.env
+dmg_staging/
+
+
+FUTURE_FEATURES.md

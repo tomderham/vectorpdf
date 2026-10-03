@@ -1,0 +1,919 @@
+//
+// VectorPDF
+// Copyright (c) 2026 Thomas Derham
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or (at your
+// option) any later version.
+//
+// This application links to and incorporates the MuPDF framework, which is
+// Copyright (c) 2006-2026 Artifex Software, Inc.
+//
+// VECTORPDF IS PROVIDED "AS IS" WITHOUT ANY WARRANTY, AND ALL
+// WARRANTIES, WHETHER EXPRESSED OR IMPLIED, INCLUDING WARRANTY OF
+// MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ARE DISCLAIMED.
+//
+
+import Foundation
+import CoreGraphics
+
+public enum SelectionMode: String, Sendable, CaseIterable, Identifiable {
+    case readingOrder = "Text"
+    case rectangularArea = "Area"
+    
+    public var id: String { rawValue }
+}
+
+public struct SelectionResult: Sendable, Equatable {
+    public let text: String
+    public let highlightQuads: [PDFQuad]
+    public let boundingRect: CGRect
+    public let mode: SelectionMode
+    
+    public init(text: String, highlightQuads: [PDFQuad], boundingRect: CGRect = .zero, mode: SelectionMode = .readingOrder) {
+        self.text = text
+        self.highlightQuads = highlightQuads
+        self.boundingRect = boundingRect
+        self.mode = mode
+    }
+}
+
+/// One page's slice of a selection that spans more than one page — e.g. dragging from partway
+/// down page 3 into page 4. `PDFViewerViewModel.activeSelection` always holds the *first* (by
+/// page number) slice, matching every existing single-page consumer unchanged; any further pages
+/// are tracked separately in `additionalSelectionPages` purely for on-screen highlighting and for
+/// combining the full selected text (see PDFViewerViewModel.activeSelectionCombinedText).
+public struct PageSelectionResult: Sendable, Equatable {
+    public let pageIndex: Int
+    public let result: SelectionResult
+
+    public init(pageIndex: Int, result: SelectionResult) {
+        self.pageIndex = pageIndex
+        self.result = result
+    }
+}
+
+public struct TextPosition: Comparable, Sendable, Equatable {
+    public let blockIndex: Int
+    public let lineIndex: Int
+    public let charIndex: Int
+    
+    public init(blockIndex: Int, lineIndex: Int, charIndex: Int) {
+        self.blockIndex = blockIndex
+        self.lineIndex = lineIndex
+        self.charIndex = charIndex
+    }
+    
+    public static func < (lhs: TextPosition, rhs: TextPosition) -> Bool {
+        if lhs.blockIndex != rhs.blockIndex {
+            return lhs.blockIndex < rhs.blockIndex
+        }
+        if lhs.lineIndex != rhs.lineIndex {
+            return lhs.lineIndex < rhs.lineIndex
+        }
+        return lhs.charIndex < rhs.charIndex
+    }
+}
+
+public final class SpatialTextSelector: Sendable {
+    /// Minimum width for a text block to plausibly be body text, excluding narrow line-number gutters or margin annotations.
+    public static let minColumnWidth: CGFloat = 60.0
+    /// Horizontal gutter threshold when testing multi-column bounds.
+    public static let gutterThreshold: CGFloat = 20.0
+
+    public init() {}
+    
+    /// Selects text on a StructuredPage between startPoint and endPoint, supporting both reading order flow and rectangular marquee
+    public func selectText(
+        on page: StructuredPage,
+        from startPoint: CGPoint,
+        to endPoint: CGPoint,
+        mode: SelectionMode = .readingOrder
+    ) -> SelectionResult {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard !textBlocks.isEmpty else {
+            return SelectionResult(text: "", highlightQuads: [], boundingRect: .zero, mode: mode)
+        }
+        
+        switch mode {
+        case .rectangularArea:
+            return selectRectangularArea(on: textBlocks, from: startPoint, to: endPoint)
+        case .readingOrder:
+            return selectReadingOrder(on: textBlocks, from: startPoint, to: endPoint)
+        }
+    }
+    
+    // MARK: - Reading Flow Selection
+    private func selectReadingOrder(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
+        guard let pos1 = resolvePosition(at: startPoint, in: textBlocks),
+              let pos2 = resolvePosition(at: endPoint, in: textBlocks) else {
+            return SelectionResult(text: "", highlightQuads: [], boundingRect: .zero, mode: .readingOrder)
+        }
+
+        if pos1 == pos2 {
+            return SelectionResult(text: "", highlightQuads: [], boundingRect: .zero, mode: .readingOrder)
+        }
+
+        // Order endpoints by page geometry (Y, then X) rather than block index.
+        let line1 = textBlocks[pos1.blockIndex].lines[pos1.lineIndex]
+        let line2 = textBlocks[pos2.blockIndex].lines[pos2.lineIndex]
+        let pos1IsFirst: Bool
+        if abs(line1.bbox.midY - line2.bbox.midY) > 2 {
+            pos1IsFirst = line1.bbox.midY < line2.bbox.midY
+        } else if pos1.blockIndex == pos2.blockIndex && pos1.lineIndex == pos2.lineIndex {
+            pos1IsFirst = pos1.charIndex < pos2.charIndex
+        } else {
+            pos1IsFirst = line1.bbox.minX < line2.bbox.minX
+        }
+        let firstPos = pos1IsFirst ? pos1 : pos2
+        let lastPos = pos1IsFirst ? pos2 : pos1
+
+        var selectedQuads: [PDFQuad] = []
+        var selectedText = ""
+        var overallBoundingBox = CGRect.null
+
+        struct SelectedSlice {
+            let quad: PDFQuad
+            let lineBBox: CGRect
+            let sliceBBox: CGRect
+            let text: String
+        }
+        var slices: [SelectedSlice] = []
+
+        // Snap vertical band to line boundaries.
+        let firstLine = textBlocks[firstPos.blockIndex].lines[firstPos.lineIndex]
+        let lastLine = textBlocks[lastPos.blockIndex].lines[lastPos.lineIndex]
+        let bandMinY = min(firstLine.bbox.minY, lastLine.bbox.minY)
+        let bandMaxY = max(firstLine.bbox.maxY, lastLine.bbox.maxY)
+
+        // Determine column bounds from the wider anchor block.
+        let startBlock = textBlocks[firstPos.blockIndex]
+        let endBlock = textBlocks[lastPos.blockIndex]
+        let anchorBlock = startBlock.bbox.width >= endBlock.bbox.width ? startBlock : endBlock
+        let isMultiColumn = textBlocks.contains { $0.bbox.width > Self.minColumnWidth && abs($0.bbox.midX - anchorBlock.bbox.midX) > 100 }
+        let constrainToColumn = isMultiColumn && (max(startPoint.x, endPoint.x) < anchorBlock.bbox.maxX + Self.gutterThreshold)
+
+        // Include blocks overlapping the vertical band in visual reading order.
+        let bandBlocks = textBlocks.enumerated()
+            .filter { _, block in
+                let overlap = min(block.bbox.maxY, bandMaxY) - max(block.bbox.minY, bandMinY)
+                return overlap > 1.0 || (block.bbox.midY >= bandMinY && block.bbox.midY <= bandMaxY)
+            }
+            .filter { _, block in
+                // Exclude blocks that belong to a different column based on horizontal overlap.
+                guard constrainToColumn else { return true }
+                let overlapWidth = min(block.bbox.maxX, anchorBlock.bbox.maxX) - max(block.bbox.minX, anchorBlock.bbox.minX)
+                guard overlapWidth > 0 else { return false }
+                let narrowerWidth = min(block.bbox.width, anchorBlock.bbox.width)
+                guard narrowerWidth > 0 else { return false }
+                return (overlapWidth / narrowerWidth) >= 0.5
+            }
+            .sorted { $0.element.bbox.minY < $1.element.bbox.minY }
+
+        for (bIdx, block) in bandBlocks {
+            let isFirstBlock = (bIdx == firstPos.blockIndex)
+            let isLastBlock = (bIdx == lastPos.blockIndex)
+
+            for lIdx in 0..<block.lines.count {
+                // Use line indices directly for boundary blocks to avoid ascender/descender overlap errors.
+                if isFirstBlock && lIdx < firstPos.lineIndex { continue }
+                if isLastBlock && lIdx > lastPos.lineIndex { continue }
+
+                let line = block.lines[lIdx]
+                guard !line.characters.isEmpty else { continue }
+                // Verify intermediate lines fall within the vertical band.
+                if !isFirstBlock && !isLastBlock {
+                    if anchorBlock.bbox.width >= Self.minColumnWidth && Self.isLineNumberGutter(line: line, bodyLeftMargin: anchorBlock.bbox.minX) {
+                        continue
+                    }
+                    let lineOverlap = min(line.bbox.maxY, bandMaxY) - max(line.bbox.minY, bandMinY)
+                    guard (line.bbox.midY >= bandMinY && line.bbox.midY <= bandMaxY) || lineOverlap >= min(line.bbox.height * 0.4, 4.0) else { continue }
+                }
+
+                let isFirstSelectedLine = (isFirstBlock && lIdx == firstPos.lineIndex)
+                let isLastSelectedLine = (isLastBlock && lIdx == lastPos.lineIndex)
+                let fromChar = isFirstSelectedLine ? firstPos.charIndex : 0
+                let toChar = isLastSelectedLine ? lastPos.charIndex : line.characters.count
+
+                let validFrom = max(0, min(fromChar, line.characters.count))
+                let validTo = max(validFrom, min(toChar, line.characters.count))
+
+                guard validFrom < validTo else { continue }
+
+                let sliceChars = Array(line.characters[validFrom..<validTo])
+                guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { continue }
+
+                let sliceMinX = firstChar.boundingRect.minX
+                let sliceMaxX = lastChar.boundingRect.maxX
+                let lineMinY = line.bbox.minY
+                let lineMaxY = line.bbox.maxY
+
+                // Continuous line quad covering words and spaces seamlessly
+                let lineQuad = PDFQuad(
+                    ul: CGPoint(x: sliceMinX, y: lineMinY),
+                    ur: CGPoint(x: sliceMaxX, y: lineMinY),
+                    ll: CGPoint(x: sliceMinX, y: lineMaxY),
+                    lr: CGPoint(x: sliceMaxX, y: lineMaxY)
+                )
+
+                // Assemble line text with inter-word spacing
+                var sliceText = ""
+                for (cIdx, char) in sliceChars.enumerated() {
+                    sliceText.append(char.char)
+                    if cIdx < sliceChars.count - 1 {
+                        let nextChar = sliceChars[cIdx + 1]
+                        let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
+                        if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
+                            sliceText.append(" ")
+                        }
+                    }
+                }
+
+                slices.append(SelectedSlice(
+                    quad: lineQuad,
+                    lineBBox: line.bbox,
+                    sliceBBox: lineQuad.boundingRect,
+                    text: sliceText
+                ))
+            }
+        }
+
+        // Sort all selected slices in true visual reading order (top-to-bottom, left-to-right)
+        slices = readingOrder(slices) { $0.lineBBox }
+
+        // Build quads, bounding box, and natural formatted text
+        for (idx, slice) in slices.enumerated() {
+            selectedQuads.append(slice.quad)
+            overallBoundingBox = overallBoundingBox.union(slice.sliceBBox)
+            selectedText.append(slice.text)
+
+            if idx < slices.count - 1 {
+                let nextSlice = slices[idx + 1]
+                let isSameRow = abs(slice.lineBBox.midY - nextSlice.lineBBox.midY) < 3.0
+
+                if isSameRow {
+                    let hGap = nextSlice.sliceBBox.minX - slice.sliceBBox.maxX
+                    if hGap > 1.0 && !slice.text.hasSuffix(" ") && !nextSlice.text.hasPrefix(" ") {
+                        selectedText.append(" ")
+                    }
+                } else {
+                    let vGap = nextSlice.lineBBox.minY - slice.lineBBox.maxY
+                    let avgH = (slice.lineBBox.height + nextSlice.lineBBox.height) / 2.0
+
+                    if vGap > avgH * 0.75 {
+                        selectedText.append("\n\n")
+                    } else if !slice.text.hasSuffix(" ") && !nextSlice.text.hasPrefix(" ") {
+                        let nextFirst = nextSlice.text.trimmingCharacters(in: .whitespaces).first
+                        if slice.text.hasSuffix("-") && nextFirst?.isLowercase == true {
+                            selectedText.removeLast()
+                        } else {
+                            selectedText.append(" ")
+                        }
+                    }
+                }
+            }
+        }
+
+        let trimmed = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return SelectionResult(
+            text: trimmed,
+            highlightQuads: selectedQuads,
+            boundingRect: overallBoundingBox.isNull ? .zero : overallBoundingBox,
+            mode: .readingOrder
+        )
+    }
+    
+    // MARK: - Rectangular Area Selection
+    private func selectRectangularArea(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
+        let minX = min(startPoint.x, endPoint.x)
+        let maxX = max(startPoint.x, endPoint.x)
+        let minY = min(startPoint.y, endPoint.y)
+        let maxY = max(startPoint.y, endPoint.y)
+        let selRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        
+        guard selRect.width > 2 && selRect.height > 2 else {
+            return SelectionResult(text: "", highlightQuads: [], boundingRect: selRect, mode: .rectangularArea)
+        }
+        
+        // Single crisp rectangular quad for the marquee area
+        let areaQuad = PDFQuad(
+            ul: CGPoint(x: minX, y: minY),
+            ur: CGPoint(x: maxX, y: minY),
+            ll: CGPoint(x: minX, y: maxY),
+            lr: CGPoint(x: maxX, y: maxY)
+        )
+        
+        var linesText: [String] = []
+        for block in textBlocks where block.bbox.intersects(selRect) {
+            for line in block.lines where line.bbox.intersects(selRect) {
+                let charsInRect = line.characters.filter {
+                    let b = $0.boundingRect
+                    return selRect.contains(CGPoint(x: b.midX, y: b.midY)) || selRect.intersects(b)
+                }
+                if !charsInRect.isEmpty {
+                    var lineStr = ""
+                    for (idx, c) in charsInRect.enumerated() {
+                        lineStr.append(c.char)
+                        if idx < charsInRect.count - 1 {
+                            let next = charsInRect[idx + 1]
+                            let gap = next.boundingRect.minX - c.boundingRect.maxX
+                            if gap > CGFloat(c.size) * 0.20 && c.char != " " && next.char != " " {
+                                lineStr.append(" ")
+                            }
+                        }
+                    }
+                    linesText.append(lineStr)
+                }
+            }
+        }
+        
+        let text = linesText.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return SelectionResult(
+            text: text,
+            highlightQuads: [areaQuad],
+            boundingRect: selRect,
+            mode: .rectangularArea
+        )
+    }
+    
+    // MARK: - Position Resolution
+    private func resolvePosition(at point: CGPoint, in textBlocks: [TextBlock]) -> TextPosition? {
+        guard !textBlocks.isEmpty else { return nil }
+
+        var bestBlockIdx = -1
+        var bestLineIdx = -1
+        var bestScore: CGFloat = .infinity
+        
+        for bIdx in 0..<textBlocks.count {
+            let block = textBlocks[bIdx]
+            for lIdx in 0..<block.lines.count {
+                let line = block.lines[lIdx]
+                
+                let yOverlap = (point.y >= line.bbox.minY - 3 && point.y <= line.bbox.maxY + 3)
+                let dy: CGFloat
+                if yOverlap {
+                    dy = 0
+                } else if point.y < line.bbox.minY {
+                    dy = line.bbox.minY - point.y
+                } else {
+                    dy = point.y - line.bbox.maxY
+                }
+                
+                let dx: CGFloat
+                if point.x >= line.bbox.minX && point.x <= line.bbox.maxX {
+                    dx = 0
+                } else if point.x < line.bbox.minX {
+                    dx = line.bbox.minX - point.x
+                } else {
+                    dx = point.x - line.bbox.maxX
+                }
+                
+                // Prioritize vertical alignment (same line) heavily
+                let score = (dy * 4.0) + dx
+                if score < bestScore {
+                    bestScore = score
+                    bestBlockIdx = bIdx
+                    bestLineIdx = lIdx
+                }
+            }
+        }
+        
+        guard bestScore < .infinity,
+              bestBlockIdx >= 0, bestBlockIdx < textBlocks.count,
+              bestLineIdx >= 0, bestLineIdx < textBlocks[bestBlockIdx].lines.count else {
+            return nil
+        }
+
+        let line = textBlocks[bestBlockIdx].lines[bestLineIdx]
+        guard !line.characters.isEmpty else {
+            return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: 0)
+        }
+        
+        // Find character index on bestLine
+        if point.x <= line.characters[0].boundingRect.minX {
+            return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: 0)
+        }
+        if let lastChar = line.characters.last, point.x >= lastChar.boundingRect.maxX {
+            return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: line.characters.count)
+        }
+        
+        for i in 0..<line.characters.count {
+            let box = line.characters[i].boundingRect
+            if point.x <= box.maxX {
+                let charIdx = (point.x < box.midX) ? i : (i + 1)
+                return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: charIdx)
+            }
+        }
+        
+        return TextPosition(blockIndex: bestBlockIdx, lineIndex: bestLineIdx, charIndex: line.characters.count)
+    }
+
+    // MARK: - Point Target Resolution
+    /// Determines whether a line belongs to a margin line-number gutter (numeric/punctuation only and narrow or in left margin)
+    public static func isLineNumberGutter(line: TextLine, bodyLeftMargin: CGFloat) -> Bool {
+        // Line numbers sit in the margin gutter to the left of the body column
+        guard line.bbox.minX < bodyLeftMargin else { return false }
+        let isNumericOrPunct = line.characters.allSatisfy { ch in
+            ch.char.isNumber || ch.char.isWhitespace || ch.char == "." || ch.char == ":" || ch.char == "-" || ch.char == "—"
+        }
+        guard isNumericOrPunct else { return false }
+        return line.bbox.maxX <= bodyLeftMargin + 8 || line.bbox.width < 45
+    }
+
+    /// Resolves the primary content line for a target location (such as a cross-reference destination or bookmark),
+    /// consistent with mouse selection: filtering out narrow line-number gutters and margin annotations,
+    /// identifying the appropriate body column, and accurately targeting figure/table titles and equations.
+    public func targetLine(on page: StructuredPage, at point: CGPoint, label: String? = nil, uri: String? = nil) -> TextLine? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard !textBlocks.isEmpty else { return nil }
+
+        // 1. Separate body text blocks from narrow margin gutters (line numbers, marginalia).
+        // Consistent with selectReadingOrder's minColumnWidth (60pt).
+        let bodyBlocks = textBlocks.filter { $0.bbox.width >= Self.minColumnWidth }
+        let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
+        let bodyLeftMargin = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
+
+        // 2. Parse target reference intent from label and URI (e.g. "Table 27-14", "Equation (27-19)", "Figure 3", "[2]")
+        let cleanLabel = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var eqTargetNum: String? = nil
+        var tableOrFigKind: String? = nil
+        var tableOrFigNum: String? = nil
+        var refTargetNums: [String] = []
+
+        // 1. Primary ground truth: If the link's URI explicitly identifies a reference target (e.g. "#nameddest=Rpone.0221551.ref003", "#ref3", "#bib2"),
+        // that takes precedence over whatever anchor text was captured under the link's bounding box.
+        if let uri, !uri.isEmpty {
+            let uriRefPattern = #"(?<![A-Za-z])(?:bibitem|bib|cite|ref)[^0-9/]*0*([0-9]+)$"#
+            if let uriRegex = try? NSRegularExpression(pattern: uriRefPattern, options: .caseInsensitive),
+               let match = uriRegex.firstMatch(in: uri, range: NSRange(location: 0, length: (uri as NSString).length)) {
+                let ns = uri as NSString
+                if match.numberOfRanges > 1 && match.range(at: 1).location != NSNotFound {
+                    refTargetNums = [ns.substring(with: match.range(at: 1))]
+                }
+            }
+        }
+
+        if !cleanLabel.isEmpty {
+            // Check for Academic Reference pattern in anchor label if not already definitively identified by URI
+            if refTargetNums.isEmpty {
+                let bracketPattern = #"\[([^\]]+)\]"#
+                if let bRegex = try? NSRegularExpression(pattern: bracketPattern),
+                   let bMatch = bRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                    let ns = cleanLabel as NSString
+                    let inner = ns.substring(with: bMatch.range(at: 1))
+                    let numRegex = try? NSRegularExpression(pattern: #"\b([0-9]+)\b"#)
+                    let numMatches = numRegex?.matches(in: inner, range: NSRange(location: 0, length: (inner as NSString).length)) ?? []
+                    for nm in numMatches {
+                        refTargetNums.append((inner as NSString).substring(with: nm.range))
+                    }
+                } else {
+                    let refPrefixPattern = #"\b(?:ref(?:erence)?s?|cite|bib)\.?\s*([0-9,\s–\-]+)"#
+                    if let pRegex = try? NSRegularExpression(pattern: refPrefixPattern, options: .caseInsensitive),
+                       let pMatch = pRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                        let ns = cleanLabel as NSString
+                        let inner = ns.substring(with: pMatch.range(at: 1))
+                        let numRegex = try? NSRegularExpression(pattern: #"\b([0-9]+)\b"#)
+                        let numMatches = numRegex?.matches(in: inner, range: NSRange(location: 0, length: (inner as NSString).length)) ?? []
+                        for nm in numMatches {
+                            refTargetNums.append((inner as NSString).substring(with: nm.range))
+                        }
+                    }
+                }
+            }
+
+            // Check for Equation pattern: e.g. "Equation (27-19)", "Eq. (27-19)", "Equation 27-19", "(27-19)"
+            let eqPattern = #"(?:Equation|Eq\.?)\s*(?:\(?([0-9A-Za-z\.\-]+)\)?|\(([^\)]+)\))"#
+            if let eqRegex = try? NSRegularExpression(pattern: eqPattern, options: .caseInsensitive),
+               let match = eqRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                let ns = cleanLabel as NSString
+                if match.numberOfRanges > 1 && match.range(at: 1).location != NSNotFound {
+                    eqTargetNum = ns.substring(with: match.range(at: 1))
+                } else if match.numberOfRanges > 2 && match.range(at: 2).location != NSNotFound {
+                    eqTargetNum = ns.substring(with: match.range(at: 2))
+                }
+            } else if cleanLabel.hasPrefix("(") && cleanLabel.hasSuffix(")") {
+                let inner = String(cleanLabel.dropFirst().dropLast()).trimmingCharacters(in: .whitespaces)
+                if !inner.isEmpty && inner.rangeOfCharacter(from: .decimalDigits) != nil {
+                    eqTargetNum = inner
+                }
+            }
+
+            // Check for Table / Figure pattern: e.g. "Table 27-14", "Figure 3", "Fig. 2", "TABLE I", "table.caption.3", "S12 Fig"
+            let tfPattern = #"\b(?:(Table|Figure|Fig\.?)\s*([0-9A-Za-z\.\-]+)|(S[0-9]+)\s*(Fig(?:ure|\.)?))\b"#
+            if let tfRegex = try? NSRegularExpression(pattern: tfPattern, options: .caseInsensitive),
+               let match = tfRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
+                let ns = cleanLabel as NSString
+                if match.range(at: 1).location != NSNotFound && match.range(at: 2).location != NSNotFound {
+                    let prefix = ns.substring(with: match.range(at: 1)).lowercased()
+                    tableOrFigKind = prefix.hasPrefix("fig") ? "figure" : "table"
+                    tableOrFigNum = ns.substring(with: match.range(at: 2)).lowercased()
+                } else if match.range(at: 3).location != NSNotFound {
+                    tableOrFigKind = "figure"
+                    tableOrFigNum = ns.substring(with: match.range(at: 3)).lowercased()
+                }
+            }
+
+            // Standalone number (e.g. "2") without brackets, when not matching equation or table/figure
+            if refTargetNums.isEmpty && eqTargetNum == nil && tableOrFigNum == nil && cleanLabel.allSatisfy({ $0.isNumber }) {
+                refTargetNums = [cleanLabel]
+            }
+        }
+
+        // 3. Specialized search: Academic References / Bibliography entries
+        if !refTargetNums.isEmpty {
+            var bestRefLine: TextLine? = nil
+            var bestRefScore: CGFloat = .infinity
+
+            for refNum in refTargetNums {
+                // Matches entry starting with "2.", "[2]", "(2)", "[2, 3]", "[2-4]", or "2 "
+                let numPattern = #"^\s*(?:\[\s*\#(refNum)(?:\s*[,–\-]\s*[0-9]+)?\s*\]|\#(refNum)\.(?!\d)|\(\s*\#(refNum)\s*\)|\#(refNum)\s+)"#
+                guard let refRegex = try? NSRegularExpression(pattern: numPattern, options: .caseInsensitive) else { continue }
+
+                for block in candidateBlocks {
+                    for line in block.lines {
+                        if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
+                        guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 15 else { continue }
+                        let lineText = line.text.trimmingCharacters(in: .whitespaces)
+                        let nsText = lineText as NSString
+                        if refRegex.firstMatch(in: lineText, range: NSRange(location: 0, length: nsText.length)) != nil {
+                            let dy = abs(line.bbox.midY - point.y)
+                            if dy < bestRefScore {
+                                bestRefScore = dy
+                                bestRefLine = line
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let refLine = bestRefLine {
+                // Frame the initial lines of the bibliography entry within the same block
+                if let block = candidateBlocks.first(where: { $0.lines.contains(where: { $0.bbox == refLine.bbox }) }) {
+                    let sortedLines = block.lines.sorted { $0.bbox.minY < $1.bbox.minY }
+                    if let startIdx = sortedLines.firstIndex(where: { $0.bbox == refLine.bbox }) {
+                        var entryLines: [TextLine] = [sortedLines[startIdx]]
+                        var prevMaxY = sortedLines[startIdx].bbox.maxY
+                        for i in (startIdx + 1)..<sortedLines.count {
+                            let l = sortedLines[i]
+                            if l.bbox.minY - prevMaxY <= 15 && l.bbox.minY - sortedLines[startIdx].bbox.minY <= 80 {
+                                entryLines.append(l)
+                                prevMaxY = l.bbox.maxY
+                            } else {
+                                break
+                            }
+                        }
+                        if entryLines.count > 1 {
+                            let minX = entryLines.map { $0.bbox.minX }.min() ?? refLine.bbox.minX
+                            let maxX = entryLines.map { $0.bbox.maxX }.max() ?? refLine.bbox.maxX
+                            let minY = entryLines.map { $0.bbox.minY }.min() ?? refLine.bbox.minY
+                            let maxY = entryLines.map { $0.bbox.maxY }.max() ?? refLine.bbox.maxY
+                            let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                            return TextLine(bbox: combinedBBox, characters: entryLines.flatMap { $0.characters })
+                        }
+                    }
+                }
+                return refLine
+            }
+        }
+
+        // 3. Specialized search: Equation References
+        // If referencing an equation (e.g. "Equation (27-19)", "Eq. (2)"), locate the equation's number tag or formula,
+        // prioritizing standalone equation tags/numbering on the right margin over prose paragraphs referencing the equation,
+        // and strictly avoiding following prose clauses ("where ...").
+        if let eqNum = eqTargetNum {
+            let targetParens = "(\(eqNum))"
+            var bestEqLine: TextLine? = nil
+            var bestEqScore: CGFloat = .infinity
+
+            for block in page.blocks where block.type == .text {
+                for line in block.lines {
+                    // Strictly exclude margin line numbers: numeric-only with narrow width or far left
+                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
+                    if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40 { continue }
+                    if line.bbox.minX < page.bounds.minX + Self.minColumnWidth - 10 && line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) { continue }
+
+                    let lineText = line.text.trimmingCharacters(in: .whitespaces)
+                    let isExactTag = (lineText == targetParens || lineText == eqNum)
+                    let isRightAlignedTag = (lineText.hasSuffix(targetParens) || lineText.hasSuffix(eqNum)) &&
+                                            (line.bbox.minX > page.bounds.midX) &&
+                                            (lineText.count <= targetParens.count + 6)
+                    let isStandaloneTag = isExactTag || isRightAlignedTag
+
+                    let dy = abs(line.bbox.midY - point.y)
+                    guard dy <= 450 else { continue }
+
+                    // Standalone equation tags get massive priority over prose paragraphs mentioning the equation
+                    let tagBonus: CGFloat = isStandaloneTag ? 1000.0 : (lineText.contains(targetParens) ? 100.0 : 0.0)
+                    guard tagBonus > 0 else { continue }
+
+                    let score = dy - tagBonus
+                    if score < bestEqScore {
+                        bestEqScore = score
+                        bestEqLine = line
+                    }
+                }
+            }
+
+            if let eqNumLine = bestEqLine {
+                // If there are formula lines on this same equation row, expand horizontally to frame
+                // both the formula and the equation number, strictly excluding margin line numbers.
+                let rowMinY = eqNumLine.bbox.minY - 15
+                let rowMaxY = eqNumLine.bbox.maxY + 15
+                let rowLines = page.blocks.filter { $0.type == .text }.flatMap { $0.lines }.filter { line in
+                    // Exclude margin line numbers: narrow numeric lines on the left, or in gutter
+                    if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 45 && line.bbox.minX < page.bounds.midX {
+                        return false
+                    }
+                    guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { return false }
+                    return line.bbox.minY >= rowMinY && line.bbox.maxY <= rowMaxY
+                }
+                if !rowLines.isEmpty {
+                    let minX = rowLines.map { $0.bbox.minX }.min() ?? eqNumLine.bbox.minX
+                    let maxX = rowLines.map { $0.bbox.maxX }.max() ?? eqNumLine.bbox.maxX
+                    let minY = rowLines.map { $0.bbox.minY }.min() ?? eqNumLine.bbox.minY
+                    let maxY = rowLines.map { $0.bbox.maxY }.max() ?? eqNumLine.bbox.maxY
+                    let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                    return TextLine(bbox: combinedBBox, characters: rowLines.flatMap { $0.characters })
+                }
+                return eqNumLine
+            }
+        }
+
+        // 4. Specialized search: Table or Figure References
+        // If referencing a Table or Figure (e.g. "Table 27-14", "Figure 1"), directly locate the caption headline.
+        if let kind = tableOrFigKind, let num = tableOrFigNum {
+            var bestTitleLine: TextLine? = nil
+            var bestTitleDy: CGFloat = .infinity
+
+            // For tables, title is near anchor (±250pt).
+            // For figures, caption is almost always below the figure illustration (up to 500pt below anchor).
+            let maxDyAbove: CGFloat = (kind == "figure") ? 60 : 250
+            let maxDyBelow: CGFloat = (kind == "figure") ? 500 : 250
+
+            let numPattern = #"(?:\b|\()\#(NSRegularExpression.escapedPattern(for: num))(?:\b|\))"#
+            let numRegex = try? NSRegularExpression(pattern: numPattern, options: .caseInsensitive)
+
+            for block in candidateBlocks {
+                for line in block.lines {
+                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
+                    guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 10 else { continue }
+                    let lineLower = line.text.lowercased()
+                    let containsKind = (kind == "figure")
+                        ? (lineLower.contains("figure") || lineLower.contains("fig"))
+                        : lineLower.contains("table")
+
+                    let containsNum: Bool
+                    if let numRegex {
+                        let nsLine = lineLower as NSString
+                        containsNum = numRegex.firstMatch(in: lineLower, range: NSRange(location: 0, length: nsLine.length)) != nil
+                    } else {
+                        containsNum = lineLower.contains(num)
+                    }
+
+                    if containsKind && containsNum {
+                        let dy = line.bbox.midY - point.y
+                        if dy >= -maxDyAbove && dy <= maxDyBelow {
+                            let absDy = abs(dy)
+                            if absDy < bestTitleDy {
+                                bestTitleDy = absDy
+                                bestTitleLine = line
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let titleLine = bestTitleLine {
+                // If title wraps across subsequent lines in the same block, frame the full title heading
+                if let block = candidateBlocks.first(where: { $0.lines.contains(where: { $0.bbox == titleLine.bbox }) }) {
+                    let sortedLines = block.lines.sorted { $0.bbox.minY < $1.bbox.minY }
+                    if let startIdx = sortedLines.firstIndex(where: { $0.bbox == titleLine.bbox }) {
+                        var captionLines: [TextLine] = [sortedLines[startIdx]]
+                        var prevMaxY = sortedLines[startIdx].bbox.maxY
+                        for i in (startIdx + 1)..<sortedLines.count {
+                            let l = sortedLines[i]
+                            if l.bbox.minY - prevMaxY <= 15 && l.bbox.minY - sortedLines[startIdx].bbox.minY <= 80 {
+                                captionLines.append(l)
+                                prevMaxY = l.bbox.maxY
+                            } else {
+                                break
+                            }
+                        }
+                        if captionLines.count > 1 {
+                            let minX = captionLines.map { $0.bbox.minX }.min() ?? titleLine.bbox.minX
+                            let maxX = captionLines.map { $0.bbox.maxX }.max() ?? titleLine.bbox.maxX
+                            let minY = captionLines.map { $0.bbox.minY }.min() ?? titleLine.bbox.minY
+                            let maxY = captionLines.map { $0.bbox.maxY }.max() ?? titleLine.bbox.maxY
+                            let combinedBBox = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                            return TextLine(bbox: combinedBBox, characters: captionLines.flatMap { $0.characters })
+                        }
+                    }
+                }
+                return titleLine
+            }
+        }
+
+        // 5. General Spatial Proximity Scoring (fallback for other references)
+        let minBodyX = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
+        let effectiveX: CGFloat
+        if point.x <= page.bounds.minX + Self.minColumnWidth {
+            effectiveX = minBodyX + 10
+        } else {
+            effectiveX = point.x
+        }
+        let targetPoint = CGPoint(x: effectiveX, y: point.y)
+
+        // Multi-column detection: only constrain to a column if the page actually contains
+        // side-by-side body text columns, preventing single-column centered headings from being discarded.
+        let isMultiColumn = candidateBlocks.contains { b1 in
+            candidateBlocks.contains { b2 in
+                b1.bbox != b2.bbox && abs(b1.bbox.midX - b2.bbox.midX) > 150 &&
+                min(b1.bbox.maxY, b2.bbox.maxY) > max(b1.bbox.minY, b2.bbox.minY) + 40
+            }
+        }
+
+        var bestLine: TextLine? = nil
+        var bestScore: CGFloat = .infinity
+
+        for block in candidateBlocks {
+            if isMultiColumn && point.x > page.bounds.minX + Self.minColumnWidth {
+                let overlapWidth = min(block.bbox.maxX, point.x + Self.gutterThreshold) - max(block.bbox.minX, point.x - Self.gutterThreshold)
+                if overlapWidth <= 0 && abs(block.bbox.midX - point.x) > 120 {
+                    continue
+                }
+            }
+
+            for line in block.lines {
+                guard !line.characters.isEmpty else { continue }
+                // Exclude narrow margin gutter line numbers
+                guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { continue }
+                guard line.bbox.minX >= page.bounds.minX + 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
+                guard line.bbox.width >= 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
+
+                // Vertical distance metric identical to resolvePosition:
+                let yOverlap = (targetPoint.y >= line.bbox.minY - 3 && targetPoint.y <= line.bbox.maxY + 3)
+                let dy: CGFloat
+                if yOverlap {
+                    dy = 0
+                } else if targetPoint.y < line.bbox.minY {
+                    dy = line.bbox.minY - targetPoint.y
+                } else {
+                    dy = (targetPoint.y - line.bbox.maxY) * 1.5
+                }
+
+                // Optional label token boost (e.g. section number or name)
+                var labelBoost: CGFloat = 0.0
+                if !cleanLabel.isEmpty {
+                    let lineLower = line.text.lowercased()
+                    for token in cleanLabel.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "-" && $0 != "." }) {
+                        let t = String(token).lowercased()
+                        if t.count >= 2 && lineLower.contains(t) {
+                            labelBoost += 1000.0
+                        } else if t.count == 1 && lineLower.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains(Substring(t)) {
+                            labelBoost += 500.0
+                        }
+                    }
+                }
+
+                // Restrict search to reasonable vertical proximity, unless the anchor is at the top of the page
+                let isTopAnchored = targetPoint.y <= page.bounds.minY + 60
+                if isTopAnchored && labelBoost > 0 {
+                    // Allowed across the page when strongly matched by label
+                } else if isTopAnchored {
+                    guard dy <= 150 else { continue }
+                } else {
+                    guard dy <= 120 else { continue }
+                }
+
+                // Horizontal distance metric identical to resolvePosition:
+                let dx: CGFloat
+                if targetPoint.x >= line.bbox.minX && targetPoint.x <= line.bbox.maxX {
+                    dx = 0
+                } else if targetPoint.x < line.bbox.minX {
+                    dx = line.bbox.minX - targetPoint.x
+                } else {
+                    dx = targetPoint.x - line.bbox.maxX
+                }
+
+                // Deprioritize running page headers when the target point is within body content
+                let isPageHeader = line.bbox.minY <= page.bounds.minY + 45
+                let headerPenalty: CGFloat = (isPageHeader && targetPoint.y > page.bounds.minY + 50) ? 500.0 : 0.0
+
+                // Heavy vertical prioritization matching resolvePosition: (effectiveDy * 4.0) + dx + headerPenalty - labelBoost
+                let effectiveDy: CGFloat = (isTopAnchored && labelBoost > 0) ? 0 : dy
+                let score = (effectiveDy * 4.0) + dx + headerPenalty - labelBoost
+
+                if score < bestScore {
+                    bestScore = score
+                    bestLine = line
+                }
+            }
+        }
+
+        return bestLine
+    }
+
+    // MARK: - Word & Line Selection
+    public func selectWord(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard let pos = resolvePosition(at: point, in: textBlocks),
+              pos.blockIndex < textBlocks.count else { return nil }
+        let block = textBlocks[pos.blockIndex]
+        guard pos.lineIndex < block.lines.count else { return nil }
+        let line = block.lines[pos.lineIndex]
+        guard !line.characters.isEmpty else { return nil }
+
+        func isWordChar(_ c: Character) -> Bool {
+            c.isLetter || c.isNumber || c == "_"
+        }
+
+        var targetIdx = min(pos.charIndex, line.characters.count - 1)
+        if targetIdx > 0 && !isWordChar(line.characters[targetIdx].char) && isWordChar(line.characters[targetIdx - 1].char) {
+            targetIdx -= 1
+        } else if targetIdx + 1 < line.characters.count && !isWordChar(line.characters[targetIdx].char) && isWordChar(line.characters[targetIdx + 1].char) {
+            targetIdx += 1
+        }
+
+        let isWord = isWordChar(line.characters[targetIdx].char)
+        var startIdx = targetIdx
+        var endIdx = targetIdx + 1
+
+        if isWord {
+            while startIdx > 0 && isWordChar(line.characters[startIdx - 1].char) {
+                startIdx -= 1
+            }
+            while endIdx < line.characters.count && isWordChar(line.characters[endIdx].char) {
+                endIdx += 1
+            }
+        }
+
+        let sliceChars = Array(line.characters[startIdx..<endIdx])
+        guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { return nil }
+
+        let lineQuad = PDFQuad(
+            ul: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.minY),
+            ur: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.minY),
+            ll: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.maxY),
+            lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
+        )
+
+        var wordText = ""
+        for (cIdx, char) in sliceChars.enumerated() {
+            wordText.append(char.char)
+            if cIdx < sliceChars.count - 1 {
+                let nextChar = sliceChars[cIdx + 1]
+                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
+                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
+                    wordText.append(" ")
+                }
+            }
+        }
+
+        return SelectionResult(
+            text: wordText,
+            highlightQuads: [lineQuad],
+            boundingRect: lineQuad.boundingRect,
+            mode: .readingOrder
+        )
+    }
+
+    public func selectLine(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
+        guard let pos = resolvePosition(at: point, in: textBlocks),
+              pos.blockIndex < textBlocks.count else { return nil }
+        let block = textBlocks[pos.blockIndex]
+        guard pos.lineIndex < block.lines.count else { return nil }
+        let line = block.lines[pos.lineIndex]
+        guard !line.characters.isEmpty else { return nil }
+
+        let sliceChars = line.characters
+        guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { return nil }
+
+        let lineQuad = PDFQuad(
+            ul: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.minY),
+            ur: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.minY),
+            ll: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.maxY),
+            lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
+        )
+
+        var lineText = ""
+        for (cIdx, char) in sliceChars.enumerated() {
+            lineText.append(char.char)
+            if cIdx < sliceChars.count - 1 {
+                let nextChar = sliceChars[cIdx + 1]
+                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
+                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
+                    lineText.append(" ")
+                }
+            }
+        }
+
+        return SelectionResult(
+            text: lineText,
+            highlightQuads: [lineQuad],
+            boundingRect: lineQuad.boundingRect,
+            mode: .readingOrder
+        )
+    }
+}
