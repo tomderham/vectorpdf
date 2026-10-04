@@ -3066,24 +3066,12 @@ func createFormSamplePDF(at fileURL: URL) {
 
     #expect(window.tabGroup?.windows.count == 2)
 
-    // Verify clicks on titlebar / toolbar execute safely
-    let topBarLocation = NSPoint(x: window.frame.width * 0.5, y: window.frame.height - 15)
-    let event = NSEvent.mouseEvent(
-        with: .leftMouseDown,
-        location: topBarLocation,
-        modifierFlags: [],
-        timestamp: ProcessInfo.processInfo.systemUptime,
-        windowNumber: window.windowNumber,
-        context: nil,
-        eventNumber: 1,
-        clickCount: 1,
-        pressure: 1.0
-    )
-    if let event {
-        window.sendEvent(event)
-    }
+    // A single click on the top bar isn't sent here: it starts AppKit's window-drag loop
+    // (performDrag), which stops the main run loop when it ends. Under the test runner that run
+    // loop is the one driving Swift's async main, so stopping it exits the whole test process.
 
     // Verify double-click on titlebar / top-bar executes zoom/fill safely
+    let topBarLocation = NSPoint(x: window.frame.width * 0.5, y: window.frame.height - 15)
     let doubleClickEvent = NSEvent.mouseEvent(
         with: .leftMouseDown,
         location: topBarLocation,

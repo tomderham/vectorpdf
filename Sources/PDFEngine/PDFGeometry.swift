@@ -53,7 +53,24 @@ public struct PDFQuad: Sendable, Equatable, Codable {
         let maxY = max(ul.y, ur.y, ll.y, lr.y)
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
-    
+
+    /// True when the quad is an upright rectangle, within `tolerance` points.
+    public func isAxisAligned(tolerance: CGFloat = 0.5) -> Bool {
+        abs(ul.y - ur.y) <= tolerance && abs(ll.y - lr.y) <= tolerance
+            && abs(ul.x - ll.x) <= tolerance && abs(ur.x - lr.x) <= tolerance
+    }
+
+    /// The part between two fractions of its length (0 = left edge, 1 = right), following any slant.
+    public func slice(from start: CGFloat, to end: CGFloat) -> PDFQuad {
+        func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+            CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+        }
+        return PDFQuad(
+            ul: lerp(ul, ur, start), ur: lerp(ul, ur, end),
+            ll: lerp(ll, lr, start), lr: lerp(ll, lr, end)
+        )
+    }
+
     public func toFZQuad() -> fz_quad {
         var q = fz_quad()
         q.ul = fz_point(x: Float(ul.x), y: Float(ul.y))

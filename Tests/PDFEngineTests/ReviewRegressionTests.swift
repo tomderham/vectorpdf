@@ -550,6 +550,136 @@ struct ReviewRegressionTests {
         #expect(vm.document?.measurementAnnotations(pageIndex: 0).count == 1)
     }
 
+    // MARK: - Links
+
+    @MainActor
+    @Test func commandClickOpensLinkInNewWindowAndPlainClickJumps() async throws {
+        let src = scratchURL("link_click.pdf")
+        defer { try? FileManager.default.removeItem(at: src) }
+        createSamplePDF(at: src)
+
+        let vm = PDFViewerViewModel()
+        vm.isTransientWindow = true
+        await vm.loadDocument(from: src.path)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 1200), styleMask: [.titled], backing: .buffered, defer: true)
+        let canvas = PDFCanvasView(viewModel: vm)
+        canvas.frame = NSRect(x: 0, y: 0, width: 1000, height: 1200)
+        window.contentView = canvas
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        let link = SnapshotTarget(label: "Eq. 1", targetPage: 0, targetPoint: CGPoint(x: 72, y: 400), sourceRect: CGRect(x: 100, y: 75, width: 80, height: 20), sourcePage: 0)
+        vm.pageLinks[0] = [link]
+
+        let pFrame = try #require(canvas.pageFrame(for: 0))
+        let pb = try #require(vm.document?.pageBounds[0])
+        let local = NSPoint(x: pFrame.minX + (140 - pb.minX) * vm.effectiveZoom, y: pFrame.minY + (85 - pb.minY) * vm.effectiveZoom)
+        func mouse(_ type: NSEvent.EventType, _ modifiers: NSEvent.ModifierFlags) -> NSEvent {
+            NSEvent.mouseEvent(with: type, location: canvas.convert(local, to: nil), modifierFlags: modifiers, timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+        }
+        defer { SnapshotWindowManager.shared.close(link.id) }
+
+        canvas.mouseDown(with: mouse(.leftMouseDown, .command))
+        canvas.mouseUp(with: mouse(.leftMouseUp, .command))
+        #expect(SnapshotWindowManager.shared.isOpen(link.id))
+        #expect(vm.activeSnapshotTarget == nil)
+        SnapshotWindowManager.shared.close(link.id)
+
+        // Option-click no longer opens a window; it follows the link like a plain click.
+        canvas.mouseDown(with: mouse(.leftMouseDown, .option))
+        canvas.mouseUp(with: mouse(.leftMouseUp, .option))
+        #expect(!SnapshotWindowManager.shared.isOpen(link.id))
+        #expect(vm.activeSnapshotTarget?.id == link.id)
+    }
+
+    @MainActor
+    @Test func linkPeekSitsBelowLinkOrFlipsAboveNearScreenBottom() {
+        let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let size = NSSize(width: 400, height: 120)
+
+        let below = LinkPeekController.panelFrame(size: size, linkRect: NSRect(x: 200, y: 600, width: 60, height: 14), screenFrame: screen)
+        #expect(below.maxY == 594)
+        #expect(below.minX == 200)
+
+        let above = LinkPeekController.panelFrame(size: size, linkRect: NSRect(x: 200, y: 50, width: 60, height: 14), screenFrame: screen)
+        #expect(above.minY == 70)
+
+        // Kept on screen horizontally near the right edge.
+        let clamped = LinkPeekController.panelFrame(size: size, linkRect: NSRect(x: 1300, y: 600, width: 60, height: 14), screenFrame: screen)
+        #expect(clamped.maxX == 1432)
+    }
+
+    @Test func linkTargetKindComesFromDestinationNamesAndOutline() {
+        func kind(_ uri: String?, outline: [String] = []) -> LinkTargetKind {
+            LinkTargetKind(uri: uri, outlineDestinationKeys: Set(outline.compactMap { LinkTargetKind.destinationKey(for: $0) }))
+        }
+        #expect(kind("#nameddest=equation.2.3") == .equation)
+        #expect(kind("#nameddest=AMS.4") == .equation)
+        #expect(kind("#nameddest=subsection.3.1") == .heading)
+        #expect(kind("#nameddest=table.1") == .table)
+        #expect(kind("#nameddest=figure.5") == .figure)
+        #expect(kind("#nameddest=cite.author2020") == .citation)
+        #expect(kind("#nameddest=theorem.2") == .statement)
+        #expect(kind("#nameddest=someanchor") == .unknown)
+
+        // An explicit destination is a heading only when an outline entry shares it.
+        let explicit = "#page=4&zoom=nan,72,140.4"
+        #expect(kind(explicit) == .unknown)
+        #expect(kind(explicit, outline: ["#page=4&zoom=100,72,140"]) == .heading)
+        #expect(kind(explicit, outline: ["#page=4&zoom=nan,72,300"]) == .unknown)
+        // Whole-page destinations never match.
+        #expect(kind("#page=4", outline: ["#page=4"]) == .unknown)
+    }
+
+    @MainActor
+    @Test func linkPeekShowsMoreContextForEquationsThanCitations() async throws {
+        let src = scratchURL("link_peek_rect.pdf")
+        defer { try? FileManager.default.removeItem(at: src) }
+        createSamplePDF(at: src)
+
+        let vm = PDFViewerViewModel()
+        vm.isTransientWindow = true
+        await vm.loadDocument(from: src.path)
+
+        func link(_ uri: String) -> SnapshotTarget {
+            SnapshotTarget(label: "ref", targetPage: 0, targetPoint: CGPoint(x: 72, y: 300), sourceRect: CGRect(x: 100, y: 75, width: 40, height: 12), sourcePage: 0, uri: uri)
+        }
+        let citation = vm.linkPeekRect(for: link("#nameddest=cite.a"))
+        let equation = vm.linkPeekRect(for: link("#nameddest=equation.1"))
+        #expect(citation == vm.resolvedTargetRect(for: link("#nameddest=cite.a")))
+        #expect(equation.height > citation.height)
+        #expect(equation.minY <= 300)
+
+        // Unrecognised destinations (e.g. headings too deep to have a bookmark) get heading context.
+        let unknown = vm.linkPeekRect(for: link("#page=1&zoom=nan,72,300"))
+        #expect(unknown.height > citation.height)
+    }
+
+    // MARK: - OCR geometry
+
+    @Test func ocrLineQuadFollowsSlantedText() {
+        // A line rising to the right in Vision's normalized, bottom-left-origin space.
+        let page = CGRect(x: 0, y: 0, width: 600, height: 800)
+        let quad = PDFOCREngine.pageQuad(
+            topLeft: CGPoint(x: 0.1, y: 0.52), topRight: CGPoint(x: 0.9, y: 0.60),
+            bottomLeft: CGPoint(x: 0.1, y: 0.50), bottomRight: CGPoint(x: 0.9, y: 0.58),
+            pageBounds: page
+        )
+        #expect(abs(quad.ul.x - 60) < 0.001 && abs(quad.ul.y - 384) < 0.001)
+        #expect(abs(quad.lr.x - 540) < 0.001 && abs(quad.lr.y - 336) < 0.001)
+        #expect(!quad.isAxisAligned())
+
+        let line = PDFOCRLine(text: "slanted", confidence: 1, quad: quad)
+        #expect(line.boundingBox == quad.boundingRect)
+
+        // The middle half of the line follows the slant rather than spanning the full box height.
+        let middle = quad.slice(from: 0.25, to: 0.75)
+        #expect(abs(middle.ul.x - 180) < 0.001 && abs(middle.ul.y - 368) < 0.001)
+        #expect(abs(middle.ur.x - 420) < 0.001 && abs(middle.ur.y - 336) < 0.001)
+        #expect(middle.boundingRect.height < quad.boundingRect.height)
+
+        #expect(PDFQuad(rect: CGRect(x: 10, y: 10, width: 50, height: 12)).isAxisAligned())
+    }
+
     // MARK: - Forms
 
     @MainActor

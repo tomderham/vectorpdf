@@ -19,7 +19,8 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 
 **Cross-references**
 - **Column-aware text selection** using structured text geometry (`fz_stext_page`), so selections in multi-column layouts don't pick up adjacent columns or margin line numbers.
-- **Snapshots:** Option-click an internal link, citation, equation, table, or figure reference to open its target in a standalone snapshot window without losing your place.
+- **Link peek:** Hold Command over an internal link (or Force Click it) to preview its target in a chrome-less popup that closes when you let go. The preview shows context suited to the target — a few lines for equations, the opening paragraph for sections, the top of a table or figure — identified from LaTeX (hyperref) destination names and the document outline.
+- **Open in New Window:** Command-click a link, citation, equation, table, or figure reference (or choose Open in New Window from its context menu) to open its target in a separate window without losing your place.
 - **Anchors:** Save text or area selections as named anchors and jump back to them from the Anchors menu.
 
 **Workspace**
@@ -36,7 +37,7 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 - **Page management:** Rotate, delete, reorder, duplicate, insert blank or imported pages, extract pages, and split a PDF.
 - **Redaction:** Region and find-and-redact (text, regex, SSN, credit card, email, phone, date) with true content removal.
 - **Encryption:** Open password-protected PDFs and save copies encrypted with AES-256.
-- **On-device OCR** of scanned pages using Apple Vision.
+- **On-device OCR** of scanned pages using Apple Vision, making them searchable; highlights follow slanted text on skewed scans.
 
 **Export & print**
 - **Export:** Plain text, Word (.docx), SVG (one file per page, text as vector paths), and flattened PDF; annotation summary export; printing through MuPDF so output matches the on-screen rendering.
@@ -59,7 +60,7 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 |  - Table of Contents Tree    |             |  - NSViewRepresentable Canvas      |
 |  - Interactive Thumbnails    |             |  - Quartz 2D Page Rendering        |
 |  - Form Controls & Signing   |             |  - Spatial Column Selection Tool   |
-|  - Cross-Ref Snapshot HUD    |             |  - Search Highlight Overlays  |
+|  - Link Peek & Anchors       |             |  - Search Highlight Overlays       |
 +------------------------------+             +------------------------------------+
           |                                                   |
 +---------------------------------------------------------------------------------+
@@ -140,7 +141,7 @@ Signs with a Developer ID certificate, builds the DMG, notarizes it, and staples
 
 ## Vendored Dependencies
 
-This project relies on **MuPDF** (version 1.24.8). To avoid committing a ~60MB binary to Git, `Vendor/MuPDF.xcframework` is built locally from source using `Vendor/build-mupdf.sh`.
+This project relies on **MuPDF** (version 1.28.5). To avoid committing a ~60MB binary to Git, `Vendor/MuPDF.xcframework` is built locally from source using `Vendor/build-mupdf.sh`.
 
 To rebuild or update the vendored MuPDF version:
 

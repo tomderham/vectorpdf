@@ -189,15 +189,17 @@ public actor PDFSearchActor {
                                         let startRatio = CGFloat(match.range.location) / totalLen
                                         let lenRatio = CGFloat(match.range.length) / totalLen
 
-                                        let matchX = line.boundingBox.minX + startRatio * line.boundingBox.width
-                                        let matchW = max(line.boundingBox.width * lenRatio, 6.0)
-                                        let matchRect = CGRect(x: matchX, y: line.boundingBox.minY, width: matchW, height: line.boundingBox.height)
+                                        // Slice of the line's outline (min 6pt), following any slant.
+                                        let lineLength = hypot(line.quad.ur.x - line.quad.ul.x, line.quad.ur.y - line.quad.ul.y)
+                                        let minFraction = lineLength > 0 ? 6.0 / lineLength : 0
+                                        let endRatio = min(1, startRatio + max(lenRatio, minFraction))
+                                        let matchQuad = line.quad.slice(from: startRatio, to: endRatio)
 
                                         continuation.yield(SearchResult(
                                             pageIndex: pageIdx,
                                             matchedText: matchedStr,
                                             snippet: snippet,
-                                            highlightQuads: [PDFQuad(rect: matchRect)]
+                                            highlightQuads: [matchQuad]
                                         ))
                                     }
                                 }

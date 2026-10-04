@@ -24,11 +24,21 @@ public struct PDFOCRLine: Sendable, Codable, Equatable {
     public let text: String
     public let confidence: Float
     public let boundingBox: CGRect // In native PDF point coordinates (top-down or matching pageBounds)
+    /// The line's outline in the same coordinates; follows the text when it's slanted.
+    public let quad: PDFQuad
 
     public init(text: String, confidence: Float, boundingBox: CGRect) {
         self.text = text
         self.confidence = confidence
         self.boundingBox = boundingBox
+        self.quad = PDFQuad(rect: boundingBox)
+    }
+
+    public init(text: String, confidence: Float, quad: PDFQuad) {
+        self.text = text
+        self.confidence = confidence
+        self.boundingBox = quad.boundingRect
+        self.quad = quad
     }
 }
 
@@ -69,31 +79,31 @@ public actor PDFOCREngine {
         var ocrLines: [PDFOCRLine] = []
         var fullTextParts: [String] = []
 
-        let width = pageBounds.width
-        let height = pageBounds.height
-
         for obs in observations {
             guard let candidate = obs.topCandidates(1).first else { continue }
             let str = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !str.isEmpty else { continue }
 
-            // Vision coordinates: (0,0) is bottom-left, normalized 0.0...1.0.
-            // Convert to PDF top-down coordinate space:
-            // x = obs.boundingBox.minX * width + pageBounds.minX
-            // y = (1.0 - obs.boundingBox.maxY) * height + pageBounds.minY
-            let box = obs.boundingBox
-            let pdfX = pageBounds.minX + box.minX * width
-            let pdfY = pageBounds.minY + (1.0 - box.maxY) * height
-            let pdfW = box.width * width
-            let pdfH = box.height * height
-
-            let lineRect = CGRect(x: pdfX, y: pdfY, width: pdfW, height: pdfH)
-            ocrLines.append(PDFOCRLine(text: str, confidence: candidate.confidence, boundingBox: lineRect))
+            // Corners rather than boundingBox, which is upright even for slanted text.
+            let quad = Self.pageQuad(
+                topLeft: obs.topLeft, topRight: obs.topRight,
+                bottomLeft: obs.bottomLeft, bottomRight: obs.bottomRight,
+                pageBounds: pageBounds
+            )
+            ocrLines.append(PDFOCRLine(text: str, confidence: candidate.confidence, quad: quad))
             fullTextParts.append(str)
         }
 
         let fullText = fullTextParts.joined(separator: "\n")
         return PDFOCRPageResult(pageIndex: pageIndex, lines: ocrLines, fullText: fullText)
+    }
+
+    /// Maps Vision's normalized, bottom-left-origin corners to top-left page coordinates.
+    static func pageQuad(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, pageBounds: CGRect) -> PDFQuad {
+        func map(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: pageBounds.minX + p.x * pageBounds.width, y: pageBounds.minY + (1.0 - p.y) * pageBounds.height)
+        }
+        return PDFQuad(ul: map(topLeft), ur: map(topRight), ll: map(bottomLeft), lr: map(bottomRight))
     }
 
     /// Merges multiple OCR results for the same page (e.g. from high-resolution tiled passes),

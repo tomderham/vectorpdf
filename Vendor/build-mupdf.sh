@@ -11,11 +11,11 @@
 # builds without editing this file.
 set -euo pipefail
 
-MUPDF_VERSION="${1:-1.28.3}"
+MUPDF_VERSION="${1:-1.28.5}"
 # Expected sha256 of https://mupdf.com/downloads/archive/mupdf-${MUPDF_VERSION}-source.tar.gz
 # Update this whenever MUPDF_VERSION changes (the script prints the actual
 # hash of whatever it downloads, so you can copy it in after reviewing).
-MUPDF_SHA256="${MUPDF_SHA256:-37c3209dc0e06fa4f3781ed44839ad933a9e6143eb4731f99e069204715bcef2}"
+MUPDF_SHA256="${MUPDF_SHA256:-98a5c10cda20c3992cdf76ff6b2a1149c32bd79cc796d3f703230b1185b7e934}"
 
 # Architectures to build. Currently Apple Silicon only; add "x86_64" here (and
 # lipo the resulting static libs together before the libtool step) if Intel

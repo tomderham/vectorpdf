@@ -2016,6 +2016,73 @@ public final class PDFViewerViewModel: ObservableObject {
         return CGRect(x: minX, y: minY, width: width, height: 40)
     }
 
+    private var cachedOutlineDestinationKeys: (document: ObjectIdentifier, keys: Set<String>)?
+
+    /// Destination keys of all outline entries; a link sharing one points at a heading.
+    private var outlineDestinationKeys: Set<String> {
+        guard let doc = document else { return [] }
+        if let cached = cachedOutlineDestinationKeys, cached.document == ObjectIdentifier(doc) {
+            return cached.keys
+        }
+        var keys = Set<String>()
+        func collect(_ nodes: [PDFOutlineNode]) {
+            for node in nodes {
+                if let key = LinkTargetKind.destinationKey(for: node.uri) { keys.insert(key) }
+                collect(node.children)
+            }
+        }
+        collect(doc.outline)
+        cachedOutlineDestinationKeys = (ObjectIdentifier(doc), keys)
+        return keys
+    }
+
+    public func linkTargetKind(for link: SnapshotTarget) -> LinkTargetKind {
+        LinkTargetKind(uri: link.uri, outlineDestinationKeys: outlineDestinationKeys)
+    }
+
+    /// Page region shown by a link peek: the target line for citations and footnotes, otherwise
+    /// a fixed amount of context around the destination (see LinkTargetKind.peekContext).
+    public func linkPeekRect(for link: SnapshotTarget) -> CGRect {
+        let anchor = resolvedTargetRect(for: link)
+        guard let context = linkTargetKind(for: link).peekContext,
+              let doc = document, link.targetPage >= 0, link.targetPage < doc.pageCount else {
+            return anchor
+        }
+        let pageBounds = doc.pageBounds[link.targetPage]
+        var top = anchor.minY
+        if let point = link.targetPoint, point.y.isFinite, point.y > pageBounds.minY + 10 {
+            top = min(top, point.y)
+        }
+        let bottom = min(pageBounds.maxY, top + context.below)
+        top = max(pageBounds.minY, top - max(context.above, 4))
+
+        // Widen to the text column: MuPDF text blocks in this band overlapping the anchor.
+        var minX = anchor.minX
+        var maxX = anchor.maxX
+        for block in pageStructuredData[link.targetPage]?.blocks ?? [] where block.type == .text {
+            let b = block.bbox
+            guard b.maxY > top, b.minY < bottom, b.width >= SpatialTextSelector.minColumnWidth,
+                  b.maxX > anchor.minX, b.minX < anchor.maxX else { continue }
+            minX = min(minX, b.minX)
+            maxX = max(maxX, b.maxX)
+        }
+        minX = max(pageBounds.minX, minX - 6)
+        maxX = min(pageBounds.maxX, maxX + 6)
+        return CGRect(x: minX, y: top, width: maxX - minX, height: bottom - top)
+    }
+
+    /// Renders a page region at the current zoom, sized to match the canvas.
+    public func renderRegionAtCurrentZoom(pageIndex: Int, rect: CGRect) async -> NSImage? {
+        guard isRenderActorReady, let doc = document, pageIndex >= 0, pageIndex < doc.pageCount,
+              rect.width > 0, rect.height > 0 else { return nil }
+        let zoom = effectiveZoom
+        let backingScale = (currentWindow ?? NSApplication.shared.keyWindow)?.backingScaleFactor ?? 2.0
+        guard let image = try? await renderActor.renderPageRect(pageIndex: pageIndex, rect: rect, scale: max(zoom * backingScale, 1.5)) else {
+            return nil
+        }
+        return NSImage(cgImage: image, size: NSSize(width: rect.width * zoom, height: rect.height * zoom))
+    }
+
     public func jumpToSnapshot(_ snap: SnapshotTarget) {
         loadPageMetadata(snap.targetPage)
         self.selectedSnapshotId = snap.id

@@ -34,7 +34,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     
     // Mouse interaction state
     private var hoveredLink: SnapshotTarget?
-    private var pendingLinkTarget: (target: SnapshotTarget, isOption: Bool)?
+    private var pendingLinkTarget: (target: SnapshotTarget, opensInNewWindow: Bool, didPeek: Bool)?
+
+    // Command-hover / Force Click link peek
+    private let linkPeek = LinkPeekController()
+    private var linkPeekEventMonitor: Any?
+    /// Set when a key, click or scroll cancels a peek, until the modifiers next change.
+    private var isLinkPeekSuppressed = false
     private var dragStartCanvasPoint: CGPoint?
     private var isDraggingSelection: Bool = false
     private var hasDraggedPastThreshold: Bool = false
@@ -138,9 +144,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         needsDisplay = true
     }
 
+    public override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        linkPeek.dismiss()
+        if let monitor = linkPeekEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            linkPeekEventMonitor = nil
+        }
+    }
+
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if let win = window {
+            installLinkPeekEventMonitor()
             viewModel.updateDisplayScale(for: win)
             DispatchQueue.main.async { [weak self, weak win] in
                 guard let self = self, let win = win else { return }
@@ -188,7 +204,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     private static let sepiaBackgroundB: UInt8 = 217
 
     /// Applies the dark (fz_invert_pixmap_luminance) or sepia (fz_tint_pixmap) theme to a copy of the page bitmap.
-    private static func transformedImage(from image: NSImage, appearance: PDFColorAppearance) -> NSImage? {
+    static func transformedImage(from image: NSImage, appearance: PDFColorAppearance) -> NSImage? {
         guard appearance != .light else { return image }
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
         let width = cgImage.width
@@ -1152,14 +1168,27 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             for match in matches {
                 let isActive = viewModel.isActiveMatch(match)
                 for quad in match.highlightQuads {
-                    let r = quad.boundingRect
-                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
-                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
-                    let qw = max(r.width * viewModel.effectiveZoom, 4)
-                    let qh = max(r.height * viewModel.effectiveZoom, 8)
-                    let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
-                    let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
-                    
+                    let path: NSBezierPath
+                    if quad.isAxisAligned() {
+                        let r = quad.boundingRect
+                        let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
+                        let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
+                        let qw = max(r.width * viewModel.effectiveZoom, 4)
+                        let qh = max(r.height * viewModel.effectiveZoom, 8)
+                        let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
+                        path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
+                    } else {
+                        // Slanted text, e.g. OCR of a skewed scan.
+                        path = NSBezierPath()
+                        let corners = [quad.ul, quad.ur, quad.lr, quad.ll].map {
+                            canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds)
+                        }
+                        path.move(to: corners[0])
+                        corners.dropFirst().forEach { path.line(to: $0) }
+                        path.close()
+                        path.lineJoinStyle = .round
+                    }
+
                     if isActive {
                         NSColor.systemOrange.withAlphaComponent(0.60).setFill()
                         path.fill()
@@ -1558,7 +1587,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         if let (pageIdx, _, pagePoint) = pageInfo(at: point),
            let links = viewModel.pageLinks[pageIdx],
            let clickedLink = links.first(where: { $0.sourceRect?.contains(pagePoint) == true }) {
-            pendingLinkTarget = (target: clickedLink, isOption: event.modifierFlags.contains(.option))
+            pendingLinkTarget = (target: clickedLink, opensInNewWindow: event.modifierFlags.contains(.command), didPeek: false)
             dragStartCanvasPoint = point
             activeDragPage = pageIdx
             isDraggingSelection = true
@@ -1670,6 +1699,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 hasDraggedPastThreshold = true
                 if pendingLinkTarget != nil {
                     pendingLinkTarget = nil
+                    linkPeek.dismiss()
                     viewModel.clearSelection()
                     hoveredLink = nil
                 }
@@ -1893,6 +1923,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             hoveredLink = nil
             needsDisplay = true
 
+            // Releasing a Force Click peek doesn't also follow the link.
+            if pending.didPeek {
+                linkPeek.dismiss()
+                return
+            }
+
             // Confirm release point is still within or immediately adjacent to link source rectangle
             let releasePoint = convert(event.locationInWindow, from: nil)
             if let (upPageIdx, _, upPagePoint) = pageInfo(at: releasePoint) {
@@ -1908,8 +1944,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
                 PDFViewerAppCoordinator.shared.openExternalURL(url)
                 return
             } else if pending.target.targetPage >= 0 {
-                // Option-click opens the link target in a snapshot window.
-                if pending.isOption {
+                // Command-click opens the link target in a snapshot window.
+                if pending.opensInNewWindow {
                     viewModel.openSnapshotInNewWindow(pending.target)
                 } else {
                     viewModel.clearSelection()
@@ -1937,6 +1973,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
     
     public override func mouseMoved(with event: NSEvent) {
+        updateLinkPeek(modifierFlags: event.modifierFlags)
         // Same rationale as mouseDown: link targets aren't meaningful outside the plain
         // single-column, unrotated layout, so don't hint at a clickable link (cursor/highlight)
         // that clicking wouldn't actually do anything about.
@@ -2050,6 +2087,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     
     public override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        linkPeek.dismiss()
         if currentHoverCanvasPoint != nil {
             currentHoverCanvasPoint = nil
             needsDisplay = true
@@ -2061,6 +2099,83 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         NSCursor.arrow.set()
     }
     
+    // MARK: - Link Peek
+
+    /// Watches Command and anything that cancels a peek. A monitor, since the canvas isn't
+    /// always first responder and menu shortcuts never reach keyDown.
+    private func installLinkPeekEventMonitor() {
+        guard linkPeekEventMonitor == nil else { return }
+        let mask: NSEvent.EventTypeMask = [.flagsChanged, .keyDown, .scrollWheel, .leftMouseDown, .rightMouseDown, .otherMouseDown, .magnify]
+        linkPeekEventMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+            guard let self, event.window === self.window else { return event }
+            if event.type == .flagsChanged {
+                self.isLinkPeekSuppressed = false
+                self.updateLinkPeek(modifierFlags: event.modifierFlags)
+            } else if self.linkPeek.targetId != nil {
+                self.linkPeek.dismiss()
+                self.isLinkPeekSuppressed = true
+            }
+            return event
+        }
+    }
+
+    /// Peeks while Command alone is held over an internal link.
+    private func updateLinkPeek(modifierFlags: NSEvent.ModifierFlags) {
+        let commandOnly = modifierFlags.intersection([.command, .option, .shift, .control]) == .command
+        guard commandOnly, !isLinkPeekSuppressed, pendingLinkTarget == nil, let window, window.isKeyWindow,
+              allowsLinkPeek else {
+            linkPeek.dismiss()
+            return
+        }
+        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        guard visibleRect.contains(point), let link = internalLinkInfo(at: point) else {
+            linkPeek.dismiss()
+            return
+        }
+        linkPeek.request(link, parent: window) { [weak self] in await self?.linkPeekContent(for: $0) }
+    }
+
+    /// Force Click peeks immediately; releasing the click ends it.
+    public override func pressureChange(with event: NSEvent) {
+        super.pressureChange(with: event)
+        guard event.stage == 2, let pending = pendingLinkTarget, !pending.didPeek,
+              pending.target.targetPage >= 0, allowsLinkPeek, let window else { return }
+        pendingLinkTarget?.didPeek = true
+        linkPeek.request(pending.target, immediate: true, parent: window) { [weak self] in await self?.linkPeekContent(for: $0) }
+    }
+
+    /// Wherever links are clickable: not while drawing or measuring.
+    private var allowsLinkPeek: Bool {
+        guard viewModel.isInteractiveViewingMode else { return false }
+        switch viewModel.canvasMode {
+        case .select, .text, .callout, .redact: return true
+        default: return false
+        }
+    }
+
+    private func linkPeekContent(for link: SnapshotTarget) async -> LinkPeekContent? {
+        guard let window, let sourceRect = link.sourceRect, let doc = viewModel.document,
+              link.sourcePage >= 0, link.sourcePage < doc.pageCount,
+              let pFrame = pageFrame(for: link.sourcePage) else { return nil }
+        let targetRect = viewModel.linkPeekRect(for: link)
+        guard let rendered = await viewModel.renderRegionAtCurrentZoom(pageIndex: link.targetPage, rect: targetRect) else {
+            return nil
+        }
+        let appearance = activeColorAppearance
+        let image = appearance == .light ? rendered : (Self.transformedImage(from: rendered, appearance: appearance) ?? rendered)
+
+        let pBounds = doc.pageBounds[link.sourcePage]
+        let zoom = viewModel.effectiveZoom
+        let canvasRect = NSRect(
+            x: pFrame.minX + (sourceRect.minX - pBounds.minX) * zoom,
+            y: pFrame.minY + (sourceRect.minY - pBounds.minY) * zoom,
+            width: sourceRect.width * zoom,
+            height: sourceRect.height * zoom
+        )
+        let screenRect = window.convertToScreen(convert(canvasRect, to: nil))
+        return LinkPeekContent(image: image, linkScreenRect: screenRect)
+    }
+
     /// Builds a target for a canvas point with no link or selection under
     /// it — extracting the surrounding words/sentence text if near text, or a page target if in margin.
     private func pointTarget(at canvasPoint: CGPoint) -> SnapshotTarget? {
