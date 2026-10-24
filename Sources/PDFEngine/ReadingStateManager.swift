@@ -51,6 +51,36 @@ public final class ReadingStateManager: ObservableObject {
 
     private var states: [String: DocumentReadingState] = [:]
 
+    private static let cloudSyncDefaultsKey = "com.thomasderham.vectorpdf.syncReadingStateWithICloud"
+
+    /// Whether reading state is also kept in iCloud key-value storage (on by default). It only
+    /// takes effect in builds signed with the iCloud key-value storage entitlement.
+    @Published public private(set) var isCloudSyncEnabled: Bool =
+        UserDefaults.standard.object(forKey: cloudSyncDefaultsKey) as? Bool ?? true
+
+    /// Turning sync off also deletes this app's entries from iCloud; turning it on uploads the
+    /// state stored on this Mac and picks up other Macs'.
+    public func setCloudSyncEnabled(_ enabled: Bool) {
+        guard enabled != isCloudSyncEnabled else { return }
+        isCloudSyncEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.cloudSyncDefaultsKey)
+        let store = NSUbiquitousKeyValueStore.default
+        if enabled {
+            for state in states.values {
+                if let canonical = state.canonicalKey, let data = try? JSONEncoder().encode(state) {
+                    store.set(data, forKey: kvsKey(for: canonical))
+                }
+            }
+            store.synchronize()
+            syncFromCloudKVS()
+        } else {
+            for key in store.dictionaryRepresentation.keys where key.hasPrefix(kvsPrefix) {
+                store.removeObject(forKey: key)
+            }
+            store.synchronize()
+        }
+    }
+
     /// Past this many entries, the least recently updated ones are dropped (see pruneIfNeeded).
     private static let maxStoredStates = 500
     private static let prunedStateCount = 300
@@ -95,6 +125,7 @@ public final class ReadingStateManager: ObservableObject {
     }
 
     private func syncFromCloudKVS() {
+        guard isCloudSyncEnabled else { return }
         let dict = NSUbiquitousKeyValueStore.default.dictionaryRepresentation
         var hasChanges = false
         for (key, val) in dict where key.hasPrefix(kvsPrefix) {
@@ -134,7 +165,8 @@ public final class ReadingStateManager: ObservableObject {
 
         // Check if available directly in iCloud KVS
         let store = NSUbiquitousKeyValueStore.default
-        if let kvsData = store.data(forKey: kvsKey(for: canonical)) ?? store.data(forKey: "\(kvsPrefix)\(canonical)"),
+        if isCloudSyncEnabled,
+           let kvsData = store.data(forKey: kvsKey(for: canonical)) ?? store.data(forKey: "\(kvsPrefix)\(canonical)"),
            let decoded = try? JSONDecoder().decode(DocumentReadingState.self, from: kvsData) {
             states[canonical] = decoded
             states[path] = decoded
@@ -162,7 +194,7 @@ public final class ReadingStateManager: ObservableObject {
         save()
 
         // Sync to NSUbiquitousKeyValueStore
-        if let data = try? JSONEncoder().encode(newState) {
+        if isCloudSyncEnabled, let data = try? JSONEncoder().encode(newState) {
             NSUbiquitousKeyValueStore.default.set(data, forKey: kvsKey(for: canonical))
             NSUbiquitousKeyValueStore.default.synchronize()
         }

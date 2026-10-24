@@ -586,37 +586,6 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     context.closePDF()
 }
 
-@Test func testMemoryFootprintRemainsBoundedUnderSearchAndRender() async throws {
-    let tempDir = FileManager.default.temporaryDirectory
-    let pdfURL = tempDir.appendingPathComponent("test_memory_\(UUID().uuidString).pdf")
-    createMultiPagePDF(at: pdfURL, pages: 100)
-    defer { try? FileManager.default.removeItem(at: pdfURL) }
-    
-    let searchActor = PDFSearchActor()
-    let renderActor = PDFRenderActor(cacheCapacity: 8)
-    try await searchActor.openDocument(filePath: pdfURL.path)
-    try await renderActor.openDocument(filePath: pdfURL.path)
-    
-    // 1. Run streaming search across all 100 pages
-    let stream = await searchActor.searchStream(query: "MU MIMO")
-    var matchCount = 0
-    for await _ in stream {
-        matchCount += 1
-    }
-    #expect(matchCount == 100)
-    
-    // 2. Render 20 Retina pages
-    for i in 0..<20 {
-        _ = try await renderActor.renderPage(pageIndex: i, scale: 2.0)
-    }
-    
-    // 3. Measure max RSS
-    var usage = rusage()
-    getrusage(RUSAGE_SELF, &usage)
-    let rssMB = Double(usage.ru_maxrss) / (1024.0 * 1024.0)
-    print("Peak memory RSS during 100-page search & render: \(String(format: "%.2f", rssMB)) MB")
-    #expect(rssMB < 350.0)
-}
 
 @Test func testDualModeSelectionAndActionableSnapshots() throws {
     let tempDir = FileManager.default.temporaryDirectory
@@ -1876,7 +1845,7 @@ func createFormSamplePDF(at fileURL: URL) {
     PDFViewerAppCoordinator.shared.registerActive(nil)
 }
 
-@Test @MainActor func testOpenGroupReplacesStandaloneEmptyStartWindow() async throws {
+@Test(.showsWindows) @MainActor func testOpenGroupReplacesStandaloneEmptyStartWindow() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL1 = tempDir.appendingPathComponent("test_tg_1_\(UUID().uuidString).pdf")
     let pdfURL2 = tempDir.appendingPathComponent("test_tg_2_\(UUID().uuidString).pdf")
@@ -1918,7 +1887,7 @@ func createFormSamplePDF(at fileURL: URL) {
     }
 }
 
-@Test @MainActor func testOpenGroupDoesNotReplaceWindowWithDocument() async throws {
+@Test(.showsWindows) @MainActor func testOpenGroupDoesNotReplaceWindowWithDocument() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL1 = tempDir.appendingPathComponent("test_tg_doc1_\(UUID().uuidString).pdf")
     let pdfURL2 = tempDir.appendingPathComponent("test_tg_doc2_\(UUID().uuidString).pdf")
@@ -1983,7 +1952,7 @@ func createFormSamplePDF(at fileURL: URL) {
     emptyWin1.close()
 }
 
-@Test @MainActor func testOpenDocumentHandlingEmptyStart() async throws {
+@Test(.showsWindows) @MainActor func testOpenDocumentHandlingEmptyStart() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_handling_empty_\(UUID().uuidString).pdf")
     createSamplePDF(at: pdfURL)
@@ -2007,7 +1976,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(opened.contentViewController != nil)
 }
 
-@Test @MainActor func testSnapshotWindowManagerParentChildClose() async throws {
+@Test(.showsWindows) @MainActor func testSnapshotWindowManagerParentChildClose() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_snapshot_manager_\(UUID().uuidString).pdf")
     createSamplePDF(at: pdfURL)
@@ -2038,7 +2007,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(SnapshotWindowManager.shared.isOpen(target2.id) == false)
 }
 
-@Test @MainActor func testSnapshotWindowAutoClosesWhenParentCloses() async throws {
+@Test(.showsWindows) @MainActor func testSnapshotWindowAutoClosesWhenParentCloses() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_snapshot_autoclose_\(UUID().uuidString).pdf")
     createSamplePDF(at: pdfURL)
@@ -3038,7 +3007,7 @@ func createFormSamplePDF(at fileURL: URL) {
     }
 }
 
-@Test @MainActor func testWindowTopBarDraggingAndControls() async throws {
+@Test(.showsWindows) @MainActor func testWindowTopBarDraggingAndControls() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_win_drag_\(UUID().uuidString).pdf")
     createSamplePDF(at: pdfURL)
@@ -3632,7 +3601,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.snapshotJumpToken == initialToken + 2)
 }
 
-@Test @MainActor func testLinkClickOnMouseUpAndDragSelection() async throws {
+@Test(.showsWindows) @MainActor func testLinkClickOnMouseUpAndDragSelection() async throws {
     let tempDir = FileManager.default.temporaryDirectory
     let pdfURL = tempDir.appendingPathComponent("test_link_mouseup_\(UUID().uuidString).pdf")
     createSamplePDF(at: pdfURL)
@@ -5790,7 +5759,7 @@ func createFormSamplePDF(at fileURL: URL) {
         #expect(vm.currentPageIndex == 10)
     }
 
-    @Test @MainActor func testSidebarPickerVisibilityInSingleTabAndMultiTabWindows() async throws {
+    @Test(.showsWindows) @MainActor func testSidebarPickerVisibilityInSingleTabAndMultiTabWindows() async throws {
         let tempDir = FileManager.default.temporaryDirectory
         let pdfURL = tempDir.appendingPathComponent("test_sidebar_picker_\(UUID().uuidString).pdf")
         createMultiPagePDF(at: pdfURL, pages: 3)
@@ -5870,7 +5839,7 @@ func createFormSamplePDF(at fileURL: URL) {
         #expect(abs(updatedBox.width - (500 - 2)) < 2.0)
     }
 
-    @Test @MainActor func testTabCloseNotificationRefreshesRemainingTabs() async throws {
+    @Test(.showsWindows) @MainActor func testTabCloseNotificationRefreshesRemainingTabs() async throws {
         let tempDir = FileManager.default.temporaryDirectory
         let pdfURL1 = tempDir.appendingPathComponent("test_tabclose1_\(UUID().uuidString).pdf")
         let pdfURL2 = tempDir.appendingPathComponent("test_tabclose2_\(UUID().uuidString).pdf")

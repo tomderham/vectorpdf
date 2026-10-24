@@ -53,6 +53,11 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
         openWindows.count
     }
 
+    /// Snapshot windows opened from any of `parents` (or from a snapshot window opened from one).
+    public func windows(openedFrom parents: [NSWindow]) -> [NSWindow] {
+        parents.flatMap { childrenByParent[ObjectIdentifier($0)] ?? [] }.compactMap { openWindows[$0] }
+    }
+
     /// Closes every currently open snapshot window — however it was opened (a saved snapshot
     /// card, a cross-reference link, a selection, or a plain page location).
     public func closeAll() {
@@ -132,6 +137,8 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
         window.miniwindowTitle = target.label
         window.representedURL = url
         window.tabbingMode = .disallowed
+        // Reached through its document window instead; see DockMenu.
+        window.isExcludedFromWindowsMenu = true
 
         let view = PDFViewerMainView(
             initialFilePath: url.path,

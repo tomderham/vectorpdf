@@ -480,8 +480,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
-    /// Permanently redacts (scrubs and deletes) all text glyphs, vector line art, and bitmap pixels
-    /// Permanently redacts all content covered by the given rectangles on `pageIndex`.
+    /// Permanently redacts all content covered by the given rectangles on `pageIndex`, including
+    /// annotations and form fields that touch them (their comments and values can repeat the text).
     /// - Parameters:
     ///   - mode: 1 = Blackout Region (burns black boxes, scrubs line art and images),
     ///           2 = Whiteout Region (burns white boxes, scrubs line art and images),
@@ -688,8 +688,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         let ret = mupdf_pdf_get_page_scale(ctx, doc, Int32(pageIndex), &ratio, ratio.count, &unit, unit.count, &ptsPerUnit, &found, &errorMsg)
         guard ret == 0, found != 0, ptsPerUnit > 0 else { return nil }
         return PDFScaleConfiguration.restored(
-            ratioString: String(cString: ratio),
-            unitSymbol: String(cString: unit),
+            ratioString: String(nullTerminated: ratio),
+            unitSymbol: String(nullTerminated: unit),
             pointsPerUnit: Double(ptsPerUnit)
         )
     }
@@ -912,7 +912,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     /// and coordinating with `NSFileCoordinator` to prevent sync daemon race conditions in iCloud Drive
     /// or other cloud providers.
     private func performCoordinatedSave(to destinationURL: URL, isSameFile: Bool, writeAction: (String) throws -> Void) throws {
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("vpdf_save_\(UUID().uuidString)_\(destinationURL.lastPathComponent)")
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-save-\(UUID().uuidString)-\(destinationURL.lastPathComponent)")
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         // Execute save to local temporary directory outside iCloud/CloudStorage
@@ -992,7 +992,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         let isSameFile = (path == self.filePath)
 
         // 1. Flush current in-memory modifications to a temporary working file
-        let tempSourceURL = FileManager.default.temporaryDirectory.appendingPathComponent("temp_pre_flatten_\(UUID().uuidString).pdf")
+        let tempSourceURL = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-flatten-\(UUID().uuidString).pdf")
         defer { try? FileManager.default.removeItem(at: tempSourceURL) }
 
         var errorMsg: UnsafePointer<CChar>?
@@ -1236,6 +1236,19 @@ extension PDFDocumentCore {
         }) ?? []
     }
     
+    /// Resolves an internal link or outline URI (`#page=3`, `#name`, …) to its destination page
+    /// and point, or nil if it doesn't point inside this document.
+    public func resolveLinkDestination(uri: String) -> (page: Int, point: CGPoint)? {
+        lock.lock()
+        defer { lock.unlock() }
+        var destPage: Int32 = -1
+        var destX: Float = 0
+        var destY: Float = 0
+        guard mupdf_resolve_link_page(ctx, doc, uri, &destPage, &destX, &destY) == 0,
+              destPage >= 0, Int(destPage) < pageCount else { return nil }
+        return (Int(destPage), CGPoint(x: CGFloat(destX), y: CGFloat(destY)))
+    }
+
     /// Loads structured text hierarchy for a page
     public func loadStructuredPage(for pageIndex: Int) -> StructuredPage? {
         return try? withPage(pageIndex: pageIndex) { page in
@@ -1559,5 +1572,12 @@ extension PDFDocumentCore {
             pageBoxes: boxes,
             fonts: fonts
         )
+    }
+}
+
+private extension String {
+    /// Decodes a C string buffer filled by the bridge, up to its first NUL.
+    init(nullTerminated buffer: [CChar]) {
+        self.init(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }
 }

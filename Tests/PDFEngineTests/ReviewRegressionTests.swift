@@ -531,6 +531,9 @@ struct ReviewRegressionTests {
         let canvas = PDFCanvasView(viewModel: vm)
         canvas.frame = NSRect(x: 0, y: 0, width: 1000, height: 1200)
         window.contentView = canvas
+        // Return is ignored here on purpose; don't let it reach the top of the chain and beep.
+        let keySink = KeySinkResponder()
+        canvas.nextResponder = keySink
         vm.canvasMode = .measureLength
         try await Task.sleep(nanoseconds: 50_000_000)
 
@@ -553,7 +556,7 @@ struct ReviewRegressionTests {
     // MARK: - Links
 
     @MainActor
-    @Test func commandClickOpensLinkInNewWindowAndPlainClickJumps() async throws {
+    @Test(.showsWindows) func commandClickOpensLinkInNewWindowAndPlainClickJumps() async throws {
         let src = scratchURL("link_click.pdf")
         defer { try? FileManager.default.removeItem(at: src) }
         createSamplePDF(at: src)
@@ -606,6 +609,15 @@ struct ReviewRegressionTests {
         // Kept on screen horizontally near the right edge.
         let clamped = LinkPeekController.panelFrame(size: size, linkRect: NSRect(x: 1300, y: 600, width: 60, height: 14), screenFrame: screen)
         #expect(clamped.maxX == 1432)
+    }
+
+    /// Peek images are rendered at zoom × backing scale (floored at 1.5), which on a 1x display
+    /// isn't a screen scale — the layer must use the image's real density or content mis-sizes.
+    @Test @MainActor func linkPeekUsesImagePixelDensity() {
+        let ctx = CGContext(data: nil, width: 300, height: 150, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        let image = NSImage(cgImage: ctx.makeImage()!, size: NSSize(width: 200, height: 100))
+        #expect(LinkPeekController.pixelDensity(of: image) == 1.5)
     }
 
     @Test func linkTargetKindComesFromDestinationNamesAndOutline() {
@@ -687,6 +699,9 @@ struct ReviewRegressionTests {
         let vm = PDFViewerViewModel()
         let widget = PDFFormWidget(pageIndex: 0, widgetIndex: 0, type: .text, rect: CGRect(x: 0, y: 0, width: 100, height: 20), name: "PIN", value: "", maxLen: 4, isComb: true)
         let field = PDFFormCombTextField(widget: widget, viewModel: vm, frame: NSRect(x: 0, y: 0, width: 100, height: 20))
+        // Some keys below are ignored on purpose; don't let them reach the top of the chain and beep.
+        let keySink = KeySinkResponder()
+        field.nextResponder = keySink
         for (ch, code) in [("a", UInt16(0)), ("b", 11), ("c", 8), ("d", 2)] {
             field.keyDown(with: keyEvent(ch, keyCode: code))
         }
@@ -769,5 +784,57 @@ struct ReviewRegressionTests {
         vm.applyRedactionRegion(pageIndex: 0, rect: CGRect(x: 60, y: 60, width: 300, height: 40))
         // Redaction invalidates the semantic index.
         #expect(vm.agentIndexState == .idle)
+    }
+}
+
+// MARK: - Reading-order selection columns
+
+@Suite struct ReadingOrderColumnTests {
+    /// One single-line block, 5pt per character, 12pt tall.
+    private func block(_ text: String, x: CGFloat, y: CGFloat) -> TextBlock {
+        let chars = text.enumerated().map { i, ch in
+            TextCharacter(char: ch, quad: PDFQuad(rect: CGRect(x: x + CGFloat(i) * 5, y: y, width: 5, height: 12)),
+                          origin: CGPoint(x: x + CGFloat(i) * 5, y: y + 10), size: 10, fontName: "Helvetica")
+        }
+        let bbox = CGRect(x: x, y: y, width: CGFloat(text.count) * 5, height: 12)
+        return TextBlock(type: .text, bbox: bbox, lines: [TextLine(bbox: bbox, characters: chars)])
+    }
+
+    private func page(_ blocks: [TextBlock]) -> StructuredPage {
+        StructuredPage(pageIndex: 0, bounds: CGRect(x: 0, y: 0, width: 612, height: 792), blocks: blocks)
+    }
+
+    @Test func definitionListKeepsItsTerms() {
+        // Terms in a narrow left column, definitions to their right, and a wide offset line
+        // elsewhere on the page that once made the page look multi-column.
+        let blocks = [
+            block("where", x: 90, y: 100),
+            block("HASH", x: 100, y: 115),
+            block("is the hash algorithm from the key derivation type", x: 198, y: 115),
+            block("AA", x: 100, y: 130),
+            block("is the authenticator address.", x: 198, y: 130),
+            block("M", x: 100, y: 145),
+            block("is half of the output length for the hash algorithm used.", x: 198, y: 145),
+            block("the following Authentication frame, an originator shall:", x: 90, y: 300)
+        ]
+        let result = SpatialTextSelector().selectText(on: page(blocks), from: CGPoint(x: 91, y: 106), to: CGPoint(x: 198 + 57 * 5, y: 151))
+        #expect(result.text.hasPrefix("where"))
+        for term in ["HASH", "AA", "M is half"] {
+            #expect(result.text.contains(term), "missing \(term) in \(result.text)")
+        }
+        #expect(result.text.hasSuffix("algorithm used."))
+    }
+
+    @Test func twoColumnSelectionStaysInItsColumn() {
+        let blocks = [
+            block("Left column first line of text here", x: 50, y: 100),
+            block("Left column second line of text here", x: 50, y: 115),
+            block("Right column first line of text here", x: 320, y: 100),
+            block("Right column second line of text here", x: 320, y: 115)
+        ]
+        let result = SpatialTextSelector().selectText(on: page(blocks), from: CGPoint(x: 51, y: 106), to: CGPoint(x: 50 + 37 * 5, y: 121))
+        #expect(result.text.contains("Left column first"))
+        #expect(result.text.contains("Left column second"))
+        #expect(!result.text.contains("Right"))
     }
 }

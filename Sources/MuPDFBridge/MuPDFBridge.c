@@ -476,7 +476,10 @@ int mupdf_resolve_link_page(fz_context *ctx, fz_document *doc, const char *uri, 
     float x = 0, y = 0;
     fz_location loc = fz_make_location(-1, -1);
     fz_try(ctx) {
-        loc = fz_resolve_link(ctx, doc, uri, &x, &y);
+        // fz_resolve_link resolves the #fragment of any URI in this document, so a web link like
+        // https://…/rfc9110#section-2 would land on this document's own section 2.
+        if (!fz_is_external_link(ctx, uri))
+            loc = fz_resolve_link(ctx, doc, uri, &x, &y);
     } fz_catch(ctx) {
         loc = fz_make_location(-1, -1);
     }
@@ -1593,6 +1596,42 @@ int mupdf_pdf_get_page_scale(fz_context *ctx, fz_document *doc, int pageno,
     return 0;
 }
 
+static int rect_touches_any(fz_rect area, const fz_rect *rects, int n_rects) {
+    for (int i = 0; i < n_rects; i++) {
+        fz_rect r = fz_make_rect(fminf(rects[i].x0, rects[i].x1), fminf(rects[i].y0, rects[i].y1),
+                                 fmaxf(rects[i].x0, rects[i].x1), fmaxf(rects[i].y0, rects[i].y1));
+        if (!fz_is_empty_rect(fz_intersect_rect(area, r))) return 1;
+    }
+    return 0;
+}
+
+// pdf_redact_page only removes FreeText annotations and links under a redaction. Highlights and
+// notes often repeat the covered text in /Contents, and a form field keeps its value in /V, so
+// any annotation or widget touching a redacted area goes too (popups are removed with their parent).
+static void delete_annots_touching_rects(fz_context *ctx, pdf_page *page, const fz_rect *rects, int n_rects) {
+    int deleted;
+    do {
+        deleted = 0;
+        for (pdf_annot *annot = pdf_first_annot(ctx, page); annot; annot = pdf_next_annot(ctx, annot)) {
+            enum pdf_annot_type type = pdf_annot_type(ctx, annot);
+            if (type == PDF_ANNOT_POPUP || type == PDF_ANNOT_LINK || type == PDF_ANNOT_REDACT) continue;
+            if (rect_touches_any(pdf_bound_annot(ctx, annot), rects, n_rects)) {
+                pdf_delete_annot(ctx, page, annot);
+                deleted = 1;
+                break;
+            }
+        }
+        if (deleted) continue;
+        for (pdf_annot *widget = pdf_first_widget(ctx, page); widget; widget = pdf_next_widget(ctx, widget)) {
+            if (rect_touches_any(pdf_bound_annot(ctx, widget), rects, n_rects)) {
+                pdf_delete_annot(ctx, page, widget);
+                deleted = 1;
+                break;
+            }
+        }
+    } while (deleted);
+}
+
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error) {
     if (!ctx || !doc) return -1;
     pdf_page *ppage = NULL;
@@ -1632,6 +1671,9 @@ int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int page
         opts.text = PDF_REDACT_TEXT_REMOVE;
 
         pdf_redact_page(ctx, pdoc, ppage, &opts);
+        if (rects && n_rects > 0) {
+            delete_annots_touching_rects(ctx, ppage, rects, n_rects);
+        }
 
         if (black_boxes == 2 && rects && n_rects > 0) {
             for (int i = 0; i < n_rects; i++) {

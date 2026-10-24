@@ -27,6 +27,8 @@ extension Notification.Name {
     public static let openFilePathCommand = Notification.Name("openFilePathCommand")
     public static let focusSearchCommand = Notification.Name("focusSearchCommand")
     public static let focusAnchorsCommand = Notification.Name("focusAnchorsCommand")
+    /// Object: the `PDFViewerViewModel` whose sidebar should show every tab's anchors.
+    public static let showAllTabAnchorsCommand = Notification.Name("showAllTabAnchorsCommand")
     public static let formWidgetDidChange = Notification.Name("formWidgetDidChange")
     public static let showDocumentPropertiesCommand = Notification.Name("showDocumentPropertiesCommand")
     public static let showSplitPDFCommand = Notification.Name("showSplitPDFCommand")
@@ -117,6 +119,9 @@ public struct PDFViewerMainView: View {
     }
 
     @State private var selectedSidebarTab: Int = 0
+    /// Anchors sidebar lists every tab's anchors, not just this document's.
+    @State private var showsAllTabAnchors = false
+    @StateObject private var groupAnchors = GroupAnchorsModel()
     // Rebuilds the segmented control after initial appearance to ensure segment images render.
     @State private var sidebarModePickerRenderKey = false
     @State private var hasScheduledSidebarModePickerRebuild = false
@@ -554,6 +559,7 @@ public struct PDFViewerMainView: View {
             viewModel.isTransientWindow = isSnapshotWindow
             if !isSnapshotWindow {
                 PDFViewerAppCoordinator.shared.trackForReadingStateFlush(viewModel)
+                groupAnchors.attach(to: viewModel)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notif in
@@ -599,6 +605,13 @@ public struct PDFViewerMainView: View {
             sidebarVisibility = .all
             viewModel.isSidebarVisible = true
             selectedSidebarTab = 2
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showAllTabAnchorsCommand)) { notif in
+            guard notif.object as? PDFViewerViewModel === viewModel else { return }
+            sidebarVisibility = .all
+            viewModel.isSidebarVisible = true
+            selectedSidebarTab = 2
+            showsAllTabAnchors = true
         }
         .onChange(of: viewModel.document?.filePath) { oldPath, newPath in
             guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
@@ -1018,7 +1031,21 @@ public struct PDFViewerMainView: View {
                 } else if selectedSidebarTab == 2 {
                     // Anchors Tab
                     VStack(spacing: 0) {
-                        if viewModel.activeSnapshots.isEmpty {
+                        if groupAnchors.tabCount > 1 {
+                            Picker("Show Anchors From", selection: $showsAllTabAnchors) {
+                                Text("This Document").tag(false)
+                                Text("All Tabs").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .controlSize(.small)
+                            .padding(.horizontal, 10)
+                            .padding(.top, 8)
+                            .padding(.bottom, 4)
+                        }
+                        if showsAllTabAnchors && groupAnchors.tabCount > 1 {
+                            GroupAnchorsListView(model: groupAnchors)
+                        } else if viewModel.activeSnapshots.isEmpty {
                             ContentUnavailableView {
                                 Label {
                                     Text("No Anchors")
@@ -1083,6 +1110,7 @@ public struct PDFViewerMainView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onAppear { groupAnchors.refresh() }
                 } else if selectedSidebarTab == 3 {
                     // Agent Tab: semantic search and on-device synthesis for the current document.
                     VStack(spacing: 0) {

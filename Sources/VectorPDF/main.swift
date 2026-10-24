@@ -35,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = TabBarAppearanceHelper.shared
         DocumentWindowing.installTabBarPlusButtonHandler()
+        DockMenu.installInWindowMenu()
         NSApp.setActivationPolicy(.regular)
 
         // The initial document window is created here via DocumentWindowing.
@@ -138,6 +139,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
+    }
+
+    @MainActor
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        DockMenu.make()
     }
 
     @MainActor

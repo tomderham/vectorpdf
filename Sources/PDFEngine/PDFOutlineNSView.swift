@@ -142,6 +142,9 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 if let selPage = selectedNodePage, currentPage != selPage {
                     self.selectedNodeId = nil
                     self.selectedNodePage = nil
+                    // Drop the clicked row's highlight too, or it outshines the active indicator
+                    // and reads as the ToC not following the page.
+                    outlineView?.deselectAll(nil)
                 }
             }
 

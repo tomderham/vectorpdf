@@ -259,9 +259,9 @@ public final class TabBarAppearanceHelper {
             object: nil,
             queue: .main
         ) { [weak self] notif in
-            guard let self, let window = (notif.object as? NSSplitView)?.window else { return }
+            guard let self, let splitView = notif.object as? NSSplitView else { return }
             MainActor.assumeIsolated {
-                guard window.tabGroup != nil else { return }
+                guard let window = splitView.window, window.tabGroup != nil else { return }
                 self.scheduleSplitResizeRefresh(for: window)
             }
         }

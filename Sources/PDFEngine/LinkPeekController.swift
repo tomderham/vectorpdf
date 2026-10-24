@@ -21,6 +21,10 @@ import AppKit
 struct LinkPeekContent {
     let image: NSImage
     let linkScreenRect: NSRect
+    /// Names the document the target comes from, when it isn't the one being read.
+    var caption: String? = nil
+    /// Shown over the fade when the target is cut off; empty for none.
+    var truncationHint: String = "⌘-click to open"
 }
 
 /// Chrome-less preview of a link's target, shown while Command is held over the link or during a
@@ -79,11 +83,16 @@ final class LinkPeekController {
             height: min(content.image.size.height, maxSize.height)
         )
         let isTruncated = content.image.size.width > size.width + 0.5 || content.image.size.height > size.height + 0.5
-        let frame = Self.panelFrame(size: size, linkRect: content.linkScreenRect, screenFrame: screenFrame)
+        let captionHeight = content.caption == nil ? 0 : Self.captionHeight
+        let panelSize = NSSize(width: max(size.width, content.caption == nil ? 0 : 160), height: size.height + captionHeight)
+        let frame = Self.panelFrame(size: panelSize, linkRect: content.linkScreenRect, screenFrame: screenFrame)
 
         let panel = self.panel ?? makePanel()
         self.panel = panel
-        panel.contentView = Self.makeContentView(image: content.image, size: size, isTruncated: isTruncated)
+        panel.contentView = Self.makeContentView(
+            image: content.image, size: size, isTruncated: isTruncated,
+            truncationHint: content.truncationHint, caption: content.caption, width: panelSize.width
+        )
         panel.setFrame(frame, display: false)
         if panel.parent !== parent {
             panel.parent?.removeChildWindow(panel)
@@ -105,21 +114,46 @@ final class LinkPeekController {
         return panel
     }
 
-    private static func makeContentView(image: NSImage, size: NSSize, isTruncated: Bool) -> NSView {
-        let container = NSView(frame: NSRect(origin: .zero, size: size))
+    static let captionHeight: CGFloat = 22
+
+    /// `size` is the image area; a caption adds a header strip above it.
+    static func makeContentView(
+        image: NSImage, size: NSSize, isTruncated: Bool, truncationHint: String = "⌘-click to open",
+        caption: String? = nil, width: CGFloat? = nil
+    ) -> NSView {
+        let captionHeight = caption == nil ? 0 : Self.captionHeight
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: width ?? size.width, height: size.height + captionHeight))
         container.wantsLayer = true
         container.layer?.cornerRadius = 6
         container.layer?.masksToBounds = true
         container.layer?.borderWidth = 1
         container.layer?.borderColor = NSColor.separatorColor.cgColor
 
-        // Top-left pinned, so truncation cuts the bottom/right.
+        // Top-left pinned, so truncation cuts the bottom/right. The image's pixel density is
+        // arbitrary (zoom × backing scale, floored at 1.5), so set contentsScale from it directly —
+        // recommendedLayerContentsScale rounds to a screen scale, mis-sizing content on 1x displays.
         let imageLayer = CALayer()
-        imageLayer.contents = image
+        imageLayer.contents = image.cgImage(forProposedRect: nil, context: nil, hints: nil) ?? image
         imageLayer.contentsGravity = .topLeft
-        imageLayer.contentsScale = image.recommendedLayerContentsScale(0)
-        imageLayer.frame = container.bounds
+        imageLayer.contentsScale = Self.pixelDensity(of: image)
+        imageLayer.frame = CGRect(origin: .zero, size: size)
         container.layer?.addSublayer(imageLayer)
+
+        if let caption {
+            container.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+            let icon = NSImageView(image: NSImage(systemSymbolName: "doc.text", accessibilityDescription: nil) ?? NSImage())
+            icon.contentTintColor = .secondaryLabelColor
+            icon.frame = NSRect(x: 8, y: size.height + 4, width: 14, height: 14)
+            container.addSubview(icon)
+            let label = NSTextField(labelWithString: caption)
+            label.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .medium)
+            label.textColor = .secondaryLabelColor
+            label.lineBreakMode = .byTruncatingMiddle
+            label.sizeToFit()
+            label.frame = NSRect(x: 26, y: size.height + (captionHeight - label.frame.height) / 2,
+                                 width: min(label.frame.width, container.bounds.width - 34), height: label.frame.height)
+            container.addSubview(label)
+        }
 
         if isTruncated {
             let fadeHeight = min(48, size.height / 2)
@@ -131,7 +165,8 @@ final class LinkPeekController {
             fade.frame = CGRect(x: 0, y: 0, width: size.width, height: fadeHeight)
             container.layer?.addSublayer(fade)
 
-            let hint = NSTextField(labelWithString: "⌘-click to open")
+            guard !truncationHint.isEmpty else { return container }
+            let hint = NSTextField(labelWithString: truncationHint)
             hint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
             hint.textColor = .secondaryLabelColor
             hint.sizeToFit()
@@ -139,6 +174,13 @@ final class LinkPeekController {
             container.addSubview(hint)
         }
         return container
+    }
+
+    /// Pixels per point of `image`'s bitmap.
+    static func pixelDensity(of image: NSImage) -> CGFloat {
+        guard image.size.width > 0,
+              let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return 1 }
+        return CGFloat(cg.width) / image.size.width
     }
 
     /// Below the link, or above when there's no room, kept on screen. Screen coordinates.

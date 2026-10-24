@@ -864,6 +864,9 @@ public struct EditablePagePill: View {
 struct SnapshotCardView: View {
     let snap: SnapshotTarget
     @ObservedObject var viewModel: PDFViewerViewModel
+    /// Set when `viewModel` is another tab's: clicking switches to that tab (showing its All Tabs
+    /// anchors) before jumping.
+    var activatesTab = false
     @ObservedObject private var windowManager = SnapshotWindowManager.shared
     @State private var showPreviewPopover: Bool = false
     @State private var hoverPreviewTask: Task<Void, Never>?
@@ -971,7 +974,11 @@ struct SnapshotCardView: View {
             isHovered = hovering
         }
         .onTapGesture {
-            viewModel.jumpToSnapshot(snap)
+            if activatesTab {
+                PDFViewerAppCoordinator.shared.activate(viewModel, jumpingTo: snap, revealingAllTabAnchors: true)
+            } else {
+                viewModel.jumpToSnapshot(snap)
+            }
         }
         .contextMenu {
             let isWindowOpen = windowManager.isOpen(snap.id)

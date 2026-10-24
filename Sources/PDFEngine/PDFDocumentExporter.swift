@@ -219,7 +219,7 @@ public final class PDFDocumentExporter: Sendable {
         pageIndices: [Int]? = nil
     ) throws {
         let indices = pageIndices ?? Array(0..<document.pageCount)
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("docx_export_\(UUID().uuidString)")
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-docx-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer {
             try? FileManager.default.removeItem(at: tempDir)

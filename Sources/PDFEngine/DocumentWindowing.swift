@@ -171,24 +171,40 @@ public enum DocumentWindowing {
         class_addMethod(NSWindow.self, sel, imp, "v@:@")
     }
 
-    private static func defaultWindowRect() -> NSRect {
-        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1728, height: 1117)
-        let defaultWidth: CGFloat = 1440
-        let defaultHeight: CGFloat = 960
-        // The 1000x700 floor keeps the window usable on mid-size displays, but it must never exceed
-        // what the screen can actually show (small or scaled displays, e.g. 1024x665 visible).
-        let margin: CGFloat = 60
-        let maxWidth = max(640, screenFrame.width - margin)
-        let maxHeight = max(480, screenFrame.height - margin)
-        let targetWidth = min(defaultWidth, maxWidth, max(1000, screenFrame.width * 0.75))
-        let targetHeight = min(defaultHeight, maxHeight, max(700, screenFrame.height * 0.80))
-        return NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+    /// The screen new windows open on: the active window's, else the one with the menu bar focus.
+    private static func targetScreen() -> NSScreen? {
+        NSApp.keyWindow?.screen ?? NSApp.mainWindow?.screen ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    /// Most of the screen, capped so very large displays don't get a wall-sized window, and
+    /// never more than the screen can show (small or scaled displays, e.g. 1024x665 visible).
+    static func defaultWindowSize(for screen: NSScreen?) -> NSSize {
+        let screenFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1728, height: 1117)
+        let margin: CGFloat = 40
+        let width = min(1800, max(640, screenFrame.width - margin), max(1000, screenFrame.width * 0.85))
+        let height = min(1200, max(480, screenFrame.height - margin), max(700, screenFrame.height * 0.90))
+        return NSSize(width: width.rounded(), height: height.rounded())
+    }
+
+    /// The default size, centred on `screen`, so a later `center()` keeps the window there
+    /// (it centres on whichever screen the window is already on).
+    private static func defaultWindowRect(on screen: NSScreen?) -> NSRect {
+        let size = defaultWindowSize(for: screen)
+        guard let visible = screen?.visibleFrame else { return NSRect(origin: .zero, size: size) }
+        return NSRect(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2, width: size.width, height: size.height)
+    }
+
+    /// Gives `window` the default size for `screen`. Only when a window opens: one the user moves
+    /// to another display keeps its size, as in other Mac apps.
+    private static func applyDefaultSize(to window: NSWindow, on screen: NSScreen?) {
+        window.setContentSize(defaultWindowSize(for: screen))
     }
 
     /// The bare window shell shared by every variant below — same style mask, ARC-safety flag,
     /// and tab-bar identity handling, whether or not it ends up showing a document.
     static func makeBareWindow(tabbingIdentifier: String? = nil) -> NSWindow {
-        let initialRect = defaultWindowRect()
+        let screen = targetScreen()
+        let initialRect = defaultWindowRect(on: screen)
         let window = PDFViewerWindow(
             contentRect: initialRect,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -204,6 +220,8 @@ public enum DocumentWindowing {
         window.backgroundColor = .topWindowBarColor
         window.isMovableByWindowBackground = true
         window.tabbingMode = .preferred
+        // Listed by DockMenu instead of AppKit, whose list SwiftUI's menu rebuilds lose.
+        window.isExcludedFromWindowsMenu = true
         if let tabbingIdentifier {
             window.tabbingIdentifier = tabbingIdentifier
         }
@@ -236,9 +254,8 @@ public enum DocumentWindowing {
                 DocumentWindowing.openNewWindow(url: nextUrl)
             }
         )
-        let targetRect = defaultWindowRect()
         window.contentViewController = NSHostingController(rootView: view)
-        window.setContentSize(targetRect.size)
+        applyDefaultSize(to: window, on: window.screen ?? targetScreen())
         window.title = url.lastPathComponent
         TabBarAppearanceHelper.refreshTabs(for: window)
         return window
@@ -268,9 +285,8 @@ public enum DocumentWindowing {
                 DocumentWindowing.openNewWindow(url: nextUrl)
             }
         )
-        let targetRect = defaultWindowRect()
         window.contentViewController = NSHostingController(rootView: view)
-        window.setContentSize(targetRect.size)
+        applyDefaultSize(to: window, on: window.screen ?? targetScreen())
         window.center()
         window.makeKeyAndOrderFront(nil)
     }
@@ -342,10 +358,13 @@ public enum DocumentWindowing {
 
         let tabbingIdentifier = "PDFViewerTabGroup-\(group.id.uuidString)"
         var firstWindow: NSWindow?
+        var lastWindow: NSWindow?
         for path in group.documentPaths {
             let window = makeWindow(for: URL(fileURLWithPath: path), tabbingIdentifier: tabbingIdentifier, groupOrigin: group.id)
-            if let firstWindow {
-                firstWindow.addTabbedWindow(window, ordered: .above)
+            defer { lastWindow = window }
+            if let lastWindow {
+                // Attach after the previous tab (not the first), or tabs come out in reverse.
+                lastWindow.addTabbedWindow(window, ordered: .above)
             } else {
                 if let replaceWin = windowToReplace, !replaceWin.styleMask.contains(.fullScreen) {
                     window.setFrame(replaceWin.frame, display: false)

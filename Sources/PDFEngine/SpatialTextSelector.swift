@@ -147,27 +147,27 @@ public final class SpatialTextSelector: Sendable {
         let bandMinY = min(firstLine.bbox.minY, lastLine.bbox.minY)
         let bandMaxY = max(firstLine.bbox.maxY, lastLine.bbox.maxY)
 
-        // Determine column bounds from the wider anchor block.
+        // The selection's column: the horizontal span of the blocks it starts and ends in.
         let startBlock = textBlocks[firstPos.blockIndex]
         let endBlock = textBlocks[lastPos.blockIndex]
-        let anchorBlock = startBlock.bbox.width >= endBlock.bbox.width ? startBlock : endBlock
-        let isMultiColumn = textBlocks.contains { $0.bbox.width > Self.minColumnWidth && abs($0.bbox.midX - anchorBlock.bbox.midX) > 100 }
-        let constrainToColumn = isMultiColumn && (max(startPoint.x, endPoint.x) < anchorBlock.bbox.maxX + Self.gutterThreshold)
+        let spanMinX = min(startBlock.bbox.minX, endBlock.bbox.minX)
+        let spanMaxX = max(startBlock.bbox.maxX, endBlock.bbox.maxX)
+        func isOutsideSpan(_ block: TextBlock) -> Bool {
+            let overlapWidth = min(block.bbox.maxX, spanMaxX) - max(block.bbox.minX, spanMinX)
+            return block.bbox.width <= 0 || overlapWidth / block.bbox.width < 0.5
+        }
 
-        // Include blocks overlapping the vertical band in visual reading order.
-        let bandBlocks = textBlocks.enumerated()
-            .filter { _, block in
-                let overlap = min(block.bbox.maxY, bandMaxY) - max(block.bbox.minY, bandMinY)
-                return overlap > 1.0 || (block.bbox.midY >= bandMinY && block.bbox.midY <= bandMaxY)
-            }
-            .filter { _, block in
-                // Exclude blocks that belong to a different column based on horizontal overlap.
-                guard constrainToColumn else { return true }
-                let overlapWidth = min(block.bbox.maxX, anchorBlock.bbox.maxX) - max(block.bbox.minX, anchorBlock.bbox.minX)
-                guard overlapWidth > 0 else { return false }
-                let narrowerWidth = min(block.bbox.width, anchorBlock.bbox.width)
-                guard narrowerWidth > 0 else { return false }
-                return (overlapWidth / narrowerWidth) >= 0.5
+        // Blocks overlapping the vertical band.
+        let rowBlocks = textBlocks.enumerated().filter { _, block in
+            let overlap = min(block.bbox.maxY, bandMaxY) - max(block.bbox.minY, bandMinY)
+            return overlap > 1.0 || (block.bbox.midY >= bandMinY && block.bbox.midY <= bandMaxY)
+        }
+        // Another column of text beside these rows. Narrow blocks outside the span (list bullets,
+        // the terms of a definition list, line numbers) are part of the text being selected.
+        let isMultiColumn = rowBlocks.contains { _, block in block.bbox.width >= Self.minColumnWidth * 2 && isOutsideSpan(block) }
+        let bandBlocks = rowBlocks
+            .filter { bIdx, block in
+                !isMultiColumn || bIdx == firstPos.blockIndex || bIdx == lastPos.blockIndex || !isOutsideSpan(block)
             }
             .sorted { $0.element.bbox.minY < $1.element.bbox.minY }
 
@@ -184,7 +184,7 @@ public final class SpatialTextSelector: Sendable {
                 guard !line.characters.isEmpty else { continue }
                 // Verify intermediate lines fall within the vertical band.
                 if !isFirstBlock && !isLastBlock {
-                    if anchorBlock.bbox.width >= Self.minColumnWidth && Self.isLineNumberGutter(line: line, bodyLeftMargin: anchorBlock.bbox.minX) {
+                    if spanMaxX - spanMinX >= Self.minColumnWidth && Self.isLineNumberGutter(line: line, bodyLeftMargin: spanMinX) {
                         continue
                     }
                     let lineOverlap = min(line.bbox.maxY, bandMaxY) - max(line.bbox.minY, bandMinY)

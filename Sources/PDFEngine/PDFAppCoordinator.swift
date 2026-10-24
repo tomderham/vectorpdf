@@ -321,8 +321,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.hasActiveSelection = (activeViewModel?.activeSelection != nil)
     }
 
-    // MARK: - Reading State Lifecycle
-    // Flushes reading state for active view models on app quit.
+    // MARK: - Document View Model Registry
+    // Every non-transient document view model, weakly held: flushed on app quit, and looked up by
+    // window to reach the other tabs of a tab group.
     private final class WeakViewModelBox {
         weak var viewModel: PDFViewerViewModel?
         init(_ viewModel: PDFViewerViewModel) { self.viewModel = viewModel }
@@ -339,6 +340,36 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         for box in trackedViewModels {
             box.viewModel?.saveReadingStateIfNeeded()
         }
+    }
+
+    /// The document view model hosted in `window`, if any.
+    public func viewModel(for window: NSWindow) -> PDFViewerViewModel? {
+        trackedViewModels.lazy.compactMap(\.viewModel).first { $0.currentWindow === window }
+    }
+
+    /// View models of every tab in `viewModel`'s window tab group, in tab order. Just
+    /// `[viewModel]` when it isn't tabbed (or has no window yet).
+    public func tabGroupViewModels(of viewModel: PDFViewerViewModel) -> [PDFViewerViewModel] {
+        guard let window = viewModel.currentWindow, let tabs = window.tabbedWindows, tabs.count > 1 else {
+            return [viewModel]
+        }
+        return tabs.compactMap { $0 === window ? viewModel : self.viewModel(for: $0) }
+    }
+
+    /// Brings `viewModel`'s tab to the front and scrolls it to `target`. With
+    /// `revealingAllTabAnchors`, its sidebar also switches to every tab's anchors, so a list the
+    /// user is working through in one tab stays in view in the next.
+    public func activate(_ viewModel: PDFViewerViewModel, jumpingTo target: SnapshotTarget, revealingAllTabAnchors: Bool = false) {
+        if revealingAllTabAnchors {
+            NotificationCenter.default.post(name: .showAllTabAnchorsCommand, object: viewModel)
+        }
+        if let window = viewModel.currentWindow {
+            if let group = window.tabGroup, group.selectedWindow !== window {
+                group.selectedWindow = window
+            }
+            window.makeKeyAndOrderFront(nil)
+        }
+        viewModel.jumpToSnapshot(target)
     }
 
 #if VECTORPDF_MACOS27_SDK
@@ -460,6 +491,7 @@ public struct AppSettingsView: View {
     @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
     @ObservedObject private var updater = GitHubUpdater.shared
     @ObservedObject private var signatureStore = SignatureStore.shared
+    @ObservedObject private var readingState = ReadingStateManager.shared
     @State private var isShowingSignatureEditor = false
 
     public init() {}
@@ -568,6 +600,18 @@ public struct AppSettingsView: View {
                     }
                 }
             }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            Toggle("Sync reading positions with iCloud", isOn: Binding(
+                get: { readingState.isCloudSyncEnabled },
+                set: { readingState.setCloudSyncEnabled($0) }
+            ))
+            Text("Last page, zoom, and anchors, through your own iCloud account. Documents are not uploaded.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 8)
 
             Divider()
                 .padding(.vertical, 8)

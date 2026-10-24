@@ -615,7 +615,7 @@ final class DownloadProgressDelegate: NSObject, URLSessionDownloadDelegate, @unc
         }
         // Copy temporary download location to persistent temp file
         let tempDir = FileManager.default.temporaryDirectory
-        let savedTempFile = tempDir.appendingPathComponent(UUID().uuidString + ".dmg")
+        let savedTempFile = tempDir.appendingPathComponent("VectorPDF-update-\(UUID().uuidString).dmg")
         do {
             try FileManager.default.copyItem(at: location, to: savedTempFile)
             Task { @MainActor [weak self] in
