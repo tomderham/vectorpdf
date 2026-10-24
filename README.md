@@ -1,6 +1,17 @@
 # VectorPDF
 
-A fast, lightweight, native macOS PDF reader engineered for technical documents, large specifications, and academic papers. Built on Artifex's **MuPDF (Fitz)** rendering engine, Swift 6, AppKit, and SwiftUI.
+A fast, native macOS PDF reader for technical papers, specifications, and drawings. Hold Command over a reference to an equation, figure, table, or citation and see it in place, without losing your page. Built on Artifex's **MuPDF (Fitz)** rendering engine, Swift 6, AppKit, and SwiftUI.
+
+<!-- Demo GIFs (record with docs/demo/README.md):
+![Hold Command over a reference to preview it](docs/link-peek.gif)
+![Right-click a reference to another document open in a tab](docs/cross-doc.gif)
+-->
+
+**Status:** public beta. Free and open source ([AGPL-3.0](LICENSE)). Requires macOS 15 or later on Apple Silicon.
+
+**Download:** the latest signed and notarized DMG is on the [Releases page](https://github.com/tomderham/vectorpdf/releases). The app checks GitHub for new releases (you can turn this off in Settings).
+
+[Privacy](PRIVACY.md) · [Contributing](CONTRIBUTING.md) · [Report a bug](https://github.com/tomderham/vectorpdf/issues)
 
 ---
 
@@ -20,6 +31,7 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 **Cross-references**
 - **Column-aware text selection** using structured text geometry (`fz_stext_page`), so selections in multi-column layouts don't pick up adjacent columns or margin line numbers.
 - **Link peek:** Hold Command over an internal link (or Force Click it) to preview its target in a chrome-less popup that closes when you let go. The preview shows context suited to the target — a few lines for equations, the opening paragraph for sections, the top of a table or figure — identified from LaTeX (hyperref) destination names and the document outline.
+- **References across documents:** Open related documents as tabs in one window, such as a standard and the specification it builds on, or a contract and its schedules. Right-click a plain-text reference like “Section 8.8.3 of [HTTP]” or “Clause 4.2 of the Master Agreement” to preview that section in the other tab and jump to it, matched against that document's outline (or its headings if it has none). Web links into an open document, such as IETF RFC links to rfc-editor.org, preview it there on Command-hover or Force Click.
 - **Open in New Window:** Command-click a link, citation, equation, table, or figure reference (or choose Open in New Window from its context menu) to open its target in a separate window without losing your place.
 - **Anchors:** Save text or area selections as named anchors and jump back to them from the Anchors menu.
 
@@ -35,7 +47,7 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 
 **Editing & security**
 - **Page management:** Rotate, delete, reorder, duplicate, insert blank or imported pages, extract pages, and split a PDF.
-- **Redaction:** Region and find-and-redact (text, regex, SSN, credit card, email, phone, date) with true content removal.
+- **Redaction:** Region and find-and-redact (text, regex, SSN, credit card, email, phone, date) with true content removal: text, image pixels, and line art under the region are deleted from the file, along with any annotations and form fields that touch it, and earlier revisions are not kept on save.
 - **Encryption:** Open password-protected PDFs and save copies encrypted with AES-256.
 - **On-device OCR** of scanned pages using Apple Vision, making them searchable; highlights follow slanted text on skewed scans.
 
@@ -43,7 +55,7 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 - **Export:** Plain text, Word (.docx), SVG (one file per page, text as vector paths), and flattened PDF; annotation summary export; printing through MuPDF so output matches the on-screen rendering.
 
 **Agent (optional)**
-- **Document Q&A:** On-device semantic search over the open document using Apple's NaturalLanguage embeddings. Answer synthesis uses Apple Intelligence (on-device or Private Cloud Compute) when available; without it, the best-matching passages are shown instead. Requires a macOS release that supports these frameworks.
+- **Document Q&A:** On-device semantic search over the open document using Apple's NaturalLanguage embeddings. Answer synthesis uses Apple Intelligence on-device (macOS 26 or later) or Private Cloud Compute (macOS 27, selectable in Settings, in builds signed with Apple's Private Cloud Compute entitlement); without it, the best-matching passages are shown instead. See [PRIVACY.md](PRIVACY.md) for what leaves your Mac.
 
 ---
 
@@ -86,9 +98,12 @@ A fast, lightweight, native macOS PDF reader engineered for technical documents,
 
 ## System Requirements
 
-- **Operating System:** macOS 14.0 (Sonoma) or later
+**To run:**
+- **Operating System:** macOS 15 (Sequoia) or later. The Agent tab needs macOS 26 or later; Private Cloud Compute answers need macOS 27.
 - **Architecture:** Apple Silicon (arm64)
-- **Toolchain:** Xcode 16.0+ or Swift 6.0+
+
+**To build:**
+- **Toolchain:** Xcode 27 (macOS 27 SDK, Swift 6). Older SDKs should build without the Private Cloud Compute option, but are not routinely tested.
 
 ---
 
@@ -119,12 +134,10 @@ swift test
 To assemble a signed `.app` bundle with application icon and metadata:
 
 ```bash
-# Builds with macOS 27 SDK and Private Cloud Compute agent capabilities enabled by default:
 ./Scripts/build_app_bundle.sh release
-
-# Or to build against the standard SDK:
-./Scripts/build_app_bundle.sh release default
 ```
+
+The script detects the SDK: with the macOS 27 SDK it compiles in the Private Cloud Compute option for the Agent tab. Pass `default` as a second argument to build without it on any SDK. Answering with Private Cloud Compute also needs a build signed with Apple's managed entitlement (see section 5); without it the app answers on-device.
 
 The output bundle will be generated at `./VectorPDF.app`.
 
@@ -134,7 +147,23 @@ The output bundle will be generated at `./VectorPDF.app`.
 ./Scripts/build_dmg.sh
 ```
 
-Signs with a Developer ID certificate, builds the DMG, notarizes it, and staples the ticket. Certificates and notarization credentials are read from the macOS Keychain (create a profile with `xcrun notarytool store-credentials`). Copy `Scripts/release.env.example` to `Scripts/release.env` (untracked) and set `SIGNING_IDENTITY` and `NOTARY_PROFILE`; the same variables can also be set in the environment to switch accounts.
+Signs with a Developer ID certificate, builds the DMG, notarizes it, and staples the ticket. Certificates and notarization credentials are read from the macOS Keychain (create a profile with `xcrun notarytool store-credentials`). Copy `Scripts/release.env.example` to `Scripts/release.env` (untracked) and set `SIGNING_IDENTITY` and `NOTARY_PROFILE`; the same variables can also be set in the environment to switch accounts. Set `PROVISIONING_PROFILE` to a Developer ID provisioning profile to enable the capabilities it grants, such as iCloud key-value storage for syncing reading positions.
+
+Developer ID profiles don't include the Private Cloud Compute entitlement, so the DMG answers on-device (see section 5).
+
+### 5. Build with Private Cloud Compute (your own Apple Developer account)
+
+The released DMG answers on-device, because Apple grants the Private Cloud Compute entitlement only for App Store distribution and for TestFlight, ad hoc, and development builds. If your account has the [PCC entitlement](https://developer.apple.com/private-cloud-compute/), you can build a copy that uses it on your own Macs:
+
+1. In Certificates, Identifiers & Profiles, create an explicit App ID (for example `com.example.vectorpdf`) with **Access to models on Private Cloud Compute** enabled, and register your Mac as a device.
+2. Create a **macOS App Development** profile for that App ID, your Apple Development certificate, and your Mac, and download it.
+3. Run:
+
+```bash
+./Scripts/build_pcc_dev.sh ~/Downloads/YourProfile.provisionprofile
+```
+
+The script checks that the profile grants PCC and includes this Mac, builds under the profile's bundle identifier, and signs with the matching certificate from your keychain. Then choose Private Cloud Compute in **Settings → AI Synthesis Engine**.
 
 
 ---
@@ -150,6 +179,18 @@ To rebuild or update the vendored MuPDF version:
 ```
 
 See [Vendor/README.md](Vendor/README.md) for details on build options, version bumping, and Clang module configuration.
+
+---
+
+## Privacy
+
+VectorPDF has no accounts, analytics, or telemetry. Documents are processed on your Mac. The exceptions (update checks, iCloud sync of reading positions, and Private Cloud Compute if you choose it) are described in [PRIVACY.md](PRIVACY.md).
+
+---
+
+## Contributing
+
+Bug reports with a sample PDF are the most useful contribution. See [CONTRIBUTING.md](CONTRIBUTING.md) for building, testing, and code layout.
 
 ---
 

@@ -5,6 +5,7 @@
 # Usage: Scripts/build_app_bundle.sh [debug|release] [macos27|default|auto]
 #   Defaults to "release" and "auto". When the active macOS SDK is 27+ (Xcode 27),
 #   enables the Private Cloud Compute synthesis path (-DVECTORPDF_MACOS27_SDK).
+#   Set BUNDLE_ID to build under another bundle identifier (Scripts/build_pcc_dev.sh does this).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -15,6 +16,7 @@ APP_NAME="VectorPDF"
 EXECUTABLE_NAME="VectorPDF"
 APP_BUNDLE="$APP_NAME.app"
 APP_VERSION="$(cat VERSION | tr -d '[:space:]')"
+BUNDLE_ID="${BUNDLE_ID:-com.thomasderham.vectorpdf}"
 
 SDK_VER="$(xcrun --show-sdk-version --sdk macosx 2>/dev/null || echo "0")"
 SDK_MAJOR="${SDK_VER%%.*}"
@@ -52,7 +54,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundleExecutable</key>
     <string>$EXECUTABLE_NAME</string>
     <key>CFBundleIdentifier</key>
-    <string>com.thomasderham.vectorpdf</string>
+    <string>$BUNDLE_ID</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -72,7 +74,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 Thomas Derham</string>
     <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
+    <string>15.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>CFBundleDocumentTypes</key>

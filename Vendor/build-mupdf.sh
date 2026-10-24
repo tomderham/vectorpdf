@@ -21,7 +21,7 @@ MUPDF_SHA256="${MUPDF_SHA256:-98a5c10cda20c3992cdf76ff6b2a1149c32bd79cc796d3f703
 # lipo the resulting static libs together before the libtool step) if Intel
 # Mac support is ever needed.
 ARCHS=("arm64")
-MACOS_MIN="14.0"
+MACOS_MIN="15.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

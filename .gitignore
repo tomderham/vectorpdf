@@ -34,3 +34,7 @@ dmg_staging/
 
 
 FUTURE_FEATURES.md
+
+# Demo recordings
+docs/demo/pdfs/
+*.mov

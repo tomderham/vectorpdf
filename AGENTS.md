@@ -27,6 +27,7 @@
    - Keep menus clean and uncluttered. Advanced engineering tools (e.g. scale calibration, takeoff summary tables) belong in their respective toolbars (such as the Measurement toolbar) rather than cluttering global menus.
 
 4. **Testing:**
-   - Run tests using `swift test`.
+   - Run tests using `swift test`. Tests that put real windows on screen are marked `@Test(.showsWindows)` and skipped by default; run them with `VECTORPDF_UI_TESTS=1 swift test` before a release or after changing windowing, tabs, or click handling.
+   - Tests that send key events a view deliberately ignores should end its responder chain with `KeySinkResponder` (in `TestTraits.swift`), or AppKit beeps.
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
    - Always run tests and verify zero regressions before committing.
