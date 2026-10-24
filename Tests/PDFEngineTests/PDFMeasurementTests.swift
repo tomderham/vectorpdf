@@ -498,4 +498,183 @@ struct PDFMeasurementTests {
         #expect(annot2 != nil)
         #expect(vm.pageAnnotations[0]?.count == 2)
     }
+
+
+    // MARK: - Scale Persistence
+
+    @Test("Every preset scale survives a save and reopen", arguments: ScalePreset.standardPresets)
+    func testPresetScaleRoundTrip(preset: ScalePreset) throws {
+        let src = FileManager.default.temporaryDirectory.appendingPathComponent("scale_src_\(UUID().uuidString).pdf")
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("scale_out_\(UUID().uuidString).pdf")
+        defer { for u in [src, out] { try? FileManager.default.removeItem(at: u) } }
+        createSamplePDF(at: src)
+
+        let config = PDFScaleConfiguration(preset: preset)
+        let doc = try PDFDocumentCore(filePath: src.path)
+        try doc.setPageScale(pageIndex: 1, ratioString: config.ratioString, unitString: config.linearUnit.shortSymbol, pointsPerUnit: config.pointsPerUnit)
+        try doc.save(to: out.path)
+
+        let reopened = try PDFDocumentCore(filePath: out.path)
+        #expect(reopened.loadPageScale(pageIndex: 0) == nil)
+        let restored = try #require(reopened.loadPageScale(pageIndex: 1))
+        #expect(restored == config)
+        // The same paper distance reads the same after reopening.
+        #expect(restored.formatLength(points: 250) == config.formatLength(points: 250))
+    }
+
+    @Test("A calibrated custom scale survives a save and reopen")
+    func testCalibratedScaleRoundTrip() throws {
+        let src = FileManager.default.temporaryDirectory.appendingPathComponent("calib_src_\(UUID().uuidString).pdf")
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("calib_out_\(UUID().uuidString).pdf")
+        defer { for u in [src, out] { try? FileManager.default.removeItem(at: u) } }
+        createSamplePDF(at: src)
+
+        let config = PDFScaleConfiguration.calibrated(measuredPoints: 144, knownRealWorldLength: 2.5, unit: .meters)
+        let doc = try PDFDocumentCore(filePath: src.path)
+        try doc.setPageScale(pageIndex: 0, ratioString: config.ratioString, unitString: config.linearUnit.shortSymbol, pointsPerUnit: config.pointsPerUnit)
+        try doc.save(to: out.path)
+
+        let restored = try #require(try PDFDocumentCore(filePath: out.path).loadPageScale(pageIndex: 0))
+        #expect(restored.linearUnit == .meters)
+        #expect(restored.areaUnit == .squareMeters)
+        #expect(abs(restored.pointsPerUnit - config.pointsPerUnit) / config.pointsPerUnit < 1e-5)
+        #expect(restored.formatLength(points: 144) == "2.50 m")
+    }
+
+    // MARK: - Calibration & Unit Conversion
+
+    @Test("Calibration reproduces the known length in every unit", arguments: MeasurementUnit.allCases)
+    func testCalibrationPerUnit(unit: MeasurementUnit) {
+        let config = PDFScaleConfiguration.calibrated(measuredPoints: 250, knownRealWorldLength: 7.5, unit: unit)
+        #expect(abs(config.convertPointsToReal(pointsDistance: 250) - 7.5) < 1e-9)
+        #expect(abs(config.convertPointsToReal(pointsDistance: 500) - 15.0) < 1e-9)
+    }
+
+    @Test("One square foot converts correctly into every area unit")
+    func testAreaUnitCrossConversion() {
+        // 1/4" = 1'-0": a 1 ft × 1 ft square is 18 × 18 pt on paper.
+        var config = PDFScaleConfiguration.standardArchitecturalQuarterInch
+        let oneSquareFoot = 18.0 * 18.0
+        let expected: [(AreaUnit, Double)] = [
+            (.squareFeet, 1.0),
+            (.squareInches, 144.0),
+            (.squareYards, 1.0 / 9.0),
+            (.squareMeters, 0.09290304),
+        ]
+        for (unit, value) in expected {
+            config.areaUnit = unit
+            let converted = config.convertAreaPointsToReal(pointsArea: oneSquareFoot)
+            #expect(abs(converted - value) / value < 1e-9, "\(unit): \(converted)")
+        }
+
+        // 1:100 metric: a 1 m × 1 m square.
+        var metric = PDFScaleConfiguration.standardMetricOneToOneHundred
+        let oneSquareMeter = metric.pointsPerUnit * metric.pointsPerUnit
+        #expect(abs(metric.convertAreaPointsToReal(pointsArea: oneSquareMeter) - 1.0) < 1e-9)
+        metric.areaUnit = .squareFeet
+        #expect(abs(metric.convertAreaPointsToReal(pointsArea: oneSquareMeter) - 10.763910417) < 1e-6)
+    }
+
+    @Test("Metric presets agree on real-world length across scales and units")
+    func testMetricPresetsAgree() {
+        // 10 mm on paper is 1 m at 1:100, 0.5 m at 1:50, and 10 mm at 1:1.
+        let tenMillimetersOnPaper = 72.0 / 25.4 * 10.0
+        func real(_ id: String) -> Double {
+            let preset = ScalePreset.standardPresets.first { $0.id == id }!
+            return PDFScaleConfiguration(preset: preset).convertPointsToReal(pointsDistance: tenMillimetersOnPaper)
+        }
+        #expect(abs(real("met_1_100") - 1.0) < 1e-4)
+        #expect(abs(real("met_1_50") - 0.5) < 1e-4)
+        #expect(abs(real("met_1_1") - 10.0) < 1e-3)
+        #expect(abs(real("met_1_10") - 10.0) < 1e-3) // centimeters
+    }
+
+    // MARK: - Formatting Edge Cases
+
+    @Test("Foot-inch rounding carries into the next inch and foot")
+    func testFootInchRoundingCarry() {
+        let config = PDFScaleConfiguration.standardArchitecturalQuarterInch // 18 pt per foot, 1/16" precision
+        let ptPerInch = 18.0 / 12.0
+        #expect(config.formatLength(points: 11.99 * ptPerInch) == "1'-0\"")
+        #expect(config.formatLength(points: (4 * 12 + 11.99) * ptPerInch) == "5'-0\"")
+        #expect(config.formatLength(points: 6.999 * ptPerInch) == "0'-7\"")
+        #expect(config.formatLength(points: 0) == "0'-0\"")
+        #expect(config.formatLength(points: (3 * 12 + 2 + 3.0 / 8.0) * ptPerInch) == "3'-2 3/8\"")
+    }
+
+    @Test("Decimal and metric length formatting")
+    func testDecimalFormatting() {
+        let mm = PDFScaleConfiguration(pointsPerUnit: 2.0, linearUnit: .millimeters)
+        #expect(mm.formatLength(points: 99.4 * 2.0) == "99 mm")
+        let cm = PDFScaleConfiguration(pointsPerUnit: 2.0, linearUnit: .centimeters)
+        #expect(cm.formatLength(points: 12.34 * 2.0) == "12.3 cm")
+        let ft = PDFScaleConfiguration(pointsPerUnit: 2.0, linearUnit: .decimalFeet)
+        #expect(ft.formatLength(points: 3.456 * 2.0) == "3.46 ft")
+        let inches = PDFScaleConfiguration(pointsPerUnit: 2.0, linearUnit: .inches, precisionFractionDenominator: 8)
+        #expect(inches.formatLength(points: 2.5 * 2.0) == "2 1/2\"")
+        #expect(inches.formatLength(points: 0.999 * 2.0) == "1\"")
+    }
+
+    // MARK: - Geometry Edge Cases
+
+    @Test("Polygon area ignores winding direction and degenerate shapes")
+    func testShoelaceEdgeCases() {
+        let ccw = [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 0), CGPoint(x: 40, y: 30), CGPoint(x: 0, y: 30)]
+        #expect(PDFMeasurementGeometry.shoelaceArea(points: ccw) == 1200)
+        #expect(PDFMeasurementGeometry.shoelaceArea(points: ccw.reversed()) == 1200)
+        // An L shape (concave).
+        let l = [CGPoint(x: 0, y: 0), CGPoint(x: 20, y: 0), CGPoint(x: 20, y: 10), CGPoint(x: 10, y: 10), CGPoint(x: 10, y: 30), CGPoint(x: 0, y: 30)]
+        #expect(PDFMeasurementGeometry.shoelaceArea(points: l) == 400)
+        #expect(PDFMeasurementGeometry.shoelaceArea(points: [CGPoint(x: 0, y: 0), CGPoint(x: 5, y: 5), CGPoint(x: 10, y: 10)]) == 0)
+        #expect(PDFMeasurementGeometry.shoelaceArea(points: [CGPoint(x: 0, y: 0), CGPoint(x: 5, y: 5)]) == 0)
+    }
+
+    @Test("Angle measurement edge cases")
+    func testAngleEdgeCases() {
+        let apex = CGPoint(x: 50, y: 50)
+        #expect(abs(PDFMeasurementGeometry.angleDegrees(r1: CGPoint(x: 0, y: 50), apex: apex, r2: CGPoint(x: 100, y: 50)) - 180) < 1e-9)
+        #expect(abs(PDFMeasurementGeometry.angleDegrees(r1: CGPoint(x: 100, y: 50), apex: apex, r2: CGPoint(x: 150, y: 50))) < 1e-9)
+        #expect(abs(PDFMeasurementGeometry.angleDegrees(r1: CGPoint(x: 100, y: 50), apex: apex, r2: CGPoint(x: 50, y: 0)) - 90) < 1e-9)
+        // A zero-length ray has no angle.
+        #expect(PDFMeasurementGeometry.angleDegrees(r1: apex, apex: apex, r2: CGPoint(x: 100, y: 50)) == 0)
+    }
+
+    // MARK: - Measurement Annotation Persistence
+
+    @Test("All four measurement types reload with their geometry and labels")
+    func testMeasurementAnnotationsRoundTrip() throws {
+        let src = FileManager.default.temporaryDirectory.appendingPathComponent("measure_src_\(UUID().uuidString).pdf")
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("measure_out_\(UUID().uuidString).pdf")
+        defer { for u in [src, out] { try? FileManager.default.removeItem(at: u) } }
+        createSamplePDF(at: src)
+
+        let length = [CGPoint(x: 100, y: 100), CGPoint(x: 172, y: 100)]
+        let perimeter = [CGPoint(x: 100, y: 200), CGPoint(x: 160, y: 200), CGPoint(x: 160, y: 280)]
+        let area = [CGPoint(x: 300, y: 300), CGPoint(x: 390, y: 300), CGPoint(x: 390, y: 354), CGPoint(x: 300, y: 354)]
+        let angle = [CGPoint(x: 400, y: 500), CGPoint(x: 300, y: 500), CGPoint(x: 300, y: 400)]
+
+        let doc = try PDFDocumentCore(filePath: src.path)
+        try doc.addLineDimension(pageIndex: 0, startPoint: length[0], endPoint: length[1], text: "4'-0\"", red: 0, green: 0, blue: 1)
+        try doc.addPolylineDimension(pageIndex: 0, vertices: perimeter, text: "7'-6\"", red: 0, green: 0, blue: 1)
+        try doc.addPolygonDimension(pageIndex: 0, vertices: area, text: "15.0 sq ft", red: 0, green: 1, blue: 0)
+        try doc.addAngleMeasurement(pageIndex: 0, points: angle, text: "90.0°", red: 1, green: 0, blue: 0)
+        try doc.save(to: out.path)
+
+        let reloaded = try PDFDocumentCore(filePath: out.path).measurementAnnotations(pageIndex: 0)
+        #expect(reloaded.map(\.type) == [.measureLength, .measurePerimeter, .measureArea, .measureAngle])
+        #expect(reloaded.map(\.measurementText) == ["4'-0\"", "7'-6\"", "15.0 sq ft", "90.0°"])
+
+        func close(_ a: [CGPoint], _ b: [CGPoint]) -> Bool {
+            a.count == b.count && zip(a, b).allSatisfy { abs($0.x - $1.x) < 0.01 && abs($0.y - $1.y) < 0.01 }
+        }
+        guard reloaded.count == 4 else { return }
+        #expect(close(reloaded[0].measurementPoints, length))
+        #expect(close(reloaded[1].measurementPoints, perimeter))
+        #expect(close(reloaded[2].measurementPoints, area))
+        #expect(close(reloaded[3].measurementPoints, angle))
+        #expect(abs(reloaded[0].measurementValue - 72) < 0.01)
+        #expect(abs(reloaded[1].measurementValue - 140) < 0.01)
+        #expect(abs(reloaded[2].measurementValue - 90 * 54) < 0.5)
+        #expect(abs(reloaded[3].measurementValue - 90) < 0.01)
+    }
 }
