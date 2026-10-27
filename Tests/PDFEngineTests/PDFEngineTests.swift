@@ -5,6 +5,9 @@ import Testing
 import PDFKit
 import SwiftUI
 @testable import PDFEngine
+#if canImport(FoundationModels)
+import FoundationModels
+#endif
 
 func createSamplePDF(at fileURL: URL) {
     var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
@@ -2337,6 +2340,43 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(pools.lexical >= 10)
     #expect(passageBudget >= 6)
 }
+
+#if canImport(FoundationModels)
+@Test @MainActor func testOnDevicePassagesFitTokenBudgetInRankOrder() async throws {
+    guard #available(macOS 26.0, *) else { return }
+    let short = (0..<6).map { AgentPassage(pageIndex: $0, text: String(repeating: "word ", count: 60), score: 1) }
+    let huge = AgentPassage(pageIndex: 99, text: String(repeating: "word ", count: 3000), score: 2)
+    let candidates = [short[0], huge] + short.dropFirst()
+    let budget = 400
+
+    let fitted = await DocumentAgentConversation.fitPassages(candidates, tokenBudget: budget)
+    #expect(!fitted.isEmpty)
+    #expect(!fitted.contains { $0.pageIndex == 99 })  // too big for the budget, skipped
+    #expect(fitted.map(\.pageIndex) == fitted.map(\.pageIndex).sorted())  // rank order kept
+    var total = 0
+    for passage in fitted {
+        total += await DocumentAgentConversation.estimateTokens(DocumentAgentConversation.formatExcerpts([passage])) + 4
+    }
+    #expect(total <= budget)
+    #expect(await DocumentAgentConversation.fitPassages(candidates, tokenBudget: 0).isEmpty)
+}
+#endif
+
+#if VECTORPDF_MACOS27_SDK && canImport(FoundationModels)
+@Test @MainActor func testPCCErrorDescriptionsAreReadable() throws {
+    guard #available(macOS 27.0, *) else { return }
+    typealias PCCError = PrivateCloudComputeLanguageModel.Error
+    #expect(DocumentAgentConversation.describe(PCCError.networkFailure(.init(debugDescription: "x"))) == "couldn't reach Private Cloud Compute")
+    #expect(DocumentAgentConversation.describe(PCCError.serviceUnavailable(.init(debugDescription: "x"))) == "Private Cloud Compute is temporarily unavailable")
+    #expect(DocumentAgentConversation.describe(PCCError.quotaLimitReached(.init(debugDescription: "x"))) == "today's Private Cloud Compute limit is reached")
+    let withReset = DocumentAgentConversation.describe(PCCError.quotaLimitReached(.init(resetDate: Date().addingTimeInterval(3 * 3600), debugDescription: "x")))
+    #expect(withReset.hasPrefix("today's Private Cloud Compute limit is reached; it resets "))
+
+    let tooLong = LanguageModelError.contextSizeExceeded(.init(contextSize: 32768, tokenCount: 40000, debugDescription: "x"))
+    #expect(DocumentAgentConversation.describe(tooLong) == "the question and excerpts are too long (40000 of 32768 tokens)")
+    #expect(DocumentAgentConversation.FirstOutputTimeout().localizedDescription == "no response")
+}
+#endif
 
 @Test func testAgentCitationFormattingAndExtraction() throws {
     let sampleText = "Gross revenue was $1.2M [Page 4]. Net profit increased [Pages 12-14], while debt fell [p. 8] and taxes rose [pp. 19-20]."

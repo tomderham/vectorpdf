@@ -458,11 +458,15 @@ public struct PDFViewerMainView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// User-facing label for which backend answered an Agent turn — see AgentSynthesisProvider.
-    private func providerLabel(for provider: AgentSynthesisProvider) -> String {
-        switch provider {
-        case .onDevice: return "Answered on-device"
-        case .privateCloudCompute: return "Answered via Private Cloud Compute"
+    /// User-facing label for which backend is answering or answered an Agent turn — see AgentSynthesisProvider.
+    private func providerLabel(for provider: AgentSynthesisProvider, isStreaming: Bool) -> String {
+        switch (provider, isStreaming) {
+        case (.onDevice, true): return "Answering on-device…"
+        case (.onDevice, false): return "Answered on-device"
+        case (.privateCloudCompute, true): return "Asking Private Cloud Compute…"
+        case (.privateCloudCompute, false): return "Answered via Private Cloud Compute"
+        case (.onlineModel(let name), true): return "Asking \(name)…"
+        case (.onlineModel(let name), false): return "Answered via \(name)"
         }
     }
 
@@ -1218,7 +1222,7 @@ public struct PDFViewerMainView: View {
                                                         }
 
                                                         if let provider = turn.providerUsed {
-                                                            Text(providerLabel(for: provider))
+                                                            Text(providerLabel(for: provider, isStreaming: turn.isStreaming))
                                                                 .font(.caption2)
                                                                 .foregroundStyle(.tertiary)
                                                         }

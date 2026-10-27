@@ -55,7 +55,7 @@ A fast, native macOS PDF reader for technical papers, specifications, and drawin
 - **Export:** Plain text, Word (.docx), SVG (one file per page, text as vector paths), and flattened PDF; annotation summary export; printing through MuPDF so output matches the on-screen rendering.
 
 **Agent (optional)**
-- **Document Q&A:** On-device semantic search over the open document using Apple's NaturalLanguage embeddings. Answer synthesis uses Apple Intelligence on-device (macOS 26 or later) or Private Cloud Compute (macOS 27, selectable in Settings, in builds signed with Apple's Private Cloud Compute entitlement); without it, the best-matching passages are shown instead. See [PRIVACY.md](PRIVACY.md) for what leaves your Mac.
+- **Document Q&A:** On-device semantic search over the open document using Apple's NaturalLanguage embeddings. Answer synthesis uses Apple Intelligence on-device (macOS 26 or later), Private Cloud Compute (macOS 27, selectable in Settings, in builds signed with Apple's Private Cloud Compute entitlement), or an online model from OpenAI, Google Gemini, or OpenRouter with your own API key (macOS 27); without any of these, the best-matching passages are shown instead. See [PRIVACY.md](PRIVACY.md) for what leaves your Mac.
 
 ---
 
@@ -184,7 +184,7 @@ See [Vendor/README.md](Vendor/README.md) for details on build options, version b
 
 ## Privacy
 
-VectorPDF has no accounts, analytics, or telemetry. Documents are processed on your Mac. The exceptions (update checks, iCloud sync of reading positions, and Private Cloud Compute if you choose it) are described in [PRIVACY.md](PRIVACY.md).
+VectorPDF has no accounts, analytics, or telemetry. Documents are processed on your Mac. The exceptions (update checks, iCloud sync of reading positions, and Private Cloud Compute or an online model if you choose one) are described in [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -201,3 +201,4 @@ VectorPDF is free software released under the **[GNU Affero General Public Licen
 ### Third-Party Attribution
 
 - **MuPDF:** © Artifex Software, Inc. MuPDF is licensed under the GNU Affero General Public License (AGPL-3.0). Visit [https://mupdf.com](https://mupdf.com) for more information.
+- **Foundation Models framework utilities:** © Apple Inc. and the Foundation Models project authors. `Sources/PDFEngine/ChatCompletionsLanguageModel.swift` is adapted from [apple/foundation-models-utilities](https://github.com/apple/foundation-models-utilities) under the Apache License 2.0; changes are marked in the file.

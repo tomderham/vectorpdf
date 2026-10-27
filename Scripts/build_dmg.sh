@@ -12,7 +12,9 @@
 #
 # Optional: set PROVISIONING_PROFILE to a Developer ID provisioning profile for the app's App ID.
 # It is embedded in the app, and each capability the profile grants is added to the entitlements:
-#   - Private Cloud Compute: the Agent can answer with PCC (otherwise on-device only).
+#   - Private Cloud Compute: the Agent can answer with PCC (otherwise on-device only). Apple currently
+#     grants it only for App Store, TestFlight, ad hoc, and development builds, so Developer ID
+#     profiles leave it out; the check below picks it up if that changes.
 #   - iCloud key-value storage: reading positions and anchors sync between the user's Macs
 #     (otherwise they stay on the Mac).
 # Without a profile the app is signed with neither (claiming a managed entitlement with no profile

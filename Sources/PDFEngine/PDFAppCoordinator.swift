@@ -52,15 +52,16 @@ public struct InstalledBrowser: Identifiable, Hashable, Sendable {
 
 /// Backend preference for Agent synthesis.
 public enum AgentSynthesisPreference: String, CaseIterable, Codable, Sendable {
-    case automatic
     case onDevice
     case privateCloudCompute
+    /// An OpenAI-compatible service with the person's own API key (see OnlineModelService).
+    case onlineModel
 
     public var displayName: String {
         switch self {
-        case .automatic: return "Automatic"
         case .onDevice: return "On-Device"
         case .privateCloudCompute: return "Private Cloud Compute"
+        case .onlineModel: return "Online Model (your API key)"
         }
     }
 }
@@ -124,12 +125,36 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     private static let showAgentTabKey = "com.thomasderham.vectorpdf.showAgentTab"
 
     /// Backend synthesis preference for Agent questions.
-    @Published public var agentSynthesisPreference: AgentSynthesisPreference = .automatic {
+    @Published public var agentSynthesisPreference: AgentSynthesisPreference = .onDevice {
         didSet {
             UserDefaults.standard.set(agentSynthesisPreference.rawValue, forKey: Self.agentSynthesisPreferenceKey)
         }
     }
     private static let agentSynthesisPreferenceKey = "com.thomasderham.vectorpdf.agentSynthesisPreference"
+
+    /// Service used by the online model engine. Its API key is in the keychain (APIKeyStore).
+    @Published public var onlineModelService: OnlineModelService = .openAI {
+        didSet {
+            UserDefaults.standard.set(onlineModelService.rawValue, forKey: Self.onlineModelServiceKey)
+        }
+    }
+    private static let onlineModelServiceKey = "com.thomasderham.vectorpdf.onlineModelService"
+
+    /// Chosen model name for each service, keyed by OnlineModelService raw value.
+    @Published public var onlineModelNames: [String: String] = [:] {
+        didSet {
+            UserDefaults.standard.set(onlineModelNames, forKey: Self.onlineModelNamesKey)
+        }
+    }
+    private static let onlineModelNamesKey = "com.thomasderham.vectorpdf.onlineModelNames"
+
+    /// The online model to use, or nil until a model and an API key are set for the chosen service.
+    public var onlineModelConfiguration: OnlineModelConfiguration? {
+        let service = onlineModelService
+        guard let model = onlineModelNames[service.rawValue], !model.isEmpty,
+              let key = APIKeyStore.key(for: service) else { return nil }
+        return OnlineModelConfiguration(service: service, model: model, apiKey: key)
+    }
 
     /// Defines how 100% scale is interpreted. Defaults to .physical ("Size on screen equals size on printout", matching Preview).
     @Published public var scaleMode: PDFScaleMode = .physical {
@@ -236,6 +261,15 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         if let prefRaw = UserDefaults.standard.string(forKey: Self.agentSynthesisPreferenceKey),
            let pref = AgentSynthesisPreference(rawValue: prefRaw) {
             agentSynthesisPreference = pref
+        } else if Self.canUsePrivateCloudCompute {
+            agentSynthesisPreference = .privateCloudCompute
+        }
+        if let raw = UserDefaults.standard.string(forKey: Self.onlineModelServiceKey),
+           let service = OnlineModelService(rawValue: raw) {
+            onlineModelService = service
+        }
+        if let names = UserDefaults.standard.dictionary(forKey: Self.onlineModelNamesKey) as? [String: String] {
+            onlineModelNames = names
         }
         if let scaleRaw = UserDefaults.standard.string(forKey: Self.scaleModeKey),
            let mode = PDFScaleMode(rawValue: scaleRaw) {
@@ -372,15 +406,19 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         viewModel.jumpToSnapshot(target)
     }
 
+    /// Whether this build is signed with Apple's PCC entitlement. Developer ID builds never are.
+    static var canUsePrivateCloudCompute: Bool {
 #if VECTORPDF_MACOS27_SDK
-    public var pccStatusDescription: String {
-        if DocumentAgentConversation.hasPrivateCloudComputeEntitlement() {
-            return "Private Cloud Compute entitlement is active."
-        } else {
-            return "Private Cloud Compute requires Apple's managed entitlement ('com.apple.developer.private-cloud-compute') with an Apple Developer provisioning profile. Automatic mode safely uses On-Device compute."
-        }
-    }
+        DocumentAgentConversation.hasPrivateCloudComputeEntitlement()
+#else
+        false
 #endif
+    }
+
+    /// Engines to offer in Settings: PCC only where the build can use it.
+    public var availableSynthesisPreferences: [AgentSynthesisPreference] {
+        AgentSynthesisPreference.allCases.filter { $0 != .privateCloudCompute || Self.canUsePrivateCloudCompute }
+    }
 }
 
 /// Manages the floating, modal behavior of the Settings window to keep it on top of document windows
@@ -504,16 +542,24 @@ public struct AppSettingsView: View {
 #if VECTORPDF_MACOS27_SDK
             if #available(macOS 27.0, *), coordinator.showAgentTab {
                 Picker("AI Synthesis Engine", selection: $coordinator.agentSynthesisPreference) {
-                    ForEach(AgentSynthesisPreference.allCases, id: \.self) { pref in
+                    ForEach(coordinator.availableSynthesisPreferences, id: \.self) { pref in
                         Text(pref.displayName).tag(pref)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Text(coordinator.pccStatusDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 8)
+                switch coordinator.agentSynthesisPreference {
+                case .onlineModel:
+                    OnlineModelSettingsView()
+                case .privateCloudCompute:
+                    Text("Your questions and the passages used to answer them are sent to Apple's Private Cloud Compute. If it can't answer, VectorPDF answers on-device.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 8)
+                case .onDevice:
+                    EmptyView()
+                }
             }
 #endif
 

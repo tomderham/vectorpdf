@@ -420,7 +420,10 @@ public final class PDFViewerViewModel: ObservableObject {
     // Retrieval pool sizes for Agent questions.
     private static let embeddingCandidatePoolSize = 24
     private static let lexicalCandidatePoolSize = 10
-    static let maxPassagesForSynthesis = 6
+    /// Candidates offered to the on-device model, which keeps as many as fit its context.
+    static let onDeviceCandidatePassages = 24
+    /// Passages listed as the result when no model is available to answer.
+    static let passagesShownWithoutSynthesis = 6
     // Reused so the Agent tab's lazily-built index doesn't need to re-prompt for a password
     // already entered once to open the document (see promptForPasswordAndRetry).
     var currentDocumentPassword: String?

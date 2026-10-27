@@ -163,11 +163,24 @@ extension PDFViewerViewModel {
             // For small documents under context limits, pass full document prose directly.
             let totalDocChars = chunksSnapshot.reduce(0) { $0 + $1.chunk.text.count }
             let estimatedTokens = totalDocChars / 4
-            let isFullDocEligible = activeProvider == .privateCloudCompute && estimatedTokens <= DocumentAgentConversation.fullDocumentTokenThreshold
+            let isFullDocEligible = activeProvider?.hasLargeContext == true && estimatedTokens <= DocumentAgentConversation.fullDocumentTokenThreshold
 
+            // Fold previous question into query for anaphoric follow-ups.
+            let retrievalQuery: String
+            if let prev = previousQuestion, self.shouldFoldPreviousQuestion(question) {
+                retrievalQuery = "\(prev)\n\(question)"
+            } else {
+                retrievalQuery = question
+            }
+            let ranked = await self.rankPassages(embeddingQuery: retrievalQuery, lexicalQuery: question, in: chunksSnapshot)
+            // Whole-document mode doesn't need retrieval, apart from passages for an on-device fallback.
+            guard ranked != nil || isFullDocEligible else {
+                self.finishAgentTurn(id: turnId, text: "", errorMessage: "Couldn't process this question.")
+                return
+            }
+
+            let initialProvider = self.agentConversationEngine.activeSynthesisProvider()
             let passages: [AgentPassage]
-            let isFullDoc: Bool
-
             if isFullDocEligible {
                 var pageMap: [Int: [String]] = [:]
                 for c in chunksSnapshot {
@@ -177,47 +190,19 @@ extension PDFViewerViewModel {
                 passages = sortedPages.map { pageIdx in
                     AgentPassage(pageIndex: pageIdx, text: pageMap[pageIdx]!.joined(separator: "\n\n"), score: 1.0)
                 }
-                isFullDoc = true
             } else {
-                // Fold previous question into query for anaphoric follow-ups.
-                let retrievalQuery: String
-                if let prev = previousQuestion, self.shouldFoldPreviousQuestion(question) {
-                    retrievalQuery = "\(prev)\n\(question)"
-                } else {
-                    retrievalQuery = question
-                }
-                guard let queryVector = await self.agentEmbedder.embed(retrievalQuery) else {
-                    self.finishAgentTurn(id: turnId, text: "", errorMessage: "Couldn't process this question.")
-                    return
-                }
-
-                // Hybrid retrieval combining embedding similarity and lexical relevance.
-                let embeddingScores = chunksSnapshot.map { cosineSimilarity(queryVector, $0.vector) }
-                let lexicalScores = chunksSnapshot.map { lexicalRelevanceScore(query: question, text: $0.chunk.text) }
-
-                let pools = self.agentConversationEngine.recommendedCandidatePoolSizes()
-                let topByEmbedding = chunksSnapshot.indices.sorted { embeddingScores[$0] > embeddingScores[$1] }.prefix(pools.embedding)
-                let topByLexical = chunksSnapshot.indices
-                    .filter { lexicalScores[$0] > 0 }
-                    .sorted { lexicalScores[$0] > lexicalScores[$1] }
-                    .prefix(pools.lexical)
-                let candidateIndices = Set(topByEmbedding).union(topByLexical)
-                let passageBudget = self.agentConversationEngine.recommendedPassageCount(onDeviceDefault: Self.maxPassagesForSynthesis)
-                let ranked = candidateIndices
-                    .map { i in (embedded: chunksSnapshot[i], score: hybridRelevanceScore(embeddingScore: embeddingScores[i], lexicalScore: lexicalScores[i])) }
-                    .sorted { $0.score > $1.score }
-                    .prefix(passageBudget)
-
-                // Passages retain their full, natural chunk content with zero truncation
-                passages = ranked.map { item in
-                    AgentPassage(pageIndex: item.embedded.chunk.pageIndex, text: item.embedded.chunk.text, score: item.score)
-                }
-                isFullDoc = false
+                let count = initialProvider == nil
+                    ? Self.passagesShownWithoutSynthesis
+                    : self.agentConversationEngine.recommendedPassageCount(onDeviceDefault: Self.onDeviceCandidatePassages)
+                passages = Array((ranked ?? []).prefix(count))
             }
+            // On-device (first choice or PCC fallback) keeps as many of these as fit its context.
+            let retrieved = ranked ?? []
+            let onDevicePassages = Array((retrieved.isEmpty ? passages : retrieved).prefix(Self.onDeviceCandidatePassages))
 
-            let initialProvider = self.agentConversationEngine.activeSynthesisProvider()
             self.updateAgentTurn(id: turnId) {
-                $0.passages = passages
+                // On-device lists its sources once it knows how many fit (onSources below).
+                if initialProvider != .onDevice { $0.passages = passages }
                 $0.providerUsed = initialProvider
             }
             // Without on-device generation the passages are the answer — not an error.
@@ -229,7 +214,18 @@ extension PDFViewerViewModel {
             let result = await self.agentConversationEngine.streamAnswer(
                 question: question,
                 passages: passages,
-                isFullDocument: isFullDoc
+                onDevicePassages: onDevicePassages,
+                isFullDocument: isFullDocEligible,
+                searchMore: { [weak self] query in
+                    let found = await self?.rankPassages(embeddingQuery: query, lexicalQuery: query, in: chunksSnapshot)
+                    return Array((found ?? []).prefix(8))
+                },
+                onProvider: { [weak self] provider in
+                    self?.updateAgentTurn(id: turnId) { $0.providerUsed = provider }
+                },
+                onSources: { [weak self] sources in
+                    self?.updateAgentTurn(id: turnId) { $0.passages = sources }
+                }
             ) { [weak self] partial in
                 self?.updateAgentTurn(id: turnId) { $0.answerText = partial }
             }
@@ -241,6 +237,25 @@ extension PDFViewerViewModel {
                 errorMessage: result.errorMessage
             )
         }
+    }
+
+    /// Hybrid retrieval combining embedding similarity and lexical relevance, best first; nil if the
+    /// query can't be embedded.
+    private func rankPassages(embeddingQuery: String, lexicalQuery: String, in chunks: [EmbeddedChunk]) async -> [AgentPassage]? {
+        guard let queryVector = await agentEmbedder.embed(embeddingQuery) else { return nil }
+        let embeddingScores = chunks.map { cosineSimilarity(queryVector, $0.vector) }
+        let lexicalScores = chunks.map { lexicalRelevanceScore(query: lexicalQuery, text: $0.chunk.text) }
+
+        let pools = agentConversationEngine.recommendedCandidatePoolSizes()
+        let topByEmbedding = chunks.indices.sorted { embeddingScores[$0] > embeddingScores[$1] }.prefix(pools.embedding)
+        let topByLexical = chunks.indices
+            .filter { lexicalScores[$0] > 0 }
+            .sorted { lexicalScores[$0] > lexicalScores[$1] }
+            .prefix(pools.lexical)
+        // Passages retain their full, natural chunk content with zero truncation
+        return Set(topByEmbedding).union(topByLexical)
+            .map { i in AgentPassage(pageIndex: chunks[i].chunk.pageIndex, text: chunks[i].chunk.text, score: hybridRelevanceScore(embeddingScore: embeddingScores[i], lexicalScore: lexicalScores[i])) }
+            .sorted { $0.score > $1.score }
     }
 
     /// Determines whether the question is an anaphoric follow-up referring to previous context.
