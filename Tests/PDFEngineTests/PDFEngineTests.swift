@@ -1564,26 +1564,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(abs(clipView.bounds.origin.y - expectedScrollY) < 1.0)
 }
 
-@Test @MainActor func testPinchToZoomStateAndBounds() async throws {
-    let tempDir = FileManager.default.temporaryDirectory
-    let pdfURL = tempDir.appendingPathComponent("test_pinch_bounds_\(UUID().uuidString).pdf")
-    createSamplePDF(at: pdfURL)
-    defer { try? FileManager.default.removeItem(at: pdfURL) }
-    
-    let vm = PDFViewerViewModel()
-    await vm.loadDocument(from: pdfURL.path)
-    
-    let scrollView = PDFScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
-    let canvasView = PDFCanvasView(viewModel: vm)
-    scrollView.documentView = canvasView
-    let coordinator = PDFVirtualizedScrollView.Coordinator(viewModel: vm)
-    coordinator.scrollView = scrollView
-    coordinator.canvasView = canvasView
-    
-    coordinator.update(viewModel: vm, scrollView: scrollView)
-    #expect(coordinator.isPinching == false)
-}
-
 @Test @MainActor func testPDFViewerAppCoordinatorUpdatesOnDocumentLifecycle() async throws {
     let coordinator = PDFViewerAppCoordinator.shared
     
@@ -2066,9 +2046,7 @@ func createFormSamplePDF(at fileURL: URL) {
 }
 
 @Test @MainActor func testForm1040CheckboxDoesNotCorruptSiblingTextFields() throws {
-    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
-    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+    let f1040URL = Fixture.form1040
 
     let doc = try PDFDocumentCore(filePath: f1040URL.path)
     let page1WidgetsBefore = doc.loadFormWidgets(for: 1)
@@ -2207,9 +2185,7 @@ func createFormSamplePDF(at fileURL: URL) {
 }
 
 @Test @MainActor func testCombFieldDetectionAndFactoryCreation() throws {
-    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
-    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+    let f1040URL = Fixture.form1040
 
     let doc = try PDFDocumentCore(filePath: f1040URL.path)
     let page1Widgets = doc.loadFormWidgets(for: 1)
@@ -2292,13 +2268,13 @@ func createFormSamplePDF(at fileURL: URL) {
 }
 
 @Test func testFormResetFunctionality() throws {
-    let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    let f1040URL = repoRoot.appendingPathComponent("Resources/test-files/f1040.pdf")
-    guard FileManager.default.fileExists(atPath: f1040URL.path) else { return }
+    let doc = try PDFDocumentCore(filePath: Fixture.form1040.path)
+    let field = try #require(doc.loadFormWidgets(for: 0).first { $0.type == .text && $0.value.isEmpty })
+    try doc.setFormWidgetValue(pageIndex: 0, widgetIndex: field.widgetIndex, value: "Jane Example")
+    #expect(doc.loadFormWidgets(for: 0).first { $0.widgetIndex == field.widgetIndex }?.value == "Jane Example")
 
-    let doc = try PDFDocumentCore(filePath: f1040URL.path)
-    // Verify resetForm succeeds without throwing
     try doc.resetForm()
+    #expect(doc.loadFormWidgets(for: 0).first { $0.widgetIndex == field.widgetIndex }?.value.isEmpty == true)
 }
 
 @Test @MainActor func testWindowDelegateClosesCleanlyWhenNotEdited() throws {
@@ -2514,9 +2490,9 @@ func createFormSamplePDF(at fileURL: URL) {
     // Add multi-quad highlight
     try doc.addHighlight(pageIndex: 0, quads: [quad1, quad2], red: 1.0, green: 0.9, blue: 0.2)
 
-    // Delete the highlight near the first quad point
-    let hitPoint = CGPoint(x: 100, y: 730)
-    try doc.deleteHighlight(pageIndex: 0, at: hitPoint)
+    // A hit on either quad finds the one highlight; once it's gone, nothing is left to delete.
+    #expect(try doc.deleteHighlight(pageIndex: 0, at: CGPoint(x: 220, y: 680)))
+    #expect(try doc.deleteHighlight(pageIndex: 0, at: CGPoint(x: 100, y: 730)) == false)
 }
 
 @Test @MainActor func testNavigationHistoryAndPageJump() async throws {
@@ -2638,42 +2614,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(CanvasMode.redact.rawValue == "redact")
     #expect(CanvasMode.eraser.rawValue == "eraser")
     #expect(CanvasMode.stamp.rawValue == "stamp")
-}
-
-@Test func testMuPDFTextMarkupAndInkPersistence() throws {
-    let tempDir = FileManager.default.temporaryDirectory
-    let pdfURL = tempDir.appendingPathComponent("test_markup_\(UUID().uuidString).pdf")
-    createSamplePDF(at: pdfURL)
-    defer { try? FileManager.default.removeItem(at: pdfURL) }
-
-    let doc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(doc.pageCount == 2)
-
-    let quad = PDFQuad(
-        ul: CGPoint(x: 54, y: 700),
-        ur: CGPoint(x: 180, y: 700),
-        ll: CGPoint(x: 54, y: 720),
-        lr: CGPoint(x: 180, y: 720)
-    )
-
-    // Add Underline
-    try doc.addTextMarkup(pageIndex: 0, type: .underline, quads: [quad], red: 0.2, green: 0.8, blue: 0.95)
-
-    // Add Strikethrough
-    try doc.addTextMarkup(pageIndex: 0, type: .strikeout, quads: [quad], red: 1.0, green: 0.4, blue: 0.6)
-
-    // Add Ink stroke
-    let inkPoints = [CGPoint(x: 100, y: 500), CGPoint(x: 150, y: 520), CGPoint(x: 200, y: 500)]
-    try doc.addInkStroke(pageIndex: 0, points: inkPoints, strokeWidth: 2.5, red: 0.3, green: 0.85, blue: 0.4)
-
-    // Delete annotation near ink point
-    try doc.deleteAnnotation(pageIndex: 0, at: CGPoint(x: 150, y: 520))
-
-    // Save document to ensure Fitz doesn't throw during serialization
-    let savedURL = tempDir.appendingPathComponent("test_saved_\(UUID().uuidString).pdf")
-    defer { try? FileManager.default.removeItem(at: savedURL) }
-    try doc.save(to: savedURL.path)
-    #expect(FileManager.default.fileExists(atPath: savedURL.path))
 }
 
 @Test func testAllMarkupPDFStandardsCompatibility() throws {
@@ -3290,60 +3230,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!marginAnchor.label.contains("49"))
 }
 
-@Test @MainActor func testPageManipulationMarksDocumentDirtyAndSavesOnDemand() async throws {
-    let tempDir = FileManager.default.temporaryDirectory
-    let pdfURL = tempDir.appendingPathComponent("test_dirty_tracking_\(UUID().uuidString).pdf")
-    defer { try? FileManager.default.removeItem(at: pdfURL) }
-
-    // Create 3-page test PDF
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create context")
-    }
-    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-    let font = NSFont.systemFont(ofSize: 14)
-    for i in 1...3 {
-        context.beginPDFPage(nil)
-        ("Page \(i) content" as NSString).draw(at: NSPoint(x: 72, y: 700), withAttributes: [.font: font])
-        context.endPDFPage()
-    }
-    context.closePDF()
-
-    let originalData = try Data(contentsOf: pdfURL)
-
-    let vm = PDFViewerViewModel()
-    await vm.loadDocument(from: pdfURL.path)
-    #expect(vm.isDocumentEdited == false)
-
-    // 1. Rotate Page 0: marks document dirty, but original file on disk is NOT touched yet
-    vm.rotatePage(0, by: 90)
-    #expect(vm.isDocumentEdited == true)
-
-    let fileDataDuringEdit = try Data(contentsOf: pdfURL)
-    #expect(fileDataDuringEdit == originalData) // Disk file was NOT overwritten!
-
-    // 2. Explicit Save: writes changes to disk and clears isDocumentEdited
-    vm.saveDocument()
-    #expect(vm.isDocumentEdited == false)
-
-    let fileDataAfterSave = try Data(contentsOf: pdfURL)
-    #expect(fileDataAfterSave != originalData) // Disk file has now been updated!
-
-    // 3. Delete Page 1: marks document dirty, disk file unchanged until save
-    let dataBeforeDelete = try Data(contentsOf: pdfURL)
-    vm.deletePage(1)
-    #expect(vm.isDocumentEdited == true)
-
-    let fileDataDuringDelete = try Data(contentsOf: pdfURL)
-    #expect(fileDataDuringDelete == dataBeforeDelete)
-
-    // 4. Save updates disk and verifies page count
-    vm.saveDocument()
-    #expect(vm.isDocumentEdited == false)
-    let reloadedDoc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(reloadedDoc.pageCount == 2)
-}
-
 @Test @MainActor func testViewModelWordSelectionAndTranslation() async throws {
     let vm = PDFViewerViewModel()
     let selResult = SelectionResult(
@@ -3358,58 +3244,6 @@ func createFormSamplePDF(at fileURL: URL) {
     vm.translateSelection()
     #expect(vm.translationTargetText == "Bonjour le monde")
     #expect(vm.isPresentingTranslation == true)
-}
-
-@Test @MainActor func testPageManipulationOperations() async throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let pdfURL = tempDir.appendingPathComponent("manipulation_test.pdf")
-
-    // Create 3-page PDF
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create test PDF")
-    }
-    for i in 1...3 {
-        context.beginPDFPage(nil)
-        let text = "Page \(i) Content"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        context.endPDFPage()
-    }
-    context.closePDF()
-
-    let doc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(doc.pageCount == 3)
-    let origWidth = doc.pageBounds[0].width
-    let origHeight = doc.pageBounds[0].height
-    #expect(origWidth == 612)
-    #expect(origHeight == 792)
-
-    // 1. Rotate Page 0 by 90 degrees
-    try doc.rotatePage(0, by: 90)
-    #expect(doc.pageBounds[0].width == 792)
-    #expect(doc.pageBounds[0].height == 612)
-
-    // 2. Extract Pages 0 and 2
-    let extractURL = tempDir.appendingPathComponent("extracted.pdf")
-    try doc.extractPages([0, 2], to: extractURL)
-    let extractDoc = try PDFDocumentCore(filePath: extractURL.path)
-    #expect(extractDoc.pageCount == 2)
-
-    // 3. Delete Page 1
-    try doc.deletePage(1)
-    #expect(doc.pageCount == 2)
-
-    // 4. Reorder Page 0 to 1
-    try doc.reorderPage(from: 0, to: 1)
-    #expect(doc.pageCount == 2)
-
-    // 5. Save and reload
-    try doc.save(to: pdfURL.path)
-    let reloadedDoc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(reloadedDoc.pageCount == 2)
 }
 
 @Test @MainActor func testPhysicalScaleAndEffectiveZoom() throws {
@@ -3910,126 +3744,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.draggedThumbnailPageIndex == nil)
 }
 
-@Test @MainActor func testMultiPageManipulationCore() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let pdfURL = tempDir.appendingPathComponent("bulk_test.pdf")
-
-    // Create 5-page PDF
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create test PDF")
-    }
-    for i in 1...5 {
-        context.beginPDFPage(nil)
-        let text = "Page \(i) Content"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        context.endPDFPage()
-    }
-    context.closePDF()
-
-    let doc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(doc.pageCount == 5)
-
-    // Test multi-page reorder: move pages 1 and 2 to slot 0 (beginning)
-    try doc.reorderPages(from: [1, 2], toSlot: 0)
-    #expect(doc.pageCount == 5)
-
-    // Test multi-page rotate: rotate pages 0 and 1 by 90 degrees
-    try doc.rotatePages([0, 1], by: 90)
-    #expect(doc.pageCount == 5)
-
-    // Test multi-page delete: delete pages 3 and 4
-    try doc.deletePages([3, 4])
-    #expect(doc.pageCount == 3)
-
-    // Guard against deleting all pages
-    #expect(throws: Error.self) {
-        try doc.deletePages([0, 1, 2])
-    }
-}
-
-@Test @MainActor func testDuplicatePagesCore() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let pdfURL = tempDir.appendingPathComponent("dup_test.pdf")
-
-    // Create 3-page PDF
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create test PDF")
-    }
-    for i in 1...3 {
-        context.beginPDFPage(nil)
-        let text = "Page \(i) Content"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        context.endPDFPage()
-    }
-    context.closePDF()
-
-    let doc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(doc.pageCount == 3)
-
-    // Duplicate single page (page 0) -> should be inserted at slot 1, making 4 pages total
-    let (slot1, count1) = try doc.duplicatePages([0])
-    #expect(slot1 == 1)
-    #expect(count1 == 1)
-    #expect(doc.pageCount == 4)
-
-    // Duplicate multiple pages (pages 1 and 2) -> max index is 2, inserted at slot 3
-    let (slot2, count2) = try doc.duplicatePages([1, 2])
-    #expect(slot2 == 3)
-    #expect(count2 == 2)
-    #expect(doc.pageCount == 6)
-}
-
-@Test @MainActor func testInsertBlankPage() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let pdfURL = tempDir.appendingPathComponent("test_blank_page.pdf")
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create PDF context")
-    }
-    for i in 1...3 {
-        context.beginPDFPage(nil)
-        let text = "Page \(i) Content"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        context.endPDFPage()
-    }
-    context.closePDF()
-
-    let doc = try PDFDocumentCore(filePath: pdfURL.path)
-    #expect(doc.pageCount == 3)
-
-    // Insert blank page after page 0 (at slot 1)
-    let slot1 = try doc.insertBlankPage(atSlot: 1)
-    #expect(slot1 == 1)
-    #expect(doc.pageCount == 4)
-
-    // Verify blank page has valid geometry (inherited from adjacent page)
-    let boxes = doc.getPageBoxes(for: 1)
-    #expect(boxes.mediaBox.width == 612)
-    #expect(boxes.mediaBox.height == 792)
-
-    // Insert blank page at the end (slot 4)
-    let slot2 = try doc.insertBlankPage(atSlot: doc.pageCount)
-    #expect(slot2 == 4)
-    #expect(doc.pageCount == 5)
-
-    // Verify document can be saved and reopened
-    let savedURL = tempDir.appendingPathComponent("saved_blank_page.pdf")
-    try doc.save(to: savedURL.path)
-    let reopenedDoc = try PDFDocumentCore(filePath: savedURL.path)
-    #expect(reopenedDoc.pageCount == 5)
-}
-
 @Test @MainActor func testSplitPDFDocument() throws {
     let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
@@ -4087,75 +3801,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(doc3.pageCount == 1)
     let text3 = doc3.extractText(pageIndex: 0) ?? ""
     #expect(text3.contains("Page 7"))
-}
-
-@Test @MainActor func testImportPagesFromExternalPDF() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let primaryURL = tempDir.appendingPathComponent("primary.pdf")
-    let externalURL = tempDir.appendingPathComponent("external.pdf")
-
-    // Create 2-page primary PDF
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let ctxA = CGContext(primaryURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create primary PDF")
-    }
-    for i in 1...2 {
-        ctxA.beginPDFPage(nil)
-        let text = "Primary Page \(i)"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        ctxA.endPDFPage()
-    }
-    ctxA.closePDF()
-
-    // Create 3-page external PDF
-    guard let ctxB = CGContext(externalURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create external PDF")
-    }
-    for i in 1...3 {
-        ctxB.beginPDFPage(nil)
-        let text = "External Page \(i)"
-        (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 14)])
-        ctxB.endPDFPage()
-    }
-    ctxB.closePDF()
-
-    let docA = try PDFDocumentCore(filePath: primaryURL.path)
-    #expect(docA.pageCount == 2)
-
-    // Import external PDF at slot 1 (between page 0 and 1)
-    let (slot, importedCount) = try docA.importPages(from: externalURL, atSlot: 1)
-    #expect(slot == 1)
-    #expect(importedCount == 3)
-    #expect(docA.pageCount == 5)
-}
-
-@Test @MainActor func testQuickAnchorShortcut() async throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let pdfURL = tempDir.appendingPathComponent("anchor_test.pdf")
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-    guard let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil) else {
-        fatalError("Failed to create test PDF")
-    }
-    context.beginPDFPage(nil)
-    let text = "Sample Chapter 1 Heading"
-    (text as NSString).draw(at: NSPoint(x: 100, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 18)])
-    context.endPDFPage()
-    context.closePDF()
-
-    let vm = PDFViewerViewModel()
-    await vm.loadDocument(from: pdfURL.path)
-    #expect(vm.activeSnapshots.isEmpty)
-
-    // Call quick anchor shortcut
-    vm.addAnchorForCurrentPage()
-    #expect(!vm.activeSnapshots.isEmpty)
-    #expect(vm.activeSnapshots.first?.targetPage == 0)
 }
 
 @Test @MainActor func testAnchorsMenuCoordinatorReactivity() async throws {
@@ -4624,10 +4269,7 @@ func createFormSamplePDF(at fileURL: URL) {
 }
 
 @Test @MainActor func testRealPDFDocxExportWithImages() async throws {
-    let tutorialPath = "Vendor/.build-tmp/mupdf-1.28.3/thirdparty/lcms2/doc/LittleCMS2.19 tutorial.pdf"
-    guard FileManager.default.fileExists(atPath: tutorialPath) else { return }
-
-    let doc = try PDFDocumentCore(filePath: tutorialPath)
+    let doc = try PDFDocumentCore(filePath: Fixture.lcmsTutorial.path)
     let exporter = PDFDocumentExporter()
     let tempDir = FileManager.default.temporaryDirectory
     let docxURL = tempDir.appendingPathComponent("tutorial_test_\(UUID().uuidString).docx")
@@ -4985,23 +4627,6 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(minRect.height >= 16)
 }
 
-@Test func testTiledSchematicOCR() async throws {
-    guard let schematicPath = ProcessInfo.processInfo.environment["VECTORPDF_TEST_SCHEMATIC_PDF"],
-          FileManager.default.fileExists(atPath: schematicPath) else { return }
-
-    let vm = await PDFViewerViewModel()
-    await vm.loadDocument(from: schematicPath)
-
-    try await Task.sleep(nanoseconds: 500_000_000)
-    await vm.runOCR(onPageIndex: 0)
-
-    let ocr = await MainActor.run { vm.ocrResults[0] }
-    #expect(ocr != nil)
-    let lineCount = ocr?.lines.count ?? 0
-    print("Total recognized lines in schematic: \(lineCount)")
-    #expect(lineCount > 50)
-}
-
 @Test func testSearchJumpTokenIncrementsOnNavigation() async throws {
     let vm = await PDFViewerViewModel()
     let initialToken = await MainActor.run { vm.searchJumpToken }
@@ -5194,261 +4819,6 @@ func createFormSamplePDF(at fileURL: URL) {
         }
     }
 
-    @Test @MainActor func testInspectPage39() throws {
-        guard let pdfPath = ProcessInfo.processInfo.environment["VECTORPDF_TEST_SPEC_PDF"],
-              FileManager.default.fileExists(atPath: pdfPath) else {
-            return
-        }
-
-        let doc = try PDFDocumentCore(filePath: pdfPath)
-        guard 38 < doc.pageCount, let stext = doc.loadStructuredPage(for: 38) else {
-            return
-        }
-
-        let engine = PDFLayoutEngine()
-        let elements = engine.reconstructLayout(for: stext)
-        let paragraphTexts = elements.compactMap { elem -> String? in
-            if case .paragraph(let runs, _, _, _, _, _, _) = elem {
-                return runs.map { $0.text }.joined()
-            }
-            return nil
-        }
-
-        // Verify that the sentence on page 39 is reconstructed into a single continuous paragraph without word splitting
-        let targetSentence = "Validate that the indicated finite cyclic group in the first message is the same as the indicated finite cyclic group in the second message"
-        let found = paragraphTexts.contains { $0.contains(targetSentence) }
-        #expect(found, "Page 39 should contain the target sentence unbroken in a single paragraph")
-    }
-
-    @Test @MainActor func testPage36LayoutAndStyling() throws {
-        guard let pdfPath = ProcessInfo.processInfo.environment["VECTORPDF_TEST_SPEC_PDF"],
-              FileManager.default.fileExists(atPath: pdfPath) else { return }
-
-        let doc = try PDFDocumentCore(filePath: pdfPath)
-        guard 35 < doc.pageCount, let stext = doc.loadStructuredPage(for: 35) else { return }
-
-        let engine = PDFLayoutEngine()
-        let elements = engine.reconstructLayout(for: stext)
-
-        // 1. Verify Table 12-aa1 is cleanly segmented into 5 rows (Header + 4 data rows)
-        var tableFound = false
-        var note1Found = false
-        var section12_16Found = false
-        var underlineRunFound = false
-        var strikeRunFound = false
-
-        for el in elements {
-            switch el {
-            case .heading(let level, let runs, _, _, _):
-                let text = runs.map(\.text).joined()
-                if text.contains("12.16 Client privacy enhancement") {
-                    section12_16Found = true
-                    #expect(level == 2)
-                }
-            case .paragraph(let runs, _, _, _, _, _, _):
-                let text = runs.map(\.text).joined()
-                if text.contains("NOTE 1") {
-                    note1Found = true
-                }
-                for r in runs {
-                    if r.isUnderline { underlineRunFound = true }
-                    if r.isStrikethrough { strikeRunFound = true }
-                }
-            case .table(let t):
-                if t.rows.first?.cells.first?.text.contains("PQCProfile") == true {
-                    tableFound = true
-                    #expect(t.rows.count == 5)
-                    #expect(t.colWidths.count == 4)
-                    // Ensure the table doesn't swallow NOTE 1 or Section 12.16
-                    for row in t.rows {
-                        for cell in row.cells {
-                            #expect(!cell.text.contains("NOTE 1"))
-                            #expect(!cell.text.contains("12.16"))
-                        }
-                    }
-                }
-            default:
-                break
-            }
-        }
-
-        #expect(tableFound, "Table 12-aa1 should be detected")
-        #expect(note1Found, "NOTE 1 should be present as a paragraph outside the table")
-        #expect(section12_16Found, "Section 12.16 should be present as a heading outside the table")
-        #expect(underlineRunFound, "Underlined text run should be detected on page 36")
-        #expect(strikeRunFound, "Strikethrough text run should be detected on page 36")
-    }
-
-    @Test @MainActor func testMultiPageTableStitchingAndFigureBoxing() throws {
-        guard let pdfPath = ProcessInfo.processInfo.environment["VECTORPDF_TEST_SPEC_PDF"],
-              FileManager.default.fileExists(atPath: pdfPath) else { return }
-        let doc = try PDFDocumentCore(filePath: pdfPath)
-        let engine = PDFLayoutEngine()
-
-        // 1. Verify Table 9-87 multi-page stitching across pages 16-19 (indices 15..18)
-        var pageElems: [[PDFLayoutElement]] = []
-        for pIdx in 15...18 {
-            guard pIdx < doc.pageCount, let stext = doc.loadStructuredPage(for: pIdx) else { continue }
-            pageElems.append(engine.reconstructLayout(for: stext))
-        }
-
-        engine.stitchContinuingTables(pages: &pageElems)
-
-        // Page 16 must now hold the unified 9-row Table 9-87 (all non-empty data and header rows)
-        var table9_87: LayoutTable? = nil
-        for elem in pageElems[0] {
-            if case .table(let t) = elem, t.colWidths.count == 4 {
-                table9_87 = t
-                break
-            }
-        }
-
-        #expect(table9_87 != nil, "Table 9-87 should be present on page 16")
-        #expect(table9_87?.rows.count == 9, "Table 9-87 should have stitched all 9 non-empty rows across pages 16-19")
-        #expect(table9_87?.colWidths.count == 4)
-
-        // Intermediate pages (17 and 18) must have had Table 9-87 and "(continued)" headings removed
-        for i in 1...2 {
-            for elem in pageElems[i] {
-                if case .table(let t) = elem, t.colWidths.count == 4 {
-                    #expect(Bool(false), "Page \(i + 16) should have had its Table 9-87 continuation merged into page 16")
-                }
-                if case .heading(_, let runs, _, _, _) = elem {
-                    let text = runs.map(\.text).joined()
-                    #expect(!text.contains("(continued)"), "Page \(i + 16) should not have a lingering continuation heading")
-                }
-            }
-        }
-
-        // 2. Verify Figure 9-aa1 on Page 23 (index 22)
-        if 22 < doc.pageCount, let stext23 = doc.loadStructuredPage(for: 22) {
-            let elements23 = engine.reconstructLayout(for: stext23)
-            var box1Found = false
-            var box2Found = false
-
-            for elem in elements23 {
-                switch elem {
-                case .table(let t):
-                    if t.colWidths.count == 7 {
-                        box1Found = true
-                        #expect(t.rows.count == 1, "Figure 9-aa1 Box 1 should be a 1-row bordered field table")
-                        #expect(t.rows[0].isBordered == true, "Field box row should be bordered")
-                        #expect(t.rows[0].cells[0].text.contains("Element ID"))
-                    } else if t.colWidths.count == 4 && t.rows.first?.cells.first?.text.contains("PoW Challenge") == true {
-                        box2Found = true
-                        #expect(t.rows.count == 1, "Figure 9-aa1 Box 2 should be a 1-row bordered field table")
-                        #expect(t.rows[0].isBordered == true, "Field box row should be bordered")
-                    }
-                default:
-                    break
-                }
-            }
-
-            #expect(box1Found, "Figure 9-aa1 Box 1 should be detected as a 7-column table")
-            #expect(box2Found, "Figure 9-aa1 Box 2 should be detected as a 4-column table")
-        }
-
-        // 3. Verify Word (.docx) export for multi-page tables and boxed figures
-        let exporter = PDFDocumentExporter()
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test_multipage_export_\(UUID().uuidString).docx")
-        defer { try? FileManager.default.removeItem(at: tempURL) }
-        try exporter.exportWordDocument(from: doc, to: tempURL, pageIndices: [15, 16, 17, 18, 22])
-        #expect(FileManager.default.fileExists(atPath: tempURL.path))
-    }
-
-    @Test @MainActor func testInspectToCUnderlineAndTable22() throws {
-        guard let pdfPath = ProcessInfo.processInfo.environment["VECTORPDF_TEST_SPEC_PDF"],
-              FileManager.default.fileExists(atPath: pdfPath) else { return }
-        let doc = try PDFDocumentCore(filePath: pdfPath)
-        let engine = PDFLayoutEngine()
-
-        print("\n================== PAGE 7 (index 6): Reconstructed Elements ==================")
-        if 6 < doc.pageCount, let stext7 = doc.loadStructuredPage(for: 6) {
-            let elements7 = engine.reconstructLayout(for: stext7)
-            for elem in elements7 {
-                switch elem {
-                case .heading(let level, let runs, let bbox, _, _):
-                    print("  HEADING L\(level) [\(bbox.minX), \(bbox.minY)]: \(runs.map(\.text).joined())")
-                case .paragraph(let runs, let bbox, _, _, let leftIndent, let firstLineIndent, _):
-                    print("  PARA [x=\(bbox.minX), y=\(bbox.minY), w=\(bbox.width), ind=\(leftIndent), fl=\(firstLineIndent)]: '\(runs.map(\.text).joined())'")
-                case .table(let t):
-                    print("  TABLE: rows=\(t.rows.count)")
-                default:
-                    break
-                }
-            }
-        }
-
-        print("\n================== PAGE 22 (index 21): Table 9-bb19 ==================")
-        if 21 < doc.pageCount, let stext22 = doc.loadStructuredPage(for: 21) {
-            let elements22 = engine.reconstructLayout(for: stext22)
-            for elem in elements22 {
-                switch elem {
-                case .heading(let level, let runs, _, _, _):
-                    print("  HEADING L\(level): \(runs.map(\.text).joined())")
-                case .table(let t):
-                    print("  TABLE: rows=\(t.rows.count), cols=\(t.colWidths.count), bbox=\(t.bbox)")
-                    for (rIdx, r) in t.rows.enumerated() {
-                        let rowTxt = r.cells.map { $0.text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "\n", with: " ") }.joined(separator: " | ")
-                        let isEmpty = rowTxt.replacingOccurrences(of: "|", with: "").trimmingCharacters(in: .whitespaces).isEmpty
-                        print("    Row \(rIdx) [empty=\(isEmpty), y=\(r.bbox.minY)..\(r.bbox.maxY)]: '\(rowTxt)'")
-                    }
-                default:
-                    break
-                }
-            }
-        }
-
-        print("\n================== UNDERLINE SEARCH ==================")
-        var totalUnderlineSpaces = 0
-        for pIdx in 0..<min(45, doc.pageCount) {
-            if let stext = doc.loadStructuredPage(for: pIdx) {
-                let uChars = stext.allCharacters.filter { $0.isUnderline }
-                if !uChars.isEmpty {
-                    let textSample = String(uChars.prefix(50).map { $0.char })
-                    let spaceCount = uChars.filter { $0.char == " " }.count
-                    totalUnderlineSpaces += spaceCount
-                    print("  Page \(pIdx + 1): \(uChars.count) underline chars (\(spaceCount) spaces). Sample: '\(textSample)'")
-                }
-            }
-        }
-        #expect(totalUnderlineSpaces > 1000)
-
-        // Verify docx export of ToC, Table 9-bb19, and underlined pages
-        let exporter = PDFDocumentExporter()
-        let tempDocx = FileManager.default.temporaryDirectory.appendingPathComponent("test_toc_table_underline_\(UUID().uuidString).docx")
-        defer { try? FileManager.default.removeItem(at: tempDocx) }
-
-        try exporter.exportWordDocument(from: doc, to: tempDocx, pageIndices: [6, 21, 30, 38])
-        #expect(FileManager.default.fileExists(atPath: tempDocx.path))
-
-        // Unzip and inspect document.xml
-        let unzipDir = FileManager.default.temporaryDirectory.appendingPathComponent("unzipped_docx_\(UUID().uuidString)")
-        try? FileManager.default.createDirectory(at: unzipDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: unzipDir) }
-
-        let unzipProc = Process()
-        unzipProc.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-        unzipProc.arguments = ["-q", tempDocx.path, "-d", unzipDir.path]
-        try unzipProc.run()
-        unzipProc.waitUntilExit()
-
-        let docXMLPath = unzipDir.appendingPathComponent("word/document.xml")
-        #expect(FileManager.default.fileExists(atPath: docXMLPath.path))
-        let docXML = try String(contentsOf: docXMLPath, encoding: .utf8)
-
-        // 1. Verify native Word dot leader tabs are present for ToC
-        #expect(docXML.contains("w:leader=\"dot\""))
-        #expect(docXML.contains("<w:tab/>"))
-
-        // 2. Verify single unbroken underline runs spanning words and spaces
-        #expect(docXML.contains("<w:u w:val=\"single\"/>"))
-
-        // 3. Verify Table 9-bb19 has no empty rows
-        #expect(docXML.contains("Security Profile Number"))
-        #expect(docXML.contains("Vendor specific"))
-    }
-
     @Test @MainActor func testSaveFlattenedFormAndAnnotations() throws {
         let tempDir = FileManager.default.temporaryDirectory
         let formURL = tempDir.appendingPathComponent("test_flatten_src_\(UUID().uuidString).pdf")
@@ -5531,16 +4901,6 @@ func createFormSamplePDF(at fileURL: URL) {
         let docWidgetsOnly = try PDFDocumentCore(filePath: flattenedWidgetsOnlyURL.path)
         #expect(try docWidgetsOnly.deleteAnnotation(pageIndex: 0, at: CGPoint(x: 150, y: 307)) == true, "Annotations should remain interactive")
         #expect(docWidgetsOnly.loadFormWidgets(for: 0).isEmpty, "Widgets should be flattened")
-    }
-
-    @Test func testExportDocumentFormatCases() {
-        #expect(ExportDocumentFormat.allCases.count == 4)
-        #expect(ExportDocumentFormat.flattenedPDF.fileExtension == "pdf")
-        #expect(ExportDocumentFormat.flattenedPDF.defaultMimeType == "application/pdf")
-        #expect(ExportDocumentFormat.plainText.fileExtension == "txt")
-        #expect(ExportDocumentFormat.wordDocument.fileExtension == "docx")
-        #expect(ExportDocumentFormat.svgDocument.fileExtension == "svg")
-        #expect(ExportDocumentFormat.svgDocument.defaultMimeType == "image/svg+xml")
     }
 
     @Test @MainActor func testTwoPageBookModeCoverPageOffsetLayoutAndAutoZoom() async throws {

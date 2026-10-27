@@ -2374,6 +2374,317 @@ int mupdf_pdf_extract_pages(fz_context *ctx, fz_document *doc, const int *page_i
     return 0;
 }
 
+// MARK: - Copying pages with their annotations
+//
+// pdf_graft_page copies a page's contents, resources and boxes, but not its annotations (markup,
+// links, form widgets) or its measurement viewports. The helpers below copy those too, for both
+// a page duplicated within its document and pages imported from another one.
+
+typedef struct {
+    pdf_document *src;
+    pdf_document *dst;
+    int same_doc;
+    pdf_graft_map *map;   // for content objects; shared across the pages so resources are copied once
+    int *memo;            // source object number -> destination object number, for objects copied here
+    int memo_len;
+} vp_page_copy;
+
+static int vp_is_annot_or_field(fz_context *ctx, pdf_obj *dict) {
+    if (!pdf_is_dict(ctx, dict)) return 0;
+    if (pdf_name_eq(ctx, pdf_dict_get(ctx, dict, PDF_NAME(Type)), PDF_NAME(Annot))) return 1;
+    if (pdf_dict_get(ctx, dict, PDF_NAME(Subtype)) && pdf_dict_get(ctx, dict, PDF_NAME(Rect))) return 1;
+    return pdf_dict_get(ctx, dict, PDF_NAME(FT)) || pdf_dict_get(ctx, dict, PDF_NAME(T)) || pdf_dict_get(ctx, dict, PDF_NAME(Kids));
+}
+
+static int vp_is_page(fz_context *ctx, pdf_obj *dict) {
+    return pdf_name_eq(ctx, pdf_dict_get(ctx, dict, PDF_NAME(Type)), PDF_NAME(Page));
+}
+
+/// Copies `obj` (found under `key` of its parent) into the destination document.
+/// Annotations and form fields reached from it are copied here, so that page references inside
+/// them can be redirected: a reference to a copied page goes to its copy, and (between documents)
+/// a reference to a page that wasn't copied becomes null. Within one document, a widget keeps its
+/// parent field — the copy becomes another widget of the same field — and objects other than
+/// annotations and their appearance streams are shared rather than copied. Between documents,
+/// everything else goes through the graft map.
+static pdf_obj *vp_copy_obj(fz_context *ctx, vp_page_copy *st, pdf_obj *obj, pdf_obj *key, int in_ap) {
+    if (!pdf_get_bound_document(ctx, obj)) return pdf_keep_obj(ctx, obj);
+
+    if (pdf_is_indirect(ctx, obj)) {
+        int num = pdf_to_num(ctx, obj);
+        if (num > 0 && num < st->memo_len && st->memo[num])
+            return pdf_new_indirect(ctx, st->dst, st->memo[num], 0);
+
+        pdf_obj *resolved = pdf_resolve_indirect(ctx, obj);
+        if (vp_is_page(ctx, resolved))
+            return st->same_doc ? pdf_keep_obj(ctx, obj) : PDF_NULL;
+
+        int owned;
+        if (st->same_doc) {
+            int is_field_parent = key && pdf_name_eq(ctx, key, PDF_NAME(Parent)) && vp_is_annot_or_field(ctx, resolved)
+                && !pdf_dict_get(ctx, resolved, PDF_NAME(Subtype));
+            owned = !is_field_parent && (vp_is_annot_or_field(ctx, resolved) || (in_ap && pdf_is_stream(ctx, obj)));
+            if (!owned) return pdf_keep_obj(ctx, obj);
+        } else if (!vp_is_annot_or_field(ctx, resolved)) {
+            return pdf_graft_mapped_object(ctx, st->map, obj);
+        }
+
+        int new_num = pdf_create_object(ctx, st->dst);
+        if (num > 0 && num < st->memo_len) st->memo[num] = new_num;
+        pdf_obj *copy = NULL;
+        pdf_obj *ref = NULL;
+        fz_buffer *buf = NULL;
+        fz_var(copy);
+        fz_var(ref);
+        fz_var(buf);
+        fz_try(ctx) {
+            // A stream's own dictionary (its /Resources, say) is not part of the appearance.
+            copy = vp_copy_obj(ctx, st, resolved, key, pdf_is_stream(ctx, obj) ? 0 : in_ap);
+            pdf_update_object(ctx, st->dst, new_num, copy);
+            ref = pdf_new_indirect(ctx, st->dst, new_num, 0);
+            if (pdf_is_stream(ctx, obj)) {
+                buf = pdf_load_raw_stream_number(ctx, st->src, num);
+                pdf_update_stream(ctx, st->dst, ref, buf, 1);
+            }
+        } fz_always(ctx) {
+            pdf_drop_obj(ctx, copy);
+            fz_drop_buffer(ctx, buf);
+        } fz_catch(ctx) {
+            pdf_drop_obj(ctx, ref);
+            fz_rethrow(ctx);
+        }
+        return ref;
+    }
+
+    if (pdf_is_dict(ctx, obj)) {
+        int len = pdf_dict_len(ctx, obj);
+        pdf_obj *dict = pdf_new_dict(ctx, st->dst, len);
+        fz_try(ctx) {
+            for (int i = 0; i < len; i++) {
+                pdf_obj *k = pdf_dict_get_key(ctx, obj, i);
+                int child_in_ap = in_ap || pdf_name_eq(ctx, k, PDF_NAME(AP));
+                pdf_dict_put_drop(ctx, dict, k, vp_copy_obj(ctx, st, pdf_dict_get_val(ctx, obj, i), k, child_in_ap));
+            }
+        } fz_catch(ctx) {
+            pdf_drop_obj(ctx, dict);
+            fz_rethrow(ctx);
+        }
+        return dict;
+    }
+
+    if (pdf_is_array(ctx, obj)) {
+        int len = pdf_array_len(ctx, obj);
+        pdf_obj *array = pdf_new_array(ctx, st->dst, len);
+        fz_try(ctx) {
+            for (int i = 0; i < len; i++)
+                pdf_array_push_drop(ctx, array, vp_copy_obj(ctx, st, pdf_array_get(ctx, obj, i), key, in_ap));
+        } fz_catch(ctx) {
+            pdf_drop_obj(ctx, array);
+            fz_rethrow(ctx);
+        }
+        return array;
+    }
+
+    return pdf_keep_obj(ctx, obj);
+}
+
+/// Between documents, a named destination (/Dest or a GoTo action's /D) means nothing in the
+/// destination document, so replace it with the explicit destination it names.
+static void vp_resolve_named_dest(fz_context *ctx, vp_page_copy *st, pdf_obj *holder_src, pdf_obj *holder_dst, pdf_obj *key) {
+    pdf_obj *dest = pdf_dict_get(ctx, holder_src, key);
+    if (!pdf_is_name(ctx, dest) && !pdf_is_string(ctx, dest)) return;
+    pdf_obj *explicit = pdf_lookup_dest(ctx, st->src, dest);
+    if (pdf_is_dict(ctx, explicit)) explicit = pdf_dict_get(ctx, explicit, PDF_NAME(D));
+    if (!pdf_is_array(ctx, explicit)) return;
+    pdf_dict_put_drop(ctx, holder_dst, key, vp_copy_obj(ctx, st, explicit, key, 0));
+}
+
+static pdf_obj *vp_acroform_fields(fz_context *ctx, pdf_document *doc) {
+    pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, doc), PDF_NAME(Root));
+    pdf_obj *acroform = pdf_dict_get(ctx, root, PDF_NAME(AcroForm));
+    if (!acroform) {
+        acroform = pdf_dict_put_dict(ctx, root, PDF_NAME(AcroForm), 2);
+    }
+    pdf_obj *fields = pdf_dict_get(ctx, acroform, PDF_NAME(Fields));
+    if (!fields) fields = pdf_dict_put_array(ctx, acroform, PDF_NAME(Fields), 4);
+    return fields;
+}
+
+static int vp_has_root_field_named(fz_context *ctx, pdf_obj *fields, const char *name) {
+    int n = pdf_array_len(ctx, fields);
+    for (int i = 0; i < n; i++) {
+        if (strcmp(pdf_dict_get_text_string(ctx, pdf_array_get(ctx, fields, i), PDF_NAME(T)), name) == 0) return 1;
+    }
+    return 0;
+}
+
+/// Within one document, a duplicated widget joins its original's field, so both show the same
+/// value. A widget that is itself the field (no /Parent) is first split into a field holding the
+/// field entries and a widget holding the rest, so the two widgets can share that field.
+static void vp_link_duplicate_widget(fz_context *ctx, pdf_document *doc, pdf_obj *orig_ref, pdf_obj *copy_ref) {
+    pdf_obj *parent = pdf_dict_get(ctx, orig_ref, PDF_NAME(Parent));
+    if (parent) {
+        pdf_obj *kids = pdf_dict_get(ctx, parent, PDF_NAME(Kids));
+        if (!kids) kids = pdf_dict_put_array(ctx, parent, PDF_NAME(Kids), 2);
+        pdf_array_push(ctx, kids, copy_ref);
+        return;
+    }
+    static const char * const field_keys[] = { "T", "TU", "TM", "FT", "Ff", "V", "DV", "Opt", "MaxLen", "TI", "I" };
+    pdf_obj *field = pdf_new_dict(ctx, doc, 8);
+    pdf_obj *field_ref = NULL;
+    fz_var(field_ref);
+    fz_try(ctx) {
+        for (int i = 0; i < (int)nelem(field_keys); i++) {
+            pdf_obj *val = pdf_dict_gets(ctx, orig_ref, field_keys[i]);
+            if (!val) continue;
+            pdf_dict_puts(ctx, field, field_keys[i], val);
+            pdf_dict_dels(ctx, orig_ref, field_keys[i]);
+            pdf_dict_dels(ctx, copy_ref, field_keys[i]);
+        }
+        pdf_obj *kids = pdf_dict_put_array(ctx, field, PDF_NAME(Kids), 2);
+        pdf_array_push(ctx, kids, orig_ref);
+        pdf_array_push(ctx, kids, copy_ref);
+        field_ref = pdf_add_object(ctx, doc, field);
+        pdf_dict_put(ctx, orig_ref, PDF_NAME(Parent), field_ref);
+        pdf_dict_put(ctx, copy_ref, PDF_NAME(Parent), field_ref);
+
+        pdf_obj *fields = vp_acroform_fields(ctx, doc);
+        int at = pdf_array_find(ctx, fields, orig_ref);
+        if (at >= 0) pdf_array_put(ctx, fields, at, field_ref);
+        else pdf_array_push(ctx, fields, field_ref);
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, field);
+        pdf_drop_obj(ctx, field_ref);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+/// Between documents, adds each copied widget's top-level field to the destination's form
+/// (renamed if a field of that name is already there), and brings over the form's default
+/// resources so the copied fields' fonts are found.
+static void vp_register_imported_field(fz_context *ctx, vp_page_copy *st, pdf_obj *widget_copy) {
+    pdf_obj *top = widget_copy;
+    for (pdf_obj *p = pdf_dict_get(ctx, top, PDF_NAME(Parent)); pdf_is_dict(ctx, p); p = pdf_dict_get(ctx, p, PDF_NAME(Parent)))
+        top = p;
+    if (!pdf_dict_get(ctx, top, PDF_NAME(FT)) && !pdf_dict_get(ctx, top, PDF_NAME(T)) && !pdf_dict_get(ctx, top, PDF_NAME(Kids)))
+        return;
+    pdf_obj *fields = vp_acroform_fields(ctx, st->dst);
+    if (pdf_array_find(ctx, fields, top) >= 0) return;
+
+    const char *name = pdf_dict_get_text_string(ctx, top, PDF_NAME(T));
+    if (name[0] && vp_has_root_field_named(ctx, fields, name)) {
+        char renamed[512];
+        for (int n = 2; n < 10000; n++) {
+            snprintf(renamed, sizeof renamed, "%s_%d", name, n);
+            if (!vp_has_root_field_named(ctx, fields, renamed)) break;
+        }
+        pdf_dict_put_text_string(ctx, top, PDF_NAME(T), renamed);
+    }
+    pdf_array_push(ctx, fields, top);
+
+    pdf_obj *src_form = pdf_dict_getp(ctx, pdf_trailer(ctx, st->src), "Root/AcroForm");
+    pdf_obj *dst_form = pdf_dict_getp(ctx, pdf_trailer(ctx, st->dst), "Root/AcroForm");
+    pdf_obj *src_fonts = pdf_dict_getp(ctx, src_form, "DR/Font");
+    if (pdf_is_dict(ctx, src_fonts)) {
+        pdf_obj *dr = pdf_dict_get(ctx, dst_form, PDF_NAME(DR));
+        if (!dr) dr = pdf_dict_put_dict(ctx, dst_form, PDF_NAME(DR), 1);
+        pdf_obj *dst_fonts = pdf_dict_get(ctx, dr, PDF_NAME(Font));
+        if (!dst_fonts) dst_fonts = pdf_dict_put_dict(ctx, dr, PDF_NAME(Font), 4);
+        int n = pdf_dict_len(ctx, src_fonts);
+        for (int i = 0; i < n; i++) {
+            pdf_obj *k = pdf_dict_get_key(ctx, src_fonts, i);
+            if (!pdf_dict_get(ctx, dst_fonts, k))
+                pdf_dict_put_drop(ctx, dst_fonts, k, pdf_graft_mapped_object(ctx, st->map, pdf_dict_get_val(ctx, src_fonts, i)));
+        }
+    }
+    if (!pdf_dict_get(ctx, dst_form, PDF_NAME(DA)) && pdf_dict_get(ctx, src_form, PDF_NAME(DA)))
+        pdf_dict_put(ctx, dst_form, PDF_NAME(DA), pdf_dict_get(ctx, src_form, PDF_NAME(DA)));
+}
+
+/// Copies the annotations of source page `src_page_obj` onto destination page `dst_page_ref`.
+static void vp_copy_page_annots(fz_context *ctx, vp_page_copy *st, pdf_obj *src_page_obj, pdf_obj *dst_page_ref) {
+    pdf_obj *annots = pdf_dict_get(ctx, src_page_obj, PDF_NAME(Annots));
+    int n = pdf_array_len(ctx, annots);
+    if (n == 0) return;
+    pdf_obj *new_annots = pdf_dict_put_array(ctx, dst_page_ref, PDF_NAME(Annots), n);
+    for (int i = 0; i < n; i++) {
+        pdf_obj *annot = pdf_array_get(ctx, annots, i);
+        if (!pdf_is_dict(ctx, annot)) continue;
+        // Popups are recreated by viewers as needed; copying them would need their parents remapped.
+        if (pdf_name_eq(ctx, pdf_dict_get(ctx, annot, PDF_NAME(Subtype)), PDF_NAME(Popup))) continue;
+
+        pdf_obj *copy = vp_copy_obj(ctx, st, annot, NULL, 0);
+        fz_try(ctx) {
+            pdf_dict_del(ctx, copy, PDF_NAME(Popup));
+            pdf_dict_put(ctx, copy, PDF_NAME(P), dst_page_ref);
+            if (!st->same_doc) {
+                vp_resolve_named_dest(ctx, st, annot, copy, PDF_NAME(Dest));
+                pdf_obj *action = pdf_dict_get(ctx, annot, PDF_NAME(A));
+                pdf_obj *action_copy = pdf_dict_get(ctx, copy, PDF_NAME(A));
+                if (pdf_name_eq(ctx, pdf_dict_get(ctx, action, PDF_NAME(S)), PDF_NAME(GoTo)) && pdf_is_dict(ctx, action_copy))
+                    vp_resolve_named_dest(ctx, st, action, action_copy, PDF_NAME(D));
+            }
+            if (pdf_name_eq(ctx, pdf_dict_get(ctx, annot, PDF_NAME(Subtype)), PDF_NAME(Widget))) {
+                if (st->same_doc) vp_link_duplicate_widget(ctx, st->dst, annot, copy);
+                else vp_register_imported_field(ctx, st, copy);
+            }
+            pdf_array_push(ctx, new_annots, copy);
+        } fz_always(ctx) {
+            pdf_drop_obj(ctx, copy);
+        } fz_catch(ctx) {
+            fz_rethrow(ctx);
+        }
+    }
+}
+
+/// Inserts copies of `src_pages` of `src` (which may be `dst` itself) into `dst` at `insert_slot`,
+/// with their annotations and the page entries pdf_graft_page leaves out.
+static void vp_copy_pages(fz_context *ctx, pdf_document *dst, pdf_document *src, const int *src_pages, int count, int insert_slot) {
+    static const char * const extra_keys[] = { "VP", "Group", "Tabs" };
+    vp_page_copy st = { src, dst, src == dst, NULL, NULL, 0 };
+    fz_var(st.map);
+    fz_var(st.memo);
+    fz_try(ctx) {
+        st.map = pdf_new_graft_map(ctx, dst);
+        for (int i = 0; i < count; i++) {
+            pdf_graft_mapped_page(ctx, st.map, insert_slot + i, src, src_pages[i]);
+            pdf_obj *src_page = pdf_lookup_page_obj(ctx, src, src_pages[i]);
+            pdf_obj *dst_page = pdf_lookup_page_obj(ctx, dst, insert_slot + i);
+            for (int k = 0; k < (int)nelem(extra_keys); k++) {
+                pdf_obj *val = pdf_dict_gets(ctx, src_page, extra_keys[k]);
+                if (val) pdf_dict_puts_drop(ctx, dst_page, extra_keys[k], pdf_graft_mapped_object(ctx, st.map, val));
+            }
+        }
+
+        st.memo_len = pdf_xref_len(ctx, src);
+        st.memo = fz_calloc(ctx, st.memo_len, sizeof(int));
+        // Between documents, references to a copied page (from links, say) go to its copy.
+        if (!st.same_doc) {
+            for (int i = 0; i < count; i++) {
+                int src_num = pdf_to_num(ctx, pdf_lookup_page_obj(ctx, src, src_pages[i]));
+                int dst_num = pdf_to_num(ctx, pdf_lookup_page_obj(ctx, dst, insert_slot + i));
+                if (src_num > 0 && src_num < st.memo_len) st.memo[src_num] = dst_num;
+            }
+        }
+        for (int i = 0; i < count; i++) {
+            pdf_obj *dst_page = pdf_lookup_page_obj(ctx, dst, insert_slot + i);
+            pdf_obj *dst_ref = pdf_new_indirect(ctx, dst, pdf_to_num(ctx, dst_page), 0);
+            fz_try(ctx)
+                vp_copy_page_annots(ctx, &st, pdf_lookup_page_obj(ctx, src, src_pages[i]), dst_ref);
+            fz_always(ctx)
+                pdf_drop_obj(ctx, dst_ref);
+            fz_catch(ctx)
+                fz_rethrow(ctx);
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, st.memo);
+        pdf_drop_graft_map(ctx, st.map);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
 int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page_indices, int count, int *out_inserted_slot, const char **out_error) {
     if (!ctx || !doc || !page_indices || count <= 0) return -1;
     fz_try(ctx) {
@@ -2390,9 +2701,7 @@ int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page
             }
         }
         int insert_slot = max_index + 1;
-        for (int i = 0; i < count; i++) {
-            pdf_graft_page(ctx, pdoc, insert_slot + i, pdoc, page_indices[i]);
-        }
+        vp_copy_pages(ctx, pdoc, pdoc, page_indices, count, insert_slot);
         if (out_inserted_slot) *out_inserted_slot = insert_slot;
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
@@ -2404,7 +2713,9 @@ int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page
 int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_path, int insert_slot, int *out_imported_count, const char **out_error) {
     if (!ctx || !doc || !src_path) return -1;
     fz_document *src_doc = NULL;
+    int *src_pages = NULL;
     fz_var(src_doc);
+    fz_var(src_pages);
     fz_try(ctx) {
         pdf_document *dst_pdoc = pdf_document_from_fz_document(ctx, doc);
         if (!dst_pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Target document is not a PDF");
@@ -2417,11 +2728,12 @@ int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_pa
         pdf_document *src_pdoc = pdf_document_from_fz_document(ctx, src_doc);
         if (!src_pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Source file is not a valid PDF");
         int src_count = pdf_count_pages(ctx, src_pdoc);
-        for (int i = 0; i < src_count; i++) {
-            pdf_graft_page(ctx, dst_pdoc, insert_slot + i, src_pdoc, i);
-        }
+        src_pages = fz_malloc(ctx, src_count * sizeof(int));
+        for (int i = 0; i < src_count; i++) src_pages[i] = i;
+        vp_copy_pages(ctx, dst_pdoc, src_pdoc, src_pages, src_count, insert_slot);
         if (out_imported_count) *out_imported_count = src_count;
     } fz_always(ctx) {
+        fz_free(ctx, src_pages);
         if (src_doc) fz_drop_document(ctx, src_doc);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);

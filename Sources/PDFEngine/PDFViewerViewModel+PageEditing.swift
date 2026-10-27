@@ -24,8 +24,12 @@ import ObjectiveC
 extension PDFViewerViewModel {
     // MARK: - Working-copy plumbing
 
-    /// Reopens the render and search actors at `path` using the document's password.
-    func reopenActors(at path: String) async {
+    /// Reopens the render and search actors at `path` using the document's password. Edits queue
+    /// this to run later, by when a save may have deleted that working copy or another document
+    /// may be open — so only the file now backing the document is opened. Returns whether it was.
+    @discardableResult
+    func reopenActors(at path: String) async -> Bool {
+        guard path == workingCopyPath ?? document?.filePath else { return false }
         searchTask?.cancel()
         let password = currentDocumentPassword
         do {
@@ -44,6 +48,7 @@ extension PDFViewerViewModel {
         } else {
             performSearch()
         }
+        return true
     }
 
     /// Drops everything cached per page *index* after pages were inserted, deleted, reordered or

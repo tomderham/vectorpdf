@@ -470,6 +470,14 @@ public struct PDFViewerMainView: View {
         }
     }
 
+    /// A snapshot window's title — the file and the spot it shows, as SnapshotWindowManager names
+    /// it. It isn't drawn (the title bar hides titles), but Mission Control and VoiceOver read it.
+    private var snapshotWindowTitle: String {
+        let fileName = initialFilePath.map { ($0 as NSString).lastPathComponent } ?? viewModel.documentTitle
+        guard let label = initialTarget?.label, !label.isEmpty else { return fileName }
+        return "\(fileName) — \(label)"
+    }
+
     public var body: some View {
         Group {
             if isSnapshotWindow {
@@ -484,7 +492,7 @@ public struct PDFViewerMainView: View {
                 }
                 .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
                 .toolbarBackground(.visible, for: .windowToolbar)
-                .navigationTitle("")
+                .navigationTitle(snapshotWindowTitle)
             } else if viewModel.document == nil {
                 startScreen
                     .toolbar {
@@ -523,7 +531,9 @@ public struct PDFViewerMainView: View {
                         PDFViewerViewModel.active = viewModel
                         PDFViewerAppCoordinator.shared.registerActive(viewModel)
                     }
-                    if let doc = viewModel.document {
+                    if isSnapshotWindow {
+                        window.title = snapshotWindowTitle
+                    } else if let doc = viewModel.document {
                         window.title = viewModel.documentTitle
                         window.representedURL = URL(fileURLWithPath: doc.filePath)
                     } else {
