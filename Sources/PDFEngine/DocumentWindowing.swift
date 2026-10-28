@@ -31,6 +31,10 @@ final class PDFViewerWindow: NSWindow {
         DocumentWindowing.addEmptyTab(to: self)
     }
 
+    override var contentViewController: NSViewController? {
+        didSet { TitlebarDragStrip.install(in: self) }
+    }
+
     override func sendEvent(_ event: NSEvent) {
         let wasKey = isKeyWindow
         if event.type == .leftMouseDown {
@@ -80,17 +84,13 @@ final class PDFViewerWindow: NSWindow {
                                 return
                             }
                         }
-                    } else {
-                        if event.clickCount == 2 {
-                            handleTitleBarDoubleClick(event)
-                            return
-                        } else if event.clickCount == 1 {
-                            if isKeyWindow {
-                                performDrag(with: event)
-                                return
-                            }
-                        }
+                    } else if event.clickCount == 2 {
+                        handleTitleBarDoubleClick(event)
+                        return
                     }
+                    // A single click on blank title bar lands on TitlebarDragStrip and falls through
+                    // to AppKit, which moves the window. Not performDrag(with:): AppKit never saw
+                    // that move begin ("Window move completed without beginning").
                 }
             }
         }
@@ -122,7 +122,7 @@ final class PDFViewerWindow: NSWindow {
         }
     }
 
-    private func isInteractiveControl(_ view: NSView, stopAtContentView: Bool = false) -> Bool {
+    func isInteractiveControl(_ view: NSView, stopAtContentView: Bool = false) -> Bool {
         var current: NSView? = view
         while let v = current {
             if stopAtContentView && v === contentView {
@@ -438,3 +438,39 @@ extension NSColor {
     }
 }
 
+/// An invisible strip over the title-bar area, above the SwiftUI content that extends under the
+/// transparent title bar and below the toolbar items. Blank title bar then drags the window the
+/// way AppKit's own title bar does, as the document title does: the click doesn't reach SwiftUI,
+/// whose views would otherwise get it while the window server moves the window without AppKit
+/// knowing, so AppKit warned "Window move completed without beginning" and snapped the window
+/// to its remembered place when it changed display mid-drag. Where the content has a control in
+/// the title-bar area (the sidebar mode picker), clicks go through to it.
+final class TitlebarDragStrip: NSView {
+    static func install(in window: PDFViewerWindow) {
+        guard let content = window.contentView, let frameView = content.superview,
+              !frameView.subviews.contains(where: { $0 is TitlebarDragStrip }) else { return }
+        let strip = TitlebarDragStrip(frame: frameView.bounds)
+        strip.autoresizingMask = [.width, .height]
+        frameView.addSubview(strip, positioned: .above, relativeTo: content)
+    }
+
+    override var mouseDownCanMoveWindow: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let window = window as? PDFViewerWindow, let superview else { return nil }
+        let inWindow = superview.convert(point, to: nil)
+        // Only the title-bar band, above the content layout area.
+        guard inWindow.y >= window.contentLayoutRect.maxY, inWindow.y <= window.frame.height else { return nil }
+        if let content = window.contentView,
+           let hit = content.hitTest(content.superview?.convert(inWindow, from: nil) ?? inWindow),
+           window.isInteractiveControl(hit, stopAtContentView: true) {
+            return nil
+        }
+        return self
+    }
+
+    // AppKit moves the window (mouseDownCanMoveWindow); PDFViewerWindow.sendEvent handles
+    // activation and double-click. Nothing for SwiftUI underneath.
+    override func mouseDown(with event: NSEvent) {}
+}

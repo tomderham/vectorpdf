@@ -1788,7 +1788,12 @@ public final class TitleContainerView: NSControl {
 
     public override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    // Behaves like blank title bar: activates an inactive window, drags, double-click zooms.
+    // Dragging the title moves the window, as blank title bar does; AppKit does the moving.
+    public override var mouseDownCanMoveWindow: Bool { true }
+
+    // Behaves like blank title bar: activates an inactive window, double-click zooms. Not
+    // performDrag(with:): AppKit already moves the window from here, and a second move it
+    // didn't start logs "Window move completed without beginning".
     public override func mouseDown(with event: NSEvent) {
         guard let window else { return super.mouseDown(with: event) }
         if !window.isKeyWindow {
@@ -1798,8 +1803,6 @@ public final class TitleContainerView: NSControl {
         }
         if event.clickCount == 2 {
             window.zoom(nil)
-        } else {
-            window.performDrag(with: event)
         }
     }
 
