@@ -145,6 +145,9 @@ public struct PDFViewerMainView: View {
     @State private var sidebarVisibility: NavigationSplitViewVisibility
     @State private var tocSearchQuery: String = ""
     @FocusState private var isAgentInputFocused: Bool
+    /// The search results list, which takes keyboard focus when a result is clicked so the arrow
+    /// keys step through results instead of moving the cursor in the search field.
+    @FocusState private var isSearchResultsFocused: Bool
     @State private var undoToastMessage: String? = nil
     @State private var undoAction: (() -> Void)? = nil
     public let initialFilePath: String?
@@ -1008,6 +1011,7 @@ public struct PDFViewerMainView: View {
                                                 isActive: viewModel.isActiveMatch(match)
                                             )
                                             .onTapGesture {
+                                                isSearchResultsFocused = true
                                                 DispatchQueue.main.async {
                                                     viewModel.navigateToMatch(match, shouldScrollList: false)
                                                 }
@@ -1047,6 +1051,18 @@ public struct PDFViewerMainView: View {
                                 }
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 4)
+                            }
+                            .focusable()
+                            .focused($isSearchResultsFocused)
+                            // The active result is already highlighted.
+                            .focusEffectDisabled()
+                            .onKeyPress(keys: [.upArrow, .leftArrow, .downArrow, .rightArrow]) { press in
+                                if press.key == .upArrow || press.key == .leftArrow {
+                                    viewModel.previousSearchMatch()
+                                } else {
+                                    viewModel.nextSearchMatch()
+                                }
+                                return .handled
                             }
                             .onChange(of: viewModel.searchScrollRevision) { _, _ in
                                 if let targetId = viewModel.activeSearchMatchId {
