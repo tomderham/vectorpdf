@@ -61,11 +61,14 @@ public struct SmartRegexBuilder {
         return pattern
     }
 
-    /// Compiles a search query into a literal regex pattern with escaped metacharacters.
+    /// Compiles a search query into a literal regex pattern with escaped metacharacters. A space
+    /// matches any run of whitespace, so a phrase is still found where it wraps onto a new line.
     public static func buildLiteralPattern(from query: String) -> String {
         let trimmed = stripSurroundingQuotes(query)
         guard !trimmed.isEmpty else { return "" }
-        return NSRegularExpression.escapedPattern(for: trimmed)
+        return trimmed.split(whereSeparator: \.isWhitespace)
+            .map { NSRegularExpression.escapedPattern(for: String($0)) }
+            .joined(separator: "\\s+")
     }
 
     /// Wraps a compiled pattern with word-boundary anchors to match whole words.

@@ -114,8 +114,17 @@ public enum ReferenceExtractor {
     )
 
     private static let docHintPattern = try! NSRegularExpression(
-        pattern: #"^\s*,?\s*(?:of|in|to|under)\s+(?:the\s+|this\s+|that\s+)?((?:[A-Z][\p{L}\p{N}&'’\-]*)(?:\s+(?:[A-Z][\p{L}\p{N}&'’\-]*|of|and|&|for|on))*)"#
+        pattern: #"^\s*,?\s*(?:of|in|to|under)\s+(the\s+|this\s+|that\s+)?((?:[A-Z][\p{L}\p{N}&'’\-]*)(?:\s+(?:[A-Z][\p{L}\p{N}&'’\-]*|\p{N}[\p{L}\p{N}.\-]{2,}|of|and|&|for|on))*)"#
     )
+
+    /// Whether a bare number is an address or version ("192.168.1.1", "1.0.2") rather than a
+    /// section: section numbers count from 1 in small steps, so they don't start at 100 or more,
+    /// and no part after the first is 0 or has a leading zero.
+    private static func isVersionOrAddress(_ identifier: String) -> Bool {
+        let parts = identifier.split(separator: ".").map(String.init)
+        if let first = Int(parts[0]), first >= 100 { return true }
+        return parts.dropFirst().contains { $0 == "0" || ($0.count > 1 && $0.hasPrefix("0")) }
+    }
 
     /// Every reference in `text`, in order.
     public static func references(in text: String) -> [ParsedReference] {
@@ -148,7 +157,8 @@ public enum ReferenceExtractor {
             // "2.4 GHz", "802.11" and "1.5 times" are numbers, not references: a bare number has
             // to have three levels, or a title after it.
             let levels = identifier.split(separator: ".").count
-            guard levels >= 3 || title != nil else { continue }
+            guard levels >= 3 || title != nil,
+                  !isVersionOrAddress(identifier) else { continue }
             var reference = ParsedReference(
                 kind: .section,
                 label: "",
@@ -198,13 +208,20 @@ public enum ReferenceExtractor {
         let start = NSMaxRange(range)
         let tail = NSRange(location: start, length: min(120, text.length - start))
         guard tail.length > 0, let match = docHintPattern.firstMatch(in: text as String, range: tail) else { return nil }
-        var words = text.substring(with: match.range(at: 1)).split(separator: " ").map(String.init)
+        var words = text.substring(with: match.range(at: 2)).split(separator: " ").map(String.init)
         // Trailing connectives belong to the next phrase: "of the Agreement and", "Act for".
         while let last = words.last, ["of", "and", "&", "for", "on"].contains(last) { words.removeLast() }
         // A reference to another labelled part ("Section 4 of Schedule 2") is not a document name.
         if let first = words.first, kind(forLabel: first) != nil { return nil }
         let hint = words.joined(separator: " ")
-        return hint.count >= 3 ? hint : nil
+        guard hint.count >= 3 else { return nil }
+        // Any capitalised words follow "in" or "to" ("in January", "to Buyer"); a document's name
+        // is "the …" or has a number or acronym ("NIST SP 800-56A").
+        let hasDeterminer = match.range(at: 1).location != NSNotFound
+        let hasNumberOrAcronym = words.contains { word in
+            word.contains(where: \.isNumber) || (word.count >= 2 && word.allSatisfy { $0.isUppercase || $0.isNumber })
+        }
+        return hasDeterminer || hasNumberOrAcronym ? hint : nil
     }
 }
 
@@ -253,24 +270,29 @@ extension ReferenceExtractor {
             text.append(ch)
             rects.append(contentsOf: Array(repeating: rect, count: String(ch).utf16.count))
         }
+        func removeLast(while shouldRemove: (Character) -> Bool) {
+            while let last = text.last, shouldRemove(last) {
+                text.removeLast()
+                rects.removeLast(String(last).utf16.count)
+            }
+        }
         for (lineIndex, line) in block.lines.enumerated() {
-            if lineIndex > 0, text.last != " " {
-                // A hyphen at a line end is usually a word break.
-                if text.last == "-" || text.last == "\u{00AD}" {
-                    text.removeLast()
-                    rects.removeLast()
-                } else {
-                    append(" ", nil)
+            if lineIndex > 0 {
+                // Joined as copied text is: "Sections 4-" / "7" stays "4-7", a hyphenated word is whole.
+                switch LineJoin(block.lines[lineIndex - 1].text, line.text) {
+                case .wordBreak:
+                    removeLast(while: \.isWhitespace)
+                    removeLast(while: { "-\u{00AD}\u{2010}".contains($0) })
+                case .hyphen:
+                    removeLast(while: \.isWhitespace)
+                case .space:
+                    if text.last != " " { append(" ", nil) }
                 }
             }
             for (i, ch) in line.characters.enumerated() {
                 append(ch.char, ch.boundingRect)
-                if i + 1 < line.characters.count {
-                    let next = line.characters[i + 1]
-                    let gap = next.boundingRect.minX - ch.boundingRect.maxX
-                    if gap > CGFloat(ch.size) * 0.20 && ch.char != " " && next.char != " " {
-                        append(" ", nil)
-                    }
+                if i + 1 < line.characters.count, ch.hasWordGap(before: line.characters[i + 1]) {
+                    append(" ", nil)
                 }
             }
         }

@@ -256,11 +256,12 @@ public final class CrossReferenceResolver: @unchecked Sendable {
     public func detectAcademicReferences(in text: String, sourcePage: Int, document: PDFDocumentCore) -> [SnapshotTarget] {
         var targets: [SnapshotTarget] = []
         
+        // Whole words only: "configuration" holds "fig", "suitable" "table", "frequency" "eq".
         let patterns = [
-            #"(?:Fig(?:ure|\.)?)\s*([0-9A-Za-z\.\-]+)"#,
-            #"(?:Table)\s*([0-9A-Za-z\.\-]+)"#,
-            #"(?:Eq(?:uation|\.)?)\s*\(?([0-9A-Za-z\.\-]+)\)?"#,
-            #"(?:Theorem|Section|Lemma|Definition)\s*([0-9A-Za-z\.\-]+)"#,
+            #"\b(?:Fig(?:ure|\.)?)\s*([0-9A-Za-z\.\-]+)"#,
+            #"\b(?:Table)\s*([0-9A-Za-z\.\-]+)"#,
+            #"\b(?:Eq(?:uation|\.)?)\s*\(?([0-9A-Za-z\.\-]+)\)?"#,
+            #"\b(?:Theorem|Section|Lemma|Definition)\s*([0-9A-Za-z\.\-]+)"#,
             #"\[([0-9]+)\]"#
         ]
         

@@ -34,7 +34,7 @@ public struct EmbeddedChunk: Sendable, Codable, Equatable {
 /// A document's full semantic index.
 public struct DocumentSemanticIndex: Sendable, Codable, Equatable {
     /// Current format version for cached semantic indices.
-    public static let currentFormatVersion = 5
+    public static let currentFormatVersion = 6
     public var formatVersion: Int = DocumentSemanticIndex.currentFormatVersion
     public let sourcePath: String
     public let sourceModifiedAt: Date

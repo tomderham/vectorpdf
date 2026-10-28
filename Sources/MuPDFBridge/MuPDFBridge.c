@@ -323,7 +323,9 @@ int mupdf_stext_page_load(fz_context *ctx, fz_page *page, fz_stext_page **out_st
     fz_try(ctx) {
         fz_stext_options opts;
         memset(&opts, 0, sizeof(opts));
-        opts.flags = FZ_STEXT_DEHYPHENATE | FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
+        /* No FZ_STEXT_DEHYPHENATE: hyphenated words are joined in Swift (LineJoin), which skips
+         * margin line numbers; MuPDF's plain text would glue the next line number on ("divi4"). */
+        opts.flags = FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
         *out_stext = fz_new_stext_page_from_page(ctx, page, &opts);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
@@ -339,7 +341,7 @@ int mupdf_stext_page_load_from_display_list(fz_context *ctx, fz_display_list *li
     fz_try(ctx) {
         fz_stext_options opts;
         memset(&opts, 0, sizeof(opts));
-        opts.flags = FZ_STEXT_DEHYPHENATE | FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
+        opts.flags = FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
         *out_stext = fz_new_stext_page_from_display_list(ctx, list, &opts);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);

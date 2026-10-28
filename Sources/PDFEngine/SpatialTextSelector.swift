@@ -17,6 +17,7 @@
 
 import Foundation
 import CoreGraphics
+import Synchronization
 
 public enum SelectionMode: String, Sendable, CaseIterable, Identifiable {
     case readingOrder = "Text"
@@ -83,6 +84,33 @@ public final class SpatialTextSelector: Sendable {
     public static let gutterThreshold: CGFloat = 20.0
 
     public init() {}
+
+    /// Ruled tables found per page. Selecting runs on every mouse move while dragging, and
+    /// finding tables means walking the page's vector paths, so the last few pages' are kept.
+    private let tableCache = Mutex<[PageFingerprint: [LayoutTable]]>([:])
+
+    private struct PageFingerprint: Hashable {
+        let pageIndex: Int, blockCount: Int, lineCount: Int, bounds: [CGFloat]
+        init(_ page: StructuredPage) {
+            pageIndex = page.pageIndex
+            blockCount = page.blocks.count
+            lineCount = page.blocks.reduce(0) { $0 + $1.lines.count }
+            bounds = [page.bounds.width, page.bounds.height] + (page.blocks.first.map { [$0.bbox.minX, $0.bbox.minY] } ?? [])
+        }
+    }
+
+    /// The page's tables with ruled borders (lattice tables). Borderless "stream" tables aren't
+    /// used here: columns of ordinary text line up much like them.
+    private func ruledTables(on page: StructuredPage) -> [LayoutTable] {
+        let key = PageFingerprint(page)
+        if let cached = tableCache.withLock({ $0[key] }) { return cached }
+        let tables = PDFLayoutEngine().detectRuledTables(in: page)
+        tableCache.withLock { cache in
+            if cache.count >= 8 { cache.removeAll() }
+            cache[key] = tables
+        }
+        return tables
+    }
     
     /// Selects text on a StructuredPage between startPoint and endPoint, supporting both reading order flow and rectangular marquee
     public func selectText(
@@ -100,12 +128,174 @@ public final class SpatialTextSelector: Sendable {
         case .rectangularArea:
             return selectRectangularArea(on: textBlocks, from: startPoint, to: endPoint)
         case .readingOrder:
-            return selectReadingOrder(on: textBlocks, from: startPoint, to: endPoint)
+            return selectReadingOrder(on: textBlocks, tables: ruledTables(on: page), from: startPoint, to: endPoint)
         }
     }
     
     // MARK: - Reading Flow Selection
-    private func selectReadingOrder(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
+
+    /// One line's part of a selection.
+    private struct SelectedSlice {
+        let quad: PDFQuad
+        let lineBBox: CGRect
+        let sliceBBox: CGRect
+        let text: String
+        /// Right edge of the line's block: a line reaching it is wrapped, not the end of a paragraph.
+        let blockMaxX: CGFloat
+        /// Where the line sits when it is inside a ruled table.
+        let cell: TableCell?
+    }
+
+    private struct TableCell: Equatable {
+        let table: Int, row: Int, column: Int
+        func sameRow(_ other: TableCell) -> Bool { table == other.table && row == other.row }
+    }
+
+    /// Characters as text, with a space wherever the PDF left a word gap instead of writing one.
+    static func text(of characters: [TextCharacter]) -> String {
+        var text = ""
+        for (i, ch) in characters.enumerated() {
+            text.append(ch.char)
+            if i + 1 < characters.count, ch.hasWordGap(before: characters[i + 1]) { text.append(" ") }
+        }
+        return text
+    }
+
+    /// The text and highlight for characters `from..<to` of `line`, or nil if that's empty.
+    private func makeSlice(_ line: TextLine, from fromChar: Int, to toChar: Int, blockMaxX: CGFloat, cell: TableCell?) -> SelectedSlice? {
+        let validFrom = max(0, min(fromChar, line.characters.count))
+        let validTo = max(validFrom, min(toChar, line.characters.count))
+        guard validFrom < validTo else { return nil }
+
+        let sliceChars = Array(line.characters[validFrom..<validTo])
+        guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { return nil }
+
+        // Continuous line quad covering words and spaces seamlessly
+        let lineQuad = PDFQuad(
+            ul: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.minY),
+            ur: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.minY),
+            ll: CGPoint(x: firstChar.boundingRect.minX, y: line.bbox.maxY),
+            lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
+        )
+
+        // Assemble line text with inter-word spacing
+        let sliceText = Self.text(of: sliceChars)
+
+        return SelectedSlice(quad: lineQuad, lineBBox: line.bbox, sliceBBox: lineQuad.boundingRect,
+                             text: sliceText, blockMaxX: blockMaxX, cell: cell)
+    }
+
+    /// The ruled-table cell containing `rect`'s centre, if any.
+    private func tableCell(of rect: CGRect, in tables: [LayoutTable]) -> TableCell? {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        for (t, table) in tables.enumerated() where table.bbox.contains(center) {
+            for (r, row) in table.rows.enumerated() where row.bbox.minY - 1 <= center.y && center.y <= row.bbox.maxY + 1 {
+                let column = row.cells.firstIndex { $0.bbox.minX - 1 <= center.x && center.x <= $0.bbox.maxX + 1 }
+                return TableCell(table: t, row: r, column: column ?? 0)
+            }
+        }
+        return nil
+    }
+
+    /// Puts slices in reading order: row by row, except that the lines of a ruled table are read
+    /// cell by cell along each of its rows (a cell's second line before the next cell).
+    private func ordered(_ slices: [SelectedSlice]) -> [SelectedSlice] {
+        var items: [(frame: CGRect, slices: [SelectedSlice])] = []
+        var tableItem: [Int: Int] = [:]
+        for slice in slices {
+            guard let cell = slice.cell else {
+                items.append((slice.lineBBox, [slice]))
+                continue
+            }
+            if let i = tableItem[cell.table] {
+                items[i].frame = items[i].frame.union(slice.lineBBox)
+                items[i].slices.append(slice)
+            } else {
+                tableItem[cell.table] = items.count
+                items.append((slice.lineBBox, [slice]))
+            }
+        }
+        for i in tableItem.values {
+            items[i].slices.sort { a, b in
+                let (ca, cb) = (a.cell!, b.cell!)
+                if ca.row != cb.row { return ca.row < cb.row }
+                if ca.column != cb.column { return ca.column < cb.column }
+                return abs(a.lineBBox.midY - b.lineBBox.midY) > 3 ? a.lineBBox.midY < b.lineBBox.midY : a.lineBBox.minX < b.lineBBox.minX
+            }
+        }
+        return readingOrder(items) { $0.frame }.flatMap(\.slices)
+    }
+
+    /// When a selection runs from one column of text into another (as opposed to across a table
+    /// or along a line), the lines it covers in reading order: the rest of the first column, any
+    /// columns between, then the last column down to the end. A column ends at text spanning both
+    /// columns, such as a full-width heading — the ordering rule of Breuel's layout analysis.
+    /// Nil when the selection doesn't cross columns.
+    private func crossColumnSlices(
+        textBlocks: [TextBlock], tables: [LayoutTable], pos1: TextPosition, pos2: TextPosition,
+        isLineNumber: (TextLine) -> Bool
+    ) -> [SelectedSlice]? {
+        let block1 = textBlocks[pos1.blockIndex], block2 = textBlocks[pos2.blockIndex]
+        func isColumnText(_ block: TextBlock) -> Bool {
+            block.bbox.width >= Self.minColumnWidth * 2 && tableCell(of: block.bbox, in: tables) == nil
+        }
+        guard isColumnText(block1), isColumnText(block2),
+              block1.bbox.maxX <= block2.bbox.minX || block2.bbox.maxX <= block1.bbox.minX else { return nil }
+
+        // Read the left column first, whichever end the drag started from.
+        let (firstPos, lastPos) = block1.bbox.minX < block2.bbox.minX ? (pos1, pos2) : (pos2, pos1)
+        let left = textBlocks[firstPos.blockIndex].bbox, right = textBlocks[lastPos.blockIndex].bbox
+        let firstLine = textBlocks[firstPos.blockIndex].lines[firstPos.lineIndex]
+        let lastLine = textBlocks[lastPos.blockIndex].lines[lastPos.lineIndex]
+
+        func overlapsX(_ a: CGRect, _ b: CGRect) -> Bool { min(a.maxX, b.maxX) > max(a.minX, b.minX) }
+        let spanning = textBlocks.filter { overlapsX($0.bbox, left) && overlapsX($0.bbox, right) }
+        let regionBottom = spanning.filter { $0.bbox.minY >= firstLine.bbox.maxY - 1 }.map(\.bbox.minY).min() ?? .infinity
+        let regionTop = spanning.filter { $0.bbox.maxY <= lastLine.bbox.minY + 1 }.map(\.bbox.maxY).max() ?? -.infinity
+
+        // The columns from the left one to the right one: blocks between them, grouped by overlap.
+        var columns: [(range: ClosedRange<CGFloat>, blocks: [Int])] = []
+        let between = textBlocks.indices
+            .filter { idx in
+                let bbox = textBlocks[idx].bbox
+                return bbox.midX >= left.minX && bbox.midX <= right.maxX && !(overlapsX(bbox, left) && overlapsX(bbox, right))
+            }
+            .sorted { textBlocks[$0].bbox.minX < textBlocks[$1].bbox.minX }
+        for idx in between {
+            let bbox = textBlocks[idx].bbox
+            if let last = columns.indices.last, bbox.minX < columns[last].range.upperBound {
+                columns[last].range = columns[last].range.lowerBound...max(columns[last].range.upperBound, bbox.maxX)
+                columns[last].blocks.append(idx)
+            } else {
+                columns.append((bbox.minX...bbox.maxX, [idx]))
+            }
+        }
+
+        var result: [SelectedSlice] = []
+        for column in columns {
+            let isFirst = column.blocks.contains(firstPos.blockIndex)
+            let isLast = column.blocks.contains(lastPos.blockIndex)
+            var slices: [SelectedSlice] = []
+            for bIdx in column.blocks {
+                let block = textBlocks[bIdx]
+                for (lIdx, line) in block.lines.enumerated() where !line.characters.isEmpty && !isLineNumber(line) {
+                    let midY = line.bbox.midY
+                    let top = isFirst ? firstLine.bbox.midY - 1 : regionTop
+                    let bottom = isLast ? lastLine.bbox.midY + 1 : regionBottom
+                    guard midY > top, midY < bottom else { continue }
+                    let from = (bIdx == firstPos.blockIndex && lIdx == firstPos.lineIndex) ? firstPos.charIndex : 0
+                    let to = (bIdx == lastPos.blockIndex && lIdx == lastPos.lineIndex) ? lastPos.charIndex : line.characters.count
+                    if let slice = makeSlice(line, from: from, to: to, blockMaxX: block.bbox.maxX, cell: tableCell(of: line.bbox, in: tables)) {
+                        slices.append(slice)
+                    }
+                }
+            }
+            result += ordered(slices)
+        }
+        return result.isEmpty ? nil : result
+    }
+
+    private func selectReadingOrder(on textBlocks: [TextBlock], tables: [LayoutTable], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
         guard let pos1 = resolvePosition(at: startPoint, in: textBlocks),
               let pos2 = resolvePosition(at: endPoint, in: textBlocks) else {
             return SelectionResult(text: "", highlightQuads: [], boundingRect: .zero, mode: .readingOrder)
@@ -115,6 +305,96 @@ public final class SpatialTextSelector: Sendable {
             return SelectionResult(text: "", highlightQuads: [], boundingRect: .zero, mode: .readingOrder)
         }
 
+        // The page's left text margin, measured from its lines: MuPDF often puts a margin line
+        // number in the same block as the body line beside it, so the check by block below
+        // misses those. Only numbers left of all the page's text count, so a table's numeric
+        // first column (an Order column, say) is kept.
+        let isPageLineNumber = Self.lineNumberTest(for: textBlocks.flatMap(\.lines))
+
+        var slices: [SelectedSlice]
+        if let crossColumn = crossColumnSlices(textBlocks: textBlocks, tables: tables, pos1: pos1, pos2: pos2, isLineNumber: isPageLineNumber) {
+            slices = crossColumn
+        } else {
+            slices = bandSlices(textBlocks: textBlocks, tables: tables, pos1: pos1, pos2: pos2, isLineNumber: isPageLineNumber)
+            slices = ordered(slices)
+        }
+
+        // Rows of widely spaced text (double spacing, say) are as far apart as paragraphs are in
+        // ordinary text. The usual gap between this selection's lines tells the two apart.
+        let downwardGaps = zip(slices, slices.dropFirst()).compactMap { a, b -> CGFloat? in
+            guard a.cell == nil, b.cell == nil, abs(a.lineBBox.midY - b.lineBBox.midY) >= 3 else { return nil }
+            let gap = b.lineBBox.minY - a.lineBBox.maxY
+            return gap > 0 ? gap : nil
+        }.sorted()
+        let usualGap = downwardGaps.count >= 2 ? downwardGaps[downwardGaps.count / 2] : nil
+
+        var selectedQuads: [PDFQuad] = []
+        var selectedText = ""
+        var overallBoundingBox = CGRect.null
+        for (idx, slice) in slices.enumerated() {
+            selectedQuads.append(slice.quad)
+            overallBoundingBox = overallBoundingBox.union(slice.sliceBBox)
+            selectedText.append(slice.text)
+            guard idx < slices.count - 1 else { continue }
+            let next = slices[idx + 1]
+
+            if let cell = slice.cell, let nextCell = next.cell, cell != nextCell {
+                // Between cells of a ruled table: tabs along a row, a line break between rows,
+                // so the text pastes into a spreadsheet or word processor as a table.
+                selectedText.append(cell.sameRow(nextCell) ? "\t" : "\n")
+                continue
+            }
+            if (slice.cell == nil) != (next.cell == nil) {
+                selectedText.append("\n")   // into or out of a table
+                continue
+            }
+
+            if abs(slice.lineBBox.midY - next.lineBBox.midY) < 3.0 {
+                let hGap = next.sliceBBox.minX - slice.sliceBBox.maxX
+                if hGap > 1.0 && !slice.text.hasSuffix(" ") && !next.text.hasPrefix(" ") {
+                    selectedText.append(" ")
+                }
+                continue
+            }
+            if next.lineBBox.minY < slice.lineBBox.minY {
+                selectedText.append("\n")   // up to the top of the next column
+                continue
+            }
+
+            let vGap = next.lineBBox.minY - slice.lineBBox.maxY
+            let avgH = (slice.lineBBox.height + next.lineBBox.height) / 2.0
+            let reachesRightEdge = slice.lineBBox.maxX >= slice.blockMaxX - slice.lineBBox.height * 1.5
+            let isUsualSpacing = usualGap.map { vGap <= $0 * 1.25 + 1 } ?? false
+            if vGap > avgH * 0.75 && !(isUsualSpacing && reachesRightEdge) {
+                selectedText.append("\n")
+            } else {
+                switch LineJoin(slice.text, next.text) {
+                case .wordBreak:
+                    while selectedText.last?.isWhitespace == true { selectedText.removeLast() }
+                    selectedText.removeLast()
+                case .hyphen:
+                    while selectedText.last?.isWhitespace == true { selectedText.removeLast() }
+                case .space:
+                    if !slice.text.hasSuffix(" ") && !next.text.hasPrefix(" ") { selectedText.append(" ") }
+                }
+            }
+        }
+
+        let trimmed = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return SelectionResult(
+            text: trimmed,
+            highlightQuads: selectedQuads,
+            boundingRect: overallBoundingBox.isNull ? .zero : overallBoundingBox,
+            mode: .readingOrder
+        )
+    }
+
+    /// The lines in the horizontal band from the start of a selection to its end, within the
+    /// selection's column — the usual case, a selection running down a column or along a line.
+    private func bandSlices(
+        textBlocks: [TextBlock], tables: [LayoutTable], pos1: TextPosition, pos2: TextPosition,
+        isLineNumber: (TextLine) -> Bool
+    ) -> [SelectedSlice] {
         // Order endpoints by page geometry (Y, then X) rather than block index.
         let line1 = textBlocks[pos1.blockIndex].lines[pos1.lineIndex]
         let line2 = textBlocks[pos2.blockIndex].lines[pos2.lineIndex]
@@ -129,16 +409,6 @@ public final class SpatialTextSelector: Sendable {
         let firstPos = pos1IsFirst ? pos1 : pos2
         let lastPos = pos1IsFirst ? pos2 : pos1
 
-        var selectedQuads: [PDFQuad] = []
-        var selectedText = ""
-        var overallBoundingBox = CGRect.null
-
-        struct SelectedSlice {
-            let quad: PDFQuad
-            let lineBBox: CGRect
-            let sliceBBox: CGRect
-            let text: String
-        }
         var slices: [SelectedSlice] = []
 
         // Snap vertical band to line boundaries.
@@ -182,11 +452,9 @@ public final class SpatialTextSelector: Sendable {
 
                 let line = block.lines[lIdx]
                 guard !line.characters.isEmpty else { continue }
+                if isLineNumber(line) { continue }
                 // Verify intermediate lines fall within the vertical band.
                 if !isFirstBlock && !isLastBlock {
-                    if spanMaxX - spanMinX >= Self.minColumnWidth && Self.isLineNumberGutter(line: line, bodyLeftMargin: spanMinX) {
-                        continue
-                    }
                     let lineOverlap = min(line.bbox.maxY, bandMaxY) - max(line.bbox.minY, bandMinY)
                     guard (line.bbox.midY >= bandMinY && line.bbox.midY <= bandMaxY) || lineOverlap >= min(line.bbox.height * 0.4, 4.0) else { continue }
                 }
@@ -195,95 +463,15 @@ public final class SpatialTextSelector: Sendable {
                 let isLastSelectedLine = (isLastBlock && lIdx == lastPos.lineIndex)
                 let fromChar = isFirstSelectedLine ? firstPos.charIndex : 0
                 let toChar = isLastSelectedLine ? lastPos.charIndex : line.characters.count
-
-                let validFrom = max(0, min(fromChar, line.characters.count))
-                let validTo = max(validFrom, min(toChar, line.characters.count))
-
-                guard validFrom < validTo else { continue }
-
-                let sliceChars = Array(line.characters[validFrom..<validTo])
-                guard let firstChar = sliceChars.first, let lastChar = sliceChars.last else { continue }
-
-                let sliceMinX = firstChar.boundingRect.minX
-                let sliceMaxX = lastChar.boundingRect.maxX
-                let lineMinY = line.bbox.minY
-                let lineMaxY = line.bbox.maxY
-
-                // Continuous line quad covering words and spaces seamlessly
-                let lineQuad = PDFQuad(
-                    ul: CGPoint(x: sliceMinX, y: lineMinY),
-                    ur: CGPoint(x: sliceMaxX, y: lineMinY),
-                    ll: CGPoint(x: sliceMinX, y: lineMaxY),
-                    lr: CGPoint(x: sliceMaxX, y: lineMaxY)
-                )
-
-                // Assemble line text with inter-word spacing
-                var sliceText = ""
-                for (cIdx, char) in sliceChars.enumerated() {
-                    sliceText.append(char.char)
-                    if cIdx < sliceChars.count - 1 {
-                        let nextChar = sliceChars[cIdx + 1]
-                        let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
-                        if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
-                            sliceText.append(" ")
-                        }
-                    }
-                }
-
-                slices.append(SelectedSlice(
-                    quad: lineQuad,
-                    lineBBox: line.bbox,
-                    sliceBBox: lineQuad.boundingRect,
-                    text: sliceText
-                ))
-            }
-        }
-
-        // Sort all selected slices in true visual reading order (top-to-bottom, left-to-right)
-        slices = readingOrder(slices) { $0.lineBBox }
-
-        // Build quads, bounding box, and natural formatted text
-        for (idx, slice) in slices.enumerated() {
-            selectedQuads.append(slice.quad)
-            overallBoundingBox = overallBoundingBox.union(slice.sliceBBox)
-            selectedText.append(slice.text)
-
-            if idx < slices.count - 1 {
-                let nextSlice = slices[idx + 1]
-                let isSameRow = abs(slice.lineBBox.midY - nextSlice.lineBBox.midY) < 3.0
-
-                if isSameRow {
-                    let hGap = nextSlice.sliceBBox.minX - slice.sliceBBox.maxX
-                    if hGap > 1.0 && !slice.text.hasSuffix(" ") && !nextSlice.text.hasPrefix(" ") {
-                        selectedText.append(" ")
-                    }
-                } else {
-                    let vGap = nextSlice.lineBBox.minY - slice.lineBBox.maxY
-                    let avgH = (slice.lineBBox.height + nextSlice.lineBBox.height) / 2.0
-
-                    if vGap > avgH * 0.75 {
-                        selectedText.append("\n\n")
-                    } else if !slice.text.hasSuffix(" ") && !nextSlice.text.hasPrefix(" ") {
-                        let nextFirst = nextSlice.text.trimmingCharacters(in: .whitespaces).first
-                        if slice.text.hasSuffix("-") && nextFirst?.isLowercase == true {
-                            selectedText.removeLast()
-                        } else {
-                            selectedText.append(" ")
-                        }
-                    }
+                if let slice = makeSlice(line, from: fromChar, to: toChar, blockMaxX: block.bbox.maxX,
+                                         cell: tableCell(of: line.bbox, in: tables)) {
+                    slices.append(slice)
                 }
             }
         }
-
-        let trimmed = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return SelectionResult(
-            text: trimmed,
-            highlightQuads: selectedQuads,
-            boundingRect: overallBoundingBox.isNull ? .zero : overallBoundingBox,
-            mode: .readingOrder
-        )
+        return slices
     }
-    
+
     // MARK: - Rectangular Area Selection
     private func selectRectangularArea(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
         let minX = min(startPoint.x, endPoint.x)
@@ -312,18 +500,7 @@ public final class SpatialTextSelector: Sendable {
                     return selRect.contains(CGPoint(x: b.midX, y: b.midY)) || selRect.intersects(b)
                 }
                 if !charsInRect.isEmpty {
-                    var lineStr = ""
-                    for (idx, c) in charsInRect.enumerated() {
-                        lineStr.append(c.char)
-                        if idx < charsInRect.count - 1 {
-                            let next = charsInRect[idx + 1]
-                            let gap = next.boundingRect.minX - c.boundingRect.maxX
-                            if gap > CGFloat(c.size) * 0.20 && c.char != " " && next.char != " " {
-                                lineStr.append(" ")
-                            }
-                        }
-                    }
-                    linesText.append(lineStr)
+                    linesText.append(Self.text(of: charsInRect))
                 }
             }
         }
@@ -344,7 +521,15 @@ public final class SpatialTextSelector: Sendable {
         var bestBlockIdx = -1
         var bestLineIdx = -1
         var bestScore: CGFloat = .infinity
-        
+        var bestLineDX: CGFloat = .infinity
+
+        // How far right each block's column reaches: the widest of the blocks sharing its left
+        // edge. Distance to a line is measured to its column, so beside the short last line of a
+        // paragraph the point stays with that paragraph rather than jumping to the next column.
+        let columnMaxX = textBlocks.map { block in
+            textBlocks.filter { abs($0.bbox.minX - block.bbox.minX) <= 2 }.map(\.bbox.maxX).max() ?? block.bbox.maxX
+        }
+
         for bIdx in 0..<textBlocks.count {
             let block = textBlocks[bIdx]
             for lIdx in 0..<block.lines.count {
@@ -360,19 +545,26 @@ public final class SpatialTextSelector: Sendable {
                     dy = point.y - line.bbox.maxY
                 }
                 
+                // A line number shares its block's left edge but isn't text that runs on.
+                let isText = line.characters.contains { $0.char.isLetter }
+                let reachX = isText ? max(line.bbox.maxX, columnMaxX[bIdx]) : line.bbox.maxX
                 let dx: CGFloat
-                if point.x >= line.bbox.minX && point.x <= line.bbox.maxX {
+                if point.x >= line.bbox.minX && point.x <= reachX {
                     dx = 0
                 } else if point.x < line.bbox.minX {
                     dx = line.bbox.minX - point.x
                 } else {
-                    dx = point.x - line.bbox.maxX
+                    dx = point.x - reachX
                 }
                 
                 // Prioritize vertical alignment (same line) heavily
                 let score = (dy * 4.0) + dx
-                if score < bestScore {
+                // Between equally near lines — the pieces MuPDF splits a widely justified line
+                // into all reach the column edge — the one actually nearest the point wins.
+                let lineDX = point.x < line.bbox.minX ? line.bbox.minX - point.x : max(0, point.x - line.bbox.maxX)
+                if score < bestScore || (score == bestScore && lineDX < bestLineDX) {
                     bestScore = score
+                    bestLineDX = lineDX
                     bestBlockIdx = bIdx
                     bestLineIdx = lIdx
                 }
@@ -414,11 +606,59 @@ public final class SpatialTextSelector: Sendable {
     public static func isLineNumberGutter(line: TextLine, bodyLeftMargin: CGFloat) -> Bool {
         // Line numbers sit in the margin gutter to the left of the body column
         guard line.bbox.minX < bodyLeftMargin else { return false }
-        let isNumericOrPunct = line.characters.allSatisfy { ch in
-            ch.char.isNumber || ch.char.isWhitespace || ch.char == "." || ch.char == ":" || ch.char == "-" || ch.char == "—"
-        }
-        guard isNumericOrPunct else { return false }
+        // A plain number: "4.2" or "(a)" hanging in the margin numbers a clause, not a line.
+        guard lineNumberValue(line) != nil else { return false }
         return line.bbox.maxX <= bodyLeftMargin + 8 || line.bbox.width < 45
+    }
+
+    /// The number a line holds, allowing one trailing "." or ":" ("15."), or nil.
+    private static func lineNumberValue(_ line: TextLine) -> Int? {
+        var text = line.text.trimmingCharacters(in: .whitespaces)
+        if text.hasSuffix(".") || text.hasSuffix(":") { text.removeLast() }
+        return Int(text)
+    }
+
+    /// Which of a page's `lines` are margin line numbers: plain numbers left of the body text
+    /// that count up at a steady pitch — numbering every line, or every fifth, say — or, with too
+    /// few to tell (a title page's two), one per line of text. Section or clause numbers hanging
+    /// in the margin also count up, but are as far apart as their paragraphs are long.
+    static func lineNumberTest(for lines: [TextLine]) -> (TextLine) -> Bool {
+        guard let bodyLeft = bodyLeftEdge(of: lines) else { return { _ in false } }
+        let candidates = lines.filter { isLineNumberGutter(line: $0, bodyLeftMargin: bodyLeft) }
+            .sorted { $0.bbox.midY < $1.bbox.midY }
+        guard candidates.count >= 2 else { return { _ in false } }
+
+        // Distance down the page per number, against the distance between lines of text.
+        var pitches: [CGFloat] = []
+        for (a, b) in zip(candidates, candidates.dropFirst()) {
+            let step = lineNumberValue(b)! - lineNumberValue(a)!
+            if step > 0 { pitches.append((b.bbox.midY - a.bbox.midY) / CGFloat(step)) }
+        }
+        let pairs = candidates.count - 1
+        guard pitches.count * 4 >= pairs * 3 else { return { _ in false } }
+        func mostlyNear(_ pitch: CGFloat) -> Bool {
+            pitch > 0 && pitches.filter { abs($0 - pitch) <= pitch * 0.2 }.count * 4 >= pairs * 3
+        }
+        let isSteady = pitches.count >= 2 && mostlyNear(pitches.sorted()[pitches.count / 2])
+        let matchesText = textLinePitch(lines).map(mostlyNear) ?? false
+        guard isSteady || matchesText else { return { _ in false } }
+        return { isLineNumberGutter(line: $0, bodyLeftMargin: bodyLeft) }
+    }
+
+    /// The usual distance from one row of text to the next.
+    private static func textLinePitch(_ lines: [TextLine]) -> CGFloat? {
+        let rows = lines.filter { $0.characters.contains { $0.char.isLetter } }.map(\.bbox.midY).sorted()
+        let gaps = zip(rows, rows.dropFirst()).map { $1 - $0 }.filter { $0 >= 3 }.sorted()
+        return gaps.isEmpty ? nil : gaps[gaps.count / 2]
+    }
+
+    /// The left edge of the body text among `lines`: the leftmost x at which at least three lines
+    /// with letters in them start — a margin text is aligned to, so margin line numbers (no
+    /// letters) and one-off strays such as a printer's slug line don't count. Nil if no such edge.
+    static func bodyLeftEdge(of lines: [TextLine]) -> CGFloat? {
+        let starts = lines.filter { $0.characters.contains { $0.char.isLetter } }.map(\.bbox.minX).sorted()
+        guard starts.count >= 3 else { return nil }
+        return starts.indices.dropLast(2).first { starts[$0 + 2] - starts[$0] <= 2 }.map { starts[$0] }
     }
 
     /// Resolves the primary content line for a target location (such as a cross-reference destination or bookmark),
@@ -432,7 +672,7 @@ public final class SpatialTextSelector: Sendable {
         // Consistent with selectReadingOrder's minColumnWidth (60pt).
         let bodyBlocks = textBlocks.filter { $0.bbox.width >= Self.minColumnWidth }
         let candidateBlocks = bodyBlocks.isEmpty ? textBlocks : bodyBlocks
-        let bodyLeftMargin = candidateBlocks.map { $0.bbox.minX }.min() ?? (page.bounds.minX + Self.minColumnWidth)
+        let isLineNumber = Self.lineNumberTest(for: textBlocks.flatMap(\.lines))
 
         // 2. Parse target reference intent from label and URI (e.g. "Table 27-14", "Equation (27-19)", "Figure 3", "[2]")
         let cleanLabel = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -483,7 +723,7 @@ public final class SpatialTextSelector: Sendable {
             }
 
             // Check for Equation pattern: e.g. "Equation (27-19)", "Eq. (27-19)", "Equation 27-19", "(27-19)"
-            let eqPattern = #"(?:Equation|Eq\.?)\s*(?:\(?([0-9A-Za-z\.\-]+)\)?|\(([^\)]+)\))"#
+            let eqPattern = #"\b(?:Equation|Eq\.?)\s*(?:\(?([0-9A-Za-z\.\-]+)\)?|\(([^\)]+)\))"#
             if let eqRegex = try? NSRegularExpression(pattern: eqPattern, options: .caseInsensitive),
                let match = eqRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
                 let ns = cleanLabel as NSString
@@ -500,23 +740,38 @@ public final class SpatialTextSelector: Sendable {
             }
 
             // Check for Table / Figure pattern: e.g. "Table 27-14", "Figure 3", "Fig. 2", "TABLE I", "table.caption.3", "S12 Fig"
-            let tfPattern = #"\b(?:(Table|Figure|Fig\.?)\s*([0-9A-Za-z\.\-]+)|(S[0-9]+)\s*(Fig(?:ure|\.)?))\b"#
+            let tfPattern = #"\b(?:(Tables?|Figures?|Figs?\.?)\s*([0-9][0-9A-Za-z\.\-]*|[A-Z](?:[.\-]?[0-9][0-9\.\-]*)?|[IVXLC]+)|(S[0-9]+)\s*(Fig(?:ure|\.)?))\b"#
             if let tfRegex = try? NSRegularExpression(pattern: tfPattern, options: .caseInsensitive),
                let match = tfRegex.firstMatch(in: cleanLabel, range: NSRange(location: 0, length: (cleanLabel as NSString).length)) {
                 let ns = cleanLabel as NSString
                 if match.range(at: 1).location != NSNotFound && match.range(at: 2).location != NSNotFound {
                     let prefix = ns.substring(with: match.range(at: 1)).lowercased()
                     tableOrFigKind = prefix.hasPrefix("fig") ? "figure" : "table"
-                    tableOrFigNum = ns.substring(with: match.range(at: 2)).lowercased()
+                    tableOrFigNum = ns.substring(with: match.range(at: 2)).lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".-"))
                 } else if match.range(at: 3).location != NSNotFound {
                     tableOrFigKind = "figure"
                     tableOrFigNum = ns.substring(with: match.range(at: 3)).lowercased()
                 }
             }
 
-            // Standalone number (e.g. "2") without brackets, when not matching equation or table/figure
-            if refTargetNums.isEmpty && eqTargetNum == nil && tableOrFigNum == nil && cleanLabel.allSatisfy({ $0.isNumber }) {
-                refTargetNums = [cleanLabel]
+            // A link on just the number ("3", "(2.1)"), as LaTeX's `Figure~\ref{}` makes: its
+            // destination name says what it numbers; with none, a bare number is a citation.
+            let bareNumber = cleanLabel.trimmingCharacters(in: CharacterSet(charactersIn: "()[] "))
+            if refTargetNums.isEmpty && eqTargetNum == nil && tableOrFigNum == nil,
+               !bareNumber.isEmpty, bareNumber.first?.isNumber == true,
+               bareNumber.allSatisfy({ $0.isNumber || $0 == "." || $0 == "-" }) {
+                switch LinkTargetKind(uri: uri, outlineDestinationKeys: []) {
+                case .figure:
+                    (tableOrFigKind, tableOrFigNum) = ("figure", bareNumber)
+                case .table:
+                    (tableOrFigKind, tableOrFigNum) = ("table", bareNumber)
+                case .equation:
+                    eqTargetNum = bareNumber
+                case .citation, .unknown:
+                    if bareNumber.allSatisfy(\.isNumber) { refTargetNums = [bareNumber] }
+                default:
+                    break
+                }
             }
         }
 
@@ -532,8 +787,7 @@ public final class SpatialTextSelector: Sendable {
 
                 for block in candidateBlocks {
                     for line in block.lines {
-                        if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
-                        guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 15 else { continue }
+                        if isLineNumber(line) { continue }
                         let lineText = line.text.trimmingCharacters(in: .whitespaces)
                         let nsText = lineText as NSString
                         if refRegex.firstMatch(in: lineText, range: NSRange(location: 0, length: nsText.length)) != nil {
@@ -589,9 +843,8 @@ public final class SpatialTextSelector: Sendable {
             for block in page.blocks where block.type == .text {
                 for line in block.lines {
                     // Strictly exclude margin line numbers: numeric-only with narrow width or far left
-                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
+                    if isLineNumber(line) { continue }
                     if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 40 { continue }
-                    if line.bbox.minX < page.bounds.minX + Self.minColumnWidth - 10 && line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) { continue }
 
                     let lineText = line.text.trimmingCharacters(in: .whitespaces)
                     let isExactTag = (lineText == targetParens || lineText == eqNum)
@@ -625,7 +878,7 @@ public final class SpatialTextSelector: Sendable {
                     if line.characters.allSatisfy({ $0.char.isNumber || $0.char.isWhitespace }) && line.bbox.width < 45 && line.bbox.minX < page.bounds.midX {
                         return false
                     }
-                    guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { return false }
+                    guard !isLineNumber(line) else { return false }
                     return line.bbox.minY >= rowMinY && line.bbox.maxY <= rowMaxY
                 }
                 if !rowLines.isEmpty {
@@ -656,12 +909,13 @@ public final class SpatialTextSelector: Sendable {
 
             for block in candidateBlocks {
                 for line in block.lines {
-                    if Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) { continue }
-                    guard line.bbox.minX >= page.bounds.minX + Self.minColumnWidth - 10 else { continue }
+                    if isLineNumber(line) { continue }
                     let lineLower = line.text.lowercased()
-                    let containsKind = (kind == "figure")
-                        ? (lineLower.contains("figure") || lineLower.contains("fig"))
-                        : lineLower.contains("table")
+                    let kindPattern = (kind == "figure") ? #"\bfig(?:ure)?s?\b"# : #"\btables?\b"#
+                    let containsKind = lineLower.range(of: kindPattern, options: .regularExpression) != nil
+                    // A caption starts with its label; prose mentioning the table only contains it.
+                    let startsWithKind = lineLower.trimmingCharacters(in: .whitespaces)
+                        .range(of: "^" + kindPattern, options: .regularExpression) != nil
 
                     let containsNum: Bool
                     if let numRegex {
@@ -674,9 +928,9 @@ public final class SpatialTextSelector: Sendable {
                     if containsKind && containsNum {
                         let dy = line.bbox.midY - point.y
                         if dy >= -maxDyAbove && dy <= maxDyBelow {
-                            let absDy = abs(dy)
-                            if absDy < bestTitleDy {
-                                bestTitleDy = absDy
+                            let score = abs(dy) + (startsWithKind ? 0 : 1000)
+                            if score < bestTitleDy {
+                                bestTitleDy = score
                                 bestTitleLine = line
                             }
                         }
@@ -747,8 +1001,7 @@ public final class SpatialTextSelector: Sendable {
             for line in block.lines {
                 guard !line.characters.isEmpty else { continue }
                 // Exclude narrow margin gutter line numbers
-                guard !Self.isLineNumberGutter(line: line, bodyLeftMargin: bodyLeftMargin) else { continue }
-                guard line.bbox.minX >= page.bounds.minX + 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
+                guard !isLineNumber(line) else { continue }
                 guard line.bbox.width >= 40 || line.characters.contains(where: { $0.char.isLetter }) else { continue }
 
                 // Vertical distance metric identical to resolvePosition:
@@ -858,17 +1111,7 @@ public final class SpatialTextSelector: Sendable {
             lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
         )
 
-        var wordText = ""
-        for (cIdx, char) in sliceChars.enumerated() {
-            wordText.append(char.char)
-            if cIdx < sliceChars.count - 1 {
-                let nextChar = sliceChars[cIdx + 1]
-                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
-                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
-                    wordText.append(" ")
-                }
-            }
-        }
+        let wordText = Self.text(of: sliceChars)
 
         return SelectionResult(
             text: wordText,
@@ -897,17 +1140,7 @@ public final class SpatialTextSelector: Sendable {
             lr: CGPoint(x: lastChar.boundingRect.maxX, y: line.bbox.maxY)
         )
 
-        var lineText = ""
-        for (cIdx, char) in sliceChars.enumerated() {
-            lineText.append(char.char)
-            if cIdx < sliceChars.count - 1 {
-                let nextChar = sliceChars[cIdx + 1]
-                let gap = nextChar.boundingRect.minX - char.boundingRect.maxX
-                if gap > CGFloat(char.size) * 0.20 && char.char != " " && nextChar.char != " " {
-                    lineText.append(" ")
-                }
-            }
-        }
+        let lineText = Self.text(of: sliceChars)
 
         return SelectionResult(
             text: lineText,

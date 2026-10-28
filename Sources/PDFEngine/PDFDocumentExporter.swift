@@ -87,16 +87,20 @@ public final class PDFDocumentExporter: Sendable {
         let indices = pageIndices ?? Array(0..<document.pageCount)
         let layoutEngine = PDFLayoutEngine()
         var pageElements: [[PDFLayoutElement]] = []
+        var pageBounds: [CGRect] = []
 
         for pIdx in indices {
             guard let stext = document.loadStructuredPage(for: pIdx) else {
                 pageElements.append([])
+                pageBounds.append(.zero)
                 continue
             }
             pageElements.append(layoutEngine.reconstructLayout(for: stext))
+            pageBounds.append(stext.bounds)
         }
 
         layoutEngine.stitchContinuingTables(pages: &pageElements)
+        let isHeaderOrFooter = headerFooterTest(pages: Array(zip(pageElements, pageBounds)))
 
         var fullText = ""
         for (i, pIdx) in indices.enumerated() {
@@ -115,10 +119,8 @@ public final class PDFDocumentExporter: Sendable {
             var pageTextBlocks: [String] = []
             for elem in elements {
                 switch elem {
-                case .heading(_, let runs, _, _, _):
-                    let str = runs.map { $0.text }.joined().trimmingCharacters(in: .whitespaces)
-                    if !str.isEmpty { pageTextBlocks.append(str) }
-                case .paragraph(let runs, _, _, _, _, _, _):
+                case .heading(_, let runs, let bbox, _, _), .paragraph(let runs, let bbox, _, _, _, _, _):
+                    guard !isHeaderOrFooter(runs, bbox, pageBounds[i]) else { continue }
                     let str = runs.map { $0.text }.joined().trimmingCharacters(in: .whitespaces)
                     if !str.isEmpty { pageTextBlocks.append(str) }
                 case .table(let table):
@@ -332,28 +334,19 @@ public final class PDFDocumentExporter: Sendable {
             reconstructedPages[i].elements = allPageElements[i]
         }
 
-        // Running headers/footers: paragraphs in the top/bottom margin whose text (with numbers
-        // masked) recurs on more than one page, or that are just a page number.
-        var marginTextPageCounts: [String: Int] = [:]
-        for page in reconstructedPages {
-            var seen = Set<String>()
-            for case .paragraph(let runs, let bbox, _, _, _, _, _) in page.elements where isInMarginZone(bbox: bbox, pageBounds: page.bounds) {
-                seen.insert(normalizedMarginText(runs.map(\.text).joined()))
-            }
-            for key in seen { marginTextPageCounts[key, default: 0] += 1 }
-        }
-        let repeatedMarginTexts = Set(marginTextPageCounts.filter { $0.value >= 2 }.keys)
+        let headerFooter = headerFooterTest(pages: reconstructedPages.map { ($0.elements, $0.bounds) })
         func isHeaderOrFooter(runs: [TextRun], bbox: CGRect, pageBounds: CGRect) -> Bool {
-            guard isInMarginZone(bbox: bbox, pageBounds: pageBounds) else { return false }
-            let text = runs.map(\.text).joined()
-            return repeatedMarginTexts.contains(normalizedMarginText(text)) || isPageNumberText(text)
+            headerFooter(runs, bbox, pageBounds)
         }
 
         for (pageSeq, page) in reconstructedPages.enumerated() {
             // Check if page has substantive body content
             let substantiveElements = page.elements.filter { elem in
                 switch elem {
-                case .heading(_, let runs, _, _, _):
+                case .heading(_, let runs, let bbox, _, _):
+                    if isHeaderOrFooter(runs: runs, bbox: bbox, pageBounds: page.bounds) {
+                        return false
+                    }
                     return !runs.map(\.text).joined().trimmingCharacters(in: .whitespaces).isEmpty
                 case .paragraph(let runs, let bbox, _, _, _, _, _):
                     if isHeaderOrFooter(runs: runs, bbox: bbox, pageBounds: page.bounds) {
@@ -380,7 +373,10 @@ public final class PDFDocumentExporter: Sendable {
 
             for elem in page.elements {
                 switch elem {
-                case .heading(let level, let runs, _, let spaceBefore, let spaceAfter):
+                case .heading(let level, let runs, let bbox, let spaceBefore, let spaceAfter):
+                    if isHeaderOrFooter(runs: runs, bbox: bbox, pageBounds: page.bounds) {
+                        continue
+                    }
                     let styleName = (level == 1) ? "Heading1" : "Heading2"
                     let outlineLvl = (level == 1) ? 0 : 1
                     var pXML = """
@@ -803,6 +799,33 @@ public final class PDFDocumentExporter: Sendable {
         return out
     }
 
+    /// A test for running headers and footers across `pages`: paragraphs and headings in the
+    /// top/bottom margin whose text (with numbers masked) recurs on more than one page, or that
+    /// are just a page number.
+    private func headerFooterTest(pages: [(elements: [PDFLayoutElement], bounds: CGRect)]) -> ([TextRun], CGRect, CGRect) -> Bool {
+        var marginTextPageCounts: [String: Int] = [:]
+        for page in pages {
+            var seen = Set<String>()
+            for element in page.elements {
+                switch element {
+                case .heading(_, let runs, let bbox, _, _), .paragraph(let runs, let bbox, _, _, _, _, _):
+                    if isInMarginZone(bbox: bbox, pageBounds: page.bounds) {
+                        seen.insert(normalizedMarginText(runs.map(\.text).joined()))
+                    }
+                default:
+                    break
+                }
+            }
+            for key in seen { marginTextPageCounts[key, default: 0] += 1 }
+        }
+        let repeatedMarginTexts = Set(marginTextPageCounts.filter { $0.value >= 2 }.keys)
+        return { runs, bbox, pageBounds in
+            guard self.isInMarginZone(bbox: bbox, pageBounds: pageBounds) else { return false }
+            let text = runs.map(\.text).joined()
+            return repeatedMarginTexts.contains(self.normalizedMarginText(text)) || Self.isPageNumberText(text)
+        }
+    }
+
     /// Whether a block lies entirely within the top or bottom margin band of its page.
     private func isInMarginZone(bbox: CGRect, pageBounds: CGRect) -> Bool {
         let band = min(54.0, pageBounds.height * 0.08)
@@ -818,10 +841,14 @@ public final class PDFDocumentExporter: Sendable {
             .trimmingCharacters(in: .whitespaces)
     }
 
-    /// A bare page number such as "3", "- 3 -", "Page 3", "3 of 12" or "iv".
-    private func isPageNumberText(_ text: String) -> Bool {
+    /// A bare page number such as "3", "- 3 -", "Page 3", "3 of 12", "iv" or "XII" — a real roman
+    /// numeral in one case, so a stray word in the margin ("Civil", "mid") isn't one.
+    static func isPageNumberText(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.range(of: #"^(?i)(page\s*)?[-–—]?\s*(\d+|[ivxlcdm]+)\s*[-–—]?(\s*(of|/)\s*\d+)?$"#, options: .regularExpression) != nil
+        let roman = #"c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})"#
+        let number = #"(?:\d+|(?=[ivxlc])"# + roman + "|(?=[IVXLC])" + roman.uppercased() + ")"
+        let pattern = #"^(?:[Pp]age\s*|PAGE\s*)?[-–—]?\s*"# + number + #"\s*[-–—]?(?:\s*(?:of|OF|/)\s*\d+)?$"#
+        return t.range(of: pattern, options: .regularExpression) != nil
     }
 
     // MARK: - ToC Parsing Helper

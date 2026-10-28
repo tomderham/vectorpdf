@@ -65,6 +65,23 @@ private func reference(_ text: String) -> ParsedReference? {
         #expect(ReferenceExtractor.references(in: "See the Table of Contents, part a of it, and the Partnership 2 clause").isEmpty)
     }
 
+    @Test func versionsAndAddressesAreNotSections() {
+        let text = "Connect to 192.168.1.1, then retry with 1.0.2 or 2.03.1."
+        #expect(ReferenceExtractor.references(in: text).isEmpty)
+        // Section numbers still are, whatever comes before them.
+        #expect(ReferenceExtractor.references(in: "as described in 35.5.2.3.1 and 9.4.2.170").map(\.identifier) == ["35.5.2.3.1", "9.4.2.170"])
+    }
+
+    @Test func documentHintNeedsADocumentName() throws {
+        // Capitalised words after "in" or "to" that name no document.
+        #expect(try #require(reference("per Section 3 in January.")).docHint == nil)
+        #expect(try #require(reference("deliver under Section 3 to Buyer")).docHint == nil)
+        // "the …", or a number or acronym, make it one.
+        #expect(try #require(reference("Section 3 of the Supply Agreement")).docHint == "Supply Agreement")
+        #expect(try #require(reference("Section 12 of Clean Air Act")).docHint == nil)
+        #expect(try #require(reference("Section 5.6 of NIST SP 800-56A")).docHint == "NIST SP 800-56A")
+    }
+
     @Test func labelledDocumentHintIsNotADocument() throws {
         let ref = try #require(reference("Section 4 of Schedule 2 applies"))
         #expect(ref.docHint == nil)
@@ -182,7 +199,10 @@ private func reference(_ text: String) -> ParsedReference? {
 
     @Test func documentHint() {
         #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "Master Services Agreement.pdf", hint: "Master Services Agreement") == 20)
-        #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "MSA - Master Agreement v3.pdf", hint: "Master Services Agreement") == 8)
+        // Its initials count as its name.
+        #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "MSA - Master Agreement v3.pdf", hint: "Master Services Agreement") == 20)
+        #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "Supply - Master Agreement v3.pdf", hint: "Master Services Agreement") == 8)
+        #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "MSA_final.pdf", hint: "Master Services Agreement") == 20)
         #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "Schedule 2.pdf", hint: "Master Agreement") == -10)
         #expect(CrossDocReferenceMatcher.docHintAdjustment(documentTitle: "Anything.pdf", hint: nil) == 0)
     }

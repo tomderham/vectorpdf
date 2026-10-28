@@ -135,14 +135,11 @@ public actor PDFOCREngine {
             }
         }
 
-        allLines.sort { a, b in
-            let rowA = Int(a.boundingBox.minY / 15.0)
-            let rowB = Int(b.boundingBox.minY / 15.0)
-            if rowA != rowB {
-                return rowA < rowB
-            }
-            return a.boundingBox.minX < b.boundingBox.minX
-        }
+        // Rows by line height rather than fixed bands, so close rows of small text stay apart and
+        // a row straddling a band boundary stays together.
+        let heights = allLines.map(\.boundingBox.height).sorted()
+        let rowTolerance = heights.isEmpty ? 3 : max(1, heights[heights.count / 2] * 0.5)
+        allLines = readingOrder(allLines, rowTolerance: rowTolerance) { $0.boundingBox }
 
         let fullText = allLines.map { $0.text }.joined(separator: "\n")
         return PDFOCRPageResult(pageIndex: pageIndex, lines: allLines, fullText: fullText)

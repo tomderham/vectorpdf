@@ -123,8 +123,15 @@ public final class PDFLayoutEngine: Sendable {
 
     // MARK: - Public Entrypoint
 
-    /// Reconstructs the high-level document flow (paragraphs, headings, tables, images) from a structured page.
-    public func reconstructLayout(for page: StructuredPage) -> [PDFLayoutElement] {
+    /// The tables on a page that have ruled borders (lattice tables).
+    public func detectRuledTables(in page: StructuredPage) -> [LayoutTable] {
+        let sizes = page.blocks.filter { $0.type == .text }.flatMap(\.lines).flatMap(\.characters).map(\.size).filter { $0 > 0 }.sorted()
+        return detectLatticeTables(in: page, baseFontSize: sizes.isEmpty ? 11.0 : sizes[sizes.count / 2])
+    }
+
+    /// The tables on a page: lattice tables (found from their ruled borders) and stream tables
+    /// (borderless, found from aligned columns of text) — the two methods Tabula and Camelot use.
+    public func detectTables(in page: StructuredPage) -> [LayoutTable] {
         // 1. Calculate base/median font size for the page to determine typography scale
         let allChars = page.blocks.filter { $0.type == .text }.flatMap { $0.lines }.flatMap { $0.characters }
         let validSizes = allChars.map { $0.size }.filter { $0 > 0 }.sorted()
@@ -132,13 +139,40 @@ public final class PDFLayoutEngine: Sendable {
 
         // 2. Extract vector strokes and detect Lattice Tables (vector border-driven tables)
         let latticeTables = detectLatticeTables(in: page, baseFontSize: baseFontSize)
-        var capturedTableBBoxes = latticeTables.map { $0.bbox }
 
         // 3. Find Stream Tables (borderless tabular data with strict column alignment)
-        let streamTables = detectStreamTables(in: page, excluding: capturedTableBBoxes)
-        capturedTableBBoxes.append(contentsOf: streamTables.map { $0.bbox })
+        let latticeBoxes = latticeTables.map { $0.bbox }
+        let streamTables = detectStreamTables(in: page, excluding: latticeBoxes)
 
-        let allTables = latticeTables + streamTables
+        // Text columns line up like a table's: a "table" whose every column break is a gutter
+        // between the page's text columns, with sentence-length cells, is the columns themselves.
+        let pageLines = page.blocks.filter { $0.type == .text }.flatMap(\.lines).filter { line in
+            !latticeBoxes.contains { $0.contains(CGPoint(x: line.bbox.midX, y: line.bbox.midY)) }
+        }
+        let gutters = detectColumnGutters(lines: pageLines, pageWidth: page.bounds.width)
+        return latticeTables + streamTables.filter { !isTextColumns($0, gutters: gutters) }
+    }
+
+    private func isTextColumns(_ table: LayoutTable, gutters: [CGFloat]) -> Bool {
+        guard !gutters.isEmpty, let columnCount = table.rows.first?.cells.count, columnCount >= 2 else { return false }
+        let cells = table.rows.flatMap(\.cells)
+        let averageLength = cells.map { $0.text.count }.reduce(0, +) / max(1, cells.count)
+        guard averageLength >= 15 else { return false }
+        return (0..<(columnCount - 1)).allSatisfy { c in
+            let leftEdge = table.rows.map { $0.cells[c].bbox.maxX }.max()!
+            let rightEdge = table.rows.map { $0.cells[c + 1].bbox.minX }.min()!
+            return gutters.contains { $0 >= leftEdge && $0 <= rightEdge }
+        }
+    }
+
+    /// Reconstructs the high-level document flow (paragraphs, headings, tables, images) from a structured page.
+    public func reconstructLayout(for page: StructuredPage) -> [PDFLayoutElement] {
+        let allChars = page.blocks.filter { $0.type == .text }.flatMap { $0.lines }.flatMap { $0.characters }
+        let validSizes = allChars.map { $0.size }.filter { $0 > 0 }.sorted()
+        let baseFontSize: Float = validSizes.isEmpty ? 11.0 : validSizes[validSizes.count / 2]
+
+        let allTables = detectTables(in: page)
+        let capturedTableBBoxes = allTables.map { $0.bbox }
 
         // 4. Collect text lines that are NOT captured inside tables
         var freeLines: [TextLine] = []
@@ -164,13 +198,13 @@ public final class PDFLayoutEngine: Sendable {
             }
         }
 
-        // Sort free lines in reading order: on a two-column page, each column top-to-bottom
+        // Sort free lines in reading order: on a multi-column page, each column top-to-bottom
         // (between any full-width lines), otherwise simply top-to-bottom, left-to-right.
-        let gutterX = detectColumnGutter(lines: freeLines, pageWidth: page.bounds.width)
-        freeLines = readingOrderedLines(freeLines, gutterX: gutterX)
+        let gutters = detectColumnGutters(lines: freeLines, pageWidth: page.bounds.width)
+        freeLines = readingOrderedLines(freeLines, gutters: gutters)
 
         // 5. Reconstruct Flow Paragraphs & Headings from free text lines
-        let flowElements = reconstructParagraphsAndHeadings(lines: freeLines, baseFontSize: baseFontSize, pageWidth: page.bounds.width)
+        let flowElements = reconstructParagraphsAndHeadings(lines: freeLines, baseFontSize: baseFontSize, pageWidth: page.bounds.width, gutters: gutters)
 
         // 6. Collect visual image / illustration elements
         var visualElements: [PDFLayoutElement] = []
@@ -198,15 +232,15 @@ public final class PDFLayoutEngine: Sendable {
         allElements.append(contentsOf: flowElements)
         allElements.append(contentsOf: visualElements)
 
-        if let gutterX {
-            // Column-aware order: a plain sort by y would interleave the two columns' paragraphs.
+        if !gutters.isEmpty {
+            // Column-aware order: a plain sort by y would interleave the columns' paragraphs.
             let spanningTops = allElements
-                .filter { $0.bbox.minX < gutterX && $0.bbox.maxX > gutterX }
+                .filter { Self.crossesGutter($0.bbox, gutters) }
                 .map { $0.bbox.minY }
             func key(_ e: PDFLayoutElement) -> (Int, Int, CGFloat) {
                 let b = e.bbox
                 let band = spanningTops.filter { $0 <= b.minY }.count
-                let column = (b.minX < gutterX && b.maxX > gutterX) ? -1 : (b.midX < gutterX ? 0 : 1)
+                let column = Self.crossesGutter(b, gutters) ? -1 : Self.column(of: b, gutters)
                 return (band, column, b.minY)
             }
             allElements.sort { key($0) < key($1) }
@@ -218,54 +252,72 @@ public final class PDFLayoutEngine: Sendable {
 
     // MARK: - Column Detection
 
-    /// The x position of the gutter between two side-by-side text columns, or nil for a
-    /// single-column page. A candidate gutter must have enough lines entirely on each side, the
-    /// two sides must sit next to each other vertically (not one above the other), and only a few
-    /// lines (full-width headings, titles) may cross it.
-    private func detectColumnGutter(lines: [TextLine], pageWidth: CGFloat) -> CGFloat? {
-        guard lines.count >= 10, pageWidth > 0 else { return nil }
-        var best: (x: CGFloat, crossing: Int)?
-        var x = pageWidth * 0.35
-        while x <= pageWidth * 0.65 {
+    /// The x positions of the gutters between side-by-side text columns, left to right; empty for
+    /// a single-column page. A gutter must have enough lines entirely on each side, the two sides
+    /// must sit next to each other vertically (not one above the other), and only a few lines
+    /// (full-width headings, titles) may cross it. Each run of such positions — the width of the
+    /// white space between two columns — gives one gutter, at the position fewest lines cross.
+    private func detectColumnGutters(lines: [TextLine], pageWidth: CGFloat) -> [CGFloat] {
+        guard lines.count >= 10, pageWidth > 0 else { return [] }
+        let step: CGFloat = 2
+        var runs: [[(x: CGFloat, crossing: Int)]] = []
+        var x = pageWidth * 0.15
+        while x <= pageWidth * 0.85 {
             let left = lines.filter { $0.bbox.maxX <= x }
             let right = lines.filter { $0.bbox.minX >= x }
             let crossing = lines.count - left.count - right.count
+            var isGutter = false
             if left.count >= 5, right.count >= 5, crossing <= max(2, lines.count / 8) {
                 let leftTop = left.map { $0.bbox.minY }.min()!, leftBottom = left.map { $0.bbox.maxY }.max()!
                 let rightTop = right.map { $0.bbox.minY }.min()!, rightBottom = right.map { $0.bbox.maxY }.max()!
                 let overlap = min(leftBottom, rightBottom) - max(leftTop, rightTop)
                 let shorter = min(leftBottom - leftTop, rightBottom - rightTop)
-                if shorter > 0, overlap >= shorter * 0.5 {
-                    let isBetter = best.map { crossing < $0.crossing || (crossing == $0.crossing && abs(x - pageWidth / 2) < abs($0.x - pageWidth / 2)) } ?? true
-                    if isBetter { best = (x, crossing) }
+                isGutter = shorter > 0 && overlap >= shorter * 0.5
+            }
+            if isGutter {
+                if let last = runs.last?.last, x - last.x <= step + 0.01 {
+                    runs[runs.count - 1].append((x, crossing))
+                } else {
+                    runs.append([(x, crossing)])
                 }
             }
-            x += 2
+            x += step
         }
-        return best?.x
+        return runs.map { run in
+            let fewest = run.map(\.crossing).min()!
+            let best = run.filter { $0.crossing == fewest }
+            return best[best.count / 2].x
+        }
     }
 
-    /// Lines in reading order. With a gutter: full-width lines split the page into bands, and
-    /// within each band the left column is read before the right.
-    private func readingOrderedLines(_ lines: [TextLine], gutterX: CGFloat?) -> [TextLine] {
-        guard let gutterX else { return readingOrder(lines) { $0.bbox } }
+    /// Whether `rect` spans at least one gutter.
+    private static func crossesGutter(_ rect: CGRect, _ gutters: [CGFloat]) -> Bool {
+        gutters.contains { rect.minX < $0 && rect.maxX > $0 }
+    }
+
+    /// The index of the column holding `rect`'s centre.
+    private static func column(of rect: CGRect, _ gutters: [CGFloat]) -> Int {
+        gutters.filter { $0 <= rect.midX }.count
+    }
+
+    /// Lines in reading order. With gutters: lines spanning a gutter split the page into bands,
+    /// and within each band the columns are read left to right.
+    private func readingOrderedLines(_ lines: [TextLine], gutters: [CGFloat]) -> [TextLine] {
+        guard !gutters.isEmpty else { return readingOrder(lines) { $0.bbox } }
         var result: [TextLine] = []
-        var left: [TextLine] = []
-        var right: [TextLine] = []
+        var columns = Array(repeating: [TextLine](), count: gutters.count + 1)
         func flush() {
-            result += readingOrder(left) { $0.bbox }
-            result += readingOrder(right) { $0.bbox }
-            left = []
-            right = []
+            for c in columns.indices {
+                result += readingOrder(columns[c]) { $0.bbox }
+                columns[c] = []
+            }
         }
         for line in lines.sorted(by: { $0.bbox.minY < $1.bbox.minY }) {
-            if line.bbox.minX < gutterX && line.bbox.maxX > gutterX {
+            if Self.crossesGutter(line.bbox, gutters) {
                 flush()
                 result.append(line)
-            } else if line.bbox.midX < gutterX {
-                left.append(line)
             } else {
-                right.append(line)
+                columns[Self.column(of: line.bbox, gutters)].append(line)
             }
         }
         flush()
@@ -471,6 +523,11 @@ public final class PDFLayoutEngine: Sendable {
             if avgWidth > page.bounds.width * 0.35 && block.lines.count >= 2 {
                 continue
             }
+            // Nor is a paragraph in a narrow column: three or more lines, most filling the block's width.
+            let fullLines = block.lines.filter { $0.bbox.width >= block.bbox.width * 0.9 }.count
+            if block.lines.count >= 3 && block.bbox.width >= 100 && fullLines * 5 >= block.lines.count * 3 {
+                continue
+            }
 
             for line in block.lines {
                 let center = CGPoint(x: line.bbox.midX, y: line.bbox.midY)
@@ -608,12 +665,15 @@ public final class PDFLayoutEngine: Sendable {
         guard let first = rows.first else { return nil }
         let numCols = first.cells.count
 
-        // Verify column X coordinate alignment across all rows (<= 10 pt jitter)
+        // Verify each column's cells line up across all rows (<= 10 pt jitter), on their left
+        // edges, right edges (numbers) or centres.
         for c in 0..<numCols {
-            let xPositions = rows.map { $0.cells[c].bbox.minX }
-            let minX = xPositions.min() ?? 0
-            let maxX = xPositions.max() ?? 0
-            if (maxX - minX) > 10.0 {
+            let cells = rows.map { $0.cells[c].bbox }
+            func isAligned(_ x: (CGRect) -> CGFloat) -> Bool {
+                let positions = cells.map(x)
+                return positions.max()! - positions.min()! <= 10.0
+            }
+            if !isAligned(\.minX) && !isAligned(\.maxX) && !isAligned(\.midX) {
                 return nil
             }
         }
@@ -640,7 +700,7 @@ public final class PDFLayoutEngine: Sendable {
 
     // MARK: - Paragraph & Heading Reconstruction (Line Joining & Reflow)
 
-    private func mergeHorizontalLineFragments(lines: [TextLine]) -> [TextLine] {
+    private func mergeHorizontalLineFragments(lines: [TextLine], gutters: [CGFloat]) -> [TextLine] {
         guard !lines.isEmpty else { return [] }
         var merged: [TextLine] = []
         var current = lines[0]
@@ -649,16 +709,17 @@ public final class PDFLayoutEngine: Sendable {
             let next = lines[i]
             let isSameRow = abs(current.bbox.midY - next.bbox.midY) < 3.0
             let hGap = next.bbox.minX - current.bbox.maxX
+            let gutterBetween = gutters.contains { $0 >= current.bbox.maxX && $0 <= next.bbox.minX }
 
             // If on the same row and the next line starts to the right within reasonable inline spacing
-            if isSameRow && hGap >= -3.0 && hGap <= 25.0 {
+            if isSameRow && hGap >= -3.0 && hGap <= 25.0 && !gutterBetween {
                 var newChars = current.characters
                 let lastChar = current.characters.last
                 let firstNextChar = next.characters.first
                 let avgSize = CGFloat(((lastChar?.size ?? 10.0) + (firstNextChar?.size ?? 10.0)) / 2.0)
 
-                // Add space character if there is a noticeable gap and neither character is whitespace
-                if hGap > avgSize * 0.18 && lastChar?.char != " " && firstNextChar?.char != " " {
+                // Add space character if there is a word gap between them
+                if let last = lastChar, let first = firstNextChar, last.hasWordGap(before: first) {
                     let spaceQuad = PDFQuad(
                         ul: CGPoint(x: current.bbox.maxX, y: current.bbox.minY),
                         ur: CGPoint(x: next.bbox.minX, y: current.bbox.minY),
@@ -704,11 +765,24 @@ public final class PDFLayoutEngine: Sendable {
         return false
     }
 
-    private func reconstructParagraphsAndHeadings(lines: [TextLine], baseFontSize: Float, pageWidth: CGFloat) -> [PDFLayoutElement] {
+    private func reconstructParagraphsAndHeadings(lines: [TextLine], baseFontSize: Float, pageWidth: CGFloat, gutters: [CGFloat]) -> [PDFLayoutElement] {
         guard !lines.isEmpty else { return [] }
 
         // 0. Merge horizontally adjacent line fragments on the same visual row
-        let mergedLines = mergeHorizontalLineFragments(lines: lines)
+        let mergedLines = mergeHorizontalLineFragments(lines: lines, gutters: gutters)
+
+        // Each line's column (-1 for lines spanning a gutter) and that column's left and right
+        // edges: line lengths and indents are measured against the column, not the page.
+        func columnKey(_ line: TextLine) -> Int {
+            Self.crossesGutter(line.bbox, gutters) ? -1 : Self.column(of: line.bbox, gutters)
+        }
+        var columnLeft: [Int: CGFloat] = [:]
+        var columnRight: [Int: CGFloat] = [:]
+        for line in mergedLines {
+            let key = columnKey(line)
+            columnLeft[key] = min(columnLeft[key] ?? .infinity, line.bbox.minX)
+            columnRight[key] = max(columnRight[key] ?? -.infinity, line.bbox.maxX)
+        }
 
         // 1. Calculate the modal vertical line pitch (top-to-top line leading)
         var pitches: [CGFloat] = []
@@ -745,10 +819,13 @@ public final class PDFLayoutEngine: Sendable {
                 let isListStart = isListMarker(line.text.trimmingCharacters(in: .whitespaces))
                 let isPrevToC = isToCEntry(prev.text)
 
-                // Sentence break heuristic: prev line ended with [.!?], is noticeably short, and next starts with capital
+                // Sentence break heuristic: prev line ended with [.!?], stops well short of its
+                // column's right edge, and next starts with capital
                 let trimmedPrev = prev.text.trimmingCharacters(in: .whitespaces)
                 let endsSentence = trimmedPrev.hasSuffix(".") || trimmedPrev.hasSuffix("!") || trimmedPrev.hasSuffix("?")
-                let prevIsShort = prev.bbox.width < (pageWidth * 0.45)
+                let prevColumn = columnKey(prev)
+                let prevColumnWidth = (columnRight[prevColumn] ?? prev.bbox.maxX) - (columnLeft[prevColumn] ?? prev.bbox.minX)
+                let prevIsShort = prev.bbox.maxX < (columnRight[prevColumn] ?? prev.bbox.maxX) - prevColumnWidth * 0.15
                 let firstChar = line.text.trimmingCharacters(in: .whitespaces).first
                 let startsWithCap = firstChar?.isUppercase == true
 
@@ -806,7 +883,7 @@ public final class PDFLayoutEngine: Sendable {
                 elements.append(.heading(level: 2, runs: runs, bbox: blockBox, spaceBefore: max(180, spaceBeforeTwips), spaceAfter: spaceAfterTwips))
             } else {
                 // Determine horizontal alignment and indentation
-                let leftIndent = Int(round(max(0, blockBox.minX - 54.0) * 20.0)) // relative to page margin ~54pt
+                let leftIndent = Int(round(max(0, blockBox.minX - (columnLeft[columnKey(firstLine)] ?? blockBox.minX)) * 20.0))
                 let firstLineOffset = Int(round((firstLine.bbox.minX - blockBox.minX) * 20.0))
 
                 var alignment: LayoutAlignment = .left
@@ -841,20 +918,23 @@ public final class PDFLayoutEngine: Sendable {
             let isLastLine = (lIdx == lines.count - 1)
 
             if !isLastLine {
-                // Check if line ends with a hyphen and next line starts with lowercase
-                let nextFirstChar = lines[lIdx + 1].text.trimmingCharacters(in: .whitespaces).first
                 let lastRunIdx = lineRuns.count - 1
                 let lastRunText = lineRuns[lastRunIdx].text
-
-                if lastRunText.hasSuffix("-") && nextFirstChar?.isLowercase == true {
+                var joined = lastRunText
+                switch LineJoin(line.text, lines[lIdx + 1].text) {
+                case .wordBreak:
                     // Strip the trailing hyphen: word joins seamlessly
-                    let stripped = String(lastRunText.dropLast())
-                    let r = lineRuns[lastRunIdx]
-                    lineRuns[lastRunIdx] = TextRun(text: stripped, isBold: r.isBold, isItalic: r.isItalic, isUnderline: r.isUnderline, isStrikethrough: r.isStrikethrough, size: r.size, fontName: r.fontName, colorHex: r.colorHex)
-                } else if !lastRunText.hasSuffix(" ") {
+                    while joined.last?.isWhitespace == true { joined.removeLast() }
+                    if !joined.isEmpty { joined.removeLast() }
+                case .hyphen:
+                    while joined.last?.isWhitespace == true { joined.removeLast() }
+                case .space:
                     // Append a single space between wrapped lines
+                    if !joined.hasSuffix(" ") { joined += " " }
+                }
+                if joined != lastRunText {
                     let r = lineRuns[lastRunIdx]
-                    lineRuns[lastRunIdx] = TextRun(text: lastRunText + " ", isBold: r.isBold, isItalic: r.isItalic, isUnderline: r.isUnderline, isStrikethrough: r.isStrikethrough, size: r.size, fontName: r.fontName, colorHex: r.colorHex)
+                    lineRuns[lastRunIdx] = TextRun(text: joined, isBold: r.isBold, isItalic: r.isItalic, isUnderline: r.isUnderline, isStrikethrough: r.isStrikethrough, size: r.size, fontName: r.fontName, colorHex: r.colorHex)
                 }
             }
 
@@ -885,14 +965,13 @@ public final class PDFLayoutEngine: Sendable {
             return true
         }
 
-        // Regex patterns for numbered lists: "1.", "1.1", "1.1.1", "(1)", "1)", "a.", "a)", "(a)", "A.", "I.", "iv."
-        let standalonePattern = #"^(\d+(\.\d+)*\.?|\([0-9a-zA-Z]+\)|[0-9a-zA-Z]+[.)])$"#
-        if t.range(of: standalonePattern, options: .regularExpression) != nil {
+        // Numbered lists: "1.", "1.1", "1.1.1", "(1)", "1)", "a.", "a)", "(a)", "A.", "I.", "iv." —
+        // but not abbreviations such as "Dr." or "Fig.": letters are one letter or a roman numeral.
+        let marker = #"(\d+\.|\d+(\.\d+)+\.?|\((?:\d{1,3}|[a-zA-Z]|[ivxl]{1,5}|[IVXL]{1,5})\)|(?:\d{1,3}|[a-zA-Z]|[ivxl]{1,5}|[IVXL]{1,5})[.)])"#
+        if t.range(of: "^(\\d+(\\.\\d+)*\\.?|" + marker + ")$", options: .regularExpression) != nil {
             return true
         }
-
-        let prefixPattern = #"^(\d+\.|\d+(\.\d+)+\.?|\([0-9a-zA-Z]+\)|[0-9a-zA-Z]+[.)])\s+"#
-        return t.range(of: prefixPattern, options: .regularExpression) != nil
+        return t.range(of: "^" + marker + #"\s+"#, options: .regularExpression) != nil
     }
 
     // MARK: - Multi-Page Table Stitching
@@ -948,15 +1027,9 @@ public final class PDFLayoutEngine: Sendable {
                             pages[aPage][aElem] = .table(table: mergedTable)
 
                             // Remove continuation heading preceding currentTable if present
-                            for i in (0..<elemIdx).reversed() {
-                                if case .heading(_, let runs, _, _, _) = pages[p][i] {
-                                    let hText = runs.map(\.text).joined()
-                                    if hText.localizedCaseInsensitiveContains("continued") || hText.localizedCaseInsensitiveContains("cont.") {
-                                        pages[p].remove(at: i)
-                                        elemIdx -= 1
-                                        break
-                                    }
-                                }
+                            if Self.isContinuationHeading(before: elemIdx, on: pages[p]) {
+                                pages[p].remove(at: elemIdx - 1)
+                                elemIdx -= 1
                             }
 
                             // Remove currentTable from page p
@@ -975,6 +1048,14 @@ public final class PDFLayoutEngine: Sendable {
         }
     }
 
+    /// Whether the element just before `index` is a "Table 3 (continued)" or "… cont'd" heading
+    /// — "continued" as a word, so "Discontinued Operations" is a heading of its own.
+    private static func isContinuationHeading(before index: Int, on page: [PDFLayoutElement]) -> Bool {
+        guard index > 0, case .heading(_, let runs, _, _, _) = page[index - 1] else { return false }
+        let text = runs.map(\.text).joined()
+        return text.range(of: #"(?i)\bcontinued\b|\bcont(?:\.|'d|’d)"#, options: .regularExpression) != nil
+    }
+
     private func areTablesContinuing(prev: LayoutTable, next: LayoutTable, onNextPage: [PDFLayoutElement], tableElemIdx: Int) -> Bool {
         // 1. Column count must match
         guard prev.colWidths.count == next.colWidths.count else { return false }
@@ -987,13 +1068,8 @@ public final class PDFLayoutEngine: Sendable {
         guard widthDiff < 15.0 else { return false }
 
         // 3. Check for "(continued)" heading preceding next table
-        for i in 0..<tableElemIdx {
-            if case .heading(_, let runs, _, _, _) = onNextPage[i] {
-                let text = runs.map(\.text).joined()
-                if text.localizedCaseInsensitiveContains("continued") || text.localizedCaseInsensitiveContains("cont.") {
-                    return true
-                }
-            }
+        if Self.isContinuationHeading(before: tableElemIdx, on: onNextPage) {
+            return true
         }
 
         // 4. Or check if header row matches

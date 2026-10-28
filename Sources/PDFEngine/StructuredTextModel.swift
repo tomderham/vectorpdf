@@ -58,6 +58,37 @@ public struct TextCharacter: Sendable, Equatable {
     public var boundingRect: CGRect {
         quad.boundingRect
     }
+
+    /// The gap between two characters, as a fraction of the font size, wider than which they
+    /// belong to different words.
+    public static let wordGapRatio: CGFloat = 0.22
+
+    /// Whether the space between this character and `next` separates words, where the PDF
+    /// positioned the next word rather than writing a space. The one rule for loading text,
+    /// selecting it, exporting it and finding references in it.
+    public func hasWordGap(before next: TextCharacter) -> Bool {
+        char != " " && next.char != " " && next.boundingRect.minX - boundingRect.maxX > CGFloat(size) * Self.wordGapRatio
+    }
+}
+
+/// How the end of one line joins the start of the next when lines are run together.
+public enum LineJoin: Equatable {
+    /// A word hyphenated across the break ("Representa-" / "tives"): drop the hyphen.
+    case wordBreak
+    /// A hyphen or dash that belongs to the text ("4-" / "7", "cost-" / "Benefit"): keep it, no space.
+    case hyphen
+    /// Anything else: a space.
+    case space
+
+    /// The join between a line ending in `end` and the next, starting with `start`. A soft hyphen
+    /// always breaks a word; a hyphen does between a letter and a lowercase letter.
+    public init(_ end: String, _ start: String) {
+        let end = end.trimmingCharacters(in: .whitespaces)
+        guard let last = end.last, "-\u{00AD}\u{2010}".contains(last) else { self = .space; return }
+        let isWordBreak = last == "\u{00AD}"
+            || (end.dropLast().last?.isLetter == true && start.trimmingCharacters(in: .whitespaces).first?.isLowercase == true)
+        self = isWordBreak ? .wordBreak : .hyphen
+    }
 }
 
 /// A contiguous run of characters within a line sharing the same styling (bold, italic, underline, strikethrough, font size, font family, color).
@@ -181,14 +212,15 @@ public struct StructuredPage: Sendable {
         blocks.filter { $0.type == .text }.map { $0.text }.joined(separator: "\n\n")
     }
 
-    /// Plain text extracted only from blocks matching running prose width thresholds.
+    /// The page's text for the Agent's index: every block, table cells included, without margin
+    /// line numbers.
     public var proseText: String {
         let textBlocks = blocks.filter { $0.type == .text && !$0.lines.isEmpty }
-        let prose = textBlocks.filter { block in
-            let averageLineWidth = block.lines.map { $0.bbox.width }.reduce(0, +) / CGFloat(block.lines.count)
-            return averageLineWidth > bounds.width * 0.15
-        }
-        return prose.map { $0.text }.joined(separator: "\n\n")
+        let isLineNumber = SpatialTextSelector.lineNumberTest(for: textBlocks.flatMap(\.lines))
+        return textBlocks
+            .map { $0.lines.filter { !isLineNumber($0) }.map(\.text).joined(separator: "\n") }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
     }
     
     public var allLines: [TextLine] {
@@ -204,25 +236,65 @@ public struct StructuredPage: Sendable {
         var fullText = ""
         var quads: [PDFQuad?] = []
         
+        func append(_ line: TextLine) {
+            for char in line.characters {
+                fullText.append(char.char)
+                for _ in 0..<char.char.utf16.count {
+                    quads.append(char.quad)
+                }
+            }
+        }
+        func appendBreak(_ separator: String) {
+            fullText.append(separator)
+            quads.append(contentsOf: Array(repeating: nil, count: separator.utf16.count))
+        }
+        func removeLast(while shouldRemove: (Character) -> Bool) {
+            while let last = fullText.last, shouldRemove(last) {
+                fullText.removeLast()
+                quads.removeLast(String(last).utf16.count)
+            }
+        }
+        // Lines run together as copied text is: a hyphenated word is joined up, so it's found whole.
+        func join(_ previous: TextLine, _ next: TextLine) {
+            switch LineJoin(previous.text, next.text) {
+            case .wordBreak:
+                removeLast(while: \.isWhitespace)
+                removeLast(while: { "-\u{00AD}\u{2010}".contains($0) })
+            case .hyphen:
+                removeLast(while: \.isWhitespace)
+            case .space:
+                appendBreak(" ")
+            }
+        }
+
+        // Margin line numbers go at the end, still searchable, rather than between the lines of
+        // text they number — where they would split a phrase that wraps onto the next line.
         let textBlocks = blocks.filter { $0.type == .text }
-        for (bIdx, block) in textBlocks.enumerated() {
-            for (lIdx, line) in block.lines.enumerated() {
-                for char in line.characters {
-                    fullText.append(char.char)
-                    for _ in 0..<char.char.utf16.count {
-                        quads.append(char.quad)
-                    }
-                }
-                if lIdx < block.lines.count - 1 {
-                    fullText.append(" ")
-                    quads.append(nil)
-                }
+        let isLineNumber = SpatialTextSelector.lineNumberTest(for: textBlocks.flatMap(\.lines))
+        var lineNumbers: [TextLine] = []
+        var wroteBlock = false
+        var lastLine: TextLine?
+        for block in textBlocks {
+            let bodyLines = block.lines.filter { !isLineNumber($0) }
+            lineNumbers.append(contentsOf: block.lines.filter(isLineNumber))
+            guard let first = bodyLines.first else { continue }
+            // A word hyphenated across into the next block is still one word.
+            if let lastLine, LineJoin(lastLine.text, first.text) == .wordBreak {
+                join(lastLine, first)
+            } else if wroteBlock {
+                appendBreak("\n\n")
             }
-            if bIdx < textBlocks.count - 1 {
-                fullText.append("\n\n")
-                quads.append(nil)
-                quads.append(nil)
+            wroteBlock = true
+            lastLine = bodyLines.last
+            for (lIdx, line) in bodyLines.enumerated() {
+                if lIdx > 0 { join(bodyLines[lIdx - 1], line) }
+                append(line)
             }
+        }
+        for line in lineNumbers {
+            if wroteBlock { appendBreak("\n\n") }
+            wroteBlock = true
+            append(line)
         }
         return (fullText, quads)
     }
@@ -293,8 +365,7 @@ public struct StructuredPage: Sendable {
 
                             // Synthesize space if PDF glyph stream positioned the word with an offset rather than a space character
                             if let lastChar = characters.last {
-                                let gap = textChar.boundingRect.minX - lastChar.boundingRect.maxX
-                                if gap > CGFloat(lastChar.size) * 0.22 && lastChar.char != " " && textChar.char != " " {
+                                if lastChar.hasWordGap(before: textChar) {
                                     let spaceQuad = PDFQuad(
                                         ul: CGPoint(x: lastChar.boundingRect.maxX, y: lastChar.boundingRect.minY),
                                         ur: CGPoint(x: textChar.boundingRect.minX, y: lastChar.boundingRect.minY),

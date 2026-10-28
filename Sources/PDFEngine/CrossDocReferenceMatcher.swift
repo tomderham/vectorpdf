@@ -127,6 +127,15 @@ public enum CrossDocReferenceMatcher {
         return score
     }
 
+    /// Whether `line` is set like a heading: mostly bold, or larger than the body text. A bold
+    /// term mid-sentence doesn't make a line a heading.
+    static func isEmphasised(_ line: TextLine, bodySize: Float) -> Bool {
+        let visible = line.characters.filter { !$0.char.isWhitespace }
+        guard !visible.isEmpty else { return false }
+        let bold = visible.filter(\.isBold).count
+        return bold * 2 > visible.count || (visible.first.map { $0.size > bodySize + 0.5 } ?? false)
+    }
+
     // MARK: Document hint
 
     /// Adjustment for how well a tab's title matches the reference's named document.
@@ -135,6 +144,9 @@ public enum CrossDocReferenceMatcher {
         let titleWords = Set(words(of: (documentTitle as NSString).deletingPathExtension))
         let hintWords = words(of: hint).filter { $0.count >= 3 && !["the", "this", "that", "and"].contains($0) }
         guard !hintWords.isEmpty else { return 0 }
+        // "Master Services Agreement" is often filed as "MSA.pdf".
+        let initials = String(hint.split(separator: " ").compactMap { $0.first }.filter(\.isUppercase)).lowercased()
+        if initials.count >= 2, titleWords.contains(initials) { return 20 }
         let found = hintWords.filter { titleWords.contains($0) }.count
         if found == hintWords.count { return 20 }
         if found > 0 { return 8 }
@@ -366,7 +378,7 @@ public enum CrossDocReferenceFinder {
             if mid < hitRect.minX { prefix.append(ch.char) }
             else if mid > hitRect.maxX { suffix.append(ch.char) }
         }
-        let isEmphasised = line.characters.contains { $0.isBold } || (line.characters.first.map { $0.size > bodySize + 0.5 } ?? false)
+        let isEmphasised = CrossDocReferenceMatcher.isEmphasised(line, bodySize: bodySize)
         guard let score = CrossDocReferenceMatcher.headingHitScore(prefix: prefix, hit: hit.matchedText, suffix: suffix, isEmphasised: isEmphasised, for: reference) else {
             return nil
         }

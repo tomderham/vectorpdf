@@ -804,6 +804,10 @@ struct ReviewRegressionTests {
         StructuredPage(pageIndex: 0, bounds: CGRect(x: 0, y: 0, width: 612, height: 792), blocks: blocks)
     }
 
+    private func collapsed(_ text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
     @Test func definitionListKeepsItsTerms() {
         // Terms in a narrow left column, definitions to their right, and a wide offset line
         // elsewhere on the page that once made the page look multi-column.
@@ -823,6 +827,35 @@ struct ReviewRegressionTests {
             #expect(result.text.contains(term), "missing \(term) in \(result.text)")
         }
         #expect(result.text.hasSuffix("algorithm used."))
+    }
+
+    @Test func hangingClauseNumbersAreNotLineNumbers() {
+        // Clause numbers at x = 72, their text indented to x = 108: the numbers are left of every
+        // line with letters, as margin line numbers are, but they number clauses.
+        var blocks: [TextBlock] = []
+        for (i, y) in [100, 130, 175, 205].enumerated() {
+            blocks.append(block("4.\(i + 1)", x: 72, y: CGFloat(y)))
+            blocks.append(block("The Supplier shall deliver goods", x: 108, y: CGFloat(y)))
+        }
+        let result = SpatialTextSelector().selectText(on: page(blocks), from: CGPoint(x: 71, y: 105), to: CGPoint(x: 108 + 32 * 5, y: 211))
+        #expect(result.text.hasPrefix("4.1 The Supplier"), "got \(result.text)")
+        #expect(result.text.contains("4.4 The Supplier"))
+        #expect(collapsed(page(blocks).searchableIndex.text).contains("4.2 The Supplier"))
+
+        // Plain numbers hanging at uneven spacing are section numbers too.
+        let sections = [100, 160, 190, 280].enumerated().flatMap { i, y in
+            [block("\(i + 1)", x: 72, y: CGFloat(y)), block("Clause text that runs on here", x: 108, y: CGFloat(y))]
+        }
+        #expect(collapsed(page(sections).searchableIndex.text).contains("3 Clause text"))
+    }
+
+    @Test func evenlySpacedMarginNumbersAreLineNumbers() {
+        let blocks = (0..<6).flatMap { i in
+            [block("\(i + 1)", x: 50, y: 100 + CGFloat(i) * 24), block("Body text of a numbered line", x: 108, y: 100 + CGFloat(i) * 24)]
+        }
+        let index = collapsed(page(blocks).searchableIndex.text)
+        #expect(index.hasPrefix("Body text of a numbered line Body text"), "got \(index)")
+        #expect(index.hasSuffix("1 2 3 4 5 6"))
     }
 
     @Test func twoColumnSelectionStaysInItsColumn() {

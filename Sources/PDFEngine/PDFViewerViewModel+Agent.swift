@@ -262,12 +262,15 @@ extension PDFViewerViewModel {
     public func shouldFoldPreviousQuestion(_ question: String) -> Bool {
         let q = question.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let words = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
-        if words.count <= 4 { return true }
-        let followUpTriggers: Set<String> = [
-            "it", "this", "that", "these", "those", "they", "them", "he", "she",
-            "more", "why", "how", "details", "explain", "elaborate", "again", "also"
-        ]
-        return words.contains(where: { followUpTriggers.contains($0) })
+        // "Why?", "How so?": too short to be about anything by themselves.
+        if words.count <= 2 { return true }
+        // Pronouns standing for something said before. Not "that", which is mostly a conjunction
+        // ("indicates that the frame…"), nor question words, which every question has.
+        let pronouns: Set<String> = ["it", "its", "this", "these", "those", "they", "them", "their", "he", "she", "him", "her"]
+        if words.contains(where: pronouns.contains) { return true }
+        // "Tell me more", "Can you elaborate again?"
+        let continuations: Set<String> = ["more", "elaborate", "again", "else"]
+        return words.count <= 6 && words.contains(where: continuations.contains)
     }
 
     private func updateAgentTurn(id: UUID, _ mutate: (inout AgentTurn) -> Void) {

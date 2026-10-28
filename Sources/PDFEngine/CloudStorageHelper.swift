@@ -283,6 +283,26 @@ public enum CloudStorageHelper: Sendable {
     }
 
     /// Inspects a file path and returns a comprehensive `StorageInfo` struct.
+    /// The cloud service holding `path`, from its provider folder: File Provider services each
+    /// have one under ~/Library/CloudStorage ("GoogleDrive-user@example.com", "OneDrive-Personal",
+    /// "Box-Box"); older clients sync a top-level "Dropbox", "Google Drive" or "Box" folder.
+    static func cloudServiceName(for path: String) -> String {
+        let components = ((path as NSString).standardizingPath as NSString).pathComponents
+        let folders: [String]
+        if let index = components.firstIndex(of: "CloudStorage"), index + 1 < components.count {
+            folders = [components[index + 1]]
+        } else {
+            folders = components
+        }
+        for folder in folders {
+            if folder.hasPrefix("GoogleDrive") || folder == "Google Drive" { return "Google Drive" }
+            if folder.hasPrefix("OneDrive") { return "OneDrive" }
+            if folder.hasPrefix("Dropbox") { return "Dropbox" }
+            if folder == "Box" || folder == "Box Sync" || folder.hasPrefix("Box-") { return "Box" }
+        }
+        return "Cloud Storage"
+    }
+
     public static func storageInfo(for path: String) -> StorageInfo {
         let provider = detectProvider(for: path)
         let fileURL = URL(fileURLWithPath: (path as NSString).standardizingPath)
@@ -310,18 +330,7 @@ public enum CloudStorageHelper: Sendable {
 
         case .cloudStorage:
             let (isEvicted, isDownloading) = checkDownloadStatus(for: fileURL)
-            // Detect service name if obvious from directory structure
-            let normalized = (path as NSString).standardizingPath
-            var serviceName = "Cloud Storage"
-            if normalized.contains("GoogleDrive") || normalized.contains("Google Drive") {
-                serviceName = "Google Drive"
-            } else if normalized.contains("OneDrive") {
-                serviceName = "OneDrive"
-            } else if normalized.contains("Dropbox") {
-                serviceName = "Dropbox"
-            } else if normalized.contains("Box") {
-                serviceName = "Box"
-            }
+            let serviceName = cloudServiceName(for: path)
 
             let status: String
             if isDownloading {

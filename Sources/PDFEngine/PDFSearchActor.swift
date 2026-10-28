@@ -166,8 +166,13 @@ public actor PDFSearchActor {
                             pageText = ""
                         }
                         
-                        let nsString = pageText as NSString
-                        let hasStextMatch = regex.firstMatch(in: pageText, options: [], range: NSRange(location: 0, length: nsString.length)) != nil
+                        func matches(_ text: String) -> Bool {
+                            regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: (text as NSString).length)) != nil
+                        }
+                        // A phrase wrapping onto the next line can have a margin line number
+                        // between its halves in the plain text, or a hyphen splitting a word; the
+                        // index below moves the numbers aside and joins the word.
+                        let hasStextMatch = matches(pageText) || matches(Self.joiningWrappedLines(pageText))
 
                         if !hasStextMatch {
                             if let ocr = ocrPages[pageIdx] {
@@ -263,7 +268,16 @@ public actor PDFSearchActor {
         }
     }
     
+    /// `text` without the lines that hold only a number, such as margin line numbers, and with
+    /// words hyphenated across lines joined up, as `LineJoin` joins them in the index.
+    static func joiningWrappedLines(_ text: String) -> String {
+        text.replacingOccurrences(of: "(?m)^[ \\t]*\\d{1,4}[ \\t]*\\n", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "(\\p{L})[-\u{2010}][ \\t]*\\n[ \\t]*(\\p{Ll})", with: "$1$2", options: .regularExpression)
+            .replacingOccurrences(of: "\u{00AD}[ \\t]*\\n[ \\t]*", with: "", options: .regularExpression)
+    }
+
     /// Searches the entire document and returns aggregated results
+
     public func search(query: String, options: SearchOptions = SearchOptions()) async throws -> [SearchResult] {
         var results: [SearchResult] = []
         let stream = searchStream(query: query, options: options)
