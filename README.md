@@ -137,7 +137,7 @@ To assemble a signed `.app` bundle with application icon and metadata:
 ./Scripts/build_app_bundle.sh release
 ```
 
-The script detects the SDK: with the macOS 27 SDK it compiles in the Private Cloud Compute option for the Agent tab. Pass `default` as a second argument to build without it on any SDK. Answering with Private Cloud Compute also needs a build signed with Apple's managed entitlement (see section 5); without it the app answers on-device.
+With the macOS 27 SDK (Xcode 27) the build includes the Private Cloud Compute and online model options for the Agent tab, as do `swift build` and `swift run`. Answering with Private Cloud Compute also needs a build signed with Apple's managed entitlement (see section 5); without it the app answers on-device.
 
 The output bundle will be generated at `./VectorPDF.app`.
 

@@ -2,16 +2,15 @@
 # Builds VectorPDF.app: compiles the executable with swift build and packages it into an
 # application bundle with Info.plist, icon, and ad-hoc code signature.
 #
-# Usage: Scripts/build_app_bundle.sh [debug|release] [macos27|default|auto]
-#   Defaults to "release" and "auto". When the active macOS SDK is 27+ (Xcode 27),
-#   enables the Private Cloud Compute synthesis path (-DVECTORPDF_MACOS27_SDK).
+# Usage: Scripts/build_app_bundle.sh [debug|release]
+#   Defaults to "release". With the macOS 27 SDK (Xcode 27) the build includes Private Cloud
+#   Compute and online models for the Agent; Package.swift decides, as for `swift run`.
 #   Set BUNDLE_ID to build under another bundle identifier (Scripts/build_pcc_dev.sh does this).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
-SDK_MODE="${2:-auto}"
 APP_NAME="VectorPDF"
 EXECUTABLE_NAME="VectorPDF"
 APP_BUNDLE="$APP_NAME.app"
@@ -19,16 +18,9 @@ APP_VERSION="$(cat VERSION | tr -d '[:space:]')"
 BUNDLE_ID="${BUNDLE_ID:-com.thomasderham.vectorpdf}"
 
 SDK_VER="$(xcrun --show-sdk-version --sdk macosx 2>/dev/null || echo "0")"
-SDK_MAJOR="${SDK_VER%%.*}"
 
-BUILD_ARGS=(-c "$CONFIG")
-if [ "$SDK_MODE" = "macos27" ] || { [ "$SDK_MODE" = "auto" ] && [ "$SDK_MAJOR" -ge 27 ]; }; then
-    BUILD_ARGS+=(-Xswiftc -DVECTORPDF_MACOS27_SDK)
-    echo "Building $EXECUTABLE_NAME ($CONFIG, macOS $SDK_VER SDK with VECTORPDF_MACOS27_SDK)..."
-else
-    echo "Building $EXECUTABLE_NAME ($CONFIG, macOS $SDK_VER SDK)..."
-fi
-swift build "${BUILD_ARGS[@]}"
+echo "Building $EXECUTABLE_NAME ($CONFIG, macOS $SDK_VER SDK)..."
+swift build -c "$CONFIG"
 
 BUILT_BINARY=".build/$CONFIG/$EXECUTABLE_NAME"
 if [ ! -f "$BUILT_BINARY" ]; then

@@ -2,7 +2,7 @@
 # Builds, codesigns with Developer ID, packages into a DMG installer,
 # submits to Apple Notary Service, and staples the notarization ticket.
 #
-# Usage: Scripts/build_dmg.sh [sdk_mode: auto|macos27|default]
+# Usage: Scripts/build_dmg.sh
 #
 # No secrets live in this script. The signing private key is in the login Keychain, and the
 # notarization credentials are in a Keychain profile created once with:
@@ -23,7 +23,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SDK_MODE="${1:-auto}"
 APP_NAME="VectorPDF"
 VERSION="$(cat VERSION | tr -d '[:space:]')"
 DMG_NAME="${APP_NAME}_Installer_${VERSION}.dmg"
@@ -40,7 +39,7 @@ WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
 echo "=== 1. Building $APP_NAME release app bundle ==="
-./Scripts/build_app_bundle.sh release "$SDK_MODE"
+./Scripts/build_app_bundle.sh release
 
 if [ -n "$PROVISIONING_PROFILE" ]; then
     echo "=== 1a. Embedding provisioning profile ==="

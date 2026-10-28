@@ -18,6 +18,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+SDK_VER="$(xcrun --show-sdk-version --sdk macosx 2>/dev/null || echo "0")"
+if [ "${SDK_VER%%.*}" -lt 27 ]; then
+    echo "error: Private Cloud Compute needs the macOS 27 SDK (Xcode 27); this is $SDK_VER" >&2
+    exit 1
+fi
+
 if [ $# -lt 1 ]; then
     echo "usage: $0 <profile.provisionprofile> [signing identity]" >&2
     exit 1
@@ -76,7 +82,7 @@ if [ -z "$SIGNING_IDENTITY" ]; then
     fi
 fi
 
-BUNDLE_ID="$BUNDLE_ID" ./Scripts/build_app_bundle.sh release macos27
+BUNDLE_ID="$BUNDLE_ID" ./Scripts/build_app_bundle.sh release
 apply_provisioning_profile "${APP_NAME}.app" "$PROFILE" "$WORK_DIR"
 
 echo "Signing $APP_NAME as $BUNDLE_ID..."
