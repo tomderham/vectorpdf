@@ -105,6 +105,22 @@ private struct AdaptiveToolbarPair<Left: View, Right: View>: View {
     }
 }
 
+/// A toolbar item that is its own bordered group. On macOS 26 and later the toolbar would merge
+/// neighbouring items into one shared glass capsule, and puts no space between items that draw
+/// their own; this keeps just the item's own pill, with a small gap on each side.
+private struct PillToolbarItem<Content: View>: ToolbarContent {
+    @ViewBuilder let content: Content
+
+    var body: some ToolbarContent {
+        if #available(macOS 26.0, *) {
+            ToolbarItem(placement: .automatic) { content.padding(.horizontal, 4) }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .automatic) { content }
+        }
+    }
+}
+
 /// Standalone, reusable macOS SwiftUI PDF Document Viewer
 public struct PDFViewerMainView: View {
     @StateObject public var viewModel: PDFViewerViewModel
@@ -1366,13 +1382,13 @@ public struct PDFViewerMainView: View {
                 ToolbarTitleView(viewModel: viewModel)
             }
 
-            ToolbarItem(placement: .automatic) {
+            PillToolbarItem {
                 EditableZoomField(viewModel: viewModel)
                     .disabled(viewModel.document == nil)
             }
             
             // Rotate group
-            ToolbarItem(placement: .automatic) {
+            PillToolbarItem {
                 AdaptiveToolbarPair {
                     PillBarButton(action: {
                         viewModel.rotateCounterclockwise()
@@ -1389,7 +1405,7 @@ public struct PDFViewerMainView: View {
                 .disabled(viewModel.document == nil)
             }
 
-            ToolbarItem(placement: .automatic) {
+            PillToolbarItem {
                 ToolbarPillContainer {
                     PillBarButton(action: {
                         withAnimation(.easeInOut(duration: 0.15)) {
@@ -1403,7 +1419,7 @@ public struct PDFViewerMainView: View {
             }
 
             // Markup / Measurement toggle group
-            ToolbarItem(placement: .automatic) {
+            PillToolbarItem {
                 AdaptiveToolbarPair {
                     PillBarButton(action: {
                         withAnimation(.easeInOut(duration: 0.15)) {
