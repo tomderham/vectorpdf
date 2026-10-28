@@ -1067,8 +1067,9 @@ public struct SearchOptionsMenu: View {
             Toggle("Match Case", isOn: binding(for: \.matchCase))
             Toggle("Whole Word", isOn: binding(for: \.wholeWord))
             Divider()
-            // Smart search treats spaces, hyphens, dashes, and line breaks interchangeably.
-            Toggle("Smart Search (spaces/hyphens/dashes interchangeable)", isOn: binding(for: \.smartSearch))
+            // Spaces, hyphens, dashes and line breaks match each other, as do straight and curly
+            // quotes, and ignored patterns (Settings) are looked past.
+            Toggle("Smart Search", isOn: binding(for: \.smartSearch))
         } label: {
             Image(systemName: "slider.horizontal.3")
                 .symbolVariant(isNonDefault ? .fill : .none)

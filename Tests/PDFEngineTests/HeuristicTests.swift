@@ -324,3 +324,73 @@ private func paragraphs(_ elements: [PDFLayoutElement]) -> [(text: String, bbox:
     }
 }
 
+// MARK: - Ignored search patterns
+
+@Suite struct IgnoredSearchPatternTests {
+    private let tags = IgnoredSearchPattern.template("IEEE 802.11")!.pattern
+
+    /// Each template turns its example into the text around it, and leaves alone what it shouldn't.
+    @Test(arguments: [
+        ("Numeric citations", "it was shown [12] that the method [3, 5] works [3–7].", "it was shown that the method works."),
+        ("Numeric citations", "see array[i] and [Note 2]", nil),
+        ("Trademark symbols", "the iPhone® app and Widget™ kit", "the iPhone app and Widget kit"),
+        ("Star paging", "the court *456 held that", "the court held that"),
+        ("Star paging", "a * b and 3*4", nil),
+        ("IEEE 802.11", "the Header(#6820) field (#12236, Ed)ends", "the Header field ends"),
+    ] as [(String, String, String?)])
+    func templatesStripTheirExamples(template: String, text: String, expected: String?) throws {
+        let pattern = try #require(IgnoredSearchPattern.template(template))
+        #expect(pattern.validationError == nil)
+        let regex = try #require(IgnoredSearchPattern.combinedRegex([pattern.pattern]))
+        let stripped = TextWithoutIgnored(text, ignoring: regex)
+        #expect(stripped?.text == expected)
+    }
+
+    @Test func strippedTextMapsBackToTheOriginal() throws {
+        let regex = try #require(IgnoredSearchPattern.combinedRegex([tags]))
+        let stripped = try #require(TextWithoutIgnored("Header(#6820) field (#12236, Ed)ends", ignoring: regex))
+        #expect(stripped.text == "Header field ends")
+        let field = (stripped.text as NSString).range(of: "field")
+        #expect(stripped.originalRange(of: field) == NSRange(location: 14, length: 5))
+        let phrase = (stripped.text as NSString).range(of: "Header field")
+        #expect(stripped.originalRange(of: phrase) == NSRange(location: 0, length: 19))
+        #expect(stripped.originalOffsets(of: phrase).contains(6) == false)
+        #expect(TextWithoutIgnored("no tags here", ignoring: regex) == nil)
+    }
+
+    @Test func invalidPatternsAreReportedAndSkipped() {
+        #expect(IgnoredSearchPattern(name: "", pattern: "(unclosed").validationError != nil)
+        #expect(IgnoredSearchPattern(name: "", pattern: "x*").validationError != nil)
+        #expect(IgnoredSearchPattern(name: "", pattern: tags).validationError == nil)
+        #expect(IgnoredSearchPattern.combinedRegex(["(unclosed", "x*"]) == nil)
+        #expect(IgnoredSearchPattern.combinedRegex(["(unclosed", tags]) != nil)
+    }
+
+    @Test func patternsRoundTripThroughJSON() throws {
+        let patterns = [IgnoredSearchPattern(name: "Tags", pattern: tags, isEnabled: false)]
+        let decoded = try JSONDecoder().decode([IgnoredSearchPattern].self, from: JSONEncoder().encode(patterns))
+        #expect(decoded == patterns)
+    }
+
+    /// On the 802.11 layout page, "Hhxxiz(#6820) Ptku" is found as "Hhxxiz Ptku" with the tag
+    /// pattern on, highlighted on the words but not the tag; the tag itself is still found.
+    @Test func phraseInterruptedByATagIsFound() async throws {
+        let actor = PDFSearchActor()
+        try await actor.openDocument(filePath: Fixture.url("ieee-802.11-draft-layout.pdf").path)
+        let on = SearchOptions(ignoredPatterns: [tags])
+
+        #expect(try await actor.search(query: "Hhxxiz Ptku").isEmpty)
+        let hits = try await actor.search(query: "Hhxxiz Ptku", options: on)
+        let hit = try #require(hits.first)
+        #expect(hits.count == 1)
+        #expect(hit.matchedText == "Hhxxiz Ptku")
+        #expect(hit.highlightQuads.count == 2)
+
+        let tag = try #require(try await actor.search(query: "#6820", options: on).first)
+        for quad in hit.highlightQuads {
+            #expect(!quad.boundingRect.insetBy(dx: 1, dy: 1).intersects(tag.boundingRect.insetBy(dx: 1, dy: 1)))
+        }
+        // Literal search is left alone.
+        #expect(try await actor.search(query: "Hhxxiz Ptku", options: SearchOptions(smartSearch: false, ignoredPatterns: [tags])).isEmpty)
+    }
+}

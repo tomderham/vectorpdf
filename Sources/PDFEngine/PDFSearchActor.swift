@@ -120,6 +120,7 @@ public actor PDFSearchActor {
                     continuation.finish()
                     return
                 }
+                let ignored = options.smartSearch && !options.isRegex ? IgnoredSearchPattern.combinedRegex(options.ignoredPatterns) : nil
                 
                 // Build 3-slice prioritized search sequence:
                 // 1. Local ±50 page window around nearPage (immediate ~30ms hits)
@@ -172,7 +173,13 @@ public actor PDFSearchActor {
                         // A phrase wrapping onto the next line can have a margin line number
                         // between its halves in the plain text, or a hyphen splitting a word; the
                         // index below moves the numbers aside and joins the word.
-                        let hasStextMatch = matches(pageText) || matches(Self.joiningWrappedLines(pageText))
+                        // Ignored patterns can split a phrase too ("Header(#6820) field").
+                        func withoutIgnored(_ text: String) -> String {
+                            ignored.map { $0.stringByReplacingMatches(in: text, range: NSRange(location: 0, length: (text as NSString).length), withTemplate: "") } ?? text
+                        }
+                        let joined = Self.joiningWrappedLines(pageText)
+                        let hasStextMatch = matches(pageText) || matches(joined)
+                            || (ignored != nil && matches(withoutIgnored(joined)))
 
                         if !hasStextMatch {
                             if let ocr = ocrPages[pageIdx] {
@@ -219,28 +226,41 @@ public actor PDFSearchActor {
                         let structuredPage = StructuredPage.load(fromStext: stext, pageIndex: pageIdx, pageBounds: pageBounds)
                         let (indexedText, charQuads) = structuredPage.searchableIndex
                         let nsIndexed = indexedText as NSString
-                        let exactMatches = regex.matches(in: indexedText, options: [], range: NSRange(location: 0, length: nsIndexed.length))
-                        
-                        for match in exactMatches {
+                        // Each match: its range in the index, its text, and the index units it
+                        // covers — all of them, or all but an ignored pattern's in the middle.
+                        var found = regex.matches(in: indexedText, options: [], range: NSRange(location: 0, length: nsIndexed.length)).map {
+                            (range: $0.range, text: nsIndexed.substring(with: $0.range), units: Array($0.range.location..<NSMaxRange($0.range)))
+                        }
+                        if let ignored, let stripped = TextWithoutIgnored(indexedText, ignoring: ignored) {
+                            let strippedNS = stripped.text as NSString
+                            let starts = Set(found.map(\.range.location))
+                            for match in regex.matches(in: stripped.text, range: NSRange(location: 0, length: strippedNS.length)) where match.range.length > 0 {
+                                let range = stripped.originalRange(of: match.range)
+                                guard !starts.contains(range.location) else { continue }
+                                found.append((range, strippedNS.substring(with: match.range), stripped.originalOffsets(of: match.range)))
+                            }
+                            found.sort { $0.range.location < $1.range.location }
+                        }
+
+                        for match in found {
                             if Task.isCancelled { break }
-                            let matchedStr = nsIndexed.substring(with: match.range)
+                            let matchedStr = match.text
                             
                             let start = max(0, match.range.location - 35)
                             let end = min(nsIndexed.length, match.range.location + match.range.length + 35)
                             let snippet = "..." + nsIndexed.substring(with: NSRange(location: start, length: end - start)).replacingOccurrences(of: "\n", with: " ") + "..."
                             
-                            var rawQuads: [PDFQuad] = []
-                            let matchEnd = min(charQuads.count, match.range.location + match.range.length)
-                            if match.range.location < matchEnd {
-                                for i in match.range.location..<matchEnd {
-                                    if let q = charQuads[i] {
-                                        rawQuads.append(q)
-                                    }
-                                }
+                            // One highlight per unbroken run of characters, so one doesn't
+                            // stretch over an ignored tag in the middle of the match.
+                            var runs: [[Int]] = []
+                            for unit in match.units {
+                                if let last = runs.last?.last, unit == last + 1 { runs[runs.count - 1].append(unit) } else { runs.append([unit]) }
                             }
-                            
-                            let merged = rawQuads.mergedLineQuads()
-                            let finalQuads = merged.isEmpty ? rawQuads : merged
+                            let finalQuads = runs.flatMap { run -> [PDFQuad] in
+                                let rawQuads = run.compactMap { $0 < charQuads.count ? charQuads[$0] : nil }
+                                let merged = rawQuads.mergedLineQuads()
+                                return merged.isEmpty ? rawQuads : merged
+                            }
                             
                             continuation.yield(SearchResult(
                                 pageIndex: pageIdx,

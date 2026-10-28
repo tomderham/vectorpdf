@@ -114,7 +114,14 @@ extension PDFViewerViewModel {
     /// Empty until the document has finished opening.
     public func searchWholeDocument(_ query: String, options: SearchOptions = SearchOptions()) async -> [SearchResult] {
         guard isRenderActorReady, document != nil else { return [] }
-        return (try? await searchActor.search(query: query, options: options)) ?? []
+        return (try? await searchActor.search(query: query, options: withIgnoredPatterns(options))) ?? []
+    }
+
+    /// `options` with the ignored patterns from Settings.
+    func withIgnoredPatterns(_ options: SearchOptions) -> SearchOptions {
+        var options = options
+        options.ignoredPatterns = PDFViewerAppCoordinator.shared.enabledIgnoredSearchPatterns
+        return options
     }
 
     public func performSearch(autoNavigate: Bool = false) {
@@ -145,7 +152,7 @@ extension PDFViewerViewModel {
         
         let currentNear = self.currentPageIndex
         let localStart = max(0, currentNear - 50)
-        let options = self.searchOptions
+        let options = withIgnoredPatterns(self.searchOptions)
 
         if !detectedScannedPages.isEmpty && !isRunningOCR {
             Task { [weak self] in

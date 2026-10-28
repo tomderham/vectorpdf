@@ -219,6 +219,26 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     }
     private static let preferredBrowserKey = "com.thomasderham.vectorpdf.preferredBrowser"
 
+    /// Text Smart Search looks past in every document (see `IgnoredSearchPattern`).
+    @Published public var ignoredSearchPatterns: [IgnoredSearchPattern] = [] {
+        didSet {
+            guard ignoredSearchPatterns != oldValue else { return }
+            if let data = try? JSONEncoder().encode(ignoredSearchPatterns) {
+                UserDefaults.standard.set(data, forKey: Self.ignoredSearchPatternsKey)
+            }
+            // Searches already showing results pick up the change.
+            for viewModel in trackedViewModels.compactMap(\.viewModel) where !viewModel.searchQuery.isEmpty {
+                viewModel.performSearch()
+            }
+        }
+    }
+    private static let ignoredSearchPatternsKey = "com.thomasderham.vectorpdf.ignoredSearchPatterns"
+
+    /// The enabled, valid ignored patterns' expressions, for `SearchOptions.ignoredPatterns`.
+    public var enabledIgnoredSearchPatterns: [String] {
+        ignoredSearchPatterns.filter { $0.isEnabled && $0.validationError == nil }.map(\.pattern)
+    }
+
     /// Scans the system for installed web browsers capable of opening http/https links.
     public var installedBrowsers: [InstalledBrowser] {
         var results: [InstalledBrowser] = [
@@ -251,6 +271,10 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     }
 
     private init() {
+        if let data = UserDefaults.standard.data(forKey: Self.ignoredSearchPatternsKey),
+           let patterns = try? JSONDecoder().decode([IgnoredSearchPattern].self, from: data) {
+            ignoredSearchPatterns = patterns
+        }
         if let raw = UserDefaults.standard.string(forKey: Self.pdfColorAppearanceKey),
            let restored = PDFColorAppearance(rawValue: raw) {
             pdfColorAppearance = restored
@@ -531,6 +555,7 @@ public struct AppSettingsView: View {
     @ObservedObject private var signatureStore = SignatureStore.shared
     @ObservedObject private var readingState = ReadingStateManager.shared
     @State private var isShowingSignatureEditor = false
+    @State private var isShowingIgnoredPatterns = false
 
     public init() {}
 
@@ -580,6 +605,26 @@ public struct AppSettingsView: View {
                 ForEach(coordinator.installedBrowsers) { browser in
                     Text(browser.name).tag(browser.id)
                 }
+            }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ignored Search Patterns")
+                    Text(coordinator.ignoredSearchPatterns.isEmpty
+                         ? "None"
+                         : "\(coordinator.enabledIgnoredSearchPatterns.count) of \(coordinator.ignoredSearchPatterns.count) on")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Edit…") { isShowingIgnoredPatterns = true }
+                    .controlSize(.small)
+            }
+            .sheet(isPresented: $isShowingIgnoredPatterns) {
+                IgnoredSearchPatternsView()
             }
 
             Divider()

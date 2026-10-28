@@ -27,11 +27,15 @@ public struct SearchOptions: Sendable, Equatable {
     public var smartSearch: Bool
     /// When true, the query string is evaluated directly as a raw regular expression.
     public var isRegex: Bool
+    /// Regular expressions for text Smart Search looks past (see `IgnoredSearchPattern`): a phrase
+    /// is also found where one of these interrupts it. Unused by literal and regex searches.
+    public var ignoredPatterns: [String]
 
-    public init(matchCase: Bool = false, wholeWord: Bool = false, smartSearch: Bool = true, isRegex: Bool = false) {
+    public init(matchCase: Bool = false, wholeWord: Bool = false, smartSearch: Bool = true, isRegex: Bool = false, ignoredPatterns: [String] = []) {
         self.matchCase = matchCase
         self.wholeWord = wholeWord
         self.smartSearch = smartSearch
         self.isRegex = isRegex
+        self.ignoredPatterns = ignoredPatterns
     }
 }
