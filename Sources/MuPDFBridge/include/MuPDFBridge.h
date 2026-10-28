@@ -185,7 +185,8 @@ int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_pa
 int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_slot, float width, float height, const char **out_error);
 
 // Store & Memory Management
-void mupdf_context_empty_store(fz_context *ctx);
+// No fz_empty_store wrapper: the store is shared by every cloned context, and emptying it frees
+// items other threads are still using. Shrinking evicts only unused items, so is safe.
 int mupdf_context_shrink_store(fz_context *ctx, unsigned int percent);
 void mupdf_free(fz_context *ctx, void *ptr);
 

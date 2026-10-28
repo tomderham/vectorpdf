@@ -1,0 +1,68 @@
+From 299d8464f1a86df6d056e11d8850135fcac7eec7 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Mon, 19 Oct 2026 18:02:13 +0100
+Subject: [PATCH] Bug 709849: Fix fz_store use after free.
+
+When we first insert an object into the hash table, we used to
+not put it into the linked list, until after we had made space
+for it in the store.
+
+As we make space for it in the store, we can momentarily drop
+the lock. This might allow another thread time to find the object
+from the hash table, use it, free it, and drop it before we get
+a chance to link it into the store ourselves.
+
+The fix, implemented here, is to move putting it into the store
+earlier so that it always happens before the lock might get
+dropped, and for us to never touch it again afterwards.
+
+Many thanks to "Carl" for the bug report, analysis, and a
+different suggested fix.
+---
+ source/fitz/store.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/source/fitz/store.c b/source/fitz/store.c
+index 171548afe6..7509123b55 100644
+--- a/source/fitz/store.c
++++ b/source/fitz/store.c
+@@ -528,11 +528,18 @@ fz_store_item(fz_context *ctx, void *key, void *val_, size_t itemsize, const fz_
+ 		val->refs++;
+ 	}
+ 
++	/* It's in the store now, as the moment we unlock below it could be found from the
++	 * hash table. */
++	store->size += itemsize;
++
++	/* Regardless of whether it's indexed, it goes into the linked list */
++	touch(store, item);
++
+ 	/* If we haven't got an infinite store, check for space within it */
+ 	if (store->max != FZ_STORE_UNLIMITED)
+ 	{
+ 		/* FIXME: Overflow? */
+-		size = store->size + itemsize;
++		size = store->size;
+ 		if (size > store->max)
+ 		{
+ 			FZ_LOG_STORE(ctx, "Store size exceeded: item=%zu, size=%zu, max=%zu\n",
+@@ -547,7 +554,7 @@ fz_store_item(fz_context *ctx, void *key, void *val_, size_t itemsize, const fz_
+ 					do_reap(ctx); /* Drops alloc lock */
+ 					fz_lock(ctx, FZ_LOCK_ALLOC);
+ 				}
+-				size = store->size + itemsize;
++				size = store->size;
+ 				if (size <= store->max)
+ 					break;
+ 
+@@ -572,10 +579,6 @@ fz_store_item(fz_context *ctx, void *key, void *val_, size_t itemsize, const fz_
+ 			FZ_LOG_DUMP_STORE(ctx, "After eviction:\n");
+ 		}
+ 	}
+-	store->size += itemsize;
+-
+-	/* Regardless of whether it's indexed, it goes into the linked list */
+-	touch(store, item);
+ 	fz_unlock(ctx, FZ_LOCK_ALLOC);
+ 
+ 	return NULL;

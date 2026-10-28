@@ -17,6 +17,8 @@
 1. **Framework & Engine:**
    - VectorPDF is a native macOS PDF application built in Swift and SwiftUI, backed by a C MuPDF bridge (`MuPDFBridge`) and Swift engine layer (`PDFEngine`).
    - All AppKit / UI interactions must be `@MainActor`-safe.
+   - The vendored MuPDF is 1.28.5 **plus cherry-picked upstream fixes** in `Vendor/patches/` (store thread-safety, Bug 709849). When a MuPDF release includes them, rebase onto that tag and delete the patches — see "Backported patches" in `Vendor/README.md`.
+   - Never empty MuPDF's store (`fz_empty_store`): it is shared by every cloned context, and emptying it frees items other threads are using. Its size limit bounds memory on its own.
 
 2. **Windowing & Native Appearance:**
    - Windows use a unified toolbar with tab bar support via `PDFViewerWindow` and `DocumentWindowing`.
@@ -30,4 +32,5 @@
    - Run tests using `swift test`. Tests that put real windows on screen are marked `@Test(.showsWindows)` and skipped by default; run them with `VECTORPDF_UI_TESTS=1 swift test` before a release or after changing windowing, tabs, or click handling.
    - Tests that send key events a view deliberately ignores should end its responder chain with `KeySinkResponder` (in `TestTraits.swift`), or AppKit beeps.
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
+   - After changing MuPDF, the bridge, or how documents are used across threads, run the concurrency stress test: `VECTORPDF_STRESS_TESTS=1 swift test --filter ConcurrencyStress`.
    - Always run tests and verify zero regressions before committing.

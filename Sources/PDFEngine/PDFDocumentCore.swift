@@ -183,7 +183,6 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 currentY += pageHeightWithSpacing
             }
         }
-        mupdf_context_empty_store(ctx)
         self.pageBounds = bounds
         self.pageYOffsets = yOffsets
         self.totalHeight = currentY

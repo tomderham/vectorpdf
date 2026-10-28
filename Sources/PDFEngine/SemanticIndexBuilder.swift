@@ -118,14 +118,8 @@ public actor SemanticIndexBuilder {
 
                         continuation.yield((pageIndex: pageIdx, text: structuredPage.proseText))
                     }
-
-                    // Periodically empty store to keep memory usage bounded.
-                    if pageIdx % 15 == 0 {
-                        mupdf_context_empty_store(ctx)
-                    }
                 }
-
-                mupdf_context_empty_store(ctx)
+                // The shared MuPDF store bounds itself; see PDFSearchActor.
                 continuation.finish()
             }
 

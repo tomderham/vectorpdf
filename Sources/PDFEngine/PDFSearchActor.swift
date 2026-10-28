@@ -250,15 +250,10 @@ public actor PDFSearchActor {
                             ))
                         }
                     }
-                    
-                    // Periodically empty store to keep MuPDF memory strictly bounded during long searches
-                    if pageIdx % 15 == 0 {
-                        mupdf_context_empty_store(ctx)
-                    }
                 }
-                
-                // Final clean-up of search context store
-                mupdf_context_empty_store(ctx)
+                // MuPDF's store is shared by every context and bounded by its own limit, which
+                // evicts only what nothing is using; emptying it would free items other
+                // threads are using (see Vendor/README.md, Backported patches).
                 continuation.finish()
             }
             

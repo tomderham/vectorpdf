@@ -1,0 +1,69 @@
+From 5ba5c976427aa2c084d21e43e71f5f8d4eb87105 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Mon, 19 Oct 2026 17:32:52 +0100
+Subject: [PATCH] Bug 709849: Fix race condition on free/read.
+
+The current code locates an item in the store while locked,
+and bumps the refcount of that items value. Then it unlocks
+and returns the items value.
+
+Unfortunately, there is a race condition between the unlock
+and the return; while the value is protected, the item used
+to get the value for the return is not.
+
+Many thanks to "Carl" for the bug report, analysis, and
+suggested fix.
+---
+ source/fitz/store.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/source/fitz/store.c b/source/fitz/store.c
+index dd0640b013..171548afe6 100644
+--- a/source/fitz/store.c
++++ b/source/fitz/store.c
+@@ -502,6 +502,7 @@ fz_store_item(fz_context *ctx, void *key, void *val_, size_t itemsize, const fz_
+ 		{
+ 			/* There was one there already! Take a new reference
+ 			 * to the existing one, and drop our current one. */
++			fz_storable *existing_val;
+ 			fz_warn(ctx, "found duplicate %s in the store", type->name);
+ 			touch(store, existing);
+ 			if (existing->val->refs > 0)
+@@ -509,10 +510,14 @@ fz_store_item(fz_context *ctx, void *key, void *val_, size_t itemsize, const fz_
+ 				(void)Memento_takeRef(existing->val);
+ 				existing->val->refs++;
+ 			}
++			/* Read existing_val while still locked. val is now protected by
++			 * our reference. existing is not, so item could be freed before
++			 * we return. */
++			existing_val = existing->val;
+ 			fz_unlock(ctx, FZ_LOCK_ALLOC);
+ 			fz_free(ctx, item);
+ 			type->drop_key(ctx, key);
+-			return existing->val;
++			return (void *)existing_val;
+ 		}
+ 	}
+ 
+@@ -617,6 +622,7 @@ fz_find_item(fz_context *ctx, fz_store_drop_fn *drop, void *key, const fz_store_
+ 		 * picked up from the hash before it has made it into the
+ 		 * linked list does not get whipped out again due to the
+ 		 * store being full. */
++		fz_storable *item_val;
+ 		touch(store, item);
+ 		/* And bump the refcount before returning */
+ 		if (item->val->refs > 0)
+@@ -624,8 +630,12 @@ fz_find_item(fz_context *ctx, fz_store_drop_fn *drop, void *key, const fz_store_
+ 			(void)Memento_takeRef(item->val);
+ 			item->val->refs++;
+ 		}
++		/* Read item_val while still locked. val is now protected by
++		 * our reference. item is not, so item could be freed before
++		 * we return. */
++		item_val = item->val;
+ 		fz_unlock(ctx, FZ_LOCK_ALLOC);
+-		return (void *)item->val;
++		return (void *)item_val;
+ 	}
+ 	fz_unlock(ctx, FZ_LOCK_ALLOC);
+ 

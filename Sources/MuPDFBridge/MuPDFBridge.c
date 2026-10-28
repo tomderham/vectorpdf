@@ -2804,10 +2804,6 @@ int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_sl
 }
 
 // Store & Memory Management
-void mupdf_context_empty_store(fz_context *ctx) {
-    if (ctx) fz_empty_store(ctx);
-}
-
 int mupdf_context_shrink_store(fz_context *ctx, unsigned int percent) {
     if (!ctx) return 0;
     return fz_shrink_store(ctx, percent);

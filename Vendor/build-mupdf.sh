@@ -9,6 +9,10 @@
 #
 # The optional [version] argument overrides MUPDF_VERSION below for one-off
 # builds without editing this file.
+#
+# After unpacking, every Vendor/patches/*.patch is applied in order: upstream
+# commits cherry-picked onto this release (see "Backported patches" in
+# Vendor/README.md). When bumping to a release that includes them, delete them.
 set -euo pipefail
 
 MUPDF_VERSION="${1:-1.28.5}"
@@ -49,11 +53,22 @@ if [ "$ACTUAL_SHA256" != "$MUPDF_SHA256" ]; then
   exit 1
 fi
 
-if [ ! -d "$SRC_DIR" ]; then
-  echo "==> Extracting $TARBALL"
-  mkdir -p "$SRC_DIR"
-  tar xzf "$TARBALL" -C "$SRC_DIR" --strip-components=1
-fi
+# Always unpack afresh, so the patches below apply to pristine upstream source.
+echo "==> Extracting $TARBALL"
+rm -rf "$SRC_DIR"
+mkdir -p "$SRC_DIR"
+tar xzf "$TARBALL" -C "$SRC_DIR" --strip-components=1
+
+for PATCH in "$SCRIPT_DIR"/patches/*.patch; do
+  [ -e "$PATCH" ] || continue
+  echo "==> Applying backport $(basename "$PATCH")"
+  if ! patch -p1 --forward --quiet -d "$SRC_DIR" < "$PATCH"; then
+    echo "error: $(basename "$PATCH") does not apply to MuPDF $MUPDF_VERSION."
+    echo "If this release already includes it, delete it from Vendor/patches/ and"
+    echo "its entry in Vendor/README.md; otherwise rebase it onto this release."
+    exit 1
+  fi
+done
 
 cd "$SRC_DIR"
 
