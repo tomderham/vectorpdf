@@ -25,7 +25,8 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="VectorPDF"
 VERSION="$(cat VERSION | tr -d '[:space:]')"
-DMG_NAME="${APP_NAME}_Installer_${VERSION}.dmg"
+# A fixed name, because the website links to releases/latest/download/VectorPDF.dmg.
+DMG_NAME="${APP_NAME}.dmg"
 STAGING_DIR="dmg_staging"
 if [ -f Scripts/release.env ]; then
     # shellcheck disable=SC1091
