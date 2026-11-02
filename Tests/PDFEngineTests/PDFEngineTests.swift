@@ -1789,7 +1789,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(manager.group(withId: group.id) == nil)
 }
 @Test @MainActor func testIsStandaloneEmptyStartWindowDetection() async throws {
-    let window = NSWindow(
+    let window = PDFViewerWindow(
         contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,
@@ -1840,7 +1840,7 @@ func createFormSamplePDF(at fileURL: URL) {
     }
 
     let initialFrame = NSRect(x: 150, y: 150, width: 900, height: 620)
-    let startWindow = NSWindow(
+    let startWindow = PDFViewerWindow(
         contentRect: initialFrame,
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,
@@ -1881,7 +1881,7 @@ func createFormSamplePDF(at fileURL: URL) {
         try? FileManager.default.removeItem(at: pdfURL2)
     }
 
-    let docWindow = NSWindow(
+    let docWindow = PDFViewerWindow(
         contentRect: NSRect(x: 200, y: 200, width: 800, height: 600),
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,
@@ -1910,7 +1910,7 @@ func createFormSamplePDF(at fileURL: URL) {
 }
 
 @Test @MainActor func testCloseStandaloneEmptyStartWindows() async throws {
-    let emptyWin1 = NSWindow(
+    let emptyWin1 = PDFViewerWindow(
         contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,
@@ -1918,7 +1918,7 @@ func createFormSamplePDF(at fileURL: URL) {
     )
     emptyWin1.isReleasedWhenClosed = false
 
-    let emptyWin2 = NSWindow(
+    let emptyWin2 = PDFViewerWindow(
         contentRect: NSRect(x: 120, y: 120, width: 800, height: 600),
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,
@@ -1941,7 +1941,7 @@ func createFormSamplePDF(at fileURL: URL) {
     createSamplePDF(at: pdfURL)
     defer { try? FileManager.default.removeItem(at: pdfURL) }
 
-    let emptyWindow = NSWindow(
+    let emptyWindow = PDFViewerWindow(
         contentRect: NSRect(x: 100, y: 100, width: 800, height: 600),
         styleMask: [.titled, .closable, .resizable],
         backing: .buffered,

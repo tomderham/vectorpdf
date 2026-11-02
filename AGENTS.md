@@ -29,7 +29,7 @@
    - Keep menus clean and uncluttered. Advanced engineering tools (e.g. scale calibration, takeoff summary tables) belong in their respective toolbars (such as the Measurement toolbar) rather than cluttering global menus.
 
 4. **Testing:**
-   - Run tests using `swift test`. Tests that put real windows on screen are marked `@Test(.showsWindows)` and skipped by default; run them with `VECTORPDF_UI_TESTS=1 swift test` before a release or after changing windowing, tabs, or click handling.
+   - Run tests using `swift test`. Tests that put real windows on screen are marked `@Test(.showsWindows)` and skipped by default; run them with `VECTORPDF_UI_TESTS=1 swift test --no-parallel` before a release or after changing windowing, tabs, or click handling. They need `--no-parallel` because they share one app: a window that opens a document closes other tests' empty windows.
    - Tests that send key events a view deliberately ignores should end its responder chain with `KeySinkResponder` (in `TestTraits.swift`), or AppKit beeps.
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
    - After changing MuPDF, the bridge, or how documents are used across threads, run the concurrency stress test: `VECTORPDF_STRESS_TESTS=1 swift test --filter ConcurrencyStress`.

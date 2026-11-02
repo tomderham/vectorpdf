@@ -409,9 +409,7 @@ public struct PDFViewerMainView: View {
                                             subtitle: parentDir.isEmpty ? nil : parentDir,
                                             systemImage: "clock",
                                             filePath: url.path,
-                                            onOpen: {
-                                                Task { await viewModel.loadDocument(from: url.path) }
-                                            },
+                                            onOpen: { viewModel.openDocumentPreferringNewWindow(atPath: url.path) },
                                             onOpenInNewTab: {
                                                 if let onNewTab = viewModel.onOpenNewTab {
                                                     onNewTab(url)
@@ -505,7 +503,7 @@ public struct PDFViewerMainView: View {
                     snapshotWindowBanner
                     documentCanvas
                 }
-                .frame(minWidth: 600, idealWidth: 960, minHeight: 450, idealHeight: 720)
+                .frame(idealWidth: 960, idealHeight: 720)
                 .toolbar {
                     documentToolbarContent
                 }
@@ -527,10 +525,10 @@ public struct PDFViewerMainView: View {
         .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .frame(
-            minWidth: isSnapshotWindow ? 540 : 640,
+            minWidth: isSnapshotWindow ? SnapshotWindowManager.minimumContentSize.width : 640,
             idealWidth: isSnapshotWindow ? 960 : 1440,
             maxWidth: isSnapshotWindow ? nil : .infinity,
-            minHeight: isSnapshotWindow ? 420 : 480,
+            minHeight: isSnapshotWindow ? SnapshotWindowManager.minimumContentSize.height : 480,
             idealHeight: isSnapshotWindow ? 720 : 960,
             maxHeight: isSnapshotWindow ? nil : .infinity
         )

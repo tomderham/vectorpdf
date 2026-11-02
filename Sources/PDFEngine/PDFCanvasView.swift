@@ -336,7 +336,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     // MARK: - Geometry & Page Framing
     
     public func pageFrame(for pageIndex: Int) -> NSRect? {
-        guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        // The layout is rebuilt after the document changes, and can briefly be shorter than it.
+        guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount,
+              pageIndex < viewModel.effectivePageYOffsets.count else { return nil }
         let pBounds = doc.pageBounds[pageIndex]
         let y = 16 + (viewModel.effectivePageYOffsets[pageIndex] * viewModel.effectiveZoom)
 

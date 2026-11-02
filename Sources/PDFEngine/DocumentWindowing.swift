@@ -328,18 +328,18 @@ public enum DocumentWindowing {
     /// Determines whether `window` is a standalone empty Start Screen window that can be cleanly
     /// replaced when opening a Tab Group, rather than leaving an orphaned empty window behind.
     public static func isStandaloneEmptyStartWindow(_ window: NSWindow?) -> Bool {
-        guard let window else { return false }
-        // Must not be an auxiliary window, panel, sheet, or minimized
-        if window is NSPanel || window.attachedSheet != nil || window.isMiniaturized { return false }
+        // Only document windows: not Settings, panels, sheets or anchor windows
+        guard let window = window as? PDFViewerWindow else { return false }
+        if window.attachedSheet != nil || window.isMiniaturized { return false }
         // Must have only 1 tab (or no tabbed windows attached)
         let tabCount = window.tabbedWindows?.count ?? 1
         guard tabCount <= 1 else { return false }
         // Must have no represented document URL and no unsaved edits
         guard window.representedURL == nil, !window.isDocumentEdited else { return false }
-        // If the active view model is associated with this window, verify it has no document loaded
-        if let activeVM = PDFViewerAppCoordinator.shared.activeViewModel ?? PDFViewerViewModel.active,
-           activeVM.currentWindow === window {
-            guard activeVM.document == nil else { return false }
+        // Must have no document, and none on its way: each window that opens a document closes
+        // the empty ones, and a window still loading its own must not be among them
+        if let viewModel = (window.contentViewController as? NSHostingController<PDFViewerMainView>)?.rootView.viewModel {
+            guard viewModel.document == nil, !viewModel.isLoadingDocument else { return false }
         }
         return true
     }
@@ -375,8 +375,16 @@ public enum DocumentWindowing {
             }
         }
         firstWindow?.makeKeyAndOrderFront(nil)
-        windowToReplace?.close()
+        closeAfterCurrentEvent(windowToReplace)
         return firstWindow
+    }
+
+    /// Closes a Start window once the event in progress is over: the click that opened a document
+    /// may be one on that window's own Start screen, and is still being handled.
+    private static func closeAfterCurrentEvent(_ window: NSWindow?) {
+        DispatchQueue.main.async { [weak window] in
+            window?.close()
+        }
     }
 
     /// Closes any standalone empty Start Screen window currently open in NSApp.windows,
@@ -413,7 +421,7 @@ public enum DocumentWindowing {
                 window.center()
             }
             window.makeKeyAndOrderFront(nil)
-            candidate.close()
+            closeAfterCurrentEvent(candidate)
             return window
         }
 

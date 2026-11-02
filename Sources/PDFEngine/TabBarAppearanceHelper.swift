@@ -231,24 +231,18 @@ public final class TabBarAppearanceHelper {
                     for win in siblingWindows {
                         self.refreshTabs(for: win)
                     }
-                    DispatchQueue.main.async { [weak self] in
+                    // Weak, so that none of these closures is what frees a window that has closed.
+                    let siblings = NSHashTable<NSWindow>.weakObjects()
+                    siblingWindows.forEach(siblings.add)
+                    let refreshSiblings = { [weak self] in
                         guard let self else { return }
-                        for win in siblingWindows {
+                        for win in siblings.allObjects {
                             self.refreshTabs(for: win)
                         }
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-                        guard let self else { return }
-                        for win in siblingWindows {
-                            self.refreshTabs(for: win)
-                        }
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                        guard let self else { return }
-                        for win in siblingWindows {
-                            self.refreshTabs(for: win)
-                        }
-                    }
+                    DispatchQueue.main.async(execute: refreshSiblings)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: refreshSiblings)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: refreshSiblings)
                 }
             }
         }
@@ -311,19 +305,20 @@ public final class TabBarAppearanceHelper {
             (window.contentViewController as? NSHostingController<PDFViewerMainView>)?.rootView.viewModel.updateTitlebarHeight()
         }
 
-        func applyStyling() {
-            for win in windowsToUpdate {
-                if let frameView = win.contentView?.superview {
-                    styleTopBar(in: frameView)
-                    styleTabButtons(in: frameView)
-                }
-            }
+        applyStyling(to: windowsToUpdate)
+        // Holds no windows: a closed window must not be freed from this closure.
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, window.windowNumber > 0 else { return }
+            self.applyStyling(to: window.tabGroup?.windows ?? [window])
         }
+    }
 
-        applyStyling()
-        DispatchQueue.main.async { [weak window] in
-            guard let window, window.windowNumber > 0 else { return }
-            applyStyling()
+    private func applyStyling(to windows: [NSWindow]) {
+        for win in windows {
+            if let frameView = win.contentView?.superview {
+                styleTopBar(in: frameView)
+                styleTabButtons(in: frameView)
+            }
         }
     }
 

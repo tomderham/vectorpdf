@@ -29,7 +29,7 @@ extension PDFViewerViewModel {
     /// one exception, handled separately via onOpenNewTab (see its doc comment).
     public func openDocumentPreferringNewWindow(atPath path: String) {
         Task { @MainActor in
-            if self.document == nil {
+            if self.document == nil && !self.isLoadingDocument {
                 await self.loadDocument(from: path)
             } else if let onOpenNewWindow = self.onOpenNewWindow {
                 onOpenNewWindow(URL(fileURLWithPath: path))
@@ -43,7 +43,7 @@ extension PDFViewerViewModel {
     /// in the current window's tab group.
     public func openDocumentInNewTab(atPath path: String) {
         Task { @MainActor in
-            if self.document == nil {
+            if self.document == nil && !self.isLoadingDocument {
                 await self.loadDocument(from: path)
             } else if let onOpenNewTab = self.onOpenNewTab {
                 onOpenNewTab(URL(fileURLWithPath: path))

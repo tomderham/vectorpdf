@@ -97,6 +97,10 @@ public final class PDFViewerViewModel: ObservableObject {
     /// position correctly.
     public var isInteractiveViewingMode: Bool { viewRotationDegrees == 0 && !isTwoPageMode }
 
+    /// True from when a document starts opening in this window until it's open or has failed. The
+    /// window has no document yet, but it isn't an empty Start window.
+    public internal(set) var isLoadingDocument = false
+
     public func rotateClockwise() {
         viewRotationDegrees = (viewRotationDegrees + 90) % 360
         isTwoPageMode = false
@@ -547,7 +551,10 @@ public final class PDFViewerViewModel: ObservableObject {
             let canProceed = promptSaveBeforeClosingIfNeeded()
             guard canProceed else { return }
         }
-        
+
+        isLoadingDocument = true
+        defer { isLoadingDocument = false }
+
         PDFViewerViewModel.active = self
         PDFViewerAppCoordinator.shared.registerActive(self)
         // Persist the *outgoing* document's reading position before switching away from it —

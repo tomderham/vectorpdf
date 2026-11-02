@@ -100,6 +100,9 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
         }
     }
 
+    /// Small enough to show just an equation or a table row: the banner and a few lines of text.
+    static let minimumContentSize = NSSize(width: 420, height: 160)
+
     /// Opens `target` in a new window, or brings the existing one forward if it's already open
     /// for this target — never creates a duplicate. `source` (typically the window the action
     /// was triggered from) is used both to cascade the new window's position and, if given, to
@@ -155,7 +158,7 @@ public final class SnapshotWindowManager: NSObject, ObservableObject {
         window.contentViewController = hostingController
 
         window.setContentSize(NSSize(width: windowWidth, height: windowHeight))
-        window.minSize = NSSize(width: 500, height: 400)
+        window.contentMinSize = Self.minimumContentSize
 
         if let resolvedSource {
             let sourceFrame = resolvedSource.frame

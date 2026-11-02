@@ -259,7 +259,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             if (isPageJump || isNewDocument || isLayoutModeChanged) && !isMatchNavigation && !isSnapshotJump {
                 lastNavigatedPage = viewModel.currentPageIndex
                 let targetPage = viewModel.currentPageIndex
-                if targetPage >= 0 && targetPage < doc.pageCount {
+                if targetPage >= 0 && targetPage < doc.pageCount && targetPage < viewModel.effectivePageYOffsets.count {
                     let targetY = targetPage == 0 ? 0 : max(0, (viewModel.effectivePageYOffsets[targetPage] * viewModel.effectiveZoom) + 16)
                     let targetX: CGFloat
                     if viewModel.isTwoPageMode {

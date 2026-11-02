@@ -173,6 +173,30 @@ struct ChildWindowTests {
         return window
     }
 
+    @Test(.showsWindows) func childWindowsCanShrinkToFitSomethingSmall() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("child.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha", "Bravo"])
+        let manager = SnapshotWindowManager.shared
+        let parent = makeDocumentWindow()
+        let target = SnapshotTarget(label: "Equation 3", targetPage: 0)
+        defer { manager.close(target.id); parent.close() }
+
+        manager.open(url: url, target: target, source: parent)
+        let child = try #require(manager.windows(openedFrom: [parent]).first)
+        try await Task.sleep(nanoseconds: 800_000_000)
+
+        let minimum = SnapshotWindowManager.minimumContentSize
+        child.setContentSize(minimum)
+        try await Task.sleep(nanoseconds: 400_000_000)
+
+        // SwiftUI's own layout can raise the window's limits, so check what actually applies.
+        #expect(child.contentMinSize.width <= minimum.width)
+        #expect(child.contentMinSize.height <= minimum.height)
+        #expect(child.contentView?.bounds.height == minimum.height)
+    }
+
     @Test(.showsWindows) func openingATargetTwiceReusesItsWindow() async throws {
         let dir = try makeScratchDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
