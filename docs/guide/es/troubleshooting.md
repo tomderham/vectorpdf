@@ -1,5 +1,5 @@
 <!-- keywords: solución de problemas, problema, problemas, no funciona, ayuda, solucionar, soporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # Solución de problemas
 
@@ -31,7 +31,7 @@ Comprueba tu conexión y que el archivo se descargue en el Finder, y vuelve a in
 
 ## El Agent no está disponible o solo muestra pasajes
 
-El Agent requiere macOS 26 o posterior, y para redactar respuestas en el dispositivo, Apple Intelligence debe estar activado y listo. Si falla la indexación, haz clic en Retry en la pestaña del Agent. Consulta [Elegir cómo responde el Agent](agent-engines.md).
+El Agent requiere macOS 26 o posterior, y para redactar respuestas en el dispositivo, Apple Intelligence debe estar activado y listo. Si falla la indexación, haz clic en Retry en la pestaña Ask About This Document. Consulta [Elegir cómo responde el Agent](agent-engines.md).
 
 ## Un modelo en línea no responde
 

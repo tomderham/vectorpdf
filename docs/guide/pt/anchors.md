@@ -1,5 +1,5 @@
 <!-- keywords: âncora, âncoras, marcador, marcadores, instantâneo, local salvo, salvar local, voltar, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # Âncoras
 
@@ -7,7 +7,7 @@ Uma âncora é um local salvo em um documento: um trecho de texto, uma área de 
 
 ## Criar uma âncora
 
-- Selecione o texto, ou mantenha ⌥ pressionada e arraste para selecionar uma área, depois pressione ⌘B.
+- Selecione o texto, ou mantenha ⌥ pressionada e arraste para selecionar uma área, depois pressione ⌘B ou escolha Anchors > Add Anchor.
 - Clique com o botão direito em uma seleção, em um link ou em um local da página e escolha **Create Anchor**.
 - Clique com o botão direito em um [resultado de busca](search.md) ou em uma entrada do [sumário](outline-and-thumbnails.md) e escolha **Create Anchor**.
 

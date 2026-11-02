@@ -1,5 +1,5 @@
 <!-- keywords: 个人收藏, 收藏, 标签页组, 组, 固定, 星标, 会话, 项目, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: 718bba9c175b -->
+<!-- source: e25fc5652272 -->
 
 # 个人收藏和标签页组
 
@@ -28,7 +28,7 @@
 
 ### 更改组
 
-打开该组，添加或关闭标签页，然后选取 Favorites > Update Group with Open Tabs。
+打开该组，添加或关闭标签页，然后选取 Favorites > Update Group “名称” with Open Tabs，其中“名称”是该组的名称。
 
 ### 删除组
 

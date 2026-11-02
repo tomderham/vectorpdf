@@ -1,9 +1,9 @@
 <!-- keywords: 키보드, 단축키, 키, 핫키, 제스처, 트랙패드, 마우스, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # 키보드 단축키
 
-이러한 명령 중 다수는 오른쪽 클릭 메뉴에서도 사용할 수 있으며, 아래 표에 표시되어 있습니다. [오른쪽 클릭 메뉴](right-click-menus.md)를 참조하십시오.
+이러한 명령 중 다수는 오른쪽 클릭 메뉴에서도 사용할 수 있으며, 아래에 표시되어 있습니다. [오른쪽 클릭 메뉴](right-click-menus.md)를 참조하십시오.
 
 ## 문서
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages 또는 Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@
 | Underline | ⇧⌘U | 선택한 텍스트 |
 | Strikethrough | ⇧⌘X | 선택한 텍스트 |
 | Stop Speaking | ⌥⌘. | 선택한 텍스트 |
-| Add Anchor | ⌘B | 선택 영역, 링크 또는 페이지 |
+| Add Anchor | ⌘B | 선택 영역, 링크 또는 페이지, Create Anchor로 표시 |
 
 ## 마우스 및 트랙패드
 

@@ -1,5 +1,5 @@
 <!-- keywords: aba, abas, janela, janelas, nova aba, nova janela, Dock, janelas filhas, janelas de âncora, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: b73c7e596329 -->
+<!-- source: fbec18618570 -->
 
 # Abas e janelas
 
@@ -9,7 +9,7 @@ O VectorPDF usa as abas de janela padrão do macOS.
 
 - **Nova aba:** pressione ⌘T ou clique no botão + na barra de abas.
 - **Abrir um PDF em uma nova aba:** pressione ⌥⌘O ou arraste-o para um documento aberto.
-- **Abrir um documento em outra janela:** ⌘N abre uma nova janela.
+- **Nova janela:** pressione ⌘N para abrir uma janela vazia ou ⌘O para abrir um PDF em uma nova janela.
 
 Para salvar as abas abertas como um grupo, clique no título do documento com o botão direito e escolha Save All Open Tabs as a Group. Consulte [Favoritos e Grupos de Abas](favorites-and-tab-groups.md).
 

@@ -1,5 +1,5 @@
 <!-- keywords: Anker, Lesezeichen, Momentaufnahme, gespeicherte Stelle, Stelle merken, zurückspringen, Markierung, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # Anker
 
@@ -7,7 +7,7 @@ Ein Anker ist eine gespeicherte Stelle in einem Dokument: eine Textstelle, ein B
 
 ## Einen Anker erstellen
 
-- Wähle Text aus oder halte ⌥ gedrückt und ziehe, um einen Bereich auszuwählen. Drücke dann ⌘B.
+- Wähle Text aus oder halte ⌥ gedrückt und ziehe, um einen Bereich auszuwählen. Drücke dann ⌘B oder wähle Anchors > Add Anchor.
 - Klicke mit der rechten Maustaste auf eine Auswahl, einen Link oder eine Stelle auf der Seite und wähle dann **Create Anchor**.
 - Klicke mit der rechten Maustaste auf ein [Suchergebnis](search.md) oder einen Eintrag der [Gliederung](outline-and-thumbnails.md) und wähle dann **Create Anchor**.
 

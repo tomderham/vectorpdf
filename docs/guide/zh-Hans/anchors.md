@@ -1,5 +1,5 @@
 <!-- keywords: 锚点, 书签, 快照, 保存的位置, 存储位置, 跳回, 标记, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # 锚点
 
@@ -7,7 +7,7 @@
 
 ## 创建锚点
 
-- 选择文本，或者按住 ⌥ 并拖移以选择一个区域，然后按下 ⌘B。
+- 选择文本，或者按住 ⌥ 并拖移以选择一个区域，然后按下 ⌘B 或选取 Anchors > Add Anchor。
 - 右键点按所选内容、链接或页面上的某个位置，然后选取 **Create Anchor**。
 - 右键点按[搜索结果](search.md)或[大纲](outline-and-thumbnails.md)条目，然后选取 **Create Anchor**。
 

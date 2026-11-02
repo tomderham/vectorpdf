@@ -1,5 +1,5 @@
 <!-- keywords: 앵커, 책갈피, 스냅샷, 저장한 위치, 위치 저장, 돌아가기, 표시, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # 앵커
 
@@ -7,7 +7,7 @@
 
 ## 앵커 생성하기
 
-- 텍스트를 선택하거나 ⌥ 키를 누른 채 드래그하여 영역을 선택한 다음 ⌘B 키를 누릅니다.
+- 텍스트를 선택하거나 ⌥ 키를 누른 채 드래그하여 영역을 선택한 다음 ⌘B 키를 누르거나 Anchors > Add Anchor를 선택합니다.
 - 선택 영역, 링크 또는 페이지의 특정 위치를 오른쪽 클릭한 다음 **Create Anchor**를 선택합니다.
 - [검색 결과](search.md)나 [개요](outline-and-thumbnails.md) 항목을 오른쪽 클릭한 다음 **Create Anchor**를 선택합니다.
 

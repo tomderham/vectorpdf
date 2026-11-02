@@ -1,5 +1,5 @@
 <!-- keywords: 탐색, 이동, 스크롤, 페이지, 페이지로 이동, 뒤로, 앞으로, 화살표 키, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # 문서 내에서 이동하기
 
@@ -15,7 +15,7 @@
 | Up Arrow, Down Arrow | 윈도우보다 긴 페이지 안에서 스크롤한 다음 다음 페이지로 이동합니다. 페이지가 윈도우에 맞으면 한 페이지씩 이동합니다. |
 | Page Up, Page Down | 더 큰 단위로 스크롤한 다음 다음 페이지로 이동합니다. |
 | Space, ⇧Space | 앞으로 또는 뒤로 이동합니다. Page Down 및 Page Up과 같습니다. |
-| ⌥Up Arrow, ⌥Down Arrow | 이전 또는 다음 페이지 |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | 이전 또는 다음 페이지 |
 | ⌘Up Arrow, ⌘Down Arrow | 첫 페이지 또는 마지막 페이지 |
 
 Two-Page Mode에서는 이 키를 사용하면 두 페이지 펼침면이 통째로 넘어갑니다.

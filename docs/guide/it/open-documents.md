@@ -1,5 +1,5 @@
 <!-- keywords: aprire, apri PDF, aprire file, recenti, password, cloud, trascinare, ricaricare, open, open PDF, open file, PDF, recent, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: 0d5e3c24fe3f -->
+<!-- source: fc51842f2339 -->
 
 # Aprire documenti
 
@@ -7,7 +7,7 @@
 
 - **In una nuova finestra:** scegli File > Open PDF oppure premi ⌘O.
 - **In un nuovo pannello:** scegli File > Open PDF in New Tab oppure premi ⌥⌘O.
-- **Dal Finder:** fai clic con il tasto destro su un PDF, quindi scegli Open With > VectorPDF. Per aprire tutti i PDF in VectorPDF, seleziona un PDF, scegli File > Get Info nel Finder e modifica “Open with”.
+- **Dal Finder:** fai clic con il tasto destro su un PDF, quindi scegli Open With > VectorPDF. Per aprire tutti i PDF in VectorPDF, seleziona un PDF, scegli File > Get Info nel Finder, modifica “Open with”, quindi fai clic su Change All.
 - **Trascinando:** trascina un PDF sulla schermata Start per aprirlo lì, oppure su un documento aperto per aprirlo in un nuovo pannello.
 - **Da un elenco:** scegli File > Open Recent oppure usa il menu [Favorites](favorites-and-tab-groups.md). Nella schermata Start, fai clic con il tasto destro su un documento per aprirlo in un nuovo pannello o in una nuova finestra.
 

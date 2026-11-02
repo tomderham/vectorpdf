@@ -1,5 +1,5 @@
 <!-- keywords: réglages, préférences, mises à jour, mise à jour, rechercher des mises à jour, navigateur, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 36cf10a0994a -->
+<!-- source: 71eda28f956d -->
 
 # Réglages
 
@@ -7,7 +7,7 @@ Choisissez VectorPDF > Settings, ou appuyez sur ⌘,.
 
 | Réglage | Fonction |
 | --- | --- |
-| Use Agent | Affiche l’onglet [Agent](agent.md) dans la barre latérale, sous macOS 26 ou version ultérieure. |
+| Use Agent | Affiche l’onglet [Ask About This Document](agent.md) dans la barre latérale, sous macOS 26 ou version ultérieure. |
 | AI Synthesis Engine | Choisit [ce qui rédige les réponses de l’Agent](agent-engines.md), sous macOS 27. |
 | PDF Color | Définit [l’aspect des pages](pdf-colors.md) : Follow System, Light, Dark ou Sepia. |
 | Open Links In | Choisit le navigateur pour les liens web. |

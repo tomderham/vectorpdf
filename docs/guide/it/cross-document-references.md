@@ -1,5 +1,5 @@
 <!-- keywords: riferimento, riferimenti, riferimento incrociato, altro documento, altro pannello, sezione, clausola, norma, specifica, contratto, RFC, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # Riferimenti tra documenti
 
@@ -12,7 +12,7 @@ Le norme citano altre norme e i contratti rimandano ai propri allegati, di solit
 3. Scegli una di queste opzioni:
    - **Go to** seguito dal titolo corrispondente, per visualizzarne l'anteprima. Dall'anteprima puoi raggiungerlo.
    - Tieni premuto ⌘ mentre il menu è aperto per cambiare il comando in **Open**, che porta direttamente alla destinazione senza anteprima.
-   - **Find in Other Tabs**, per cercare nel testo degli altri pannelli.
+   - **Find “riferimento” in Other Tabs**, dove “riferimento” è il testo su cui hai fatto clic, per cercare nel testo degli altri pannelli.
 
 VectorPDF confronta i riferimenti con la struttura dell'altro documento oppure, se non ne ha una, con i suoi titoli. Se lo stesso titolo compare in più pannelli, l'anteprima li elenca tutti.
 

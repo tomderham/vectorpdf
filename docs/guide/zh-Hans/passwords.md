@@ -1,5 +1,5 @@
 <!-- keywords: 密码, 加密, 保护, 受保护, 安全性, 权限, 锁定, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # 密码和加密
 

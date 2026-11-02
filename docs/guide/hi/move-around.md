@@ -1,5 +1,5 @@
 <!-- keywords: नेविगेट, नेविगेशन, स्क्रोल, पेज, पेज पर जाएँ, पीछे, आगे, तीर कुंजियाँ, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # दस्तावेज़ में इधर-उधर जाएँ
 
@@ -15,7 +15,7 @@
 | Up Arrow, Down Arrow | विंडो से लंबे पेज के अंदर स्क्रोल करें, फिर अगले पेज पर जाएँ। अगर पेज विंडो में समा जाता है, तो एक बार में एक पेज आगे या पीछे जाएँ। |
 | Page Up, Page Down | बड़े चरण में स्क्रोल करें, फिर अगले पेज पर जाएँ |
 | Space, ⇧Space | आगे या पीछे, Page Down और Page Up की तरह |
-| ⌥Up Arrow, ⌥Down Arrow | पिछला या अगला पेज |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | पिछला या अगला पेज |
 | ⌘Up Arrow, ⌘Down Arrow | पहला या अंतिम पेज |
 
 Two-Page Mode में ये कुंजियाँ पूरा स्प्रेड पलटती हैं।

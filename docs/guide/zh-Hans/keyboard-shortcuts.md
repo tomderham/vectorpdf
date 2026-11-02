@@ -1,9 +1,9 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # 键盘快捷键
 
-其中许多命令也可以在右键菜单中找到，并已在下表中注明。请参阅[右键菜单](right-click-menus.md)。
+其中许多命令也可以在右键菜单中找到，并已在下文注明。请参阅[右键菜单](right-click-menus.md)。
 
 ## 文稿
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages or Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@
 | Underline | ⇧⌘U | 所选文本 |
 | Strikethrough | ⇧⌘X | 所选文本 |
 | Stop Speaking | ⌥⌘. | 所选文本 |
-| Add Anchor | ⌘B | 所选内容、链接或页面 |
+| Add Anchor | ⌘B | 所选内容、链接或页面，显示为 Create Anchor |
 
 ## 鼠标和触控板
 

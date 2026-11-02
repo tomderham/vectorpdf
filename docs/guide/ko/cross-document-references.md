@@ -1,5 +1,5 @@
 <!-- keywords: 참조, 상호 참조, 다른 문서, 다른 탭, 섹션, 조항, 표준, 사양, 계약, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # 문서 간 참조
 
@@ -12,7 +12,7 @@
 3. 다음 중 하나를 선택합니다.
    - **Go to**: 일치하는 제목을 미리 봅니다. 미리보기에서 해당 위치로 이동할 수 있습니다.
    - 메뉴가 열려 있는 동안 ⌘ 키를 길게 누르면 명령이 **Open**으로 바뀌며, 미리보기 없이 바로 해당 위치로 이동합니다.
-   - **Find in Other Tabs**: 다른 탭의 텍스트를 검색합니다.
+   - **Find “참조” in Other Tabs**: 다른 탭의 텍스트를 검색합니다. “참조”는 클릭한 텍스트입니다.
 
 VectorPDF는 참조를 다른 문서의 개요와 대조하며, 개요가 없으면 제목과 대조합니다. 같은 제목이 여러 탭에 있으면 미리보기에 각 항목이 나열됩니다.
 

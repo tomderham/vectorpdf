@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # 右键菜单
 
@@ -24,7 +24,7 @@
 | 右键点按 | 命令 |
 | --- | --- |
 | 大纲条目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| 缩略图 | Rotate、Duplicate、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up 或 Down、Delete。请参阅[重新排列页面](pages.md)。 |
+| 缩略图 | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。选择多个页面时，命令会显示页数，例如 Delete 3 Pages。请参阅[重新排列页面](pages.md)。 |
 | 搜索结果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 锚点 | Open in New Window 或 Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 
@@ -32,7 +32,7 @@
 
 | 右键点按 | 命令 |
 | --- | --- |
-| 文稿标题或工具栏的空白部分 | 添加到 Favorites 或从中移除、Save All Open Tabs as a Group、Update Group with Open Tabs，以及你的 Tab Groups 和 Favorites |
+| 文稿标题或工具栏的空白部分 | 添加到 Favorites 或从中移除、Save All Open Tabs as a Group、Update Group “名称” with Open Tabs，以及你的 Tab Groups 和 Favorites |
 | Start 屏幕上的一行 | Open、Open in New Tab、Open in New Window、Show in Finder，以及 Remove 或 Delete |
 
 某些命令仅在适用时才会出现。例如，Save All Open Tabs as a Group 需要有多个标签页，而在从锚点打开的窗口中无法使用锚点命令。

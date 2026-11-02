@@ -1,5 +1,5 @@
 <!-- keywords: ancla, anclas, marcador, marcadores, instantánea, lugar guardado, guardar lugar, volver, marca, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # Anclas
 
@@ -7,7 +7,7 @@ Un ancla es un lugar guardado de un documento: un pasaje de texto, un área de u
 
 ## Crear un ancla
 
-- Selecciona texto, o mantén pulsada la tecla ⌥ y arrastra para seleccionar un área, y luego pulsa ⌘B.
+- Selecciona texto, o mantén pulsada la tecla ⌥ y arrastra para seleccionar un área, y luego pulsa ⌘B o elige Anchors > Add Anchor.
 - Haz clic con el botón derecho en una selección, un enlace o un lugar de la página y elige **Create Anchor**.
 - Haz clic con el botón derecho en un [resultado de búsqueda](search.md) o una entrada del [esquema](outline-and-thumbnails.md) y elige **Create Anchor**.
 

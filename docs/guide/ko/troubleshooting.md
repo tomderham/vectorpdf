@@ -1,5 +1,5 @@
 <!-- keywords: 문제 해결, 문제, 작동하지 않음, 도움말, 해결, 지원, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # 문제 해결
 
@@ -31,7 +31,7 @@ VectorPDF 윈도우가 활성 윈도우여야 합니다.
 
 ## Agent를 사용할 수 없거나 구절만 표시되는 경우
 
-Agent를 사용하려면 macOS 26 이상이 필요하며, 기기 내에서 답변을 작성하려면 Apple Intelligence가 켜져 있고 준비되어 있어야 합니다. 색인 생성에 실패하면 Agent 탭에서 Retry를 클릭합니다. [Agent의 답변 방식 선택하기](agent-engines.md)를 참조하십시오.
+Agent를 사용하려면 macOS 26 이상이 필요하며, 기기 내에서 답변을 작성하려면 Apple Intelligence가 켜져 있고 준비되어 있어야 합니다. 색인 생성에 실패하면 Ask About This Document 탭에서 Retry를 클릭합니다. [Agent의 답변 방식 선택하기](agent-engines.md)를 참조하십시오.
 
 ## 온라인 모델이 응답하지 않는 경우
 

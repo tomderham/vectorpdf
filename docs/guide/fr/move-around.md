@@ -1,5 +1,5 @@
 <!-- keywords: naviguer, faire défiler, aller à la page, retour, avancer, touches fléchées, accéder, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # Se déplacer dans un document
 
@@ -15,7 +15,7 @@ Au clavier :
 | Up Arrow, Down Arrow | Fait défiler une page plus haute que la fenêtre, puis passe à la page suivante. Si la page tient dans la fenêtre, avance d’une page à la fois. |
 | Page Up, Page Down | Fait défiler d’un pas plus grand, puis passe à la page suivante |
 | Space, ⇧Space | Avance ou recule, comme Page Down et Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Page précédente ou suivante |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Page précédente ou suivante |
 | ⌘Up Arrow, ⌘Down Arrow | Première ou dernière page |
 
 En Two-Page Mode, ces touches tournent une double page entière.

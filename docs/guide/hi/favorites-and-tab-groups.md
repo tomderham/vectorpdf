@@ -1,5 +1,5 @@
 <!-- keywords: पसंदीदा, टैब समूह, समूह, पिन, स्टार, सत्र, प्रोजेक्ट, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: 718bba9c175b -->
+<!-- source: e25fc5652272 -->
 
 # पसंदीदा और टैब समूह
 
@@ -28,7 +28,7 @@
 
 ### समूह बदलें
 
-समूह खोलें, टैब जोड़ें या बंद करें, फिर Favorites > Update Group with Open Tabs चुनें।
+समूह खोलें, टैब जोड़ें या बंद करें, फिर Favorites > Update Group “नाम” with Open Tabs चुनें, जहाँ “नाम” समूह का नाम है।
 
 ### समूह हटाएँ
 

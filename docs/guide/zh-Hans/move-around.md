@@ -1,5 +1,5 @@
 <!-- keywords: 导航, 滚动, 页面, 前往页面, 返回, 前进, 箭头键, 跳转, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # 在文稿中移动
 
@@ -15,7 +15,7 @@
 | Up Arrow、Down Arrow | 在高于窗口的页面内滚动，然后移到下一页。如果页面能完整显示在窗口中，则每次移动一页。 |
 | Page Up、Page Down | 以较大的幅度滚动，然后移到下一页 |
 | Space、⇧Space | 向前或向后，与 Page Down 和 Page Up 相同 |
-| ⌥Up Arrow、⌥Down Arrow | 上一页或下一页 |
+| ⌥Up Arrow、⌥Down Arrow、⌥Left Arrow、⌥Right Arrow | 上一页或下一页 |
 | ⌘Up Arrow、⌘Down Arrow | 第一页或最后一页 |
 
 在 Two-Page Mode 下，这些按键会翻动整个跨页。

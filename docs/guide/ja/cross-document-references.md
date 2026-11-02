@@ -1,5 +1,5 @@
 <!-- keywords: 参照, 相互参照, 他の書類, 別のタブ, セクション, 条項, 規格, 仕様書, 契約書, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # 書類間の参照
 
@@ -12,7 +12,7 @@
 3. 次のいずれかを選択します:
    - 一致する見出しの **Go to**: 見出しをプレビューします。プレビューからその場所に移動できます。
    - メニューが開いている間に ⌘ を押し続けると、コマンドが **Open** に変わり、プレビューなしで直接移動します。
-   - **Find in Other Tabs**: ほかのタブのテキストを検索します。
+   - **Find “参照” in Other Tabs**: ほかのタブのテキストを検索します。“参照” はクリックしたテキストです。
 
 VectorPDF は、参照をもう一方の書類のアウトラインと照合します。アウトラインがない場合は、見出しと照合します。同じ見出しが複数のタブにある場合は、プレビューにそれぞれが一覧表示されます。
 

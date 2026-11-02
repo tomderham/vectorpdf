@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # 右クリックメニュー
 
@@ -24,7 +24,7 @@
 | 右クリックする場所 | コマンド |
 | --- | --- |
 | アウトラインの項目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| サムネール | Rotate、Duplicate、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up または Down、Delete。[ページを並べ替える](pages.md)を参照してください。 |
+| サムネール | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。複数のページを選択している場合は、Delete 3 Pages のようにコマンドにページ数が示されます。[ページを並べ替える](pages.md)を参照してください。 |
 | 検索結果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | アンカー | Open in New Window または Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 
@@ -32,7 +32,7 @@
 
 | 右クリックする場所 | コマンド |
 | --- | --- |
-| 書類のタイトル、またはツールバーの何もない部分 | Favorites への追加または削除、Save All Open Tabs as a Group、Update Group with Open Tabs、および保存した Tab Groups と Favorites |
+| 書類のタイトル、またはツールバーの何もない部分 | Favorites への追加または削除、Save All Open Tabs as a Group、Update Group “名前” with Open Tabs、および保存した Tab Groups と Favorites |
 | Start 画面の行 | Open、Open in New Tab、Open in New Window、Show in Finder、および Remove または Delete |
 
 コマンドの中には、使用できる場合にのみ表示されるものがあります。たとえば、Save All Open Tabs as a Group には複数のタブが必要です。また、アンカーから開いたウインドウではアンカーのコマンドは使用できません。

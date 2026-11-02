@@ -1,9 +1,9 @@
 <!-- keywords: esportare, esportazione, convertire, testo semplice, testo, appiattire, appiattito, riepilogo annotazioni, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # Esportare in altri formati
 
-Scegli File > Export Document As, quindi scegli un formato.
+Per esportare un intero documento, scegli File > Export Document As, quindi scegli Plain Text, Word Document, Scalable Vector Graphics o Flattened PDF. Il riepilogo delle annotazioni e le misurazioni hanno comandi propri.
 
 ## Plain Text
 

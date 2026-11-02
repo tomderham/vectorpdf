@@ -1,5 +1,5 @@
 <!-- keywords: 故障排除, 问题, 不起作用, 帮助, 修复, 支持, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # 故障排除
 
@@ -31,7 +31,7 @@ Link Peek 适用于文稿中的链接，以及指向已在其他标签页中打�
 
 ## Agent 不可用或只显示段落
 
-Agent 需要 macOS 26 或更高版本，而在设备端撰写回答需要打开 Apple 智能并使其准备就绪。如果建立索引失败，请点按 Agent 标签页中的 Retry。请参阅[选择 Agent 的回答方式](agent-engines.md)。
+Agent 需要 macOS 26 或更高版本，而在设备端撰写回答需要打开 Apple 智能并使其准备就绪。如果建立索引失败，请点按 Ask About This Document 标签页中的 Retry。请参阅[选择 Agent 的回答方式](agent-engines.md)。
 
 ## 在线模型没有回答
 

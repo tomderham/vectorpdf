@@ -1,5 +1,5 @@
 <!-- keywords: risoluzione dei problemi, problema, problemi, non funziona, aiuto, risolvere, supporto, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # Risoluzione dei problemi
 
@@ -31,7 +31,7 @@ Controlla la connessione e verifica che il file venga scaricato nel Finder, quin
 
 ## L'Agent non è disponibile o mostra solo i passaggi
 
-L'Agent richiede macOS 26 o versioni successive e, per scrivere le risposte sul dispositivo, Apple Intelligence deve essere attivata e pronta. Se l'indicizzazione non riesce, fai clic su Retry nel pannello dell'Agent. Consulta [Scegliere come risponde l'Agent](agent-engines.md).
+L'Agent richiede macOS 26 o versioni successive e, per scrivere le risposte sul dispositivo, Apple Intelligence deve essere attivata e pronta. Se l'indicizzazione non riesce, fai clic su Retry nel pannello Ask About This Document. Consulta [Scegliere come risponde l'Agent](agent-engines.md).
 
 ## Un modello online non risponde
 

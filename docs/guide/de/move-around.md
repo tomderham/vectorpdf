@@ -1,5 +1,5 @@
 <!-- keywords: navigieren, Navigation, scrollen, Seite, Seiten, zu Seite gehen, zurück, vorwärts, Pfeiltasten, springen, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # In einem Dokument navigieren
 
@@ -15,7 +15,7 @@ Mit der Tastatur:
 | Up Arrow, Down Arrow | Innerhalb einer Seite scrollen, die höher als das Fenster ist, dann zur nächsten Seite wechseln. Passt die Seite ins Fenster, wird jeweils um eine Seite geblättert. |
 | Page Up, Page Down | In einem größeren Schritt scrollen, dann zur nächsten Seite wechseln |
 | Space, ⇧Space | Vor oder zurück, wie Page Down und Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Vorherige oder nächste Seite |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Vorherige oder nächste Seite |
 | ⌘Up Arrow, ⌘Down Arrow | Erste oder letzte Seite |
 
 Im Two-Page Mode blättern diese Tasten um eine ganze Doppelseite.

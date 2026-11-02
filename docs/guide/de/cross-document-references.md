@@ -1,5 +1,5 @@
 <!-- keywords: Verweis, Verweise, Querverweis, anderes Dokument, anderer Tab, Abschnitt, Klausel, Norm, Spezifikation, Vertrag, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # Verweise zwischen Dokumenten
 
@@ -12,7 +12,7 @@ Normen verweisen auf andere Normen, und Verträge beziehen sich auf ihre Anlagen
 3. Wähle eine dieser Optionen:
    - **Go to** mit der passenden Überschrift, um sie in der Vorschau anzusehen. Aus der Vorschau kannst du dorthin springen.
    - Halte ⌘ gedrückt, während das Menü geöffnet ist, um den Befehl in **Open** zu ändern. Damit springst du ohne Vorschau direkt dorthin.
-   - **Find in Other Tabs**, um den Text deiner anderen Tabs zu durchsuchen.
+   - **Find “Verweis” in Other Tabs**, wobei “Verweis” der Text ist, auf den du geklickt hast, um den Text deiner anderen Tabs zu durchsuchen.
 
 VectorPDF gleicht Verweise mit der Gliederung des anderen Dokuments ab oder, wenn es keine Gliederung hat, mit seinen Überschriften. Kommt dieselbe Überschrift in mehreren Tabs vor, listet die Vorschau jede davon auf.
 

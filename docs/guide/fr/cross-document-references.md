@@ -1,5 +1,5 @@
 <!-- keywords: référence, références, renvoi, autre document, autre onglet, norme, spécification, contrat, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # Références entre documents
 
@@ -12,7 +12,7 @@ Les normes citent d’autres normes et les contrats renvoient à leurs annexes, 
 3. Choisissez l’une de ces options :
    - **Go to** suivi du titre correspondant, pour le prévisualiser. Depuis l’aperçu, vous pouvez vous y rendre.
    - Maintenez la touche ⌘ enfoncée pendant que le menu est ouvert pour changer la commande en **Open**, qui s’y rend directement sans aperçu.
-   - **Find in Other Tabs**, pour rechercher dans le texte de vos autres onglets.
+   - **Find “référence” in Other Tabs**, où “référence” est le texte sur lequel vous avez cliqué, pour rechercher dans le texte de vos autres onglets.
 
 VectorPDF compare les références au plan de l’autre document, ou à ses titres s’il n’a pas de plan. Si le même titre figure dans plusieurs onglets, l’aperçu les liste tous.
 

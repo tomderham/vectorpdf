@@ -1,5 +1,5 @@
 <!-- keywords: solução de problemas, problema, problemas, não funciona, ajuda, corrigir, suporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # Solução de problemas
 
@@ -31,7 +31,7 @@ Verifique sua conexão e se o arquivo é baixado no Finder, depois tente novamen
 
 ## O Agent não está disponível ou mostra somente trechos
 
-O Agent requer o macOS 26 ou posterior, e a redação de respostas no dispositivo requer que o Apple Intelligence esteja ativado e pronto. Se a indexação falhar, clique em Retry na aba do Agent. Consulte [Escolher como o Agent responde](agent-engines.md).
+O Agent requer o macOS 26 ou posterior, e a redação de respostas no dispositivo requer que o Apple Intelligence esteja ativado e pronto. Se a indexação falhar, clique em Retry na aba Ask About This Document. Consulte [Escolher como o Agent responde](agent-engines.md).
 
 ## Um modelo online não responde
 

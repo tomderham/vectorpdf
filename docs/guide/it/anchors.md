@@ -1,5 +1,5 @@
 <!-- keywords: ancoraggio, ancoraggi, ancora, segnalibro, segnalibri, istantanea, posizione salvata, salvare la posizione, tornare indietro, indicatore, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # Ancoraggi
 
@@ -7,7 +7,7 @@ Un ancoraggio è una posizione salvata in un documento: un passaggio di testo, u
 
 ## Creare un ancoraggio
 
-- Seleziona del testo, oppure tieni premuto ⌥ e trascina per selezionare un'area, quindi premi ⌘B.
+- Seleziona del testo, oppure tieni premuto ⌥ e trascina per selezionare un'area, quindi premi ⌘B o scegli Anchors > Add Anchor.
 - Fai clic con il tasto destro su una selezione, un link o un punto della pagina, quindi scegli **Create Anchor**.
 - Fai clic con il tasto destro su un [risultato di ricerca](search.md) o su una voce della [struttura](outline-and-thumbnails.md), quindi scegli **Create Anchor**.
 

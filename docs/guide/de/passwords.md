@@ -1,5 +1,5 @@
 <!-- keywords: Passwort, Passwörter, verschlüsseln, verschlüsselt, Verschlüsselung, schützen, geschützt, Sicherheit, Berechtigungen, sperren, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # Passwörter und Verschlüsselung
 
@@ -15,7 +15,7 @@ VectorPDF fragt nach dem Passwort, wenn du ein geschütztes PDF öffnest. Wenn d
 
 Die Kopie wird mit AES-256 verschlüsselt und kann nur mit dem Passwort geöffnet werden.
 
-> **Warnung:** Bewahre das Passwort sicher auf. Wenn du es verlierst, gibt es keine Möglichkeit, ein verschlüsseltes PDF wiederherzustellen.
+> **Warnung:** Bewahre das Passwort sicher auf. Wenn du es verlierst, gibt es keine Möglichkeit, das verschlüsselte PDF wiederherzustellen.
 
 ## Die Berechtigungen eines Dokuments ansehen
 

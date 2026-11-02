@@ -1,9 +1,9 @@
 <!-- keywords: एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # अन्य फ़ॉर्मैट में एक्सपोर्ट करें
 
-File > Export Document As चुनें, फिर कोई फ़ॉर्मैट चुनें।
+पूरा दस्तावेज़ एक्सपोर्ट करने के लिए, File > Export Document As चुनें, फिर Plain Text, Word Document, Scalable Vector Graphics या Flattened PDF चुनें। ऐनोटेशन सारांश और माप के अपने अलग कमांड हैं।
 
 ## सादा टेक्स्ट
 

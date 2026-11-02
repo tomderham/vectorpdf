@@ -1,5 +1,5 @@
 <!-- keywords: navigare, navigazione, scorrere, pagina, pagine, vai alla pagina, indietro, avanti, tasti freccia, saltare, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # Spostarsi in un documento
 
@@ -15,7 +15,7 @@ Dalla tastiera:
 | Up Arrow, Down Arrow | Scorre all'interno di una pagina più alta della finestra, quindi passa alla pagina successiva. Se la pagina è contenuta nella finestra, si sposta di una pagina alla volta. |
 | Page Up, Page Down | Scorre di un passo più ampio, quindi passa alla pagina successiva |
 | Space, ⇧Space | Avanti o indietro, come Page Down e Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Pagina precedente o successiva |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Pagina precedente o successiva |
 | ⌘Up Arrow, ⌘Down Arrow | Prima o ultima pagina |
 
 In Two-Page Mode, questi tasti sfogliano un'intera doppia pagina.

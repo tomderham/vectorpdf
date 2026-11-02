@@ -1,5 +1,5 @@
 <!-- keywords: abrir, abrir PDF, abrir arquivo, recentes, senha, nuvem, recarregar, arrastar, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: 0d5e3c24fe3f -->
+<!-- source: fc51842f2339 -->
 
 # Abrir documentos
 
@@ -7,7 +7,7 @@
 
 - **Em uma nova janela:** escolha File > Open PDF ou pressione ⌘O.
 - **Em uma nova aba:** escolha File > Open PDF in New Tab ou pressione ⌥⌘O.
-- **No Finder:** clique em um PDF com o botão direito e escolha Open With > VectorPDF. Para abrir todos os PDFs no VectorPDF, selecione um PDF, escolha File > Get Info no Finder e altere “Open with”.
+- **No Finder:** clique em um PDF com o botão direito e escolha Open With > VectorPDF. Para abrir todos os PDFs no VectorPDF, selecione um PDF, escolha File > Get Info no Finder, altere “Open with” e clique em Change All.
 - **Arrastando:** arraste um PDF para a tela Start para abri-lo ali, ou para um documento aberto para abri-lo em uma nova aba.
 - **Em uma lista:** escolha File > Open Recent ou use o menu [Favorites](favorites-and-tab-groups.md). Na tela Start, clique em um documento com o botão direito para abri-lo em uma nova aba ou janela.
 

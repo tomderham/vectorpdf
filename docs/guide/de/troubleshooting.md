@@ -1,5 +1,5 @@
 <!-- keywords: Fehlerbehebung, Problem, Probleme, funktioniert nicht, Hilfe, beheben, Support, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # Fehlerbehebung
 
@@ -31,7 +31,7 @@ Prüfe deine Verbindung und ob die Datei im Finder geladen wird, und versuche es
 
 ## Der Agent ist nicht verfügbar oder zeigt nur Textstellen
 
-Der Agent erfordert macOS 26 oder neuer. Damit Antworten auf dem Gerät verfasst werden können, muss Apple Intelligence aktiviert und bereit sein. Wenn das Indexieren fehlschlägt, klicke im Tab des Agenten auf „Retry“. Weitere Informationen findest du unter [Festlegen, wie der Agent antwortet](agent-engines.md).
+Der Agent erfordert macOS 26 oder neuer. Damit Antworten auf dem Gerät verfasst werden können, muss Apple Intelligence aktiviert und bereit sein. Wenn das Indexieren fehlschlägt, klicke im Tab „Ask About This Document“ auf „Retry“. Weitere Informationen findest du unter [Festlegen, wie der Agent antwortet](agent-engines.md).
 
 ## Ein Online-Modell antwortet nicht
 

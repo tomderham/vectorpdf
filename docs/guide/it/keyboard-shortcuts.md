@@ -1,9 +1,9 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # Abbreviazioni da tastiera
 
-Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come indicato nelle tabelle seguenti. Consulta [Menu di scelta rapida](right-click-menus.md).
+Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come indicato di seguito. Consulta [Menu di scelta rapida](right-click-menus.md).
 
 ## Documenti
 
@@ -44,7 +44,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages o Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Underline | ⇧⌘U | Testo selezionato |
 | Strikethrough | ⇧⌘X | Testo selezionato |
 | Stop Speaking | ⌥⌘. | Testo selezionato |
-| Add Anchor | ⌘B | Selezione, link o pagina |
+| Add Anchor | ⌘B | Selezione, link o pagina, come Create Anchor |
 
 ## Mouse e trackpad
 

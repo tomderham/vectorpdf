@@ -1,5 +1,5 @@
 <!-- keywords: navegar, navegación, desplazarse, página, páginas, ir a la página, atrás, adelante, teclas de flecha, saltar, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # Desplazarse por un documento
 
@@ -15,7 +15,7 @@ Con el teclado:
 | Up Arrow, Down Arrow | Desplazarse dentro de una página más alta que la ventana y luego pasar a la página siguiente. Si la página cabe en la ventana, avanzar de página en página. |
 | Page Up, Page Down | Desplazarse un tramo mayor y luego pasar a la página siguiente |
 | Space, ⇧Space | Avanzar o retroceder, igual que Page Down y Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Página anterior o siguiente |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Página anterior o siguiente |
 | ⌘Up Arrow, ⌘Down Arrow | Primera o última página |
 
 En Two-Page Mode, estas teclas pasan una doble página completa.

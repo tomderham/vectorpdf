@@ -1,5 +1,5 @@
 <!-- keywords: favorito, favoritos, grupo de abas, grupos de abas, grupo, grupos, fixar, estrela, sessão, projeto, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: 718bba9c175b -->
+<!-- source: e25fc5652272 -->
 
 # Favoritos e Grupos de Abas
 
@@ -28,7 +28,7 @@ Escolha o grupo no menu Favorites e escolha Open, ou clique nele na tela Start.
 
 ### Alterar um grupo
 
-Abra o grupo, adicione ou feche abas e escolha Favorites > Update Group with Open Tabs.
+Abra o grupo, adicione ou feche abas e escolha Favorites > Update Group “nome” with Open Tabs, em que “nome” é o nome do grupo.
 
 ### Apagar um grupo
 

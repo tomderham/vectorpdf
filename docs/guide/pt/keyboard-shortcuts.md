@@ -1,9 +1,9 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # Atalhos de teclado
 
-Muitos destes comandos também estão em um menu do botão direito, conforme indicado nas tabelas abaixo. Consulte [Menus do botão direito](right-click-menus.md).
+Muitos destes comandos também estão em um menu do botão direito, conforme indicado abaixo. Consulte [Menus do botão direito](right-click-menus.md).
 
 ## Documentos
 
@@ -44,7 +44,7 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages ou Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Underline | ⇧⌘U | Texto selecionado |
 | Strikethrough | ⇧⌘X | Texto selecionado |
 | Stop Speaking | ⌥⌘. | Texto selecionado |
-| Add Anchor | ⌘B | Seleção, link ou página |
+| Add Anchor | ⌘B | Seleção, link ou página, como Create Anchor |
 
 ## Mouse e trackpad
 

@@ -1,5 +1,5 @@
 <!-- keywords: सेटिंग्ज़, प्राथमिकताएँ, विकल्प, अपडेट, अपडेट जाँचें, ब्राउज़र, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 36cf10a0994a -->
+<!-- source: 71eda28f956d -->
 
 # सेटिंग्ज़
 
@@ -7,7 +7,7 @@ VectorPDF > Settings चुनें, या ⌘, दबाएँ।
 
 | सेटिंग | यह क्या करती है |
 | --- | --- |
-| Use Agent | macOS 26 या उसके बाद के संस्करण पर साइडबार में [Agent](agent.md) टैब दिखाती है। |
+| Use Agent | macOS 26 या उसके बाद के संस्करण पर साइडबार में [Ask About This Document](agent.md) टैब दिखाती है। |
 | AI Synthesis Engine | macOS 27 पर चुनती है कि [Agent के जवाब कौन लिखेगा](agent-engines.md)। |
 | PDF Color | सेट करती है कि [पेज कैसे दिखें](pdf-colors.md): Follow System, Light, Dark या Sepia। |
 | Open Links In | वेब लिंक के लिए ब्राउज़र चुनती है। |

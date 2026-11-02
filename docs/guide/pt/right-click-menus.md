@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # Menus do botão direito
 
@@ -24,7 +24,7 @@ Se você clicar com o botão direito em uma referência em texto simples e houve
 | Onde clicar com o botão direito | Comandos |
 | --- | --- |
 | Uma entrada do sumário | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Uma miniatura | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up ou Move Page Down, Delete Page. Consulte [Reorganizar páginas](pages.md). |
+| Uma miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Com várias páginas selecionadas, os comandos indicam quantas, como Delete 3 Pages. Consulte [Reorganizar páginas](pages.md). |
 | Um resultado de busca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Uma âncora | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -32,7 +32,7 @@ Se você clicar com o botão direito em uma referência em texto simples e houve
 
 | Onde clicar com o botão direito | Comandos |
 | --- | --- |
-| O título do documento ou uma parte vazia da barra de ferramentas | Adicionar aos favoritos ou remover dos favoritos, Save All Open Tabs as a Group, Update Group with Open Tabs, e seus Grupos de Abas e favoritos |
+| O título do documento ou uma parte vazia da barra de ferramentas | Adicionar aos favoritos ou remover dos favoritos, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, e seus Grupos de Abas e favoritos |
 | Uma linha na tela Start | Open, Open in New Tab, Open in New Window, Show in Finder, e Remove ou Delete |
 
 Alguns comandos aparecem somente quando se aplicam. Por exemplo, Save All Open Tabs as a Group requer mais de uma aba, e os comandos de âncora não estão disponíveis em uma janela aberta a partir de uma âncora.

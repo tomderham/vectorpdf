@@ -1,9 +1,9 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # Raccourcis clavier
 
-Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme indiqué dans les tableaux ci-dessous. Consultez [Menus du clic droit](right-click-menus.md).
+Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme indiqué ci-dessous. Consultez [Menus du clic droit](right-click-menus.md).
 
 ## Documents
 
@@ -44,7 +44,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages ou Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Underline | ⇧⌘U | Texte sélectionné |
 | Strikethrough | ⇧⌘X | Texte sélectionné |
 | Stop Speaking | ⌥⌘. | Texte sélectionné |
-| Add Anchor | ⌘B | Sélection, lien ou page |
+| Add Anchor | ⌘B | Sélection, lien ou page, sous le nom Create Anchor |
 
 ## Souris et trackpad
 

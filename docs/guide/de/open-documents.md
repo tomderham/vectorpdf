@@ -1,5 +1,5 @@
 <!-- keywords: öffnen, PDF öffnen, Datei öffnen, zuletzt verwendet, Passwort, Cloud, neu laden, ziehen, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: 0d5e3c24fe3f -->
+<!-- source: fc51842f2339 -->
 
 # Dokumente öffnen
 
@@ -7,7 +7,7 @@
 
 - **In einem neuen Fenster:** Wähle File > Open PDF oder drücke ⌘O.
 - **In einem neuen Tab:** Wähle File > Open PDF in New Tab oder drücke ⌥⌘O.
-- **Im Finder:** Klicke mit der rechten Maustaste auf ein PDF und wähle dann „Öffnen mit“ > „VectorPDF“ (auf einem Mac mit englischer Systemsprache: Open With > VectorPDF). Um alle PDFs in VectorPDF zu öffnen, wähle ein PDF aus, wähle im Finder „Ablage“ > „Informationen“ (File > Get Info) und ändere die Option „Öffnen mit“.
+- **Im Finder:** Klicke mit der rechten Maustaste auf ein PDF und wähle dann „Öffnen mit“ > „VectorPDF“ (auf einem Mac mit englischer Systemsprache: Open With > VectorPDF). Um alle PDFs in VectorPDF zu öffnen, wähle ein PDF aus, wähle im Finder „Ablage“ > „Informationen“ (File > Get Info), ändere die Option „Öffnen mit“ und klicke dann auf „Alle ändern“ (Change All).
 - **Durch Ziehen:** Ziehe ein PDF auf den Start-Bildschirm, um es dort zu öffnen, oder auf ein geöffnetes Dokument, um es in einem neuen Tab zu öffnen.
 - **Aus einer Liste:** Wähle File > Open Recent oder verwende das Menü [Favorites](favorites-and-tab-groups.md). Klicke auf dem Start-Bildschirm mit der rechten Maustaste auf ein Dokument, um es in einem neuen Tab oder Fenster zu öffnen.
 

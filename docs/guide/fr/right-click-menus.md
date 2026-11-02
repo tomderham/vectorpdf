@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # Menus du clic droit
 
@@ -24,7 +24,7 @@ Si vous cliquez avec le bouton droit sur une référence en texte brut alors que
 | Clic droit sur | Commandes |
 | --- | --- |
 | Une entrée du plan | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Une vignette | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up ou Down, Delete. Consultez [Réorganiser les pages](pages.md). |
+| Une vignette | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Lorsque plusieurs pages sont sélectionnées, les commandes indiquent leur nombre, par exemple Delete 3 Pages. Consultez [Réorganiser les pages](pages.md). |
 | Un résultat de recherche | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Une ancre | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -32,7 +32,7 @@ Si vous cliquez avec le bouton droit sur une référence en texte brut alors que
 
 | Clic droit sur | Commandes |
 | --- | --- |
-| Le titre du document ou une partie vide de la barre d’outils | Ajout à Favorites ou retrait de Favorites, Save All Open Tabs as a Group, Update Group with Open Tabs, ainsi que vos Tab Groups et Favorites |
+| Le titre du document ou une partie vide de la barre d’outils | Ajout à Favorites ou retrait de Favorites, Save All Open Tabs as a Group, Update Group “nom” with Open Tabs, ainsi que vos Tab Groups et Favorites |
 | Une ligne de l’écran Start | Open, Open in New Tab, Open in New Window, Show in Finder, et Remove ou Delete |
 
 Certaines commandes n’apparaissent que lorsqu’elles s’appliquent. Par exemple, Save All Open Tabs as a Group nécessite plus d’un onglet, et les commandes d’ancre ne sont pas disponibles dans une fenêtre ouverte depuis une ancre.

@@ -1,5 +1,5 @@
 <!-- keywords: contraseña, contraseñas, cifrar, cifrado, encriptar, proteger, protegido, seguridad, permisos, bloquear, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # Contraseñas y cifrado
 
@@ -15,7 +15,7 @@ VectorPDF te pide la contraseña cuando abres un PDF protegido. Si haces clic en
 
 La copia se cifra con AES-256 y necesita la contraseña para abrirse.
 
-> **Advertencia:** Guarda la contraseña en un lugar seguro. Si la pierdes, no hay forma de recuperar un PDF cifrado.
+> **Advertencia:** Guarda la contraseña en un lugar seguro. Si la pierdes, no hay forma de recuperar el PDF cifrado.
 
 ## Ver los permisos de un documento
 

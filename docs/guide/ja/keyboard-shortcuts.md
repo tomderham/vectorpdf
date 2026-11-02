@@ -1,9 +1,9 @@
 <!-- keywords: キーボード, ショートカット, キー, ホットキー, ジェスチャ, トラックパッド, マウス, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # キーボードショートカット
 
-これらのコマンドの多くは右クリックメニューからも使用でき、下の表に記載しています。[右クリックメニュー](right-click-menus.md)を参照してください。
+これらのコマンドの多くは右クリックメニューからも使用でき、下に記載しています。[右クリックメニュー](right-click-menus.md)を参照してください。
 
 ## 書類
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages または Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@
 | Underline | ⇧⌘U | 選択したテキスト |
 | Strikethrough | ⇧⌘X | 選択したテキスト |
 | Stop Speaking | ⌥⌘. | 選択したテキスト |
-| Add Anchor | ⌘B | 選択範囲、リンク、ページ |
+| Add Anchor | ⌘B | 選択範囲、リンク、ページ (Create Anchor として) |
 
 ## マウスとトラックパッド
 

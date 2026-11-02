@@ -1,5 +1,5 @@
 <!-- keywords: 암호, 비밀번호, 암호화, 보호, 보안, 권한, 잠금, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # 암호 및 암호화
 
@@ -15,7 +15,7 @@
 
 사본은 AES-256으로 암호화되며, 열려면 암호가 필요합니다.
 
-> **경고:** 암호를 안전하게 보관하십시오. 암호를 잊어버리면 암호화된 PDF를 복구할 방법이 없습니다.
+> **경고:** 암호를 안전하게 보관하십시오. 암호를 분실하면 암호화된 PDF를 복구할 방법이 없습니다.
 
 ## 문서의 권한 확인하기
 

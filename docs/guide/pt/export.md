@@ -1,9 +1,9 @@
 <!-- keywords: exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # Exportar para outros formatos
 
-Escolha File > Export Document As e escolha um formato.
+Para exportar um documento inteiro, escolha File > Export Document As e escolha Plain Text, Word Document, Scalable Vector Graphics ou Flattened PDF. O resumo de anotações e as medições têm comandos próprios.
 
 ## Plain Text
 

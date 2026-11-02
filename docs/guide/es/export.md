@@ -1,9 +1,9 @@
 <!-- keywords: exportar, convertir, texto simple, texto, acoplar, acoplado, resumen de anotaciones, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # Exportar a otros formatos
 
-Elige File > Export Document As y, a continuación, un formato.
+Para exportar un documento completo, elige File > Export Document As y, a continuación, Plain Text, Word Document, Scalable Vector Graphics o Flattened PDF. El resumen de anotaciones y las mediciones tienen sus propios comandos.
 
 ## Plain Text
 

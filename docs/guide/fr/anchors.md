@@ -1,5 +1,5 @@
 <!-- keywords: ancre, ancres, signet, signets, instantané, endroit enregistré, enregistrer un endroit, revenir, repère, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # Ancres
 
@@ -7,7 +7,7 @@ Une ancre est un endroit enregistré dans un document : un passage de texte, un
 
 ## Créer une ancre
 
-- Sélectionnez du texte, ou maintenez la touche ⌥ enfoncée et faites glisser le pointeur pour sélectionner une zone, puis appuyez sur ⌘B.
+- Sélectionnez du texte, ou maintenez la touche ⌥ enfoncée et faites glisser le pointeur pour sélectionner une zone, puis appuyez sur ⌘B ou choisissez Anchors > Add Anchor.
 - Cliquez avec le bouton droit sur une sélection, un lien ou un endroit de la page, puis choisissez **Create Anchor**.
 - Cliquez avec le bouton droit sur un [résultat de recherche](search.md) ou une entrée du [plan](outline-and-thumbnails.md), puis choisissez **Create Anchor**.
 

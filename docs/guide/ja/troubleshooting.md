@@ -1,5 +1,5 @@
 <!-- keywords: トラブルシューティング, 問題, 動作しない, ヘルプ, 修正, サポート, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # トラブルシューティング
 
@@ -31,7 +31,7 @@ VectorPDF のウインドウがアクティブになっている必要もあり�
 
 ## Agent を使用できない、または該当箇所だけが表示される
 
-Agent には macOS 26 以降が必要です。デバイス上で回答を作成するには、Apple Intelligence がオンになっていて使用できる状態である必要があります。インデックスの作成に失敗した場合は、Agent タブの Retry をクリックしてください。[Agent の回答方法を選択する](agent-engines.md)を参照してください。
+Agent には macOS 26 以降が必要です。デバイス上で回答を作成するには、Apple Intelligence がオンになっていて使用できる状態である必要があります。インデックスの作成に失敗した場合は、Ask About This Document タブの Retry をクリックしてください。[Agent の回答方法を選択する](agent-engines.md)を参照してください。
 
 ## オンラインモデルが回答しない
 

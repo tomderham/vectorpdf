@@ -1,9 +1,9 @@
 <!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # 다른 포맷으로 내보내기
 
-File > Export Document As를 선택한 다음 포맷을 선택합니다.
+문서 전체를 내보내려면 File > Export Document As를 선택한 다음 Plain Text, Word Document, Scalable Vector Graphics 또는 Flattened PDF를 선택합니다. 주석 요약과 측정에는 각각 별도의 명령이 있습니다.
 
 ## 일반 텍스트(Plain Text)
 

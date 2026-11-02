@@ -1,9 +1,9 @@
 <!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # Exporter vers d’autres formats
 
-Choisissez File > Export Document As, puis choisissez un format.
+Pour exporter un document entier, choisissez File > Export Document As, puis choisissez Plain Text, Word Document, Scalable Vector Graphics ou Flattened PDF. Le résumé des annotations et les mesures ont leurs propres commandes.
 
 ## Texte brut
 

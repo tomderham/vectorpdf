@@ -1,5 +1,5 @@
 <!-- keywords: pestaña, pestañas, ventana, ventanas, nueva pestaña, nueva ventana, ventanas secundarias, ventanas de ancla, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: b73c7e596329 -->
+<!-- source: fbec18618570 -->
 
 # Pestañas y ventanas
 
@@ -9,7 +9,7 @@ VectorPDF usa las pestañas de ventana estándar de macOS.
 
 - **Pestaña nueva:** pulsa ⌘T o haz clic en el botón + de la barra de pestañas.
 - **Abrir un PDF en una pestaña nueva:** pulsa ⌥⌘O o arrástralo sobre un documento abierto.
-- **Abrir un documento en otra ventana:** ⌘N abre una ventana nueva.
+- **Ventana nueva:** pulsa ⌘N para abrir una ventana vacía, o ⌘O para abrir un PDF en una ventana nueva.
 
 Para guardar las pestañas abiertas como grupo, haz clic con el botón derecho en el título del documento y elige Save All Open Tabs as a Group. Consulta [Favoritos y grupos de pestañas](favorites-and-tab-groups.md).
 

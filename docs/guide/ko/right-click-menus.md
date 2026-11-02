@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # 오른쪽 클릭 메뉴
 
@@ -24,7 +24,7 @@
 | 오른쪽 클릭 대상 | 명령 |
 | --- | --- |
 | 개요 항목 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| 축소판 | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up 또는 Down, Delete. [페이지 재배열하기](pages.md)를 참조하십시오. |
+| 축소판 | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. 여러 페이지를 선택하면 Delete 3 Pages와 같이 명령에 페이지 수가 표시됩니다. [페이지 재배열하기](pages.md)를 참조하십시오. |
 | 검색 결과 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | 앵커 | Open in New Window 또는 Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -32,7 +32,7 @@
 
 | 오른쪽 클릭 대상 | 명령 |
 | --- | --- |
-| 문서 제목 또는 도구 막대의 빈 부분 | Favorites에 추가 또는 제거, Save All Open Tabs as a Group, Update Group with Open Tabs, 내 Tab Groups 및 Favorites |
+| 문서 제목 또는 도구 막대의 빈 부분 | Favorites에 추가 또는 제거, Save All Open Tabs as a Group, Update Group “이름” with Open Tabs, 내 Tab Groups 및 Favorites |
 | Start 화면의 행 | Open, Open in New Tab, Open in New Window, Show in Finder, Remove 또는 Delete |
 
 일부 명령은 해당하는 경우에만 나타납니다. 예를 들어 Save All Open Tabs as a Group을 사용하려면 탭이 두 개 이상 있어야 하며, 앵커에서 연 윈도우에서는 앵커 명령을 사용할 수 없습니다.

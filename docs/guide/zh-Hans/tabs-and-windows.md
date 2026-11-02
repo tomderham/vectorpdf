@@ -1,5 +1,5 @@
 <!-- keywords: 标签页, 窗口, 新标签页, 新窗口, 程序坞, 子窗口, 锚点窗口, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: b73c7e596329 -->
+<!-- source: fbec18618570 -->
 
 # 标签页和窗口
 
@@ -9,7 +9,7 @@ VectorPDF 使用标准的 macOS 窗口标签页。
 
 - **新建标签页：** 按下 ⌘T，或者点按标签页栏中的 + 按钮。
 - **在新标签页中打开 PDF：** 按下 ⌥⌘O，或者将其拖移到已打开的文稿上。
-- **在另一个窗口中打开文稿：** 按下 ⌘N 可打开新窗口。
+- **新窗口：** 按下 ⌘N 可打开空白窗口，按下 ⌘O 可在新窗口中打开 PDF。
 
 若要将打开的标签页存储为组，请右键点按文稿标题，然后选取 Save All Open Tabs as a Group。请参阅[个人收藏和标签页组](favorites-and-tab-groups.md)。
 

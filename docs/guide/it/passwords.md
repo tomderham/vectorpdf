@@ -1,5 +1,5 @@
 <!-- keywords: password, codificare, codificato, codifica, cifratura, crittografia, proteggere, protetto, sicurezza, autorizzazioni, bloccare, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # Password e codifica
 
@@ -15,7 +15,7 @@ VectorPDF chiede la password quando apri un PDF protetto. Se fai clic su Cancel,
 
 La copia viene codificata con AES-256 e per aprirla è necessaria la password.
 
-> **Attenzione:** conserva la password in un luogo sicuro. Se la perdi, non c'è modo di recuperare un PDF codificato.
+> **Attenzione:** conserva la password in un luogo sicuro. Se la perdi, non c'è modo di recuperare il PDF codificato.
 
 ## Vedere le autorizzazioni di un documento
 

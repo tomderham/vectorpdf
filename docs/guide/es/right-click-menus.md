@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # Menús de clic derecho
 
@@ -24,7 +24,7 @@ Si haces clic con el botón derecho en una referencia de texto simple y hay docu
 | Clic derecho en | Comandos |
 | --- | --- |
 | Una entrada del esquema | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Una miniatura | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up o Down, Delete. Consulta [Reorganizar páginas](pages.md). |
+| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Con varias páginas seleccionadas, los comandos indican cuántas, como Delete 3 Pages. Consulta [Reorganizar páginas](pages.md). |
 | Un resultado de búsqueda | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancla | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -32,7 +32,7 @@ Si haces clic con el botón derecho en una referencia de texto simple y hay docu
 
 | Clic derecho en | Comandos |
 | --- | --- |
-| El título del documento, o una parte vacía de la barra de herramientas | Añadir a favoritos o quitar de favoritos, Save All Open Tabs as a Group, Update Group with Open Tabs, y tus grupos de pestañas y favoritos |
+| El título del documento, o una parte vacía de la barra de herramientas | Añadir a favoritos o quitar de favoritos, Save All Open Tabs as a Group, Update Group “nombre” with Open Tabs, y tus grupos de pestañas y favoritos |
 | Una fila de la pantalla de inicio | Open, Open in New Tab, Open in New Window, Show in Finder, y Remove o Delete |
 
 Algunos comandos solo aparecen cuando corresponden. Por ejemplo, Save All Open Tabs as a Group requiere más de una pestaña, y los comandos de anclas no están disponibles en una ventana abierta desde un ancla.

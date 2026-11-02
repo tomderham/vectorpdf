@@ -1,5 +1,5 @@
 <!-- keywords: ouvrir, ouvrir un PDF, ouvrir un fichier, récent, mot de passe, nuage, recharger, faire glisser, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: 0d5e3c24fe3f -->
+<!-- source: fc51842f2339 -->
 
 # Ouvrir des documents
 
@@ -7,7 +7,7 @@
 
 - **Dans une nouvelle fenêtre :** choisissez File > Open PDF, ou appuyez sur ⌘O.
 - **Dans un nouvel onglet :** choisissez File > Open PDF in New Tab, ou appuyez sur ⌥⌘O.
-- **Depuis le Finder :** cliquez avec le bouton droit sur un PDF, puis choisissez Open With > VectorPDF (Ouvrir avec dans un Finder en français). Pour ouvrir tous les PDF dans VectorPDF, sélectionnez un PDF, choisissez File > Get Info dans le Finder (Fichier > Lire les informations en français), puis modifiez « Open with » (Ouvrir avec).
+- **Depuis le Finder :** cliquez avec le bouton droit sur un PDF, puis choisissez Open With > VectorPDF (Ouvrir avec dans un Finder en français). Pour ouvrir tous les PDF dans VectorPDF, sélectionnez un PDF, choisissez File > Get Info dans le Finder (Fichier > Lire les informations en français), modifiez « Open with » (Ouvrir avec), puis cliquez sur Change All (Tout modifier).
 - **Par glissement :** faites glisser un PDF sur l’écran Start pour l’y ouvrir, ou sur un document ouvert pour l’ouvrir dans un nouvel onglet.
 - **Depuis une liste :** choisissez File > Open Recent, ou utilisez le menu [Favorites](favorites-and-tab-groups.md). Dans l’écran Start, cliquez avec le bouton droit sur un document pour l’ouvrir dans un nouvel onglet ou une nouvelle fenêtre.
 

@@ -1,9 +1,9 @@
 <!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # 他のフォーマットに書き出す
 
-File > Export Document As を選択してから、フォーマットを選択します。
+書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、または Flattened PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
 
 ## Plain Text
 

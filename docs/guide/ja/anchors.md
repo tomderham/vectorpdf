@@ -1,5 +1,5 @@
 <!-- keywords: アンカー, ブックマーク, しおり, 保存した場所, スナップショット, anchor, anchors, bookmark, bookmarks, snapshot -->
-<!-- source: a89148a6fa8e -->
+<!-- source: f50af3ea4a89 -->
 
 # アンカー
 
@@ -7,7 +7,7 @@
 
 ## アンカーを作成する
 
-- テキストを選択するか、⌥ を押しながらドラッグして領域を選択し、⌘B を押します。
+- テキストを選択するか、⌥ を押しながらドラッグして領域を選択し、⌘B を押すか、Anchors > Add Anchor を選択します。
 - 選択範囲、リンク、ページ上の場所を右クリックして、**Create Anchor** を選択します。
 - [検索結果](search.md)または[アウトライン](outline-and-thumbnails.md)の項目を右クリックして、**Create Anchor** を選択します。
 

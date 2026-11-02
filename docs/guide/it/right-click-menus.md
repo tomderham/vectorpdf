@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: c77bf03c0903 -->
+<!-- source: 13f45f0ff809 -->
 
 # Menu di scelta rapida
 
@@ -24,7 +24,7 @@ Se fai clic con il tasto destro su un riferimento in testo semplice e in altri p
 | Clic con il tasto destro su | Comandi |
 | --- | --- |
 | Una voce della struttura | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Una miniatura | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up o Move Page Down, Delete. Consulta [Riordinare le pagine](pages.md). |
+| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Con più pagine selezionate, i comandi ne indicano il numero, ad esempio Delete 3 Pages. Consulta [Riordinare le pagine](pages.md). |
 | Un risultato di ricerca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancoraggio | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -32,7 +32,7 @@ Se fai clic con il tasto destro su un riferimento in testo semplice e in altri p
 
 | Clic con il tasto destro su | Comandi |
 | --- | --- |
-| Il titolo del documento o una parte vuota della barra degli strumenti | Aggiunta o rimozione dai preferiti, Save All Open Tabs as a Group, Update Group with Open Tabs, e i tuoi Tab Groups e Favorites |
+| Il titolo del documento o una parte vuota della barra degli strumenti | Aggiunta o rimozione dai preferiti, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, e i tuoi Tab Groups e Favorites |
 | Una riga nella schermata Start | Open, Open in New Tab, Open in New Window, Show in Finder, e Remove o Delete |
 
 Alcuni comandi compaiono solo quando sono applicabili. Ad esempio, Save All Open Tabs as a Group richiede più di un pannello, e i comandi degli ancoraggi non sono disponibili in una finestra aperta da un ancoraggio.

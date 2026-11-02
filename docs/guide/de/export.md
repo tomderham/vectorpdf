@@ -1,9 +1,9 @@
 <!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # In andere Formate exportieren
 
-Wähle File > Export Document As und dann ein Format.
+Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics oder Flattened PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
 
 ## Plain Text
 

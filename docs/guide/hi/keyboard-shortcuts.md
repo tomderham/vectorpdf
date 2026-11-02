@@ -1,9 +1,9 @@
 <!-- keywords: कीबोर्ड, शॉर्टकट, कुंजियाँ, हॉट की, जेस्चर, ट्रैकपैड, माउस, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # कीबोर्ड शॉर्टकट
 
-इनमें से कई कमांड राइट-क्लिक मेनू में भी हैं, जिन्हें नीचे की तालिकाओं में बताया गया है। [राइट-क्लिक मेनू](right-click-menus.md) देखें।
+इनमें से कई कमांड राइट-क्लिक मेनू में भी हैं, जिन्हें नीचे बताया गया है। [राइट-क्लिक मेनू](right-click-menus.md) देखें।
 
 ## दस्तावेज़
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages या Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@
 | Underline | ⇧⌘U | चयनित टेक्स्ट |
 | Strikethrough | ⇧⌘X | चयनित टेक्स्ट |
 | Stop Speaking | ⌥⌘. | चयनित टेक्स्ट |
-| Add Anchor | ⌘B | चयन, लिंक या पेज |
+| Add Anchor | ⌘B | चयन, लिंक या पेज, Create Anchor के रूप में |
 
 ## माउस और ट्रैकपैड
 

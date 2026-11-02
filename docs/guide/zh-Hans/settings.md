@@ -1,5 +1,5 @@
 <!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 36cf10a0994a -->
+<!-- source: 71eda28f956d -->
 
 # 设置
 
@@ -7,7 +7,7 @@
 
 | 设置 | 作用 |
 | --- | --- |
-| Use Agent | 在 macOS 26 或更高版本上，在边栏中显示 [Agent](agent.md) 标签页。 |
+| Use Agent | 在 macOS 26 或更高版本上，在边栏中显示 [Ask About This Document](agent.md) 标签页。 |
 | AI Synthesis Engine | 在 macOS 27 上，选择[由什么撰写 Agent 的回答](agent-engines.md)。 |
 | PDF Color | 设置[页面的外观](pdf-colors.md)：Follow System、Light、Dark 或 Sepia。 |
 | Open Links In | 选择用于打开网页链接的浏览器。 |

@@ -1,5 +1,5 @@
 <!-- keywords: referência, referências, referência cruzada, outro documento, outra aba, seção, cláusula, norma, especificação, contrato, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # Referências entre documentos
 
@@ -12,7 +12,7 @@ Normas citam outras normas e contratos mencionam seus anexos, geralmente em text
 3. Escolha uma destas opções:
    - **Go to** o título correspondente, para pré-visualizá-lo. Na pré-visualização, você pode ir até lá.
    - Mantenha ⌘ pressionada com o menu aberto para mudar o comando para **Open**, que vai direto para o local, sem pré-visualização.
-   - **Find in Other Tabs**, para buscar no texto das suas outras abas.
+   - **Find “referência” in Other Tabs**, em que “referência” é o texto em que você clicou, para buscar no texto das suas outras abas.
 
 O VectorPDF compara as referências com o sumário do outro documento ou, se ele não tiver sumário, com seus títulos. Se o mesmo título aparecer em várias abas, a pré-visualização listará cada uma delas.
 

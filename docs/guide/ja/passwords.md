@@ -1,5 +1,5 @@
 <!-- keywords: パスワード, 暗号化, 保護, セキュリティ, アクセス権, ロック, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # パスワードと暗号化
 
@@ -15,7 +15,7 @@
 
 コピーは AES-256 で暗号化され、開くにはパスワードが必要になります。
 
-> **警告:** パスワードは安全に保管してください。パスワードを忘れると、暗号化した PDF を復元する方法はありません。
+> **警告:** パスワードは安全に保管してください。パスワードを紛失すると、暗号化した PDF を復元する方法はありません。
 
 ## 書類のアクセス権を確認する
 

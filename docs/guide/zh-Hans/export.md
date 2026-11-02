@@ -1,9 +1,9 @@
 <!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: 6298933ea76c -->
+<!-- source: bfda5c49e81e -->
 
 # 导出为其他格式
 
-选取 File > Export Document As，然后选取一种格式。
+若要导出整个文稿，请选取 File > Export Document As，然后选取 Plain Text、Word Document、Scalable Vector Graphics 或 Flattened PDF。注释摘要和测量结果有各自的命令。
 
 ## 纯文本（Plain Text）
 

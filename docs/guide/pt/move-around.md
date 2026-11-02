@@ -1,5 +1,5 @@
 <!-- keywords: navegar, navegação, rolar, página, páginas, ir para a página, voltar, avançar, teclas de seta, saltar, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # Navegar por um documento
 
@@ -15,7 +15,7 @@ Pelo teclado:
 | Up Arrow, Down Arrow | Rolar dentro de uma página mais alta que a janela e depois passar à página seguinte. Se a página couber na janela, mover uma página por vez. |
 | Page Up, Page Down | Rolar um trecho maior e depois passar à página seguinte |
 | Space, ⇧Space | Avançar ou voltar, como Page Down e Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Página anterior ou seguinte |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Página anterior ou seguinte |
 | ⌘Up Arrow, ⌘Down Arrow | Primeira ou última página |
 
 Em Two-Page Mode, essas teclas viram um par de páginas inteiro.

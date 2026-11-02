@@ -1,9 +1,9 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # Tastaturkurzbefehle
 
-Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist in den folgenden Tabellen vermerkt. Weitere Informationen findest du unter [Kontextmenüs](right-click-menus.md).
+Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten vermerkt. Weitere Informationen findest du unter [Kontextmenüs](right-click-menus.md).
 
 ## Dokumente
 
@@ -44,7 +44,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist in den 
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages oder Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist in den 
 | Underline | ⇧⌘U | Ausgewählter Text |
 | Strikethrough | ⇧⌘X | Ausgewählter Text |
 | Stop Speaking | ⌥⌘. | Ausgewählter Text |
-| Add Anchor | ⌘B | Auswahl, Link oder Seite |
+| Add Anchor | ⌘B | Auswahl, Link oder Seite, als Create Anchor |
 
 ## Maus und Trackpad
 

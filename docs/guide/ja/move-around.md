@@ -1,5 +1,5 @@
 <!-- keywords: 移動, ナビゲーション, スクロール, ページ, ページへ移動, 戻る, 進む, 矢印キー, ジャンプ, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 395474dd164d -->
+<!-- source: 542d49632c84 -->
 
 # 書類内を移動する
 
@@ -15,7 +15,7 @@
 | Up Arrow、Down Arrow | ウインドウより縦に長いページ内をスクロールしてから、次のページに移動します。ページがウインドウに収まる場合は、1 ページずつ移動します。 |
 | Page Up、Page Down | より大きくスクロールしてから、次のページに移動します |
 | Space、⇧Space | 前方または後方に移動します。Page Down、Page Up と同じです |
-| ⌥Up Arrow、⌥Down Arrow | 前または次のページ |
+| ⌥Up Arrow、⌥Down Arrow、⌥Left Arrow、⌥Right Arrow | 前または次のページ |
 | ⌘Up Arrow、⌘Down Arrow | 最初または最後のページ |
 
 Two-Page Mode では、これらのキーで見開き単位で移動します。

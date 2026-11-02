@@ -1,5 +1,5 @@
 <!-- keywords: senha, senhas, criptografar, criptografado, criptografia, proteger, protegido, segurança, permissões, bloquear, password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
-<!-- source: 27a9d624a54a -->
+<!-- source: 18b3a22a195b -->
 
 # Senhas e criptografia
 

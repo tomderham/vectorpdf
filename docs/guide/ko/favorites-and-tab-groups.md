@@ -1,5 +1,5 @@
 <!-- keywords: 즐겨찾기, 탭 그룹, 그룹, 고정, 별표, 세션, 프로젝트, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: 718bba9c175b -->
+<!-- source: e25fc5652272 -->
 
 # 즐겨찾기와 탭 그룹
 
@@ -28,7 +28,7 @@ Favorites 메뉴에서 그룹을 선택한 다음 Open을 선택하거나, Start
 
 ### 그룹 변경하기
 
-그룹을 열고 탭을 추가하거나 닫은 다음 Favorites > Update Group with Open Tabs를 선택합니다.
+그룹을 열고 탭을 추가하거나 닫은 다음 Favorites > Update Group “이름” with Open Tabs를 선택합니다. “이름”은 그룹의 이름입니다.
 
 ### 그룹 삭제하기
 

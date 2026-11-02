@@ -1,9 +1,9 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: f18a657869c3 -->
+<!-- source: a53b17584c10 -->
 
 # Atajos de teclado
 
-Muchos de estos comandos también están en un menú de clic derecho, como se indica en las tablas siguientes. Consulta [Menús de clic derecho](right-click-menus.md).
+Muchos de estos comandos también están en un menú de clic derecho, como se indica a continuación. Consulta [Menús de clic derecho](right-click-menus.md).
 
 ## Documentos
 
@@ -44,7 +44,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages o Single Page | ⌥⌘2 |
@@ -64,7 +64,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | Underline | ⇧⌘U | Texto seleccionado |
 | Strikethrough | ⇧⌘X | Texto seleccionado |
 | Stop Speaking | ⌥⌘. | Texto seleccionado |
-| Add Anchor | ⌘B | Selección, enlace o página |
+| Add Anchor | ⌘B | Selección, enlace o página, como Create Anchor |
 
 ## Ratón y trackpad
 

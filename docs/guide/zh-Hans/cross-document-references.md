@@ -1,5 +1,5 @@
 <!-- keywords: 引用, 交叉引用, 其他文稿, 其他标签页, 章节, 条款, 标准, 规范, 合同, reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
-<!-- source: c30b2be55179 -->
+<!-- source: a1c1a16ffbb2 -->
 
 # 跨文稿引用
 
@@ -12,7 +12,7 @@
 3. 选取以下操作之一：
    - **Go to** 匹配的标题，以预览该标题。你可以从预览前往该位置。
    - 在菜单打开时按住 ⌘，可将该命令改为 **Open**，它会直接前往该位置而不显示预览。
-   - **Find in Other Tabs**，以搜索其他标签页中的文本。
+   - **Find “引用” in Other Tabs**（其中“引用”是你点按的文本），以搜索其他标签页中的文本。
 
 VectorPDF 会将引用与另一文稿的大纲进行匹配；如果该文稿没有大纲，则与其标题进行匹配。如果同一标题出现在多个标签页中，预览会列出每一处。
 

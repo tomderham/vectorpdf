@@ -1,5 +1,5 @@
 <!-- keywords: 열기, PDF 열기, 파일 열기, 최근 항목, 암호, 클라우드, 다시 로드, 새로 고침, 드래그, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: 0d5e3c24fe3f -->
+<!-- source: fc51842f2339 -->
 
 # 문서 열기
 
@@ -7,7 +7,7 @@
 
 - **새로운 윈도우에서 열기:** File > Open PDF를 선택하거나 ⌘O 키를 누릅니다.
 - **새로운 탭에서 열기:** File > Open PDF in New Tab을 선택하거나 ⌥⌘O 키를 누릅니다.
-- **Finder에서 열기:** PDF를 오른쪽 클릭한 다음 Open With > VectorPDF(다음으로 열기)를 선택합니다. 모든 PDF를 VectorPDF로 열려면 PDF를 선택하고 Finder에서 File > Get Info(파일 > 정보 가져오기)를 선택한 다음 “Open with”(다음으로 열기)를 변경합니다.
+- **Finder에서 열기:** PDF를 오른쪽 클릭한 다음 Open With > VectorPDF(다음으로 열기)를 선택합니다. 모든 PDF를 VectorPDF로 열려면 PDF를 선택하고 Finder에서 File > Get Info(파일 > 정보 가져오기)를 선택하고 “Open with”(다음으로 열기)를 변경한 다음 Change All(모두 변경)을 클릭합니다.
 - **드래그하여 열기:** PDF를 Start 화면으로 드래그하면 그 자리에서 열리고, 열려 있는 문서 위로 드래그하면 새로운 탭에서 열립니다.
 - **목록에서 열기:** File > Open Recent를 선택하거나 [Favorites](favorites-and-tab-groups.md) 메뉴를 사용합니다. Start 화면에서 문서를 오른쪽 클릭하면 새로운 탭이나 윈도우에서 열 수 있습니다.
 

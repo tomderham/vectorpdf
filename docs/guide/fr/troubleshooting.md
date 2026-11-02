@@ -1,5 +1,5 @@
 <!-- keywords: dépannage, problème, problèmes, ne fonctionne pas, aide, résoudre, assistance, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 12f51083c375 -->
+<!-- source: d9963fbbb92b -->
 
 # Dépannage
 
@@ -31,7 +31,7 @@ Vérifiez votre connexion et que le fichier se télécharge dans le Finder, puis
 
 ## L’Agent n’est pas disponible ou n’affiche que des passages
 
-L’Agent nécessite macOS 26 ou une version ultérieure, et la rédaction de réponses sur l’appareil nécessite qu’Apple Intelligence soit activé et prêt. Si l’indexation échoue, cliquez sur Retry dans l’onglet Agent. Consultez [Choisir comment l’Agent répond](agent-engines.md).
+L’Agent nécessite macOS 26 ou une version ultérieure, et la rédaction de réponses sur l’appareil nécessite qu’Apple Intelligence soit activé et prêt. Si l’indexation échoue, cliquez sur Retry dans l’onglet Ask About This Document. Consultez [Choisir comment l’Agent répond](agent-engines.md).
 
 ## Un modèle en ligne ne répond pas
 
