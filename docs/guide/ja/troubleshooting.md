@@ -1,5 +1,5 @@
-<!-- keywords: トラブルシューティング, 問題, 動作しない, ヘルプ, 修正, サポート, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, トラブルシューティング, 問題, 動作しない, ヘルプ, 修正, サポート, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # トラブルシューティング
 
@@ -24,6 +24,10 @@ VectorPDF のウインドウがアクティブになっている必要もあり�
 ## 別の書類への参照が見つからない
 
 もう一方の書類を同じウインドウのタブとして開いてください。別のウインドウは検索されません。
+
+## 文書が破損していると表示される
+
+ファイル内にページが見つからない場合、VectorPDF はファイルを開けなかったことを通知します。ファイルが破損しているか不完全であるか、VectorPDF が読み取れない機能を使用している可能性があります。もう一度ダウンロードするか、別の PDF アプリで開いてみてください。
 
 ## クラウド上の書類を開けない
 

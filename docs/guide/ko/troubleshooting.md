@@ -1,5 +1,5 @@
-<!-- keywords: 문제 해결, 문제, 작동하지 않음, 도움말, 해결, 지원, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, 문제 해결, 문제, 작동하지 않음, 도움말, 해결, 지원, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # 문제 해결
 
@@ -24,6 +24,10 @@ VectorPDF 윈도우가 활성 윈도우여야 합니다.
 ## 다른 문서에 대한 참조를 찾을 수 없는 경우
 
 다른 문서를 같은 윈도우의 탭으로 엽니다. 별도의 윈도우는 검색되지 않습니다.
+
+## 문서가 손상되었다고 표시되는 경우
+
+파일에서 페이지를 찾을 수 없으면 VectorPDF는 파일을 열 수 없다고 알려 줍니다. 파일이 손상되었거나 불완전하거나, VectorPDF가 읽을 수 없는 기능을 사용하고 있을 수 있습니다. 다시 다운로드하거나 다른 PDF 앱에서 열어 보세요.
 
 ## 클라우드 문서가 열리지 않는 경우
 

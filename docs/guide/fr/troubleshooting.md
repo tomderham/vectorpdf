@@ -1,5 +1,5 @@
-<!-- keywords: dépannage, problème, problèmes, ne fonctionne pas, aide, résoudre, assistance, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, dépannage, problème, problèmes, ne fonctionne pas, aide, résoudre, assistance, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # Dépannage
 
@@ -24,6 +24,10 @@ La fenêtre de VectorPDF doit aussi être la fenêtre active.
 ## Une référence à un autre document est introuvable
 
 Ouvrez l’autre document dans un onglet de la même fenêtre. La recherche ne porte pas sur les fenêtres séparées.
+
+## Un document est signalé comme endommagé
+
+Si VectorPDF ne trouve aucune page dans un fichier, il indique que le fichier n’a pas pu être ouvert. Le fichier est peut-être endommagé ou incomplet, ou il utilise des fonctionnalités que VectorPDF ne peut pas lire. Essayez de le télécharger à nouveau ou de l’ouvrir dans une autre app PDF.
 
 ## Un document en ligne ne s’ouvre pas
 

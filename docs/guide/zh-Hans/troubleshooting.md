@@ -1,5 +1,5 @@
-<!-- keywords: 故障排除, 问题, 不起作用, 帮助, 修复, 支持, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, 故障排除, 问题, 不起作用, 帮助, 修复, 支持, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # 故障排除
 
@@ -24,6 +24,10 @@ Link Peek 适用于文稿中的链接，以及指向已在其他标签页中打�
 ## 找不到对其他文稿的引用
 
 将另一份文稿作为标签页在同一窗口中打开。不会搜索单独的窗口。
+
+## 文档显示已损坏
+
+如果 VectorPDF 在文件中找不到任何页面，它会提示无法打开该文件。文件可能已损坏或不完整，也可能使用了 VectorPDF 无法读取的功能。请尝试重新下载，或在其他 PDF 应用中打开。
 
 ## 无法打开云端文稿
 

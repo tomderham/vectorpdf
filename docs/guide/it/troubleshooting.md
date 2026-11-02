@@ -1,5 +1,5 @@
-<!-- keywords: risoluzione dei problemi, problema, problemi, non funziona, aiuto, risolvere, supporto, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, risoluzione dei problemi, problema, problemi, non funziona, aiuto, risolvere, supporto, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # Risoluzione dei problemi
 
@@ -24,6 +24,10 @@ Inoltre, la finestra di VectorPDF deve essere la finestra attiva.
 ## Un riferimento a un altro documento non viene trovato
 
 Apri l'altro documento come pannello nella stessa finestra. La ricerca non viene eseguita nelle finestre separate.
+
+## Un documento risulta danneggiato
+
+Se VectorPDF non trova pagine in un file, segnala che il file non può essere aperto. Il file potrebbe essere danneggiato o incompleto, oppure usare funzioni che VectorPDF non è in grado di leggere. Prova a scaricarlo di nuovo o ad aprirlo in un’altra app per PDF.
 
 ## Un documento nel cloud non si apre
 

@@ -3297,7 +3297,7 @@ int mupdf_document_get_metadata(fz_context *ctx, fz_document *doc, mupdf_documen
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         if (pdoc) {
             out_meta->is_encrypted = (pdoc->crypt != NULL);
-            out_meta->pdf_version = pdoc->version;
+            out_meta->pdf_version = pdf_version(ctx, pdoc);
         }
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);

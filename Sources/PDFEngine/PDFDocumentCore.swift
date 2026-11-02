@@ -34,6 +34,8 @@ public enum PDFError: Error, LocalizedError, Equatable {
     case passwordRequired
     /// A password was supplied but didn't authenticate.
     case incorrectPassword
+    /// The file opened, but no pages could be found in it.
+    case unreadable
 
     public var errorDescription: String? {
         switch self {
@@ -46,6 +48,7 @@ public enum PDFError: Error, LocalizedError, Equatable {
         case .outOfBounds(let p): return "Page index \(p) is out of bounds"
         case .passwordRequired: return "This document requires a password."
         case .incorrectPassword: return "Incorrect password."
+        case .unreadable: return "The file is damaged, or uses features VectorPDF can't read."
         }
     }
 }
@@ -116,6 +119,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         self.outline = []
 
         rebuildPageLayoutAndOutline()
+        // MuPDF's repair of a file it can't read can succeed with nothing in it.
+        guard pageCount > 0 else { throw PDFError.unreadable }
     }
 
     /// Recomputes page count, layout coordinates, page bounds, and outline after document modifications.

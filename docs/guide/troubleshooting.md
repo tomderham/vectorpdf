@@ -1,4 +1,4 @@
-<!-- keywords: troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- keywords: damaged, corrupt, unreadable, troubleshooting, problem, problems, not working, help, fix, support -->
 
 # Troubleshooting
 
@@ -23,6 +23,10 @@ The VectorPDF window also needs to be the active window.
 ## A reference to another document isn't found
 
 Open the other document as a tab in the same window. Separate windows aren't searched.
+
+## A document says it's damaged
+
+If VectorPDF can't find any pages in a file, it says the file couldn't be opened. The file may be damaged or incomplete, or it may use features VectorPDF can't read. Try downloading it again, or opening it in another PDF app.
 
 ## A cloud document won't open
 

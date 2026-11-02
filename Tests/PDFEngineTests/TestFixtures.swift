@@ -31,6 +31,11 @@ enum Fixture {
     /// Little CMS tutorial: 60 pages of real-world typesetting with embedded fonts and internal links.
     static var lcmsTutorial: URL { url("lcms2-tutorial.pdf") }
 
+    /// A file from the PDF Association's test suite, in `pdf-differences/`.
+    static func pdfDifferences(_ name: String, sourceLocation: SourceLocation = #_sourceLocation) -> URL {
+        url("pdf-differences/\(name)", sourceLocation: sourceLocation)
+    }
+
     /// The fixture's URL, recording a test failure (not a silent skip) if it is missing.
     static func url(_ name: String, sourceLocation: SourceLocation = #_sourceLocation) -> URL {
         let url = directory.appendingPathComponent(name)

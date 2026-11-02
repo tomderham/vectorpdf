@@ -1,5 +1,5 @@
-<!-- keywords: solución de problemas, problema, problemas, no funciona, ayuda, solucionar, soporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, solución de problemas, problema, problemas, no funciona, ayuda, solucionar, soporte, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # Solución de problemas
 
@@ -24,6 +24,10 @@ Además, la ventana de VectorPDF debe ser la ventana activa.
 ## No se encuentra una referencia a otro documento
 
 Abre el otro documento como pestaña en la misma ventana. No se busca en ventanas separadas.
+
+## Un documento aparece como dañado
+
+Si VectorPDF no encuentra ninguna página en un archivo, indica que no se ha podido abrir. Es posible que el archivo esté dañado o incompleto, o que use funciones que VectorPDF no puede leer. Prueba a descargarlo de nuevo o a abrirlo en otra app de PDF.
 
 ## Un documento en la nube no se abre
 

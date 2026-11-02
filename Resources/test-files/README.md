@@ -30,5 +30,20 @@ mutool run Resources/test-files/scramble_text.js pages.pdf scrambled.pdf
 
 Check the result has no identifying text left (`mutool draw -F txt scrambled.pdf`) before adding it.
 
+## PDF Association test files
+
+`pdf-differences/` holds unmodified files from the PDF Association's
+[pdf-differences](https://github.com/pdf-association/pdf-differences) repository, at commit
+`907fe96e52b73e491489eee545c47b119bf9989b`. They're under the Apache License 2.0, copied alongside
+them as `LICENSE`. Only files a test can check without comparing pixels are here; the repository
+asks that its screenshots aren't compared that way.
+
+| File | What it exercises |
+| --- | --- |
+| `PageLabelsTest.pdf` | Roman, decimal, Arabic-script and long page labels, used for jumping to a page |
+| `NegativeFontSize.pdf`, `Type3Test.pdf`, `VerticalText.pdf` | Text extraction from upside-down, Type 3 and vertical text |
+| `PDF-versions1.pdf` to `PDF-versions3.pdf` | A version raised by the catalog, then by an incremental update; all are PDF 1.6 |
+| `UnknownFilter-*.pdf` | A fake `/XXXDecode` filter on one kind of stream at a time, in a file claiming a future PDF version |
+
 Tests reach these files through `Fixture` in `Tests/PDFEngineTests/TestFixtures.swift`, and fail
 (rather than skip) when one is missing.

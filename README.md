@@ -201,4 +201,5 @@ VectorPDF is free software released under the **[GNU Affero General Public Licen
 ### Third-Party Attribution
 
 - **MuPDF:** © Artifex Software, Inc. MuPDF is licensed under the GNU Affero General Public License (AGPL-3.0). Visit [https://mupdf.com](https://mupdf.com) for more information.
+- **PDF Association test files:** `Resources/test-files/pdf-differences/` holds unmodified files from [pdf-association/pdf-differences](https://github.com/pdf-association/pdf-differences) under the Apache License 2.0, copied alongside them. They're used only for testing and aren't part of the app.
 - **Foundation Models framework utilities:** © Apple Inc. and the Foundation Models project authors. `Sources/PDFEngine/ChatCompletionsLanguageModel.swift` is adapted from [apple/foundation-models-utilities](https://github.com/apple/foundation-models-utilities) under the Apache License 2.0; changes are marked in the file.

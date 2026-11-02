@@ -1,5 +1,5 @@
-<!-- keywords: Fehlerbehebung, Problem, Probleme, funktioniert nicht, Hilfe, beheben, Support, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: d9963fbbb92b -->
+<!-- keywords: damaged, corrupt, unreadable, Fehlerbehebung, Problem, Probleme, funktioniert nicht, Hilfe, beheben, Support, troubleshooting, problem, problems, not working, help, fix, support -->
+<!-- source: e9a1c8cbf4d9 -->
 
 # Fehlerbehebung
 
@@ -24,6 +24,10 @@ Außerdem muss das VectorPDF-Fenster das aktive Fenster sein.
 ## Ein Verweis auf ein anderes Dokument wird nicht gefunden
 
 Öffne das andere Dokument als Tab im selben Fenster. Separate Fenster werden nicht durchsucht.
+
+## Ein Dokument wird als beschädigt gemeldet
+
+Wenn VectorPDF in einer Datei keine Seiten findet, meldet es, dass die Datei nicht geöffnet werden konnte. Die Datei ist möglicherweise beschädigt oder unvollständig, oder sie verwendet Funktionen, die VectorPDF nicht lesen kann. Lade sie erneut herunter oder öffne sie in einer anderen PDF-App.
 
 ## Ein Cloud-Dokument lässt sich nicht öffnen
 
