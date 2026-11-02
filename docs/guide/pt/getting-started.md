@@ -1,9 +1,11 @@
 <!-- keywords: começar, início, primeiros passos, novo, instalar, requisitos, visão geral, start, begin, first steps, new, install, requirements, PDF, overview -->
-<!-- source: 69ec54de6586 -->
+<!-- source: dd2858492686 -->
 
 # Começar a usar o VectorPDF
 
 O VectorPDF requer o macOS 15 ou posterior em um Mac com Apple Silicon. Para instalá-lo, arraste-o para a pasta Aplicativos.
+
+É novo no VectorPDF? Escolha Help > Take the Tour ou clique em New here? Take the Tour em uma tela Start vazia. Isso abre um pequeno documento de exemplo em que você pode experimentar estes recursos e fazer marcações.
 
 ## Abrir seu primeiro PDF
 

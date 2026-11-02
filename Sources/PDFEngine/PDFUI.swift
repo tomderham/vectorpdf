@@ -322,6 +322,13 @@ public struct PDFViewerMainView: View {
                     .padding(.top, 28)
 
                     if totalItems == 0 && recentURLs.isEmpty {
+                        if TourDocument.bundledURL != nil {
+                            Button("New here? Take the Tour") {
+                                TourDocument.open(in: viewModel)
+                            }
+                            .buttonStyle(.link)
+                        }
+
                         VStack(spacing: 8) {
                             Image(systemName: "star")
                                 .font(.system(size: 20))

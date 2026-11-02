@@ -694,6 +694,11 @@ struct VectorPDF: App {
                 showHelpBook()
             }
             .keyboardShortcut("?", modifiers: .command)
+
+            Button("Take the Tour") {
+                TourDocument.open()
+            }
+            .disabled(TourDocument.bundledURL == nil)
         }
 
         CommandMenu("Go") {

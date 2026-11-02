@@ -35,6 +35,7 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$BUILT_BINARY" "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME"
 cp Resources/AppIcon/AppIcon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp Resources/AppIcon/DocumentIcon.icns "$APP_BUNDLE/Contents/Resources/DocumentIcon.icns"
+cp "Resources/VectorPDF Tour.pdf" "$APP_BUNDLE/Contents/Resources/"
 
 echo "Building the help book..."
 HELP_BOOK_ID="$BUNDLE_ID.help"

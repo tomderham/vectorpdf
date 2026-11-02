@@ -14,6 +14,8 @@ When VectorPDF starts without a document, it shows the Start screen. Do any of t
 
 You can also open a PDF from the Finder with [Open With](open-documents.md), or choose one from Tab Groups, Favorites or Recent Documents on the Start screen.
 
+New to VectorPDF? Choose Help > Take the Tour, or click New here? Take the Tour on an empty Start screen. It opens a short sample document that you can try these features on and mark up.
+
 ## Five things to try
 
 1. **Hold Command over a link.** Move the pointer over a reference to an equation, figure, table or citation and hold ⌘ to [preview its target](link-peek.md). Let go and the preview closes.
