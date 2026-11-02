@@ -120,10 +120,98 @@ public enum PDFAnnotationType: String, Codable, Sendable {
     case freeText
     case callout
     case stamp
+    case note
+    case cloud
     case measureLength
     case measurePerimeter
     case measureArea
     case measureAngle
+}
+
+/// The shape at the end of a callout's leader line. Raw values are MuPDF's `pdf_line_ending`.
+public enum PDFLineEnding: Int32, Codable, CaseIterable, Sendable {
+    case closedArrow = 5
+    case openArrow = 4
+    case diamond = 3
+    case circle = 2
+    case square = 1
+    case butt = 6
+    case slash = 9
+    case none = 0
+
+    public var displayName: String {
+        switch self {
+        case .closedArrow: return "Closed Arrow"
+        case .openArrow: return "Open Arrow"
+        case .diamond: return "Diamond"
+        case .circle: return "Circle"
+        case .square: return "Square"
+        case .butt: return "Butt"
+        case .slash: return "Slash"
+        case .none: return "None"
+        }
+    }
+
+    /// The ending for a tip at `tip` on a line running along (dx, dy), and whether to fill it.
+    /// The sizes match `ap_line_ending` in the bridge so saved and on-screen callouts agree.
+    func path(tip: NSPoint, dx: CGFloat, dy: CGFloat) -> (path: NSBezierPath, filled: Bool)? {
+        let len = hypot(dx, dy)
+        guard len > 0.1 else { return nil }
+        let u = NSPoint(x: dx / len, y: dy / len)
+        let p = NSPoint(x: -u.y, y: u.x)
+        let l: CGFloat = 8.0
+        let w: CGFloat = 4.0
+        func at(_ along: CGFloat, _ across: CGFloat) -> NSPoint {
+            NSPoint(x: tip.x + u.x * along + p.x * across, y: tip.y + u.y * along + p.y * across)
+        }
+        let path = NSBezierPath()
+        path.lineWidth = 1.5
+        func polygon(_ points: [NSPoint]) {
+            path.move(to: points[0])
+            points.dropFirst().forEach { path.line(to: $0) }
+        }
+        switch self {
+        case .none:
+            return nil
+        case .openArrow:
+            polygon([at(l, w), tip, at(l, -w)])
+            return (path, false)
+        case .closedArrow:
+            polygon([tip, at(l, w), at(l, -w)])
+        case .butt:
+            polygon([at(0, w), at(0, -w)])
+            return (path, false)
+        case .slash:
+            polygon([at(w * 0.5, w), at(-w * 0.5, -w)])
+            return (path, false)
+        case .diamond:
+            polygon([at(w, 0), at(0, w), at(-w, 0), at(0, -w)])
+        case .square:
+            let s = w * 0.75
+            polygon([at(s, s), at(s, -s), at(-s, -s), at(-s, s)])
+        case .circle:
+            path.appendOval(in: NSRect(x: tip.x - w, y: tip.y - w, width: w * 2, height: w * 2))
+            return (path, true)
+        }
+        path.close()
+        return (path, true)
+    }
+}
+
+/// How big a revision cloud's arcs are. Raw values are the PDF border effect intensity (/BE /I),
+/// which ISO 32000 limits to 0–2 and which viewers turn into the arc radius.
+public enum PDFCloudArcSize: CGFloat, CaseIterable, Sendable {
+    case small = 1.0
+    case medium = 1.5
+    case large = 2.0
+
+    public var displayName: String {
+        switch self {
+        case .small: return "Small"
+        case .medium: return "Medium"
+        case .large: return "Large"
+        }
+    }
 }
 
 /// Canvas interaction modes for the markup and measurement toolbars
@@ -135,6 +223,8 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     case redact
     case eraser
     case stamp
+    case note
+    case cloud
     case measureLength
     case measurePerimeter
     case measureArea
@@ -155,12 +245,16 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     public let strokeWidth: CGFloat
     public let fontSize: CGFloat?
     public let color: AnnotationColor
-    public let text: String
+    public var text: String
     public let stampImageData: Data?
     public let measurementPoints: [CGPoint]
     public let measurementValue: Double
     public let measurementText: String
     public let leaderOffset: CGFloat
+    /// The callout's line ending; nil for anything else.
+    public let lineEnding: PDFLineEnding?
+    /// The revision cloud's /BE /I; nil for anything else.
+    public let cloudIntensity: CGFloat?
     public let dateCreated: Date
     /// The PDF object number for in-session annotations.
     public var documentObjectNumber: Int?
@@ -183,6 +277,8 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         measurementValue: Double = 0.0,
         measurementText: String = "",
         leaderOffset: CGFloat = 0.0,
+        lineEnding: PDFLineEnding? = nil,
+        cloudIntensity: CGFloat? = nil,
         dateCreated: Date = Date()
     ) {
         self.id = id
@@ -202,6 +298,8 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         self.measurementValue = measurementValue
         self.measurementText = measurementText
         self.leaderOffset = leaderOffset
+        self.lineEnding = lineEnding
+        self.cloudIntensity = cloudIntensity
         self.dateCreated = dateCreated
     }
 
@@ -232,7 +330,7 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Union bounding rect across quads, ink points, or freeText rect in page coordinates.
     public var boundingRect: CGRect {
-        if type == .freeText || type == .stamp {
+        if type == .freeText || type == .stamp || type == .note || type == .cloud {
             return rect ?? .zero
         }
         if type == .callout {
@@ -283,9 +381,16 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Checks whether a given page-space point hits this annotation (with a small hit-test margin).
     public func contains(pagePoint: CGPoint, tolerance: CGFloat = 3.0) -> Bool {
-        if type == .freeText || type == .stamp {
+        if type == .freeText || type == .stamp || type == .note {
             guard let r = rect else { return false }
             return r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint)
+        }
+        if type == .cloud {
+            // Only the outline: a cloud rings content that people still need to select.
+            guard let r = rect else { return false }
+            let margin = tolerance + 6.0
+            return r.insetBy(dx: -margin, dy: -margin).contains(pagePoint)
+                && !r.insetBy(dx: margin, dy: margin).contains(pagePoint)
         }
         if type == .callout {
             if let r = rect, r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint) {

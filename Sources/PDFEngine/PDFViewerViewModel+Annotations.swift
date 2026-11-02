@@ -132,8 +132,34 @@ extension PDFViewerViewModel {
     func recordAddedAnnotation(_ annot: PDFAnnotation) -> PDFAnnotation {
         var stored = annot
         stored.documentObjectNumber = document?.lastAnnotationObjectNumber(pageIndex: annot.pageIndex)
+        if let objectNumber = stored.documentObjectNumber {
+            try? document?.setAnnotationAuthor(pageIndex: annot.pageIndex, objectNumber: objectNumber, author: Self.annotationAuthor)
+            if let old = annotationBeingReplaced?.documentObjectNumber {
+                try? document?.moveAnnotationThread(pageIndex: annot.pageIndex, from: old, to: objectNumber)
+            }
+        }
         pageAnnotations[annot.pageIndex, default: []].append(stored)
         return stored
+    }
+
+    /// Editing, moving or restyling an annotation writes a new PDF object. Call this instead of
+    /// `removeAnnotation` before adding the replacement, then `finishReplacingAnnotation` after: the
+    /// old object stays until then so its author, date and replies can move to the new one.
+    func beginReplacingAnnotation(_ annotation: PDFAnnotation) {
+        // Without an object number the old one can only be found by position, where the
+        // replacement would be too, so it has to go first.
+        guard annotation.documentObjectNumber != nil else {
+            removeAnnotation(annotation)
+            return
+        }
+        annotationBeingReplaced = annotation
+        pageAnnotations[annotation.pageIndex]?.removeAll { $0.id == annotation.id }
+    }
+
+    func finishReplacingAnnotation() {
+        guard let old = annotationBeingReplaced else { return }
+        annotationBeingReplaced = nil
+        removeAnnotation(old)
     }
 
     public func removeAnnotation(_ annotation: PDFAnnotation) {
@@ -188,6 +214,57 @@ extension PDFViewerViewModel {
         }
     }
 
+    // MARK: - Notes and Revision Clouds
+
+    /// The size of a note's icon, in page points.
+    public static let noteSize: CGFloat = 20.0
+
+    @discardableResult
+    public func addNoteAnnotation(pageIndex: Int, at point: CGPoint, text: String = "", color: AnnotationColor = .yellow) -> PDFAnnotation? {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        let rect = CGRect(x: point.x, y: point.y, width: Self.noteSize, height: Self.noteSize)
+        let annot = PDFAnnotation(pageIndex: pageIndex, type: .note, rect: rect, color: color, text: text)
+        do {
+            try doc.addNote(pageIndex: pageIndex, rect: rect, text: text, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+            let stored = recordAddedAnnotation(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return stored
+        } catch {
+            print("Failed to add note on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
+    @discardableResult
+    public func addCloudAnnotation(pageIndex: Int, rect: CGRect, arcSize: PDFCloudArcSize = .medium, color: AnnotationColor = .red) -> PDFAnnotation? {
+        return addCloudAnnotation(pageIndex: pageIndex, rect: rect, intensity: arcSize.rawValue, color: color)
+    }
+
+    @discardableResult
+    func addCloudAnnotation(pageIndex: Int, rect: CGRect, intensity: CGFloat, color: AnnotationColor) -> PDFAnnotation? {
+        guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount, rect.width > 0, rect.height > 0 else { return nil }
+        let annot = PDFAnnotation(pageIndex: pageIndex, type: .cloud, rect: rect, strokeWidth: 1.5, color: color, cloudIntensity: intensity)
+        do {
+            try doc.addCloud(pageIndex: pageIndex, rect: rect, intensity: intensity, red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+            let stored = recordAddedAnnotation(annot)
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            return stored
+        } catch {
+            print("Failed to add revision cloud on page \(pageIndex): \(error)")
+            return nil
+        }
+    }
+
+    /// Re-creates a note or cloud with a new position or color, for the edits shared by the canvas.
+    func addRestyled(_ annot: PDFAnnotation, rect: CGRect, color: AnnotationColor) -> PDFAnnotation? {
+        if annot.type == .note {
+            return addNoteAnnotation(pageIndex: annot.pageIndex, at: rect.origin, text: annot.text, color: color)
+        }
+        return addCloudAnnotation(pageIndex: annot.pageIndex, rect: rect, intensity: annot.cloudIntensity ?? PDFCloudArcSize.medium.rawValue, color: color)
+    }
+
     // MARK: - Technical Callout Annotations
 
     @discardableResult
@@ -198,7 +275,8 @@ extension PDFViewerViewModel {
         textBoxRect: CGRect,
         text: String,
         fontSize: CGFloat = 11.0,
-        color: AnnotationColor = .red
+        color: AnnotationColor = .red,
+        lineEnding: PDFLineEnding = .closedArrow
     ) -> PDFAnnotation? {
         guard !text.isEmpty, let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
         let annot = PDFAnnotation(
@@ -209,7 +287,8 @@ extension PDFViewerViewModel {
             kneePoint: kneePoint,
             fontSize: fontSize,
             color: color,
-            text: text
+            text: text,
+            lineEnding: lineEnding
         )
         do {
             try doc.addCallout(
@@ -219,6 +298,7 @@ extension PDFViewerViewModel {
                 textBoxRect: textBoxRect,
                 text: text,
                 fontSize: fontSize,
+                lineEnding: lineEnding,
                 red: color.rgb.red,
                 green: color.rgb.green,
                 blue: color.rgb.blue

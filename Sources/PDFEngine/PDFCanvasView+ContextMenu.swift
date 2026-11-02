@@ -69,6 +69,10 @@ extension PDFCanvasView {
            let annots = viewModel.pageAnnotations[pIdx],
            let hitAnnot = annots.first(where: { $0.contains(pagePoint: pPoint) }) {
             let menu = NSMenu(title: "Annotation")
+            if hitAnnot.documentObjectNumber != nil {
+                menu.addItem(makeCommentsItem(representing: (pIdx, hitAnnot.documentObjectNumber ?? 0)))
+                menu.addItem(NSMenuItem.separator())
+            }
             if hitAnnot.type == .freeText || hitAnnot.type == .callout {
                 let editTitle = hitAnnot.type == .callout ? "Edit Callout Note" : "Edit Text Box"
                 let editItem = NSMenuItem(title: editTitle, action: #selector(editHitAnnotationAction(_:)), keyEquivalent: "")
@@ -76,6 +80,9 @@ extension PDFCanvasView {
                 editItem.target = self
                 editItem.representedObject = hitAnnot
                 menu.addItem(editItem)
+                if hitAnnot.type == .callout {
+                    menu.addItem(makeLineEndingItem(for: hitAnnot))
+                }
                 menu.addItem(NSMenuItem.separator())
             }
             let removeTitle: String
@@ -87,6 +94,8 @@ extension PDFCanvasView {
             case .freeText: removeTitle = "Delete Text Box"
             case .callout: removeTitle = "Delete Callout"
             case .stamp: removeTitle = "Delete Signature"
+            case .note: removeTitle = "Delete Note"
+            case .cloud: removeTitle = "Delete Revision Cloud"
             case .measureLength: removeTitle = "Delete Dimension"
             case .measurePerimeter: removeTitle = "Delete Perimeter"
             case .measureArea: removeTitle = "Delete Area Takeoff"
@@ -100,9 +109,21 @@ extension PDFCanvasView {
             return menu
         }
 
+        // An annotation that came with the file can't be edited on the canvas, but it can be read,
+        // answered and given a status. It can be large, so the page's commands stay available.
+        var fileCommentsItem: NSMenuItem?
+        if let (pIdx, _, pPoint) = pageInfo(at: point),
+           let thread = viewModel.annotationThread(pageIndex: pIdx, at: pPoint) {
+            fileCommentsItem = makeCommentsItem(representing: (pIdx, thread.root.objectNumber))
+        }
+
         // No link, no selection — offer to create an anchor from surrounding text or open here in a new window.
         if let target = pointTarget(at: point) {
             let menu = NSMenu(title: "Page")
+            if let fileCommentsItem {
+                menu.addItem(fileCommentsItem)
+                menu.addItem(NSMenuItem.separator())
+            }
             if let (reference, pageIndex) = crossDocReference(at: point) {
                 insertCrossDocReferenceItems(into: menu, reference: reference, pageIndex: pageIndex)
             }
@@ -127,6 +148,56 @@ extension PDFCanvasView {
             return menu
         }
         return nil
+    }
+
+    private func makeCommentsItem(representing target: (pageIndex: Int, objectNumber: Int)) -> NSMenuItem {
+        let item = NSMenuItem(title: "Comments…", action: #selector(showCommentsAction(_:)), keyEquivalent: "")
+        item.image = NSImage(systemSymbolName: "text.bubble", accessibilityDescription: nil)
+        item.target = self
+        item.representedObject = [target.pageIndex, target.objectNumber]
+        return item
+    }
+
+    @objc private func showCommentsAction(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? [Int], target.count == 2 else { return }
+        showComments(pageIndex: target[0], objectNumber: target[1])
+    }
+
+    private func makeLineEndingItem(for annot: PDFAnnotation) -> NSMenuItem {
+        let item = NSMenuItem(title: "Line Ending", action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: "Line Ending")
+        for ending in PDFLineEnding.allCases {
+            let choice = NSMenuItem(title: ending.displayName, action: #selector(setLineEndingAction(_:)), keyEquivalent: "")
+            choice.target = self
+            choice.tag = Int(ending.rawValue)
+            choice.representedObject = annot
+            choice.state = ending == (annot.lineEnding ?? .closedArrow) ? .on : .off
+            submenu.addItem(choice)
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    @objc private func setLineEndingAction(_ sender: NSMenuItem) {
+        guard let annot = sender.representedObject as? PDFAnnotation,
+              let ending = PDFLineEnding(rawValue: Int32(sender.tag)),
+              ending != annot.lineEnding,
+              let rect = annot.rect, let target = annot.targetPoint, let knee = annot.kneePoint else { return }
+        viewModel.beginReplacingAnnotation(annot)
+        defer { viewModel.finishReplacingAnnotation() }
+        if let updated = viewModel.addCalloutAnnotation(
+            pageIndex: annot.pageIndex,
+            targetPoint: target,
+            kneePoint: knee,
+            textBoxRect: rect,
+            text: annot.text,
+            fontSize: annot.fontSize ?? viewModel.selectedFontSize,
+            color: annot.color,
+            lineEnding: ending
+        ) {
+            selectedAnnotation = (id: updated.id, pageIndex: annot.pageIndex)
+        }
+        needsDisplay = true
     }
 
     private func buildSelectionMenu(for sel: (pageIndex: Int, result: SelectionResult)) -> NSMenu {

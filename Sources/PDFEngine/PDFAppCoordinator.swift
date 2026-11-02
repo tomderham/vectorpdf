@@ -556,11 +556,15 @@ public struct AppSettingsView: View {
     @ObservedObject private var readingState = ReadingStateManager.shared
     @State private var isShowingSignatureEditor = false
     @State private var isShowingIgnoredPatterns = false
+    @AppStorage(PDFViewerViewModel.annotationAuthorDefaultsKey) private var annotationAuthor = ""
 
     public init() {}
 
     public var body: some View {
         Form {
+            TextField("Annotation Author", text: $annotationAuthor, prompt: Text(NSFullUserName()))
+                .padding(.bottom, 12)
+
             Toggle("Use Agent (macOS 26 or above)", isOn: $coordinator.showAgentTab)
                 .padding(.bottom, 12)
 

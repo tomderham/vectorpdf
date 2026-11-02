@@ -75,6 +75,24 @@ public struct PDFMarkupToolbarView: View {
                 }
 
                 PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .note,
+                    helpText: "Sticky Note"
+                ) {
+                    viewModel.canvasMode = .note
+                } label: {
+                    Image(systemName: "note.text")
+                }
+
+                PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .cloud,
+                    helpText: "Revision Cloud (Drag around the area under review)"
+                ) {
+                    viewModel.canvasMode = .cloud
+                } label: {
+                    Image(systemName: "cloud")
+                }
+
+                PreviewToolbarButton(
                     isSelected: viewModel.canvasMode == .eraser,
                     helpText: "Eraser (Click or Drag to remove annotations)"
                 ) {
@@ -130,11 +148,8 @@ public struct PDFMarkupToolbarView: View {
                     .frame(height: 16)
 
                 HStack(spacing: 6) {
-                    Text("Size")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
-                        .frame(width: 80)
+                        .frame(width: 64)
                         .controlSize(.small)
                     Text("\(Int(viewModel.selectedFontSize)) pt")
                         .font(.caption.monospacedDigit())
@@ -181,20 +196,47 @@ public struct PDFMarkupToolbarView: View {
                     .frame(height: 16)
 
                 HStack(spacing: 6) {
-                    Text("Size")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
-                        .frame(width: 80)
+                        .frame(width: 64)
                         .controlSize(.small)
                     Text("\(Int(viewModel.selectedFontSize)) pt")
                         .font(.caption.monospacedDigit())
                         .frame(width: 32, alignment: .leading)
-                    Text("• Drag target to note; click note to edit")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
                 .help("Callout Note Font Size (6–32 pt)")
+
+                Picker("Line Ending", selection: $viewModel.selectedLineEnding) {
+                    ForEach(PDFLineEnding.allCases, id: \.self) { ending in
+                        Text(ending.displayName).tag(ending)
+                    }
+                }
+                .labelsHidden()
+                .controlSize(.small)
+                .frame(width: 100)
+                .help("Callout Line Ending")
+
+            case .note:
+                Divider()
+                    .frame(height: 16)
+
+                Text("Click where you want the note")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+            case .cloud:
+                Divider()
+                    .frame(height: 16)
+
+                Picker("Arc Size", selection: $viewModel.selectedCloudArcSize) {
+                    ForEach(PDFCloudArcSize.allCases, id: \.self) { size in
+                        Text(size.displayName).tag(size)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .frame(width: 155)
+                .help("Revision Cloud Arc Size")
 
             case .redact:
                 EmptyView()
@@ -253,6 +295,15 @@ public struct PDFMarkupToolbarView: View {
             }
 
             Spacer()
+
+            // 4. Annotations Table Sheet Button
+            PreviewToolbarButton(
+                helpText: "Annotations (List, filter and review)"
+            ) {
+                viewModel.isShowingAnnotationsTable = true
+            } label: {
+                Image(systemName: "list.bullet.rectangle")
+            }
 
             // 5. Close Toolbar Button
             PreviewToolbarButton(

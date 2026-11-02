@@ -27,7 +27,7 @@ Saves a PDF with annotations and form fields made part of the page, so they can'
 
 ## Annotations summary
 
-Choose File > Export Annotations Summary (⇧⌘E) to save a list of your annotations. By default it's a Markdown file. Give the file a `.csv` extension to save a spreadsheet instead.
+Choose File > Export Annotations Summary (⇧⌘E) to save a list of the document's annotations, including ones from other apps, with their authors, statuses and replies. By default it's a Markdown file. Give the file a `.csv` extension to save a spreadsheet instead.
 
 ## Measurements
 

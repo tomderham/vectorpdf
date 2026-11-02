@@ -252,7 +252,7 @@ public final class PDFViewerViewModel: ObservableObject {
                 isMeasurementBarVisible = false
                 isRedactionBarVisible = false
             } else {
-                if canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .stamp || canvasMode == .eraser {
+                if canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .stamp || canvasMode == .eraser || canvasMode == .note || canvasMode == .cloud {
                     canvasMode = .select
                 }
                 pendingSignatureData = nil
@@ -264,6 +264,11 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var drawStrokeWidth: CGFloat = 2.5
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
+    @Published public var selectedLineEnding: PDFLineEnding = .closedArrow
+    @Published public var selectedCloudArcSize: PDFCloudArcSize = .medium
+    @Published public var isShowingAnnotationsTable: Bool = false
+    /// The annotation being replaced, between beginReplacingAnnotation and finishReplacingAnnotation.
+    var annotationBeingReplaced: PDFAnnotation?
 
     // Engineering Measurement & Takeoff
     @Published public var isMeasurementBarVisible: Bool = false {
@@ -271,7 +276,7 @@ public final class PDFViewerViewModel: ObservableObject {
             if isMeasurementBarVisible {
                 isMarkupBarVisible = false
                 isRedactionBarVisible = false
-                if canvasMode == .select || canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .redact || canvasMode == .stamp {
+                if canvasMode == .select || canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .redact || canvasMode == .stamp || canvasMode == .note || canvasMode == .cloud {
                     canvasMode = .measureLength
                 }
             } else {

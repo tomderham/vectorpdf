@@ -136,9 +136,35 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
                                 float target_x, float target_y,
                                 float knee_x, float knee_y,
                                 float box_x0, float box_y0, float box_x1, float box_y1,
-                                const char *text, float font_size,
+                                const char *text, float font_size, int line_ending,
                                 float r, float g, float b,
                                 const char **out_error);
+int mupdf_pdf_add_cloud_annot(fz_context *ctx, fz_document *doc, int pageno,
+                              float x0, float y0, float x1, float y1, float intensity,
+                              float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_note_annot(fz_context *ctx, fz_document *doc, int pageno,
+                             float x0, float y0, float x1, float y1, const char *text,
+                             float r, float g, float b, const char **out_error);
+int mupdf_pdf_set_annot_author(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *author, const char **out_error);
+int mupdf_pdf_set_annot_comment(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *text, const char **out_error);
+int mupdf_pdf_add_annot_reply(fz_context *ctx, fz_document *doc, int pageno, int parent_objnum,
+                              const char *text, const char *author,
+                              const char *state, const char *state_model, const char **out_error);
+int mupdf_pdf_move_annot_thread(fz_context *ctx, fz_document *doc, int pageno, int from_objnum, int to_objnum, const char **out_error);
+
+typedef struct {
+    int objnum;
+    int parent_objnum;  /* 0 unless this replies to another annotation */
+    float x0, y0, x1, y1; /* page (top-down) coordinates */
+    float r, g, b;
+    long long created, modified; /* seconds since 1970, 0 or less if absent */
+    char subtype[24];
+    int is_callout, is_cloud;
+    char *author, *contents, *state, *state_model; /* UTF-8, never NULL */
+} mupdf_review_annot;
+int mupdf_pdf_get_review_annots(fz_context *ctx, fz_document *doc, int pageno,
+                                mupdf_review_annot **out, int *out_count, const char **out_error);
+void mupdf_pdf_free_review_annots(fz_context *ctx, mupdf_review_annot *annots, int count);
 int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                        float x0, float y0, float x1, float y1,
                                        float leader_offset, const char *text,

@@ -2606,7 +2606,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 150), tolerance: 3.0))
 
     // 3. Test CanvasMode enum
-    #expect(CanvasMode.allCases.count == 12) // 7 original + 5 measurement modes
+    #expect(CanvasMode.allCases.count == 14) // 7 original + 5 measurement modes
     #expect(CanvasMode.select.rawValue == "select")
     #expect(CanvasMode.draw.rawValue == "draw")
     #expect(CanvasMode.text.rawValue == "text")
@@ -4384,7 +4384,7 @@ func createFormSamplePDF(at fileURL: URL) {
 
     // 2. Test CSV generation
     let csv = vm.generateReviewSummaryCSV()
-    #expect(csv.hasPrefix("Page,Type,Color,Content,Coordinates,Date\n"))
+    #expect(csv.hasPrefix("Page,Type,Color,Content,Coordinates,Date,Author,Status,Replies\n"))
     #expect(csv.contains("1,Callout,Blue,\"Important callout feedback\""))
 }
 

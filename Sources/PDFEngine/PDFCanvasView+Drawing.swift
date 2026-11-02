@@ -301,6 +301,34 @@ extension PDFCanvasView {
                             let str = annot.text as NSString
                             str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
 
+                        case .note, .cloud:
+                            guard let initialRect = annot.rect else { continue }
+                            var rect = initialRect
+                            if let drag = activeAnnotationDrag, drag.id == annot.id {
+                                rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
+                            }
+                            let boxRect = NSRect(
+                                x: pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom,
+                                y: pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom,
+                                width: rect.width * viewModel.effectiveZoom,
+                                height: rect.height * viewModel.effectiveZoom
+                            )
+                            if annot.type == .note {
+                                drawNoteIcon(in: boxRect, color: annot.color.nsColor)
+                            } else {
+                                drawRevisionCloud(in: boxRect, intensity: annot.cloudIntensity ?? PDFCloudArcSize.medium.rawValue, color: annot.color.nsColor)
+                            }
+                            if selectedAnnotation?.id == annot.id {
+                                let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
+                                let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
+                                selPath.lineWidth = 1.5
+                                NSColor.controlAccentColor.setStroke()
+                                selPath.stroke()
+                                if annot.type == .cloud {
+                                    drawResizeHandles(around: selRect)
+                                }
+                            }
+
                         case .callout:
                             guard let initialRect = annot.rect, let initialTargetPt = annot.targetPoint, let initialKneePt = annot.kneePoint else { continue }
                             var rect = initialRect
@@ -355,27 +383,15 @@ extension PDFCanvasView {
                             leaderPath.line(to: NSPoint(x: attachX, y: attachY))
                             leaderPath.stroke()
 
-                            // Arrow head at target point
-                            let dx = kx - tx
-                            let dy = ky - ty
-                            let len = hypot(dx, dy)
-                            if len > 0.1 {
-                                let ux = dx / len
-                                let uy = dy / len
-                                let arrowLen: CGFloat = 8.0
-                                let arrowW: CGFloat = 4.0
-                                let ax = tx + ux * arrowLen
-                                let ay = ty + uy * arrowLen
-                                let px = -uy * arrowW
-                                let py = ux * arrowW
-
-                                let arrowPath = NSBezierPath()
-                                arrowPath.move(to: NSPoint(x: tx, y: ty))
-                                arrowPath.line(to: NSPoint(x: ax + px, y: ay + py))
-                                arrowPath.line(to: NSPoint(x: ax - px, y: ay - py))
-                                arrowPath.close()
-                                effectiveColor.nsColor.setFill()
-                                arrowPath.fill()
+                            // Line ending at target point
+                            if let ending = (annot.lineEnding ?? .closedArrow).path(tip: NSPoint(x: tx, y: ty), dx: kx - tx, dy: ky - ty) {
+                                if ending.filled {
+                                    effectiveColor.nsColor.setFill()
+                                    ending.path.fill()
+                                } else {
+                                    effectiveColor.nsColor.setStroke()
+                                    ending.path.stroke()
+                                }
                             }
 
                             // Text box background and border
@@ -528,6 +544,17 @@ extension PDFCanvasView {
                     }
                     path.stroke()
                 }
+            }
+
+            // Live revision cloud dragging in progress
+            if currentCloudPage == pageIdx, let start = currentCloudStart, let end = currentCloudEnd {
+                let p1 = canvasPoint(for: start, pFrame: pFrame, pBounds: pBounds)
+                let p2 = canvasPoint(for: end, pFrame: pFrame, pBounds: pBounds)
+                drawRevisionCloud(
+                    in: NSRect(x: min(p1.x, p2.x), y: min(p1.y, p2.y), width: abs(p2.x - p1.x), height: abs(p2.y - p1.y)),
+                    intensity: viewModel.selectedCloudArcSize.rawValue,
+                    color: viewModel.selectedAnnotationColor.nsColor
+                )
             }
 
             // 2.7 Live Redaction Dragging in Progress

@@ -63,6 +63,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var currentCalloutStart: CGPoint?
     var currentCalloutEnd: CGPoint?
 
+    // Revision cloud drafting in-progress state
+    var currentCloudPage: Int?
+    var currentCloudStart: CGPoint?
+    var currentCloudEnd: CGPoint?
+
+    /// The comments popover anchored to an annotation, while it's open.
+    var commentsPopover: NSPopover?
+    var commentsPopoverDelegate: CommentsPopoverDelegate?
+
     // Engineering measurement drafting in-progress state
     var currentMeasurePage: Int?
     var currentMeasurePoints: [CGPoint] = []
@@ -311,6 +320,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         currentCalloutPage = nil
         currentCalloutStart = nil
         currentCalloutEnd = nil
+        currentCloudPage = nil
+        currentCloudStart = nil
+        currentCloudEnd = nil
         currentRedactionPage = nil
         currentRedactionStart = nil
         currentRedactionEnd = nil

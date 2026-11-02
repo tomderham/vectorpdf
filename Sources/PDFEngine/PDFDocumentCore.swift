@@ -389,7 +389,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText, .callout, .stamp, .measureLength, .measurePerimeter, .measureArea, .measureAngle: return
+        case .ink, .freeText, .callout, .stamp, .note, .cloud, .measureLength, .measurePerimeter, .measureArea, .measureAngle: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -468,6 +468,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         textBoxRect: CGRect,
         text: String,
         fontSize: CGFloat = 11.0,
+        lineEnding: PDFLineEnding = .closedArrow,
         red: Float,
         green: Float,
         blue: Float
@@ -492,6 +493,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 Float(textBoxRect.maxY),
                 cText,
                 Float(fontSize),
+                lineEnding.rawValue,
                 red,
                 green,
                 blue,
@@ -502,6 +504,133 @@ public final class PDFDocumentCore: @unchecked Sendable {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add callout annotation"
             throw PDFError.saveFailed(msg)
         }
+    }
+
+    /// Adds a revision cloud (a square annotation with a cloudy border, /BE << /S /C >>).
+    public func addCloud(pageIndex: Int, rect: CGRect, intensity: CGFloat, red: Float, green: Float, blue: Float) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_add_cloud_annot(
+            ctx, doc, Int32(pageIndex),
+            Float(rect.minX), Float(rect.minY), Float(rect.maxX), Float(rect.maxY),
+            Float(intensity), red, green, blue, &errorMsg
+        )
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add revision cloud"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Adds a sticky note (a Text annotation with a popup).
+    public func addNote(pageIndex: Int, rect: CGRect, text: String, red: Float, green: Float, blue: Float) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = text.withCString { cText in
+            mupdf_pdf_add_note_annot(
+                ctx, doc, Int32(pageIndex),
+                Float(rect.minX), Float(rect.minY), Float(rect.maxX), Float(rect.maxY),
+                cText, red, green, blue, &errorMsg
+            )
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add note"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Records who made an annotation, and when if it doesn't say yet.
+    public func setAnnotationAuthor(pageIndex: Int, objectNumber: Int, author: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = author.withCString {
+            mupdf_pdf_set_annot_author(ctx, doc, Int32(pageIndex), Int32(objectNumber), $0, &errorMsg)
+        }
+        if ret < 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to set annotation author"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Changes an annotation's comment (/Contents).
+    public func setAnnotationComment(pageIndex: Int, objectNumber: Int, text: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = text.withCString {
+            mupdf_pdf_set_annot_comment(ctx, doc, Int32(pageIndex), Int32(objectNumber), $0, &errorMsg)
+        }
+        if ret < 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to set annotation comment"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Adds a reply to an annotation, or with `status` a review status.
+    public func addAnnotationReply(pageIndex: Int, parentObjectNumber: Int, text: String, author: String, status: PDFReviewStatus? = nil) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = text.withCString { cText in
+            author.withCString { cAuthor in
+                func add(_ state: UnsafePointer<CChar>?, _ model: UnsafePointer<CChar>?) -> Int32 {
+                    mupdf_pdf_add_annot_reply(ctx, doc, Int32(pageIndex), Int32(parentObjectNumber), cText, cAuthor, state, model, &errorMsg)
+                }
+                guard let status else { return add(nil, nil) }
+                return status.rawValue.withCString { cState in
+                    "Review".withCString { add(cState, $0) }
+                }
+            }
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add reply"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Moves an annotation's author, creation date and replies to the object that replaces it.
+    public func moveAnnotationThread(pageIndex: Int, from: Int, to: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        if mupdf_pdf_move_annot_thread(ctx, doc, Int32(pageIndex), Int32(from), Int32(to), &errorMsg) != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to move annotation replies"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Everything on a page a reviewer would call an annotation, from this app or any other, with
+    /// replies and statuses gathered under the annotation they belong to.
+    public func annotationThreads(pageIndex: Int) -> [PDFAnnotationThread] {
+        lock.lock()
+        defer { lock.unlock() }
+        var list: UnsafeMutablePointer<mupdf_review_annot>?
+        var count: Int32 = 0
+        guard mupdf_pdf_get_review_annots(ctx, doc, Int32(pageIndex), &list, &count, nil) == 0, let list else { return [] }
+        defer { mupdf_pdf_free_review_annots(ctx, list, count) }
+        let entries = UnsafeBufferPointer(start: list, count: Int(count)).map { raw -> PDFAnnotationComment in
+            var raw = raw
+            let subtype = withUnsafeBytes(of: &raw.subtype) { String(decoding: $0.prefix(while: { $0 != 0 }), as: UTF8.self) }
+            return PDFAnnotationComment(
+                objectNumber: Int(raw.objnum),
+                parentObjectNumber: raw.parent_objnum > 0 ? Int(raw.parent_objnum) : nil,
+                pageIndex: pageIndex,
+                rect: CGRect(x: CGFloat(raw.x0), y: CGFloat(raw.y0), width: CGFloat(raw.x1 - raw.x0), height: CGFloat(raw.y1 - raw.y0)),
+                color: AnnotationColor.nearest(red: raw.r, green: raw.g, blue: raw.b),
+                subtype: subtype,
+                isCallout: raw.is_callout != 0,
+                isCloud: raw.is_cloud != 0,
+                author: String(cString: raw.author),
+                text: String(cString: raw.contents),
+                created: raw.created > 0 ? Date(timeIntervalSince1970: TimeInterval(raw.created)) : nil,
+                modified: raw.modified > 0 ? Date(timeIntervalSince1970: TimeInterval(raw.modified)) : nil,
+                state: String(cString: raw.state),
+                stateModel: String(cString: raw.state_model)
+            )
+        }
+        return PDFAnnotationThread.threads(from: entries)
     }
 
     /// Permanently redacts all content covered by the given rectangles on `pageIndex`, including

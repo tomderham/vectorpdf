@@ -88,6 +88,20 @@ extension PDFCanvasView {
             return
         }
 
+        // In note mode: place a note at the clicked location and open it for typing
+        if viewModel.canvasMode == .note {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point),
+               let annot = viewModel.addNoteAnnotation(pageIndex: pageIdx, at: pagePoint, color: viewModel.selectedAnnotationColor) {
+                selectedAnnotation = (id: annot.id, pageIndex: pageIdx)
+                viewModel.canvasMode = .select
+                if let number = annot.documentObjectNumber {
+                    showComments(pageIndex: pageIdx, objectNumber: number, isNewNote: true)
+                }
+                needsDisplay = true
+            }
+            return
+        }
+
         // In eraser mode: remove annotation at clicked point
         if viewModel.canvasMode == .eraser {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -97,14 +111,15 @@ extension PDFCanvasView {
             return
         }
 
-        // For .select, .text, and .callout modes: Check if clicked on an existing freeText, callout, or stamp annotation
-        if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout {
+        // For .select, .text, .callout and .cloud modes: Check if clicked on an existing annotation that can move
+        if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .cloud {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
                let list = viewModel.pageAnnotations[pageIdx] {
 
                 // 1. If an annotation is already selected on this page, check if clicking on its corner resize handles
                 if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
                    let selAnnot = list.first(where: { $0.id == sel.id }),
+                   selAnnot.type != .note,
                    let r = selAnnot.rect,
                    let resizePart = hitTestResizeHandle(for: r, on: pageIdx, canvasPoint: point) {
                     activeAnnotationDrag = (
@@ -120,8 +135,11 @@ extension PDFCanvasView {
                 }
 
                 // 2. Check if clicked on an annotation body or callout target/knee
-                if let hit = list.reversed().first(where: { ($0.type == .callout || $0.type == .freeText || $0.type == .stamp) && $0.contains(pagePoint: pagePoint, tolerance: 6.0) }) {
-                    if event.clickCount == 2 && hit.type != .stamp {
+                if let hit = list.reversed().first(where: { ($0.type == .callout || $0.type == .freeText || $0.type == .stamp || $0.type == .note || $0.type == .cloud) && $0.contains(pagePoint: pagePoint, tolerance: 6.0) }) {
+                    if event.clickCount == 2, hit.type == .note || hit.type == .cloud, let number = hit.documentObjectNumber {
+                        showComments(pageIndex: pageIdx, objectNumber: number)
+                        return
+                    } else if event.clickCount == 2 && hit.type != .stamp {
                         startInlineEditing(annotation: hit, pageIndex: pageIdx)
                         return
                     } else {
@@ -145,6 +163,15 @@ extension PDFCanvasView {
                     }
                 }
             }
+        }
+
+        // Double-clicking a note that came with the file opens it
+        if viewModel.canvasMode == .select, event.clickCount == 2,
+           let (pageIdx, _, pagePoint) = pageInfo(at: point),
+           let thread = viewModel.annotationThread(pageIndex: pageIdx, at: pagePoint),
+           thread.root.subtype == "Text" {
+            showComments(pageIndex: pageIdx, objectNumber: thread.root.objectNumber)
+            return
         }
 
         // If clicking outside any selected annotation, deselect it
@@ -237,6 +264,17 @@ extension PDFCanvasView {
                 default:
                     break
                 }
+            }
+            return
+        }
+
+        // In cloud mode: start a new revision cloud
+        if viewModel.canvasMode == .cloud {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                currentCloudPage = pageIdx
+                currentCloudStart = pagePoint
+                currentCloudEnd = pagePoint
+                needsDisplay = true
             }
             return
         }
@@ -334,6 +372,20 @@ extension PDFCanvasView {
             let currentCanvas = convert(event.locationInWindow, from: nil)
             let pBounds = doc.pageBounds[dragPageIdx]
             currentRedactionEnd = CGPoint(
+                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
+                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
+            )
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .cloud {
+            guard let dragPageIdx = currentCloudPage,
+                  let pFrame = pageFrame(for: dragPageIdx),
+                  let doc = viewModel.document else { return }
+            let currentCanvas = convert(event.locationInWindow, from: nil)
+            let pBounds = doc.pageBounds[dragPageIdx]
+            currentCloudEnd = CGPoint(
                 x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
                 y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
             )
@@ -450,7 +502,8 @@ extension PDFCanvasView {
             if dist > 2.0 {
                 let orig = drag.initialAnnotation
                 let pIdx = drag.pageIndex
-                viewModel.removeAnnotation(orig)
+                viewModel.beginReplacingAnnotation(orig)
+                defer { viewModel.finishReplacingAnnotation() }
 
                 if orig.type == .callout {
                     var targetPt = orig.targetPoint ?? CGPoint(x: (orig.rect?.minX ?? 50) - 30, y: orig.rect?.midY ?? 50)
@@ -480,8 +533,14 @@ extension PDFCanvasView {
                         textBoxRect: rect,
                         text: orig.text,
                         fontSize: orig.fontSize ?? viewModel.selectedFontSize,
-                        color: orig.color
+                        color: orig.color,
+                        lineEnding: orig.lineEnding ?? .closedArrow
                     ) {
+                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    }
+                } else if orig.type == .note || orig.type == .cloud {
+                    let rect = updatedRect(from: orig.rect ?? .zero, part: drag.part, delta: drag.currentDelta)
+                    if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
                         selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                     }
                 } else if orig.type == .freeText {
@@ -526,6 +585,21 @@ extension PDFCanvasView {
             return
         }
 
+        if viewModel.canvasMode == .cloud {
+            if let pIdx = currentCloudPage, let start = currentCloudStart, let end = currentCloudEnd {
+                let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x), height: abs(end.y - start.y))
+                if rect.width > 8 && rect.height > 8,
+                   let annot = viewModel.addCloudAnnotation(pageIndex: pIdx, rect: rect, arcSize: viewModel.selectedCloudArcSize, color: viewModel.selectedAnnotationColor) {
+                    selectedAnnotation = (id: annot.id, pageIndex: pIdx)
+                }
+            }
+            currentCloudPage = nil
+            currentCloudStart = nil
+            currentCloudEnd = nil
+            needsDisplay = true
+            return
+        }
+
         if viewModel.canvasMode == .callout {
             if let pIdx = currentCalloutPage,
                let start = currentCalloutStart,
@@ -542,7 +616,8 @@ extension PDFCanvasView {
                         textBoxRect: boxRect,
                         text: "Note",
                         fontSize: viewModel.selectedFontSize,
-                        color: viewModel.selectedAnnotationColor
+                        color: viewModel.selectedAnnotationColor,
+                        lineEnding: viewModel.selectedLineEnding
                     )
                     if let a = annot {
                         startInlineEditing(annotation: a, pageIndex: pIdx)

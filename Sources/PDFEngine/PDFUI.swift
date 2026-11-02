@@ -1663,6 +1663,9 @@ private struct ViewerSheetsModifier: ViewModifier {
             .sheet(isPresented: $viewModel.isShowingCalibrationSheet) {
                 ScaleCalibrationSheet(viewModel: viewModel)
             }
+            .sheet(isPresented: $viewModel.isShowingAnnotationsTable) {
+                AnnotationsTableView(viewModel: viewModel)
+            }
             .sheet(isPresented: $viewModel.isShowingTakeoffTable) {
                 TakeoffSummaryView(viewModel: viewModel)
             }

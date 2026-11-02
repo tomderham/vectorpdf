@@ -11,9 +11,12 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 | Selected text | Copy Text, Look Up, Translate Selection, Start Speaking or Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | A selected area | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | A link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| A highlight, underline or strikethrough | The matching Remove command |
-| A text box or callout | Edit Text Box or Edit Callout Note, and the delete command |
-| A drawing, stamp or measurement | The delete command |
+| A highlight, underline or strikethrough | Comments…, and the matching Remove command |
+| A text box | Comments…, Edit Text Box, and the delete command |
+| A callout | Comments…, Edit Callout Note, Line Ending, and the delete command |
+| A note, or the outline of a revision cloud | Comments…, and the delete command |
+| A drawing, stamp or measurement | Comments…, and the delete command |
+| An annotation saved in the document earlier, or made in another app | Comments…, and the commands for anywhere else on the page |
 | Anywhere else on the page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 If you right-click a plain-text reference and related documents are open in other tabs, the menu also has commands to [go to it or find it](cross-document-references.md).

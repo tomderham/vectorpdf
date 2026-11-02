@@ -136,7 +136,8 @@ extension PDFCanvasView {
                     selectedAnnotation = nil
                 }
             } else if text != existing.text || color != existing.color || fontSize != (existing.fontSize ?? 13.0) {
-                viewModel.removeAnnotation(existing)
+                viewModel.beginReplacingAnnotation(existing)
+                defer { viewModel.finishReplacingAnnotation() }
                 if existing.type == .callout {
                     let r = existing.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22)
                     let tp = existing.targetPoint ?? CGPoint(x: r.minX - 30, y: r.midY)
@@ -151,7 +152,8 @@ extension PDFCanvasView {
                         textBoxRect: updatedRect,
                         text: text,
                         fontSize: fontSize,
-                        color: color
+                        color: color,
+                        lineEnding: existing.lineEnding ?? .closedArrow
                     ) {
                         selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                     }
@@ -241,8 +243,9 @@ extension PDFCanvasView {
               let orig = list.first(where: { $0.id == sel.id }) else { return }
         // Only kinds that can be re-created below may be removed — anything else (a measurement,
         // ink, a text markup) would simply be deleted by an arrow key.
-        guard orig.type == .callout || orig.type == .freeText || (orig.type == .stamp && orig.stampImageData != nil) else { return }
-        viewModel.removeAnnotation(orig)
+        guard orig.type == .callout || orig.type == .freeText || orig.type == .note || orig.type == .cloud || (orig.type == .stamp && orig.stampImageData != nil) else { return }
+        viewModel.beginReplacingAnnotation(orig)
+        defer { viewModel.finishReplacingAnnotation() }
         if orig.type == .callout {
             let targetPt = orig.targetPoint.map { CGPoint(x: $0.x + dx, y: $0.y + dy) } ?? .zero
             let kneePt = orig.kneePoint.map { CGPoint(x: $0.x + dx, y: $0.y + dy) } ?? .zero
@@ -254,8 +257,14 @@ extension PDFCanvasView {
                 textBoxRect: rect,
                 text: orig.text,
                 fontSize: orig.fontSize ?? viewModel.selectedFontSize,
-                color: orig.color
+                color: orig.color,
+                lineEnding: orig.lineEnding ?? .closedArrow
             ) {
+                selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
+            }
+        } else if orig.type == .note || orig.type == .cloud {
+            let rect = (orig.rect ?? .zero).offsetBy(dx: dx, dy: dy)
+            if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
                 selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
             }
         } else if orig.type == .freeText {
@@ -394,7 +403,8 @@ extension PDFCanvasView {
            (annot.type == .callout || annot.type == .freeText),
            annot.fontSize != newSize {
 
-            viewModel.removeAnnotation(annot)
+            viewModel.beginReplacingAnnotation(annot)
+            defer { viewModel.finishReplacingAnnotation() }
             let text = annot.text
             let color = annot.color
             let fontSize = newSize
@@ -414,7 +424,8 @@ extension PDFCanvasView {
                     textBoxRect: updatedRect,
                     text: text,
                     fontSize: fontSize,
-                    color: color
+                    color: color,
+                    lineEnding: annot.lineEnding ?? .closedArrow
                 ) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
@@ -444,10 +455,11 @@ extension PDFCanvasView {
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp) {
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.type == .cloud) {
 
             guard annot.color != newColor else { return }
-            viewModel.removeAnnotation(annot)
+            viewModel.beginReplacingAnnotation(annot)
+            defer { viewModel.finishReplacingAnnotation() }
             let text = annot.text
             let fontSize = annot.fontSize ?? viewModel.selectedFontSize
 
@@ -462,8 +474,13 @@ extension PDFCanvasView {
                     textBoxRect: r,
                     text: text,
                     fontSize: fontSize,
-                    color: newColor
+                    color: newColor,
+                    lineEnding: annot.lineEnding ?? .closedArrow
                 ) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if annot.type == .note || annot.type == .cloud, let r = annot.rect {
+                if let updated = viewModel.addRestyled(annot, rect: r, color: newColor) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
             } else if annot.type == .freeText {

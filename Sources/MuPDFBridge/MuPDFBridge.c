@@ -19,6 +19,7 @@
 #include <string.h>
 #include <strings.h>
 #include <pthread.h>
+#include <time.h>
 
 // Thread Synchronization Locks for MuPDF context cloning
 static pthread_mutex_t g_mupdf_locks[FZ_LOCK_MAX];
@@ -611,6 +612,64 @@ static void ap_rect(fz_context *ctx, fz_buffer *b, fz_matrix inv, float x0, floa
     fz_append_printf(ctx, b, "%g %g %g %g re\n", r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
 }
 
+// Draws a line ending with its tip at (x, y), for a line running from there along (dx, dy). The
+// sizes match the callout overlay in PDFLineEnding.path so saved and on-screen callouts agree.
+static void ap_line_ending(fz_context *ctx, fz_buffer *b, fz_matrix inv, float x, float y, float dx, float dy, int style) {
+    float len = hypotf(dx, dy);
+    if (len <= 0.001f) return;
+    float ux = dx / len, uy = dy / len;  // along the line
+    float px = -uy, py = ux;             // across it
+    const float L = 8.0f, W = 4.0f;
+    switch (style) {
+    case PDF_ANNOT_LE_OPEN_ARROW:
+        ap_move(ctx, b, inv, x + ux * L + px * W, y + uy * L + py * W);
+        ap_line(ctx, b, inv, x, y);
+        ap_line(ctx, b, inv, x + ux * L - px * W, y + uy * L - py * W);
+        fz_append_string(ctx, b, "S\n");
+        break;
+    case PDF_ANNOT_LE_CLOSED_ARROW:
+        ap_move(ctx, b, inv, x, y);
+        ap_line(ctx, b, inv, x + ux * L + px * W, y + uy * L + py * W);
+        ap_line(ctx, b, inv, x + ux * L - px * W, y + uy * L - py * W);
+        fz_append_string(ctx, b, "h\nf\n");
+        break;
+    case PDF_ANNOT_LE_BUTT:
+        ap_move(ctx, b, inv, x + px * W, y + py * W);
+        ap_line(ctx, b, inv, x - px * W, y - py * W);
+        fz_append_string(ctx, b, "S\n");
+        break;
+    case PDF_ANNOT_LE_SLASH:
+        ap_move(ctx, b, inv, x + (px + ux * 0.5f) * W, y + (py + uy * 0.5f) * W);
+        ap_line(ctx, b, inv, x - (px + ux * 0.5f) * W, y - (py + uy * 0.5f) * W);
+        fz_append_string(ctx, b, "S\n");
+        break;
+    case PDF_ANNOT_LE_DIAMOND:
+        ap_move(ctx, b, inv, x + ux * W, y + uy * W);
+        ap_line(ctx, b, inv, x + px * W, y + py * W);
+        ap_line(ctx, b, inv, x - ux * W, y - uy * W);
+        ap_line(ctx, b, inv, x - px * W, y - py * W);
+        fz_append_string(ctx, b, "h\nf\n");
+        break;
+    case PDF_ANNOT_LE_SQUARE:
+        ap_move(ctx, b, inv, x + (ux + px) * W * 0.75f, y + (uy + py) * W * 0.75f);
+        ap_line(ctx, b, inv, x + (ux - px) * W * 0.75f, y + (uy - py) * W * 0.75f);
+        ap_line(ctx, b, inv, x - (ux + px) * W * 0.75f, y - (uy + py) * W * 0.75f);
+        ap_line(ctx, b, inv, x + (px - ux) * W * 0.75f, y + (py - uy) * W * 0.75f);
+        fz_append_string(ctx, b, "h\nf\n");
+        break;
+    case PDF_ANNOT_LE_CIRCLE:
+        for (int i = 0; i < 16; i++) {
+            float a = (float)i * 3.14159265f / 8.0f;
+            float cx = x + cosf(a) * W, cy = y + sinf(a) * W;
+            if (i == 0) ap_move(ctx, b, inv, cx, cy); else ap_line(ctx, b, inv, cx, cy);
+        }
+        fz_append_string(ctx, b, "h\nf\n");
+        break;
+    default:
+        break;
+    }
+}
+
 // A circle needs four Bézier segments — PDF has no `arc` operator.
 static void ap_circle(fz_context *ctx, fz_buffer *b, fz_matrix inv, float cx, float cy, float radius) {
     const float k = 0.5522847498f * radius;
@@ -1019,7 +1078,7 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
                                 float target_x, float target_y,
                                 float knee_x, float knee_y,
                                 float box_x0, float box_y0, float box_x1, float box_y1,
-                                const char *text, float font_size,
+                                const char *text, float font_size, int line_ending,
                                 float r, float g, float b,
                                 const char **out_error) {
     if (!ctx || !doc || !text) return -1;
@@ -1062,7 +1121,7 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
 
         fz_point cl[3] = { target_pt, knee_pt, attach_pt };
         pdf_set_annot_callout_line(ctx, annot, cl, 3);
-        pdf_set_annot_callout_style(ctx, annot, PDF_ANNOT_LE_OPEN_ARROW);
+        pdf_set_annot_callout_style(ctx, annot, (enum pdf_line_ending)line_ending);
 
         float color[3] = {r, g, b};
         float fs = font_size > 0.0f ? font_size : 11.0f;
@@ -1087,24 +1146,8 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
             ap_line(ctx, buf, inv, attach_x, attach_y);
             fz_append_string(ctx, buf, "S\n");
 
-            // Arrow head at target_pt
-            float dx = knee_x - target_x;
-            float dy = knee_y - target_y;
-            float len = hypotf(dx, dy);
-            if (len > 0.001f) {
-                float ux = dx / len;
-                float uy = dy / len;
-                float arrow_len = 8.0f;
-                float arrow_w = 4.0f;
-                float ax = target_x + ux * arrow_len;
-                float ay = target_y + uy * arrow_len;
-                float px = -uy * arrow_w;
-                float py = ux * arrow_w;
-                ap_move(ctx, buf, inv, target_x, target_y);
-                ap_line(ctx, buf, inv, ax + px, ay + py);
-                ap_line(ctx, buf, inv, ax - px, ay - py);
-                fz_append_string(ctx, buf, "h\nf\n");
-            }
+            // Line ending at target_pt, the same style /CL's /LE names for viewers that regenerate it
+            ap_line_ending(ctx, buf, inv, target_x, target_y, knee_x - target_x, knee_y - target_y, line_ending);
 
             // Text box rectangle outline and white background
             fz_append_string(ctx, buf, "1 1 1 rg\n");
@@ -1607,6 +1650,24 @@ static int rect_touches_any(fz_rect area, const fz_rect *rects, int n_rects) {
     return 0;
 }
 
+// A reply (/IRT) is part of the annotation it answers, and another viewer can't show one whose
+// parent has gone, so deleting an annotation deletes its thread too.
+static void delete_annot_and_replies(fz_context *ctx, pdf_page *page, pdf_annot *annot) {
+    int num = pdf_to_num(ctx, pdf_annot_obj(ctx, annot));
+    pdf_delete_annot(ctx, page, annot);
+    int found;
+    do {
+        found = 0;
+        for (pdf_annot *a = pdf_first_annot(ctx, page); a; a = pdf_next_annot(ctx, a)) {
+            if (pdf_to_num(ctx, pdf_dict_get(ctx, pdf_annot_obj(ctx, a), PDF_NAME(IRT))) == num) {
+                delete_annot_and_replies(ctx, page, a);
+                found = 1;
+                break;
+            }
+        }
+    } while (found);
+}
+
 // pdf_redact_page only removes FreeText annotations and links under a redaction. Highlights and
 // notes often repeat the covered text in /Contents, and a form field keeps its value in /V, so
 // any annotation or widget touching a redacted area goes too (popups are removed with their parent).
@@ -1618,7 +1679,7 @@ static void delete_annots_touching_rects(fz_context *ctx, pdf_page *page, const 
             enum pdf_annot_type type = pdf_annot_type(ctx, annot);
             if (type == PDF_ANNOT_POPUP || type == PDF_ANNOT_LINK || type == PDF_ANNOT_REDACT) continue;
             if (rect_touches_any(pdf_bound_annot(ctx, annot), rects, n_rects)) {
-                pdf_delete_annot(ctx, page, annot);
+                delete_annot_and_replies(ctx, page, annot);
                 deleted = 1;
                 break;
             }
@@ -1855,6 +1916,8 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
         for (pdf_annot *annot = pdf_first_annot(ctx, ppage); annot; annot = pdf_next_annot(ctx, annot)) {
             enum pdf_annot_type atype = pdf_annot_type(ctx, annot);
             int hit = 0;
+            // Replies have no appearance of their own; they go with their parent.
+            if (pdf_dict_get(ctx, pdf_annot_obj(ctx, annot), PDF_NAME(IRT))) continue;
             if (atype == PDF_ANNOT_HIGHLIGHT || atype == PDF_ANNOT_UNDERLINE || atype == PDF_ANNOT_STRIKE_OUT) {
                 if (pdf_annot_has_quad_points(ctx, annot)) {
                     int n_quads = pdf_annot_quad_point_count(ctx, annot);
@@ -1920,12 +1983,17 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
                     }
                 }
             } else if (atype == PDF_ANNOT_LINE || atype == PDF_ANNOT_POLY_LINE || atype == PDF_ANNOT_POLYGON ||
-                       atype == PDF_ANNOT_SQUARE || atype == PDF_ANNOT_CIRCLE) {
-                // Measurements and shapes: close enough to the annotation's bounds.
+                       atype == PDF_ANNOT_SQUARE || atype == PDF_ANNOT_CIRCLE || atype == PDF_ANNOT_TEXT) {
+                // Measurements, shapes and notes: close enough to the annotation's bounds.
                 fz_rect r = pdf_bound_annot(ctx, annot);
                 float tol = 6.0f;
                 if (x >= r.x0 - tol && x <= r.x1 + tol && y >= r.y0 - tol && y <= r.y1 + tol) {
                     hit = 1;
+                }
+                // A revision cloud rings other content, so only its outline counts.
+                if (hit && pdf_name_eq(ctx, pdf_dict_getp(ctx, pdf_annot_obj(ctx, annot), "BE/S"), PDF_NAME(C)) &&
+                    x > r.x0 + 2 * tol && x < r.x1 - 2 * tol && y > r.y0 + 2 * tol && y < r.y1 - 2 * tol) {
+                    hit = 0;
                 }
             } else if (atype == PDF_ANNOT_INK) {
                 if (pdf_annot_has_ink_list(ctx, annot)) {
@@ -1965,7 +2033,7 @@ int mupdf_pdf_delete_annot_near_point(fz_context *ctx, fz_document *doc, int pag
                 }
             }
             if (hit) {
-                pdf_delete_annot(ctx, ppage, annot);
+                delete_annot_and_replies(ctx, ppage, annot);
                 deleted = 1;
                 break;
             }
@@ -2028,7 +2096,7 @@ int mupdf_pdf_delete_annot_by_objnum(fz_context *ctx, fz_document *doc, int page
         ppage = pdf_load_page(ctx, pdoc, pageno);
         for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) {
             if (pdf_to_num(ctx, pdf_annot_obj(ctx, a)) == objnum) {
-                pdf_delete_annot(ctx, ppage, a);
+                delete_annot_and_replies(ctx, ppage, a);
                 deleted = 1;
                 break;
             }
@@ -2042,6 +2110,306 @@ int mupdf_pdf_delete_annot_by_objnum(fz_context *ctx, fz_document *doc, int page
         return -1;
     }
     return deleted;
+}
+
+static pdf_annot *find_annot_by_objnum(fz_context *ctx, pdf_page *page, int objnum) {
+    for (pdf_annot *a = pdf_first_annot(ctx, page); a; a = pdf_next_annot(ctx, a)) {
+        if (pdf_to_num(ctx, pdf_annot_obj(ctx, a)) == objnum) return a;
+    }
+    return NULL;
+}
+
+/* Revision cloud: a square annotation with a cloudy border effect (/BE << /S /C /I intensity >>).
+ * Unlike the callout's, this appearance is MuPDF's own, which is measured against Acrobat's. */
+int mupdf_pdf_add_cloud_annot(fz_context *ctx, fz_document *doc, int pageno,
+                              float x0, float y0, float x1, float y1, float intensity,
+                              float r, float g, float b, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_SQUARE);
+        float color[3] = {r, g, b};
+        pdf_set_annot_rect(ctx, annot, fz_make_rect(fminf(x0, x1), fminf(y0, y1), fmaxf(x0, x1), fmaxf(y0, y1)));
+        pdf_set_annot_color(ctx, annot, 3, color);
+        pdf_set_annot_border_width(ctx, annot, 1.5f);
+        pdf_set_annot_border_effect(ctx, annot, PDF_BORDER_EFFECT_CLOUDY);
+        pdf_set_annot_border_effect_intensity(ctx, annot, intensity);
+        pdf_update_annot(ctx, annot);
+        pdf_set_annot_resynthesised(ctx, annot);
+    }
+    fz_always(ctx) {
+        pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+/* Sticky note: a Text annotation with the Comment icon and a popup for viewers that use one. */
+int mupdf_pdf_add_note_annot(fz_context *ctx, fz_document *doc, int pageno,
+                             float x0, float y0, float x1, float y1, const char *text,
+                             float r, float g, float b, const char **out_error) {
+    if (!ctx || !doc || !text) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_TEXT);
+        float color[3] = {r, g, b};
+        pdf_set_annot_rect(ctx, annot, fz_make_rect(x0, y0, x1, y1));
+        pdf_set_annot_icon_name(ctx, annot, "Comment");
+        pdf_set_annot_color(ctx, annot, 3, color);
+        pdf_set_annot_contents(ctx, annot, text);
+        pdf_set_annot_popup(ctx, annot, fz_make_rect(x1, y0, x1 + 200.0f, y0 + 100.0f));
+        pdf_update_annot(ctx, annot);
+        pdf_set_annot_resynthesised(ctx, annot);
+    }
+    fz_always(ctx) {
+        pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+// These write the dictionary directly: MuPDF's setters would mark the annotation for a new
+// appearance, and that would replace the hand-built ones.
+static void stamp_annot_identity(fz_context *ctx, pdf_obj *obj, const char *author) {
+    int64_t now = (int64_t)time(NULL);
+    pdf_dict_put_text_string(ctx, obj, PDF_NAME(T), author);
+    if (!pdf_dict_get(ctx, obj, PDF_NAME(CreationDate))) pdf_dict_put_date(ctx, obj, PDF_NAME(CreationDate), now);
+    pdf_dict_put_date(ctx, obj, PDF_NAME(M), now);
+}
+
+int mupdf_pdf_set_annot_author(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *author, const char **out_error) {
+    if (!ctx || !doc || !author) return -1;
+    pdf_page *ppage = NULL;
+    int found = 0;
+    fz_var(ppage);
+    fz_var(found);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_annot *a = find_annot_by_objnum(ctx, ppage, objnum);
+        if (a) {
+            stamp_annot_identity(ctx, pdf_annot_obj(ctx, a), author);
+            found = 1;
+        }
+    }
+    fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return found;
+}
+
+int mupdf_pdf_set_annot_comment(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *text, const char **out_error) {
+    if (!ctx || !doc || !text) return -1;
+    pdf_page *ppage = NULL;
+    int found = 0;
+    fz_var(ppage);
+    fz_var(found);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_annot *a = find_annot_by_objnum(ctx, ppage, objnum);
+        if (a) {
+            pdf_dict_put_text_string(ctx, pdf_annot_obj(ctx, a), PDF_NAME(Contents), text);
+            pdf_dict_put_date(ctx, pdf_annot_obj(ctx, a), PDF_NAME(M), (int64_t)time(NULL));
+            found = 1;
+        }
+    }
+    fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return found;
+}
+
+/* A reply is a Text annotation with /IRT and /RT /R (ISO 32000 12.5.6.2). A status is the same with
+ * /State and /StateModel, hidden as Acrobat hides them (12.5.6.3). Both get an empty appearance,
+ * since a viewer that doesn't understand threads would otherwise draw a note icon for each. */
+int mupdf_pdf_add_annot_reply(fz_context *ctx, fz_document *doc, int pageno, int parent_objnum,
+                              const char *text, const char *author,
+                              const char *state, const char *state_model, const char **out_error) {
+    if (!ctx || !doc || !text || !author) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *reply = NULL;
+    fz_buffer *empty = NULL;
+    fz_var(ppage);
+    fz_var(reply);
+    fz_var(empty);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_annot *parent = find_annot_by_objnum(ctx, ppage, parent_objnum);
+        if (!parent) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Annotation to reply to not found");
+        reply = pdf_create_annot(ctx, ppage, PDF_ANNOT_TEXT);
+        pdf_obj *obj = pdf_annot_obj(ctx, reply);
+        pdf_set_annot_icon_name(ctx, reply, "Comment");
+        pdf_set_annot_contents(ctx, reply, text);
+        if (state) pdf_set_annot_flags(ctx, reply, PDF_ANNOT_IS_HIDDEN | PDF_ANNOT_IS_PRINT | PDF_ANNOT_IS_NO_ZOOM | PDF_ANNOT_IS_NO_ROTATE);
+        pdf_update_annot(ctx, reply);
+        pdf_obj *n = pdf_dict_getp(ctx, obj, "AP/N");
+        if (n) {
+            empty = fz_new_buffer(ctx, 1);
+            pdf_update_stream(ctx, pdoc, n, empty, 0);
+        }
+        pdf_dict_put(ctx, obj, PDF_NAME(Rect), pdf_dict_get(ctx, pdf_annot_obj(ctx, parent), PDF_NAME(Rect)));
+        pdf_dict_put(ctx, obj, PDF_NAME(IRT), pdf_annot_obj(ctx, parent));
+        pdf_dict_put(ctx, obj, PDF_NAME(RT), PDF_NAME(R));
+        if (state) {
+            pdf_dict_puts_drop(ctx, obj, "State", pdf_new_text_string(ctx, state));
+            pdf_dict_puts_drop(ctx, obj, "StateModel", pdf_new_text_string(ctx, state_model ? state_model : "Review"));
+        }
+        stamp_annot_identity(ctx, obj, author);
+    }
+    fz_always(ctx) {
+        fz_drop_buffer(ctx, empty);
+        pdf_drop_annot(ctx, reply);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+/* Editing or moving an annotation re-creates it, so its author, creation date and replies have to
+ * follow it to the new object. */
+int mupdf_pdf_move_annot_thread(fz_context *ctx, fz_document *doc, int pageno, int from_objnum, int to_objnum, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *ppage = NULL;
+    fz_var(ppage);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_annot *from = find_annot_by_objnum(ctx, ppage, from_objnum);
+        pdf_annot *to = find_annot_by_objnum(ctx, ppage, to_objnum);
+        if (from && to) {
+            pdf_obj *from_obj = pdf_annot_obj(ctx, from);
+            pdf_obj *to_obj = pdf_annot_obj(ctx, to);
+            if (pdf_dict_get(ctx, from_obj, PDF_NAME(T)))
+                pdf_dict_put(ctx, to_obj, PDF_NAME(T), pdf_dict_get(ctx, from_obj, PDF_NAME(T)));
+            if (pdf_dict_get(ctx, from_obj, PDF_NAME(CreationDate)))
+                pdf_dict_put(ctx, to_obj, PDF_NAME(CreationDate), pdf_dict_get(ctx, from_obj, PDF_NAME(CreationDate)));
+            for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) {
+                pdf_obj *obj = pdf_annot_obj(ctx, a);
+                if (pdf_to_num(ctx, pdf_dict_get(ctx, obj, PDF_NAME(IRT))) == from_objnum) {
+                    pdf_dict_put(ctx, obj, PDF_NAME(IRT), to_obj);
+                    pdf_dict_put(ctx, obj, PDF_NAME(Rect), pdf_dict_get(ctx, to_obj, PDF_NAME(Rect)));
+                }
+            }
+        }
+    }
+    fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+void mupdf_pdf_free_review_annots(fz_context *ctx, mupdf_review_annot *annots, int count) {
+    if (!ctx || !annots) return;
+    for (int i = 0; i < count; i++) {
+        fz_free(ctx, annots[i].author);
+        fz_free(ctx, annots[i].contents);
+        fz_free(ctx, annots[i].state);
+        fz_free(ctx, annots[i].state_model);
+    }
+    fz_free(ctx, annots);
+}
+
+/* Lists every reviewable annotation on a page: everything a reader sees as a markup, from any app.
+ * The entries read the dictionary, as MuPDF's getters throw on subtypes that don't allow a key. */
+int mupdf_pdf_get_review_annots(fz_context *ctx, fz_document *doc, int pageno,
+                                mupdf_review_annot **out, int *out_count, const char **out_error) {
+    if (!ctx || !doc || !out || !out_count) return -1;
+    *out = NULL;
+    *out_count = 0;
+    pdf_page *ppage = NULL;
+    mupdf_review_annot *list = NULL;
+    int count = 0;
+    fz_var(ppage);
+    fz_var(list);
+    fz_var(count);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        int capacity = 0;
+        for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) capacity++;
+        if (capacity > 0) list = fz_calloc(ctx, capacity, sizeof(*list));
+        for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) {
+            enum pdf_annot_type type = pdf_annot_type(ctx, a);
+            if (type == PDF_ANNOT_POPUP || type == PDF_ANNOT_LINK || type == PDF_ANNOT_REDACT) continue;
+            pdf_obj *obj = pdf_annot_obj(ctx, a);
+            mupdf_review_annot *e = &list[count++];
+            e->objnum = pdf_to_num(ctx, obj);
+            // A grouped annotation (/RT /Group) is a part of its parent's shape, not an answer to it.
+            if (!pdf_name_eq(ctx, pdf_dict_get(ctx, obj, PDF_NAME(RT)), PDF_NAME(Group)))
+                e->parent_objnum = pdf_to_num(ctx, pdf_dict_get(ctx, obj, PDF_NAME(IRT)));
+            fz_rect r = pdf_bound_annot(ctx, a);
+            e->x0 = r.x0; e->y0 = r.y0; e->x1 = r.x1; e->y1 = r.y1;
+            pdf_obj *c = pdf_dict_get(ctx, obj, PDF_NAME(C));
+            int n = pdf_array_len(ctx, c);
+            if (n == 3) {
+                e->r = pdf_array_get_real(ctx, c, 0); e->g = pdf_array_get_real(ctx, c, 1); e->b = pdf_array_get_real(ctx, c, 2);
+            } else if (n == 1) {
+                e->r = e->g = e->b = pdf_array_get_real(ctx, c, 0);
+            }
+            e->created = pdf_dict_get_date(ctx, obj, PDF_NAME(CreationDate));
+            e->modified = pdf_dict_get_date(ctx, obj, PDF_NAME(M));
+            fz_strlcpy(e->subtype, pdf_string_from_annot_type(ctx, type), sizeof(e->subtype));
+            e->is_callout = type == PDF_ANNOT_FREE_TEXT && pdf_name_eq(ctx, pdf_dict_get(ctx, obj, PDF_NAME(IT)), PDF_NAME(FreeTextCallout));
+            e->is_cloud = pdf_name_eq(ctx, pdf_dict_getp(ctx, obj, "BE/S"), PDF_NAME(C));
+            e->author = fz_strdup(ctx, pdf_dict_get_text_string(ctx, obj, PDF_NAME(T)));
+            e->contents = fz_strdup(ctx, pdf_dict_get_text_string(ctx, obj, PDF_NAME(Contents)));
+            e->state = fz_strdup(ctx, pdf_to_text_string(ctx, pdf_dict_gets(ctx, obj, "State")));
+            e->state_model = fz_strdup(ctx, pdf_to_text_string(ctx, pdf_dict_gets(ctx, obj, "StateModel")));
+        }
+    }
+    fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        mupdf_pdf_free_review_annots(ctx, list, count);
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    *out = list;
+    *out_count = count;
+    return 0;
 }
 
 /* Lists the measurement annotations on a page (dimension lines, perimeters, areas and angles as

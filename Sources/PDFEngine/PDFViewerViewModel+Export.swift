@@ -32,18 +32,22 @@ extension PDFViewerViewModel {
         df.dateStyle = .medium
         df.timeStyle = .short
         md += "**Generated:** \(df.string(from: Date()))  \n"
-        let totalCount = pageAnnotations.values.reduce(0) { $0 + $1.count }
+        let threads = annotationThreads()
+        let threadsByNumber = Dictionary(threads.map { ($0.root.objectNumber, $0) }, uniquingKeysWith: { first, _ in first })
+        let fromFile = Dictionary(grouping: threadsNotInSession(threads), by: { $0.root.pageIndex })
+        let totalCount = pageAnnotations.values.reduce(0) { $0 + $1.count } + fromFile.values.reduce(0) { $0 + $1.count }
         md += "**Total Annotations:** \(totalCount)  \n\n"
         md += "---\n\n"
 
-        let sortedPages = pageAnnotations.keys.sorted()
+        let sortedPages = Set(pageAnnotations.keys).union(fromFile.keys).sorted()
         if sortedPages.isEmpty {
             md += "*No annotations found in this document.*\n"
             return md
         }
 
         for pIdx in sortedPages {
-            guard let annots = pageAnnotations[pIdx], !annots.isEmpty else { continue }
+            let annots = pageAnnotations[pIdx] ?? []
+            guard !annots.isEmpty || fromFile[pIdx] != nil else { continue }
             md += "## Page \(pIdx + 1)\n\n"
             for annot in annots {
                 let colorName = annot.color.displayName
@@ -69,6 +73,10 @@ extension PDFViewerViewModel {
                     md += "- **[Ink Drawing]** *(\(colorName))*: \(annot.inkPoints.count) points\n"
                 case .stamp:
                     md += "- **[Signature / Stamp]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
+                case .note:
+                    md += "- **[Note]** *(\(colorName))*: \(annot.text)\n"
+                case .cloud:
+                    md += "- **[Revision Cloud]** *(\(colorName))*\n"
                 case .measureLength:
                     md += "- **[Dimension]** *(\(colorName))*: \(annot.measurementText.isEmpty ? annot.text : annot.measurementText)\n"
                 case .measurePerimeter:
@@ -78,15 +86,48 @@ extension PDFViewerViewModel {
                 case .measureAngle:
                     md += "- **[Angle]** *(\(colorName))*: \(annot.measurementText.isEmpty ? annot.text : annot.measurementText)\n"
                 }
+                if let number = annot.documentObjectNumber, let thread = threadsByNumber[number] {
+                    md += reviewDetailMarkdown(for: thread)
+                }
+            }
+            for thread in fromFile[pIdx] ?? [] {
+                let author = thread.root.author.isEmpty ? "" : " *(\(thread.root.author))*"
+                md += "- **[\(thread.root.typeName)]**\(author): \(thread.root.text)\n"
+                md += reviewDetailMarkdown(for: thread)
             }
             md += "\n"
         }
         return md
     }
 
+    /// Threads for annotations that came with the file, which `pageAnnotations` doesn't hold.
+    private func threadsNotInSession(_ threads: [PDFAnnotationThread]) -> [PDFAnnotationThread] {
+        let inSession = Set(pageAnnotations.values.joined().compactMap(\.documentObjectNumber))
+        return threads.filter { !inSession.contains($0.root.objectNumber) }
+    }
+
+    private func reviewDetailMarkdown(for thread: PDFAnnotationThread) -> String {
+        var md = ""
+        if thread.status != .none {
+            md += "  - Status: \(thread.status.displayName)\n"
+        }
+        for reply in thread.replies {
+            md += "  - \(reply.author.isEmpty ? "Reply" : reply.author): \(reply.text)\n"
+        }
+        return md
+    }
+
     public func generateReviewSummaryCSV() -> String {
-        var csv = "Page,Type,Color,Content,Coordinates,Date\n"
+        var csv = "Page,Type,Color,Content,Coordinates,Date,Author,Status,Replies\n"
         let df = ISO8601DateFormatter()
+        let threads = annotationThreads()
+        let threadsByNumber = Dictionary(threads.map { ($0.root.objectNumber, $0) }, uniquingKeysWith: { first, _ in first })
+        func escaped(_ text: String) -> String { text.replacingOccurrences(of: "\"", with: "\"\"") }
+        func reviewColumns(_ thread: PDFAnnotationThread?) -> String {
+            guard let thread else { return ",," }
+            let replies = thread.replies.map { "\($0.author): \($0.text)" }.joined(separator: " | ")
+            return "\"\(escaped(thread.root.author))\",\(thread.status == .none ? "" : thread.status.displayName),\"\(escaped(replies))\""
+        }
         let sortedPages = pageAnnotations.keys.sorted()
         for pIdx in sortedPages {
             guard let annots = pageAnnotations[pIdx] else { continue }
@@ -105,8 +146,15 @@ extension PDFViewerViewModel {
                     coordStr = annot.measurementPoints.map { "(\(Int($0.x)),\(Int($0.y)))" }.joined(separator: "-")
                 }
                 let dateStr = df.string(from: annot.dateCreated)
-                csv += "\(pageStr),\(typeStr),\(colorStr),\"\(contentEscaped)\",\"\(coordStr)\",\(dateStr)\n"
+                let thread = annot.documentObjectNumber.flatMap { threadsByNumber[$0] }
+                csv += "\(pageStr),\(typeStr),\(colorStr),\"\(contentEscaped)\",\"\(coordStr)\",\(dateStr),\(reviewColumns(thread))\n"
             }
+        }
+        for thread in threadsNotInSession(threads) {
+            let root = thread.root
+            let coordStr = "(\(Int(root.rect.minX)) \(Int(root.rect.minY)) \(Int(root.rect.width))x\(Int(root.rect.height)))"
+            let dateStr = root.date.map { df.string(from: $0) } ?? ""
+            csv += "\(root.pageIndex + 1),\(root.typeName),\(root.color.displayName),\"\(escaped(root.text))\",\"\(coordStr)\",\(dateStr),\(reviewColumns(thread))\n"
         }
         return csv
     }
