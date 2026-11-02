@@ -21,7 +21,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 ## Search
 
 - [Search a document](search.md)
-- [Search scanned pages with OCR](scanned-pages.md)
+- [Search and select text on scanned pages](scanned-pages.md)
 
 ## Follow references
 

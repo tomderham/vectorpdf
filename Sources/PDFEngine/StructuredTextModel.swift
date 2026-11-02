@@ -207,7 +207,17 @@ public struct StructuredPage: Sendable {
     public let pageIndex: Int
     public let bounds: CGRect
     public let blocks: [TextBlock]
-    
+    /// Maps the blocks' coordinates to page coordinates. Identity except for OCR text on a skewed
+    /// scan, whose lines are held upright (see `PDFOCRPageResult.structuredPage`).
+    public var pageTransform: CGAffineTransform = .identity
+
+    /// The page points to select between to take in all of its text, in reading order.
+    public var fullSelectionPoints: (start: CGPoint, end: CGPoint) {
+        let upright = bounds.applying(pageTransform.inverted())
+        return (CGPoint(x: upright.minX, y: upright.minY).applying(pageTransform),
+                CGPoint(x: upright.maxX, y: upright.maxY).applying(pageTransform))
+    }
+
     public var plainText: String {
         blocks.filter { $0.type == .text }.map { $0.text }.joined(separator: "\n\n")
     }

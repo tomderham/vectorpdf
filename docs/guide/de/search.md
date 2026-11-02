@@ -1,5 +1,5 @@
 <!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # Ein Dokument durchsuchen
 
@@ -41,4 +41,4 @@ Die vorgefertigten Muster decken numerische Quellenangaben wie [12], Markensymbo
 
 ## Gescannte Dokumente
 
-Gescannte Seiten enthalten keinen durchsuchbaren Text, bis er erkannt wurde. Weitere Informationen findest du unter [Gescannte Seiten mit OCR durchsuchen](scanned-pages.md).
+Gescannte Seiten enthalten keinen durchsuchbaren Text, bis er erkannt wurde. Weitere Informationen findest du unter [Text auf gescannten Seiten suchen und auswählen](scanned-pages.md).

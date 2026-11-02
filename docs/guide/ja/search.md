@@ -1,5 +1,5 @@
 <!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # 書類を検索する
 
@@ -41,4 +41,4 @@
 
 ## スキャンした書類
 
-スキャンしたページは、認識されるまで検索できるテキストがありません。[OCR でスキャンしたページを検索する](scanned-pages.md)を参照してください。
+スキャンしたページは、認識されるまで検索できるテキストがありません。[スキャンしたページのテキストを検索、選択する](scanned-pages.md)を参照してください。

@@ -1,5 +1,5 @@
 <!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # 문서 검색하기
 
@@ -41,4 +41,4 @@
 
 ## 스캔한 문서
 
-스캔한 페이지는 텍스트가 인식되기 전까지 검색할 수 있는 텍스트가 없습니다. [OCR로 스캔한 페이지 검색하기](scanned-pages.md)를 참조하십시오.
+스캔한 페이지는 텍스트가 인식되기 전까지 검색할 수 있는 텍스트가 없습니다. [스캔한 페이지에서 텍스트 검색 및 선택하기](scanned-pages.md)를 참조하십시오.

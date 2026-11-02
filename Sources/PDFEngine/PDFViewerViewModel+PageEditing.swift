@@ -202,7 +202,7 @@ extension PDFViewerViewModel {
                 (0..<limit).filter { doc.isScannedPage(pageIndex: $0) }
             }.value
             guard let self, self.document === doc, self.ocrGeneration == generation, !scanned.isEmpty else { return }
-            self.detectedScannedPages.formUnion(scanned)
+            self.detectedScannedPages.formUnion(scanned.filter { self.ocrResults[$0] == nil })
             // Only the pages just found — OCRing the rest of a long scanned document is left to
             // "Run OCR" (or a search), rather than starting it for every page on open.
             for pageIndex in scanned {
@@ -227,6 +227,7 @@ extension PDFViewerViewModel {
             self.isDocumentEdited = true
             self.currentWindow?.isDocumentEdited = true
             self.recomputeEffectiveLayout()
+            let staleOCR = discardOCR(onPages: [pageIndex])
             Task { @MainActor in
                 await self.reopenActors(at: workingPath)
                 self.thumbnailVersion = UUID()
@@ -239,6 +240,7 @@ extension PDFViewerViewModel {
                 self.objectWillChange.send()
                 self.requestThumbnail(for: pageIndex)
                 await self.renderPage(pageIndex)
+                await self.recognizeAgain(staleOCR)
             }
         } catch {
             print("Failed to rotate page \(pageIndex): \(error)")
@@ -471,6 +473,7 @@ extension PDFViewerViewModel {
             self.isDocumentEdited = true
             self.currentWindow?.isDocumentEdited = true
             self.recomputeEffectiveLayout()
+            let staleOCR = discardOCR(onPages: Set(toRotate))
             Task { @MainActor in
                 await self.reopenActors(at: workingPath)
                 self.thumbnailVersion = UUID()
@@ -487,6 +490,7 @@ extension PDFViewerViewModel {
                     self.requestThumbnail(for: p)
                 }
                 await self.renderPage(self.currentPageIndex)
+                await self.recognizeAgain(staleOCR)
             }
         } catch {
             print("Failed to rotate pages \(toRotate): \(error)")

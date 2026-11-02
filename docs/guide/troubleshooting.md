@@ -10,7 +10,7 @@ Also check that a Markup or Measurement tool isn't active. Press Escape to retur
 
 ## A search finds nothing
 
-- The pages may be scanned. See [Search scanned pages with OCR](scanned-pages.md).
+- The pages may be scanned. See [Search and select text on scanned pages](scanned-pages.md).
 - Check that Match Case and Whole Word are turned off in the [search options](search.md#search-options), and that Smart Search is on.
 - If markers interrupt the text, add an [ignored pattern](search.md#ignore-clutter-in-the-text).
 

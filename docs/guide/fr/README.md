@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # Guide d’utilisation de VectorPDF
 
@@ -25,7 +25,7 @@ VectorPDF est un lecteur de PDF rapide, conçu pour les articles techniques, les
 ## Recherche
 
 - [Rechercher dans un document](search.md)
-- [Rechercher dans des pages numérisées avec l’OCR](scanned-pages.md)
+- [Rechercher et sélectionner du texte dans des pages numérisées](scanned-pages.md)
 
 ## Suivre des références
 

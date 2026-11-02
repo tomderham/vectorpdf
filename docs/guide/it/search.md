@@ -1,5 +1,5 @@
 <!-- keywords: cercare, ricerca, trova, trova successivo, maiuscole e minuscole, parola intera, ricerca intelligente, schemi ignorati, espressione regolare, tag, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # Cercare in un documento
 
@@ -41,4 +41,4 @@ Gli schemi predefiniti coprono le citazioni numeriche come [12], i simboli di ma
 
 ## Documenti scansionati
 
-Le pagine scansionate non contengono testo da cercare finché non vengono riconosciute. Consulta [Cercare nelle pagine scansionate con l'OCR](scanned-pages.md).
+Le pagine scansionate non contengono testo da cercare finché non vengono riconosciute. Consulta [Cercare e selezionare il testo nelle pagine scansionate](scanned-pages.md).

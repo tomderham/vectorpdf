@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, トラブルシューティング, 問題, 動作しない, ヘルプ, 修正, サポート, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # トラブルシューティング
 
@@ -11,7 +11,7 @@
 
 ## 検索しても何も見つからない
 
-- ページがスキャンされたものである可能性があります。[OCR でスキャンしたページを検索する](scanned-pages.md)を参照してください。
+- ページがスキャンされたものである可能性があります。[スキャンしたページのテキストを検索、選択する](scanned-pages.md)を参照してください。
 - [検索オプション](search.md#search-options)で Match Case と Whole Word がオフになっていること、Smart Search がオンになっていることを確認してください。
 - 記号がテキストの途中に入っている場合は、[無視するパターン](search.md#ignore-clutter-in-the-text)を追加してください。
 

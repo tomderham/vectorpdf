@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, 故障排除, 问题, 不起作用, 帮助, 修复, 支持, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # 故障排除
 
@@ -11,7 +11,7 @@
 
 ## 搜索未找到任何内容
 
-- 这些页面可能是扫描页面。请参阅[使用 OCR 搜索扫描页面](scanned-pages.md)。
+- 这些页面可能是扫描页面。请参阅[搜索和选择扫描页面上的文本](scanned-pages.md)。
 - 检查[搜索选项](search.md#search-options)中的 Match Case 和 Whole Word 是否已关闭，以及 Smart Search 是否已打开。
 - 如果标记打断了文本，请添加[忽略的模式](search.md#ignore-clutter-in-the-text)。
 

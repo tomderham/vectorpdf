@@ -1,5 +1,5 @@
 <!-- keywords: auswählen, Auswahl, kopieren, Text, Bildschirmfoto, Bild, nachschlagen, Wörterbuch, Definition, übersetzen, Übersetzung, sprechen, Sprachausgabe, vorlesen, Bereich, Lasso, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # Text auswählen, kopieren und nachschlagen
 
@@ -10,6 +10,8 @@
 - **Halte ⌥ gedrückt und ziehe**, um einen rechteckigen Bereich auszuwählen, zum Beispiel eine Abbildung oder Tabelle.
 
 Drücke die Escape-Taste, um die Auswahl aufzuheben.
+
+Auf einer gescannten Seite kannst du Text auswählen, sobald er [erkannt](scanned-pages.md) wurde.
 
 ## Kopieren
 

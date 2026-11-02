@@ -223,6 +223,27 @@ extension PDFCanvasView {
         str.draw(at: NSPoint(x: pillRect.minX + padX, y: pillRect.minY + padY), withAttributes: attrs)
     }
 
+    /// The outline to fill for a highlight: a rounded box, or the quad itself on slanted text,
+    /// e.g. OCR of a skewed scan.
+    func highlightPath(for quad: PDFQuad, minSize: CGSize, pFrame: NSRect, pBounds: CGRect) -> NSBezierPath {
+        if quad.isAxisAligned() {
+            let r = quad.boundingRect
+            let origin = canvasPoint(for: r.origin, pFrame: pFrame, pBounds: pBounds)
+            let size = NSSize(width: max(r.width * viewModel.effectiveZoom, minSize.width),
+                              height: max(r.height * viewModel.effectiveZoom, minSize.height))
+            return NSBezierPath(roundedRect: NSRect(origin: origin, size: size), xRadius: 2, yRadius: 2)
+        }
+        let path = NSBezierPath()
+        let corners = [quad.ul, quad.ur, quad.lr, quad.ll].map {
+            canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds)
+        }
+        path.move(to: corners[0])
+        corners.dropFirst().forEach { path.line(to: $0) }
+        path.close()
+        path.lineJoinStyle = .round
+        return path
+    }
+
     func canvasPoint(for pagePoint: CGPoint, pFrame: NSRect, pBounds: CGRect) -> NSPoint {
         NSPoint(
             x: pFrame.minX + (pagePoint.x - pBounds.minX) * viewModel.effectiveZoom,

@@ -71,6 +71,13 @@ public struct PDFQuad: Sendable, Equatable, Codable {
         )
     }
 
+    public func applying(_ transform: CGAffineTransform) -> PDFQuad {
+        PDFQuad(
+            ul: ul.applying(transform), ur: ur.applying(transform),
+            ll: ll.applying(transform), lr: lr.applying(transform)
+        )
+    }
+
     public func toFZQuad() -> fz_quad {
         var q = fz_quad()
         q.ul = fz_point(x: Float(ul.x), y: Float(ul.y))

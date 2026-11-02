@@ -38,6 +38,14 @@ public struct SelectionResult: Sendable, Equatable {
         self.boundingRect = boundingRect
         self.mode = mode
     }
+
+    /// The same selection with its highlights moved by `transform`.
+    func applying(_ transform: CGAffineTransform) -> SelectionResult {
+        guard !transform.isIdentity else { return self }
+        let quads = highlightQuads.map { $0.applying(transform) }
+        let bounds = quads.reduce(CGRect.null) { $0.union($1.boundingRect) }
+        return SelectionResult(text: text, highlightQuads: quads, boundingRect: bounds.isNull ? .zero : bounds, mode: mode)
+    }
 }
 
 /// One page's slice of a selection that spans more than one page — e.g. dragging from partway
@@ -126,9 +134,13 @@ public final class SpatialTextSelector: Sendable {
         
         switch mode {
         case .rectangularArea:
-            return selectRectangularArea(on: textBlocks, from: startPoint, to: endPoint)
+            return selectRectangularArea(on: textBlocks, from: startPoint, to: endPoint, toPage: page.pageTransform)
         case .readingOrder:
-            return selectReadingOrder(on: textBlocks, tables: ruledTables(on: page), from: startPoint, to: endPoint)
+            let toUpright = page.pageTransform.inverted()
+            return selectReadingOrder(
+                on: textBlocks, tables: ruledTables(on: page),
+                from: startPoint.applying(toUpright), to: endPoint.applying(toUpright)
+            ).applying(page.pageTransform)
         }
     }
     
@@ -473,7 +485,9 @@ public final class SpatialTextSelector: Sendable {
     }
 
     // MARK: - Rectangular Area Selection
-    private func selectRectangularArea(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint) -> SelectionResult {
+    /// `startPoint`, `endPoint` and the marquee are in page coordinates, so that it stays upright
+    /// on the page; `toPage` brings the text to them.
+    private func selectRectangularArea(on textBlocks: [TextBlock], from startPoint: CGPoint, to endPoint: CGPoint, toPage: CGAffineTransform) -> SelectionResult {
         let minX = min(startPoint.x, endPoint.x)
         let maxX = max(startPoint.x, endPoint.x)
         let minY = min(startPoint.y, endPoint.y)
@@ -493,10 +507,10 @@ public final class SpatialTextSelector: Sendable {
         )
         
         var linesText: [String] = []
-        for block in textBlocks where block.bbox.intersects(selRect) {
-            for line in block.lines where line.bbox.intersects(selRect) {
+        for block in textBlocks where block.bbox.applying(toPage).intersects(selRect) {
+            for line in block.lines where line.bbox.applying(toPage).intersects(selRect) {
                 let charsInRect = line.characters.filter {
-                    let b = $0.boundingRect
+                    let b = $0.boundingRect.applying(toPage)
                     return selRect.contains(CGPoint(x: b.midX, y: b.midY)) || selRect.intersects(b)
                 }
                 if !charsInRect.isEmpty {
@@ -1069,6 +1083,7 @@ public final class SpatialTextSelector: Sendable {
 
     // MARK: - Word & Line Selection
     public func selectWord(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let point = point.applying(page.pageTransform.inverted())
         let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
         guard let pos = resolvePosition(at: point, in: textBlocks),
               pos.blockIndex < textBlocks.count else { return nil }
@@ -1118,10 +1133,11 @@ public final class SpatialTextSelector: Sendable {
             highlightQuads: [lineQuad],
             boundingRect: lineQuad.boundingRect,
             mode: .readingOrder
-        )
+        ).applying(page.pageTransform)
     }
 
     public func selectLine(at point: CGPoint, on page: StructuredPage) -> SelectionResult? {
+        let point = point.applying(page.pageTransform.inverted())
         let textBlocks = page.blocks.filter { $0.type == .text && !$0.lines.isEmpty }
         guard let pos = resolvePosition(at: point, in: textBlocks),
               pos.blockIndex < textBlocks.count else { return nil }
@@ -1147,6 +1163,6 @@ public final class SpatialTextSelector: Sendable {
             highlightQuads: [lineQuad],
             boundingRect: lineQuad.boundingRect,
             mode: .readingOrder
-        )
+        ).applying(page.pageTransform)
     }
 }

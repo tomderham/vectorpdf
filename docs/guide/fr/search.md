@@ -1,5 +1,5 @@
 <!-- keywords: rechercher, recherche, trouver, résultat suivant, casse, mot entier, recherche intelligente, motifs ignorés, expression régulière, balises, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # Rechercher dans un document
 
@@ -41,4 +41,4 @@ Les motifs prédéfinis couvrent les citations numériques comme [12], les symbo
 
 ## Documents numérisés
 
-Les pages numérisées ne contiennent aucun texte consultable tant qu’elles n’ont pas été reconnues. Consultez [Rechercher dans des pages numérisées avec l’OCR](scanned-pages.md).
+Les pages numérisées ne contiennent aucun texte consultable tant qu’elles n’ont pas été reconnues. Consultez [Rechercher et sélectionner du texte dans des pages numérisées](scanned-pages.md).

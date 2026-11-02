@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, समस्या निवारण, समस्या, समस्याएँ, काम नहीं कर रहा, सहायता, ठीक करें, सपोर्ट, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # समस्या निवारण
 
@@ -11,7 +11,7 @@
 
 ## खोज से कुछ नहीं मिलता
 
-- हो सकता है पेज स्कैन किए गए हों। [OCR से स्कैन किए गए पेजों में खोजें](scanned-pages.md) देखें।
+- हो सकता है पेज स्कैन किए गए हों। [स्कैन किए गए पेजों में टेक्स्ट खोजें और चुनें](scanned-pages.md) देखें।
 - जाँचें कि [खोज विकल्पों](search.md#search-options) में Match Case और Whole Word बंद हैं, और Smart Search चालू है।
 - अगर चिह्न टेक्स्ट को बीच में तोड़ते हैं, तो एक [अनदेखा पैटर्न](search.md#ignore-clutter-in-the-text) जोड़ें।
 

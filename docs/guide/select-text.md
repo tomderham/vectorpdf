@@ -10,6 +10,8 @@
 
 Press Escape to clear the selection.
 
+On a scanned page, you can select text once it has been [recognized](scanned-pages.md).
+
 ## Copy
 
 Press ⌘C, or right-click selected text and choose Copy Text.

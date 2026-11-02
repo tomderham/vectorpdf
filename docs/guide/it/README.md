@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # Manuale utente di VectorPDF
 
@@ -25,7 +25,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 ## Ricerca
 
 - [Cercare in un documento](search.md)
-- [Cercare nelle pagine scansionate con l'OCR](scanned-pages.md)
+- [Cercare e selezionare il testo nelle pagine scansionate](scanned-pages.md)
 
 ## Seguire i riferimenti
 

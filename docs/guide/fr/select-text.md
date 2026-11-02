@@ -1,5 +1,5 @@
 <!-- keywords: sélectionner, sélection, copier, texte, capture d’écran, rechercher, dictionnaire, définition, traduire, traduction, énoncer, parole, lecture à voix haute, zone, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # Sélectionner, copier et consulter du texte
 
@@ -10,6 +10,8 @@
 - **Maintenez la touche ⌥ enfoncée et faites glisser** pour sélectionner une zone rectangulaire, par exemple une figure ou un tableau.
 
 Appuyez sur Escape pour effacer la sélection.
+
+Sur une page numérisée, vous pouvez sélectionner le texte une fois qu’il a été [reconnu](scanned-pages.md).
 
 ## Copier
 

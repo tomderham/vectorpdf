@@ -145,6 +145,11 @@ extension PDFViewerViewModel {
         self.currentWindow?.isDocumentEdited = true
         // Redacted text must not survive in the Agent's index — in memory or in its disk cache.
         invalidateAgentIndex(deleteCache: true)
+        // So must text OCR read from them, and any selection of it.
+        let staleOCR = discardOCR(onPages: affectedPages)
+        if let sel = activeSelection, affectedPages.contains(sel.pageIndex) || additionalSelectionPages.contains(where: { affectedPages.contains($0.pageIndex) }) {
+            clearSelection()
+        }
 
         Task { @MainActor in
             await self.reopenActors(at: workingPath)
@@ -157,6 +162,7 @@ extension PDFViewerViewModel {
                 await self.renderPage(pIdx)
             }
             self.objectWillChange.send()
+            await self.recognizeAgain(staleOCR)
         }
     }
 

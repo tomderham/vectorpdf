@@ -1,5 +1,5 @@
 <!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # 搜索文稿
 
@@ -41,4 +41,4 @@
 
 ## 扫描文稿
 
-扫描页面在被识别之前没有可搜索的文本。请参阅[使用 OCR 搜索扫描页面](scanned-pages.md)。
+扫描页面在被识别之前没有可搜索的文本。请参阅[搜索和选择扫描页面上的文本](scanned-pages.md)。

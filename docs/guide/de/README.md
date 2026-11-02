@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -25,7 +25,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 ## Suchen
 
 - [Ein Dokument durchsuchen](search.md)
-- [Gescannte Seiten mit OCR durchsuchen](scanned-pages.md)
+- [Text auf gescannten Seiten suchen und auswählen](scanned-pages.md)
 
 ## Verweisen folgen
 

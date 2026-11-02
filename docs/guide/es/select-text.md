@@ -1,5 +1,5 @@
 <!-- keywords: seleccionar, selección, copiar, texto, captura de pantalla, imagen, consultar, diccionario, definir, traducir, traducción, hablar, voz, leer en voz alta, área, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # Seleccionar, copiar y consultar texto
 
@@ -10,6 +10,8 @@
 - **Mantén pulsada la tecla ⌥ y arrastra** para seleccionar un área rectangular, como una figura o una tabla.
 
 Pulsa Escape para borrar la selección.
+
+En una página escaneada, puedes seleccionar el texto una vez que se haya [reconocido](scanned-pages.md).
 
 ## Copiar
 

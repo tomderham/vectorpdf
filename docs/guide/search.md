@@ -40,4 +40,4 @@ The ready-made patterns cover numeric citations like [12], trademark symbols, st
 
 ## Scanned documents
 
-Scanned pages have no text to search until they've been recognized. See [Search scanned pages with OCR](scanned-pages.md).
+Scanned pages have no text to search until they've been recognized. See [Search and select text on scanned pages](scanned-pages.md).

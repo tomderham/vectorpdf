@@ -1,5 +1,5 @@
 <!-- keywords: selezionare, selezione, copiare, testo, istantanea, schermata, immagine, consultare, dizionario, definizione, tradurre, traduzione, pronunciare, sintesi vocale, leggere ad alta voce, area, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # Selezionare, copiare e consultare il testo
 
@@ -10,6 +10,8 @@
 - **Tieni premuto ⌥ e trascina** per selezionare un'area rettangolare, ad esempio una figura o una tabella.
 
 Premi Escape per annullare la selezione.
+
+In una pagina scansionata puoi selezionare il testo dopo che è stato [riconosciuto](scanned-pages.md).
 
 ## Copiare
 

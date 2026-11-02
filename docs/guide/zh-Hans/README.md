@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # VectorPDF 使用手册
 
@@ -25,7 +25,7 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 ## 搜索
 
 - [搜索文稿](search.md)
-- [使用 OCR 搜索扫描页面](scanned-pages.md)
+- [搜索和选择扫描页面上的文本](scanned-pages.md)
 
 ## 跟随引用
 

@@ -1,5 +1,5 @@
 <!-- keywords: buscar, busca, localizar, localizar próximo, maiúsculas e minúsculas, palavra inteira, busca inteligente, padrões ignorados, expressão regular, etiquetas, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # Buscar em um documento
 
@@ -41,4 +41,4 @@ Os padrões prontos abrangem citações numéricas como [12], símbolos de marca
 
 ## Documentos digitalizados
 
-Páginas digitalizadas não têm texto para buscar até serem reconhecidas. Consulte [Buscar em páginas digitalizadas com OCR](scanned-pages.md).
+Páginas digitalizadas não têm texto para buscar até serem reconhecidas. Consulte [Buscar e selecionar texto em páginas digitalizadas](scanned-pages.md).

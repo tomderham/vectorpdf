@@ -1,5 +1,5 @@
 <!-- keywords: 選択, コピー, テキスト, スクリーンショット, 画像, 調べる, 辞書, 意味, 翻訳, 読み上げ, 音声, 領域, 投げ縄, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # テキストの選択、コピー、調べる
 
@@ -10,6 +10,8 @@
 - **⌥ を押しながらドラッグ**すると、図や表などの四角い領域を選択できます。
 
 選択を解除するには、Escape キーを押します。
+
+スキャンしたページでは、テキストが[認識](scanned-pages.md)されると選択できるようになります。
 
 ## コピーする
 

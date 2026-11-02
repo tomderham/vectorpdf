@@ -767,26 +767,7 @@ extension PDFCanvasView {
             for match in matches {
                 let isActive = viewModel.isActiveMatch(match)
                 for quad in match.highlightQuads {
-                    let path: NSBezierPath
-                    if quad.isAxisAligned() {
-                        let r = quad.boundingRect
-                        let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
-                        let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
-                        let qw = max(r.width * viewModel.effectiveZoom, 4)
-                        let qh = max(r.height * viewModel.effectiveZoom, 8)
-                        let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
-                        path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
-                    } else {
-                        // Slanted text, e.g. OCR of a skewed scan.
-                        path = NSBezierPath()
-                        let corners = [quad.ul, quad.ur, quad.lr, quad.ll].map {
-                            canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds)
-                        }
-                        path.move(to: corners[0])
-                        corners.dropFirst().forEach { path.line(to: $0) }
-                        path.close()
-                        path.lineJoinStyle = .round
-                    }
+                    let path = highlightPath(for: quad, minSize: CGSize(width: 4, height: 8), pFrame: pFrame, pBounds: pBounds)
 
                     if isActive {
                         NSColor.systemOrange.withAlphaComponent(0.60).setFill()
@@ -850,13 +831,7 @@ extension PDFCanvasView {
             for selResult in selectionResultsForPage {
                 let isRectMode = (selResult.mode == .rectangularArea)
                 for quad in selResult.highlightQuads {
-                    let r = quad.boundingRect
-                    let qx = pFrame.minX + (r.minX - pBounds.minX) * viewModel.effectiveZoom
-                    let qy = pFrame.minY + (r.minY - pBounds.minY) * viewModel.effectiveZoom
-                    let qw = max(r.width * viewModel.effectiveZoom, 2)
-                    let qh = max(r.height * viewModel.effectiveZoom, 4)
-                    let quadRect = NSRect(x: qx, y: qy, width: qw, height: qh)
-                    let path = NSBezierPath(roundedRect: quadRect, xRadius: 2, yRadius: 2)
+                    let path = highlightPath(for: quad, minSize: CGSize(width: 2, height: 4), pFrame: pFrame, pBounds: pBounds)
 
                     if isRectMode {
                         NSColor.controlAccentColor.withAlphaComponent(0.18).setFill()

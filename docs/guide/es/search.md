@@ -1,5 +1,5 @@
 <!-- keywords: buscar, búsqueda, buscar siguiente, mayúsculas y minúsculas, palabra completa, búsqueda inteligente, patrones ignorados, expresión regular, etiquetas, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 9b70f3b5ae8c -->
+<!-- source: 4bafc06135d7 -->
 
 # Buscar en un documento
 
@@ -41,4 +41,4 @@ Los patrones predefinidos cubren citas numéricas como [12], símbolos de marca 
 
 ## Documentos escaneados
 
-Las páginas escaneadas no tienen texto en el que buscar hasta que se reconocen. Consulta [Buscar en páginas escaneadas con OCR](scanned-pages.md).
+Las páginas escaneadas no tienen texto en el que buscar hasta que se reconocen. Consulta [Buscar y seleccionar texto en páginas escaneadas](scanned-pages.md).

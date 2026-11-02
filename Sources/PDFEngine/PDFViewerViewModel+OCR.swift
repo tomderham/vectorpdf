@@ -30,6 +30,28 @@ extension PDFViewerViewModel {
         return doc.isScannedPage(pageIndex: pageIndex)
     }
 
+    /// Forgets the text recognized on pages whose content or geometry changed, so nothing can
+    /// select or find text that a redaction removed, and returns those pages. Discards any
+    /// recognition under way, which may have rendered the old pages; follow with
+    /// `recognizeAgain(_:)` once the document is reopened.
+    func discardOCR(onPages pages: Set<Int>) -> Set<Int> {
+        ocrGeneration += 1
+        let recognized = pages.filter { ocrResults[$0] != nil }
+        for page in recognized { ocrResults.removeValue(forKey: page) }
+        return recognized
+    }
+
+    func recognizeAgain(_ pages: Set<Int>) async {
+        guard let doc = document else { return }
+        let generation = ocrGeneration
+        for page in pages.sorted() {
+            guard document === doc, ocrGeneration == generation else { return }
+            await runOCR(onPageIndex: page)
+        }
+        guard document === doc, ocrGeneration == generation else { return }
+        startScannedPageDetection()
+    }
+
     public func runOCR(onPageIndex pageIndex: Int) async {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
         guard ocrResults[pageIndex] == nil else { return }

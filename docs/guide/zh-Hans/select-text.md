@@ -1,5 +1,5 @@
 <!-- keywords: 选择, 所选内容, 拷贝, 复制, 文本, 截屏, 图像, 查询, 词典, 定义, 翻译, 朗读, 语音, 区域, 套索, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # 选择、拷贝和查询文本
 
@@ -10,6 +10,8 @@
 - **按住 ⌥ 并拖移**可选择一个矩形区域，例如图或表。
 
 按下 Escape 键可清除所选内容。
+
+在扫描页面上，文本[识别](scanned-pages.md)完成后即可选择。
 
 ## 拷贝
 

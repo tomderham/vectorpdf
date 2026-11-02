@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, solução de problemas, problema, problemas, não funciona, ajuda, corrigir, suporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # Solução de problemas
 
@@ -11,7 +11,7 @@ Verifique também se não há uma ferramenta de Markup ou Measurement ativa. Pre
 
 ## Uma busca não encontra nada
 
-- As páginas podem estar digitalizadas. Consulte [Buscar em páginas digitalizadas com OCR](scanned-pages.md).
+- As páginas podem estar digitalizadas. Consulte [Buscar e selecionar texto em páginas digitalizadas](scanned-pages.md).
 - Verifique se Match Case e Whole Word estão desativados nas [opções de busca](search.md#search-options) e se Smart Search está ativado.
 - Se houver marcadores interrompendo o texto, adicione um [padrão ignorado](search.md#ignore-clutter-in-the-text).
 

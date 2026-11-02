@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, risoluzione dei problemi, problema, problemi, non funziona, aiuto, risolvere, supporto, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # Risoluzione dei problemi
 
@@ -11,7 +11,7 @@ Verifica inoltre che non sia attivo uno strumento Markup o Measurement. Premi Es
 
 ## Una ricerca non trova nulla
 
-- Le pagine potrebbero essere scansionate. Consulta [Cercare nelle pagine scansionate con l'OCR](scanned-pages.md).
+- Le pagine potrebbero essere scansionate. Consulta [Cercare e selezionare il testo nelle pagine scansionate](scanned-pages.md).
 - Verifica che Match Case e Whole Word siano disattivate nelle [opzioni di ricerca](search.md#search-options) e che Smart Search sia attiva.
 - Se degli indicatori interrompono il testo, aggiungi uno [schema ignorato](search.md#ignore-clutter-in-the-text).
 

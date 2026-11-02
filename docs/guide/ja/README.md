@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # VectorPDF ユーザガイド
 
@@ -25,7 +25,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 ## 検索
 
 - [書類を検索する](search.md)
-- [OCR でスキャンしたページを検索する](scanned-pages.md)
+- [スキャンしたページのテキストを検索、選択する](scanned-pages.md)
 
 ## 参照をたどる
 

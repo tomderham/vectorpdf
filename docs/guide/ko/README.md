@@ -1,4 +1,4 @@
-<!-- source: 92b6722546ac -->
+<!-- source: 189ab6c26864 -->
 
 # VectorPDF 사용 설명서
 
@@ -25,7 +25,7 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 ## 검색
 
 - [문서 검색하기](search.md)
-- [OCR로 스캔한 페이지 검색하기](scanned-pages.md)
+- [스캔한 페이지에서 텍스트 검색 및 선택하기](scanned-pages.md)
 
 ## 참조 따라가기
 

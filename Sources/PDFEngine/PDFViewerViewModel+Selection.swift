@@ -23,8 +23,20 @@ import ObjectiveC
 
 extension PDFViewerViewModel {
     // MARK: - Text Selection
+
+    /// The text to select on a page: its own, or on a scanned page what OCR recognized.
+    func selectablePage(_ pageIndex: Int) -> StructuredPage? {
+        let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex)
+        guard let ocr = ocrResults[pageIndex], let bounds = stext?.bounds,
+              stext?.plainText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true else { return stext }
+        if let page = ocrTextPages[pageIndex] { return page }
+        let page = ocr.structuredPage(bounds: bounds)
+        ocrTextPages[pageIndex] = page
+        return page
+    }
+
     public func handleDragSelect(pageIndex: Int, startPagePoint: CGPoint, currentPagePoint: CGPoint, forceMode: SelectionMode? = nil) {
-        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else { return }
+        guard let stext = selectablePage(pageIndex) else { return }
         let mode = forceMode ?? selectionMode
         let res = textSelector.selectText(on: stext, from: startPagePoint, to: currentPagePoint, mode: mode)
         if !res.text.isEmpty || (!res.highlightQuads.isEmpty && mode == .rectangularArea) {
@@ -34,7 +46,7 @@ extension PDFViewerViewModel {
     }
 
     public func selectWord(at pagePoint: CGPoint, pageIndex: Int) {
-        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else { return }
+        guard let stext = selectablePage(pageIndex) else { return }
         if let res = textSelector.selectWord(at: pagePoint, on: stext) {
             self.activeSelection = (pageIndex: pageIndex, result: res)
             self.additionalSelectionPages = []
@@ -42,7 +54,7 @@ extension PDFViewerViewModel {
     }
 
     public func selectLine(at pagePoint: CGPoint, pageIndex: Int) {
-        guard let stext = pageStructuredData[pageIndex] ?? document?.loadStructuredPage(for: pageIndex) else { return }
+        guard let stext = selectablePage(pageIndex) else { return }
         if let res = textSelector.selectLine(at: pagePoint, on: stext) {
             self.activeSelection = (pageIndex: pageIndex, result: res)
             self.additionalSelectionPages = []
@@ -92,9 +104,8 @@ extension PDFViewerViewModel {
 
         var results: [PageSelectionResult] = []
         for pageIdx in firstPage...lastPage {
-            guard let stext = pageStructuredData[pageIdx] ?? document?.loadStructuredPage(for: pageIdx) else { continue }
-            let topLeft = CGPoint(x: stext.bounds.minX, y: stext.bounds.minY)
-            let bottomRight = CGPoint(x: stext.bounds.maxX, y: stext.bounds.maxY)
+            guard let stext = selectablePage(pageIdx) else { continue }
+            let (topLeft, bottomRight) = stext.fullSelectionPoints
 
             let from: CGPoint
             let to: CGPoint
@@ -131,9 +142,8 @@ extension PDFViewerViewModel {
     /// whole-document, to keep this simple: reuses the same "select a page in full" corner-to-
     /// corner trick already used for pages fully spanned by a cross-page drag, just above.
     public func selectAllOnCurrentPage() {
-        guard let stext = pageStructuredData[currentPageIndex] ?? document?.loadStructuredPage(for: currentPageIndex) else { return }
-        let topLeft = CGPoint(x: stext.bounds.minX, y: stext.bounds.minY)
-        let bottomRight = CGPoint(x: stext.bounds.maxX, y: stext.bounds.maxY)
+        guard let stext = selectablePage(currentPageIndex) else { return }
+        let (topLeft, bottomRight) = stext.fullSelectionPoints
         handleDragSelect(pageIndex: currentPageIndex, startPagePoint: topLeft, currentPagePoint: bottomRight, forceMode: .readingOrder)
     }
 

@@ -1,5 +1,5 @@
 <!-- keywords: 선택, 복사, 텍스트, 스크린샷, 이미지, 찾아보기, 사전, 정의, 번역, 말하기, 소리 내어 읽기, 영역, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: ac4faa83c206 -->
+<!-- source: 56c5298b2bce -->
 
 # 텍스트 선택, 복사 및 찾아보기
 
@@ -10,6 +10,8 @@
 - **⌥ 키를 누른 채 드래그**하면 그림이나 표와 같은 사각형 영역이 선택됩니다.
 
 선택을 해제하려면 Escape 키를 누릅니다.
+
+스캔한 페이지에서는 텍스트가 [인식](scanned-pages.md)된 후에 선택할 수 있습니다.
 
 ## 복사하기
 

@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, Fehlerbehebung, Problem, Probleme, funktioniert nicht, Hilfe, beheben, Support, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # Fehlerbehebung
 
@@ -11,7 +11,7 @@ Prüfe außerdem, ob ein Werkzeug aus „Markup“ oder „Measurement“ aktiv 
 
 ## Eine Suche findet nichts
 
-- Die Seiten sind möglicherweise gescannt. Weitere Informationen findest du unter [Gescannte Seiten mit OCR durchsuchen](scanned-pages.md).
+- Die Seiten sind möglicherweise gescannt. Weitere Informationen findest du unter [Text auf gescannten Seiten suchen und auswählen](scanned-pages.md).
 - Prüfe, ob „Match Case“ und „Whole Word“ in den [Suchoptionen](search.md#search-options) deaktiviert sind und „Smart Search“ aktiviert ist.
 - Wenn Markierungen den Text unterbrechen, füge ein [ignoriertes Muster](search.md#ignore-clutter-in-the-text) hinzu.
 

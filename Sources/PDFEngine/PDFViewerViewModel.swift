@@ -351,7 +351,11 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Redaction, Callout & On-Device OCR
-    @Published public var ocrResults: [Int: PDFOCRPageResult] = [:]
+    @Published public var ocrResults: [Int: PDFOCRPageResult] = [:] {
+        didSet { ocrTextPages.removeAll() }
+    }
+    /// `ocrResults` as selection reads them. Selecting runs on every mouse move while dragging.
+    var ocrTextPages: [Int: StructuredPage] = [:]
     @Published public var isRunningOCR: Bool = false
     var activeOCRCount: Int = 0 {
         didSet {

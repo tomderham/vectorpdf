@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, 문제 해결, 문제, 작동하지 않음, 도움말, 해결, 지원, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # 문제 해결
 
@@ -11,7 +11,7 @@ Markup 또는 Measurement 도구가 활성화되어 있지 않은지도 확인�
 
 ## 검색 결과가 없는 경우
 
-- 스캔한 페이지일 수 있습니다. [OCR로 스캔한 페이지 검색하기](scanned-pages.md)를 참조하십시오.
+- 스캔한 페이지일 수 있습니다. [스캔한 페이지에서 텍스트 검색 및 선택하기](scanned-pages.md)를 참조하십시오.
 - [검색 옵션](search.md#search-options)에서 Match Case와 Whole Word가 꺼져 있고 Smart Search가 켜져 있는지 확인합니다.
 - 표시가 텍스트 중간에 끼어 있으면 [무시할 패턴](search.md#ignore-clutter-in-the-text)을 추가합니다.
 

@@ -1,5 +1,5 @@
 <!-- keywords: damaged, corrupt, unreadable, dépannage, problème, problèmes, ne fonctionne pas, aide, résoudre, assistance, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: e9a1c8cbf4d9 -->
+<!-- source: 96d44ec3359c -->
 
 # Dépannage
 
@@ -11,7 +11,7 @@ Vérifiez aussi qu’aucun outil Markup ou Measurement n’est actif. Appuyez su
 
 ## Une recherche ne trouve rien
 
-- Les pages sont peut-être numérisées. Consultez [Rechercher dans des pages numérisées avec l’OCR](scanned-pages.md).
+- Les pages sont peut-être numérisées. Consultez [Rechercher et sélectionner du texte dans des pages numérisées](scanned-pages.md).
 - Vérifiez que Match Case et Whole Word sont désactivés dans les [options de recherche](search.md#search-options), et que Smart Search est activé.
 - Si des marqueurs interrompent le texte, ajoutez un [motif ignoré](search.md#ignore-clutter-in-the-text).
 
