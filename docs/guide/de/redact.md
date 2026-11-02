@@ -1,9 +1,15 @@
-<!-- keywords: schwärzen, Schwärzung, Schwärzungen, entfernen, vertraulich, Sozialversicherungsnummer, Kreditkarte, E-Mail, Telefon, Datum, suchen und schwärzen, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: schwärzen, Schwärzung, Schwärzungen, entfernen, vertraulich, Sozialversicherungsnummer, Kreditkarte, E-Mail, Telefon, Datum, suchen und schwärzen, Metadaten, Lesezeichen, Anhänge, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # Vertrauliche Inhalte schwärzen
 
 Beim Schwärzen werden Inhalte dauerhaft aus einem PDF entfernt. VectorPDF löscht Text, Bildpixel und Vektorgrafiken unter dem geschwärzten Bereich aus der Datei, außerdem alle Anmerkungen und Formularfelder, die ihn berühren. Die Inhalte werden nicht nur mit einem Kasten abgedeckt, und frühere Versionen werden beim Sichern nicht behalten.
+
+Wenn du in einem Dokument zum ersten Mal schwärzt, erklärt ein Hinweis, was sich sonst noch ändert:
+
+- **Aus dem gesamten Dokument entfernt:** Metadaten wie Titel und Autor, Anhänge, Seitenminiaturen, Alternativtext für die Bedienungshilfen und XFA-Formulardaten. Wenn du diese behalten möchtest, schwärze eine Kopie.
+- **Lesezeichen bleiben erhalten,** und jedes geschwärzte Wort in ihren Titeln wird durch [Redacted] ersetzt. Text in Bildern und Scans kann nicht abgeglichen werden. Prüfe die Lesezeichen daher selbst, nachdem du solche Stellen geschwärzt hast.
+- **Nicht entfernt:** benannte Ziele, Seitenbeschriftungen, Ebenennamen und JavaScript. Diese könnten den Text weiterhin enthalten.
 
 > **Warnung:** Eine Schwärzung wird sofort wirksam, sobald du sie anwendest, und es gibt kein Undo. Deine Originaldatei ändert sich erst, wenn du sicherst. Um neu zu beginnen, schließe das Dokument also ohne zu sichern. Bewahre eine Kopie des Originals auf und verwende „Save As“, um die geschwärzte Version unter einem neuen Namen zu sichern.
 

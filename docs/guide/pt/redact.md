@@ -1,9 +1,15 @@
-<!-- keywords: tarjar, tarja, tarjamento, ocultar, censurar, remover, confidencial, CPF, cartão de crédito, e-mail, telefone, data, localizar e tarjar, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: tarjar, tarja, tarjamento, ocultar, censurar, remover, confidencial, CPF, cartão de crédito, e-mail, telefone, data, localizar e tarjar, metadados, marcadores, anexos, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # Tarjar conteúdo confidencial
 
 O tarjamento remove conteúdo de um PDF permanentemente. O VectorPDF apaga do arquivo o texto, os pixels de imagem e os traços que estão sob a área tarjada, junto com as anotações e os campos de formulário que a tocam. Ele não apenas os cobre com uma caixa, e as revisões anteriores não são mantidas quando você salva.
+
+Na primeira vez que você tarja algo em um documento, um alerta explica o que mais muda:
+
+- **Removido do documento inteiro:** metadados como título e autor, anexos, miniaturas de página, texto alternativo para acessibilidade e dados de formulário XFA. Para mantê-los, tarje uma cópia.
+- **Os marcadores são mantidos,** e cada palavra tarjada nos títulos deles é substituída por [Redacted]. O texto em imagens e digitalizações não pode ser comparado, portanto verifique os marcadores você mesmo depois de tarjá-los.
+- **Não removido:** destinos nomeados, rótulos de página, nomes de camadas e JavaScript. Eles ainda podem conter o texto.
 
 > **Aviso:** O tarjamento entra em vigor assim que você o aplica, e não há como desfazê-lo com Undo. O arquivo original só é alterado quando você salva, portanto, para recomeçar, feche o documento sem salvar. Guarde uma cópia do original e use Save As para salvar a versão tarjada com um novo nome.
 

@@ -1,9 +1,15 @@
-<!-- keywords: censurar, censura, censuras, eliminar, tachar, ocultar, confidencial, información sensible, número de la Seguridad Social, tarjeta de crédito, correo electrónico, teléfono, fecha, buscar y censurar, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: censurar, censura, censuras, eliminar, tachar, ocultar, confidencial, información sensible, número de la Seguridad Social, tarjeta de crédito, correo electrónico, teléfono, fecha, buscar y censurar, metadatos, marcadores, archivos adjuntos, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # Censurar contenido confidencial
 
 La censura elimina contenido de un PDF de forma permanente. VectorPDF borra del archivo el texto, los píxeles de imagen y los trazos que hay bajo el área censurada, junto con las anotaciones y los campos de formulario que la tocan. No se limita a taparlos con un recuadro, y las revisiones anteriores no se conservan al guardar.
+
+La primera vez que censuras algo en un documento, una alerta explica qué más cambia:
+
+- **Se elimina de todo el documento:** los metadatos, como el título y el autor, los archivos adjuntos, las miniaturas de página, el texto alternativo para accesibilidad y los datos de formularios XFA. Para conservarlos, censura una copia.
+- **Los marcadores se mantienen,** y cada palabra censurada de sus títulos se sustituye por [Redacted]. El texto de las imágenes y los escaneados no se puede comparar, así que revisa tú mismo los marcadores después de censurarlos.
+- **No se elimina:** los destinos con nombre, las etiquetas de página, los nombres de capa ni el código JavaScript. Podrían seguir conteniendo el texto.
 
 > **Advertencia:** La censura surte efecto en cuanto la aplicas, y no hay Undo. El archivo original no cambia hasta que lo guardas, así que, para empezar de nuevo, cierra el documento sin guardar. Conserva una copia del original y usa Save As para guardar la versión censurada con otro nombre.
 

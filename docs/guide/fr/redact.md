@@ -1,9 +1,15 @@
-<!-- keywords: caviarder, caviardage, caviardages, supprimer, masquer, noircir, sensible, numéro de sécurité sociale, carte bancaire, e-mail, téléphone, rechercher et caviarder, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: caviarder, caviardage, caviardages, supprimer, masquer, noircir, sensible, numéro de sécurité sociale, carte bancaire, e-mail, téléphone, rechercher et caviarder, métadonnées, signets, pièces jointes, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # Caviarder des informations sensibles
 
 Le caviardage supprime définitivement du contenu d’un PDF. VectorPDF efface du fichier le texte, les pixels d’image et les tracés situés sous la zone caviardée, ainsi que les annotations et les champs de formulaire qui la touchent. Il ne se contente pas de les recouvrir d’un cadre, et les révisions antérieures ne sont pas conservées lorsque vous enregistrez.
+
+La première fois que vous caviardez dans un document, une alerte explique ce qui change également :
+
+- **Supprimé de tout le document :** les métadonnées comme le titre et l’auteur, les pièces jointes, les vignettes de page, le texte de remplacement pour l’accessibilité et les données de formulaire XFA. Pour les conserver, caviardez une copie.
+- **Les signets sont conservés,** et chaque mot caviardé dans leurs titres est remplacé par [Redacted]. Le texte des images et des numérisations ne peut pas être comparé : vérifiez donc vous-même les signets après avoir caviardé ces éléments.
+- **Non supprimé :** les destinations nommées, les étiquettes de page, les noms de calques et le code JavaScript. Ils pourraient encore contenir le texte.
 
 > **Attention :** Le caviardage prend effet dès que vous l’appliquez, et il n’y a pas de commande Undo. Votre fichier d’origine ne change pas tant que vous n’enregistrez pas : pour recommencer, fermez le document sans l’enregistrer. Conservez une copie de l’original et utilisez Save As pour enregistrer la version caviardée sous un nouveau nom.
 

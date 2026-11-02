@@ -1,9 +1,15 @@
-<!-- keywords: 涂黑, 修订, 遮盖, 移除, 敏感, 脱敏, 社会安全号码, 信用卡, 电子邮件, 电话, 日期, 查找并涂黑, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: 涂黑, 修订, 遮盖, 移除, 敏感, 脱敏, 社会安全号码, 信用卡, 电子邮件, 电话, 日期, 查找并涂黑, 元数据, 书签, 附件, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # 涂黑敏感内容
 
 涂黑操作会从 PDF 中永久移除内容。VectorPDF 会从文件中删除涂黑区域下方的文本、图像像素和线条图，以及与该区域接触的所有注释和表单栏位。它不只是用方框遮盖这些内容，存储时也不会保留之前的修订版本。
+
+首次在文稿中进行涂黑时，会有提醒说明还有哪些内容会更改：
+
+- **从整个文稿中移除：** 标题和作者等元数据、附件、页面缩略图、用于辅助功能的替代文本，以及 XFA 表单数据。若要保留这些内容，请涂黑副本。
+- **书签会保留，** 其标题中每个被涂黑的单词都会替换为 [Redacted]。图像和扫描件中的文本无法匹配，因此涂黑这些内容后请自行检查书签。
+- **不会移除：** 命名目标、页面标签、图层名称和 JavaScript。这些内容中可能仍含有该文本。
 
 > **警告：** 涂黑操作一经应用就会立即生效，并且没有 Undo。在你存储之前，原始文件不会更改，因此若要重新开始，请关闭文稿且不存储。请保留原始文件的副本，并使用 Save As 以新名称存储涂黑后的版本。
 

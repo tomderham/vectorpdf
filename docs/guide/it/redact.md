@@ -1,9 +1,15 @@
-<!-- keywords: oscurare, oscuramento, oscuramenti, rimuovere, cancellare, sensibile, carta di credito, email, telefono, data, trova e oscura, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, phone, date, find and redact, PDF -->
-<!-- source: 90945f068642 -->
+<!-- keywords: oscurare, oscuramento, oscuramenti, rimuovere, cancellare, sensibile, carta di credito, email, telefono, data, trova e oscura, metadati, segnalibri, allegati, redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
+<!-- source: d8be777cd6d7 -->
 
 # Oscurare contenuti sensibili
 
 L'oscuramento rimuove definitivamente i contenuti da un PDF. VectorPDF elimina dal file il testo, i pixel delle immagini e la grafica vettoriale sotto l'area oscurata, insieme a tutte le annotazioni e ai campi dei moduli che la toccano. Non si limita a coprirli con un riquadro e, quando salvi, le revisioni precedenti non vengono conservate.
+
+La prima volta che oscuri qualcosa in un documento, un avviso spiega cos'altro cambia:
+
+- **Rimossi dall'intero documento:** i metadati come titolo e autore, gli allegati, le miniature delle pagine, il testo alternativo per l'accessibilità e i dati dei moduli XFA. Per conservarli, oscura una copia.
+- **I segnalibri restano,** e ogni parola oscurata nei loro titoli viene sostituita da [Redacted]. Il testo nelle immagini e nelle scansioni non può essere confrontato, quindi controlla tu i segnalibri dopo averli oscurati.
+- **Non rimossi:** destinazioni con nome, etichette di pagina, nomi dei livelli e JavaScript. Potrebbero contenere ancora il testo.
 
 > **Attenzione:** l'oscuramento ha effetto non appena lo applichi e non è disponibile il comando Undo. Il file originale non cambia finché non salvi, quindi per ricominciare chiudi il documento senza salvare. Conserva una copia dell'originale e usa Save As per salvare la versione oscurata con un nuovo nome.
 
