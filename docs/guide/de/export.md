@@ -1,5 +1,5 @@
 <!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # In andere Formate exportieren
 
@@ -28,7 +28,7 @@ Sichert ein PDF, in dem Anmerkungen und Formularfelder fest in die Seite eingebe
 
 ## Anmerkungsübersicht
 
-Wähle File > Export Annotations Summary (⇧⌘E), um eine Liste deiner Anmerkungen zu sichern. Standardmäßig ist das eine Markdown-Datei. Gib der Datei die Endung `.csv`, um stattdessen eine Tabelle zu sichern.
+Wähle File > Export Annotations Summary (⇧⌘E), um eine Liste der Anmerkungen des Dokuments zu sichern, einschließlich der Anmerkungen aus anderen Apps, mit ihren Autoren, Status und Antworten. Standardmäßig ist das eine Markdown-Datei. Gib der Datei die Endung `.csv`, um stattdessen eine Tabelle zu sichern.
 
 ## Messungen
 

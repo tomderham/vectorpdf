@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # राइट-क्लिक मेनू
 
@@ -12,9 +12,12 @@
 | चयनित टेक्स्ट | Copy Text, Look Up, Translate Selection, Start Speaking या Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | चयनित क्षेत्र | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | लिंक | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| हाइलाइट, अंडरलाइन या स्ट्राइकथ्रू | उससे मेल खाता Remove कमांड |
-| टेक्स्ट बॉक्स या कॉलआउट | Edit Text Box या Edit Callout Note, और हटाने का कमांड |
-| ड्रॉइंग, स्टैम्प या माप | हटाने का कमांड |
+| हाइलाइट, अंडरलाइन या स्ट्राइकथ्रू | Comments…, और उससे मेल खाता Remove कमांड |
+| टेक्स्ट बॉक्स | Comments…, Edit Text Box, और हटाने का कमांड |
+| कॉलआउट | Comments…, Edit Callout Note, Line Ending, और हटाने का कमांड |
+| नोट, या रिविज़न क्लाउड की बाहरी रेखा | Comments…, और हटाने का कमांड |
+| ड्रॉइंग, स्टैम्प या माप | Comments…, और हटाने का कमांड |
+| दस्तावेज़ में पहले सहेजा गया या किसी अन्य ऐप में बनाया गया ऐनोटेशन | Comments…, और पेज पर किसी अन्य जगह के कमांड |
 | पेज पर कहीं और | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 अगर आप सादे टेक्स्ट वाले किसी संदर्भ पर राइट-क्लिक करते हैं और संबंधित दस्तावेज़ दूसरे टैब में खुले हैं, तो मेनू में [उस पर जाने या उसे ढूँढने](cross-document-references.md) के कमांड भी होते हैं।

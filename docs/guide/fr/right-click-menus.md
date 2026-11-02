@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # Menus du clic droit
 
@@ -12,9 +12,12 @@ Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, po
 | Du texte sélectionné | Copy Text, Look Up, Translate Selection, Start Speaking ou Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Une zone sélectionnée | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un lien | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Un surlignage, un soulignement ou un texte barré | La commande Remove correspondante |
-| Une zone de texte ou une bulle | Edit Text Box ou Edit Callout Note, et la commande de suppression |
-| Un dessin, un tampon ou une mesure | La commande de suppression |
+| Un surlignage, un soulignement ou un texte barré | Comments… et la commande Remove correspondante |
+| Une zone de texte | Comments…, Edit Text Box et la commande de suppression |
+| Une bulle | Comments…, Edit Callout Note, Line Ending et la commande de suppression |
+| Une note, ou le contour d’un nuage de révision | Comments… et la commande de suppression |
+| Un dessin, un tampon ou une mesure | Comments… et la commande de suppression |
+| Une annotation enregistrée plus tôt dans le document ou créée dans une autre app | Comments… et les commandes de n’importe quel autre endroit de la page |
 | Partout ailleurs sur la page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Si vous cliquez avec le bouton droit sur une référence en texte brut alors que des documents liés sont ouverts dans d’autres onglets, le menu propose aussi des commandes pour [y accéder ou la trouver](cross-document-references.md).

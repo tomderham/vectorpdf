@@ -1,5 +1,5 @@
 <!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # 다른 포맷으로 내보내기
 
@@ -28,7 +28,7 @@ Word 및 다른 앱에서 편집할 수 있는 `.docx` 파일을 저장합니다
 
 ## 주석 요약
 
-주석 목록을 저장하려면 File > Export Annotations Summary(⇧⌘E)를 선택합니다. 기본적으로 Markdown 파일로 저장됩니다. 대신 스프레드시트로 저장하려면 파일 확장자를 `.csv`로 지정합니다.
+다른 앱의 주석을 포함한 문서의 주석 목록을 작성자, 상태 및 답글과 함께 저장하려면 File > Export Annotations Summary(⇧⌘E)를 선택합니다. 기본적으로 Markdown 파일로 저장됩니다. 대신 스프레드시트로 저장하려면 파일 확장자를 `.csv`로 지정합니다.
 
 ## 측정
 

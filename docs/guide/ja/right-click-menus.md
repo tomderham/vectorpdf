@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # 右クリックメニュー
 
@@ -12,9 +12,12 @@
 | 選択したテキスト | Copy Text、Look Up、Translate Selection、Start Speaking または Stop Speaking、Highlight、Underline、Strikethrough、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 選択した領域 | Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | リンク | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| ハイライト、下線、取り消し線 | 対応する Remove コマンド |
-| テキストボックスまたは吹き出し | Edit Text Box または Edit Callout Note、および削除コマンド |
-| 描画、スタンプ、測定値 | 削除コマンド |
+| ハイライト、下線、取り消し線 | Comments…、および対応する Remove コマンド |
+| テキストボックス | Comments…、Edit Text Box、および削除コマンド |
+| 吹き出し | Comments…、Edit Callout Note、Line Ending、および削除コマンド |
+| 付箋、またはリビジョンクラウドの輪郭 | Comments…、および削除コマンド |
+| 描画、スタンプ、測定値 | Comments…、および削除コマンド |
+| 以前に書類に保存された注釈、またはほかのアプリで作成された注釈 | Comments…、およびページ上のその他の場所のコマンド |
 | ページ上のその他の場所 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 プレーンテキストの参照を右クリックしたときに、関連する書類が別のタブで開いている場合は、メニューに[その参照に移動または検索する](cross-document-references.md)コマンドも表示されます。

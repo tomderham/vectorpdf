@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # Menús de clic derecho
 
@@ -12,9 +12,12 @@ Haz clic con el botón derecho, o haz clic con la tecla Control pulsada, para ve
 | Texto seleccionado | Copy Text, Look Up, Translate Selection, Start Speaking o Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un área seleccionada | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un enlace | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Un resaltado, subrayado o tachado | El comando Remove correspondiente |
-| Un cuadro de texto o una llamada | Edit Text Box o Edit Callout Note, y el comando de eliminación |
-| Un dibujo, sello o medición | El comando de eliminación |
+| Un resaltado, subrayado o tachado | Comments… y el comando Remove correspondiente |
+| Un cuadro de texto | Comments…, Edit Text Box y el comando de eliminación |
+| Una llamada | Comments…, Edit Callout Note, Line Ending y el comando de eliminación |
+| Una nota, o el contorno de una nube de revisión | Comments… y el comando de eliminación |
+| Un dibujo, sello o medición | Comments… y el comando de eliminación |
+| Una anotación guardada antes en el documento o creada en otra app | Comments… y los comandos de cualquier otro lugar de la página |
 | Cualquier otro lugar de la página | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Si haces clic con el botón derecho en una referencia de texto simple y hay documentos relacionados abiertos en otras pestañas, el menú también incluye comandos para [ir a ella o encontrarla](cross-document-references.md).

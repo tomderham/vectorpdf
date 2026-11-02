@@ -1,5 +1,5 @@
 <!-- keywords: esportare, esportazione, convertire, testo semplice, testo, appiattire, appiattito, riepilogo annotazioni, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # Esportare in altri formati
 
@@ -28,7 +28,7 @@ Salva un PDF in cui le annotazioni e i campi dei moduli diventano parte della pa
 
 ## Riepilogo delle annotazioni
 
-Scegli File > Export Annotations Summary (⇧⌘E) per salvare un elenco delle annotazioni. Per impostazione predefinita viene creato un file Markdown. Assegna al file l'estensione `.csv` per salvare invece un foglio di calcolo.
+Scegli File > Export Annotations Summary (⇧⌘E) per salvare un elenco delle annotazioni del documento, comprese quelle di altre app, con autori, stati e risposte. Per impostazione predefinita viene creato un file Markdown. Assegna al file l'estensione `.csv` per salvare invece un foglio di calcolo.
 
 ## Misurazioni
 

@@ -1,4 +1,4 @@
-<!-- source: c677ec539fe2 -->
+<!-- source: 92b6722546ac -->
 
 # Manuale utente di VectorPDF
 
@@ -42,7 +42,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 ## Annotare e firmare
 
 - [Evidenziare, sottolineare e barrare](text-markup.md)
-- [Disegnare, aggiungere testo e richiami](draw-and-notes.md)
+- [Disegnare, aggiungere note, testo e richiami](draw-and-notes.md)
 - [Timbri e firme](stamps.md)
 - [Compilare moduli](forms.md)
 

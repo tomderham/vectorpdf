@@ -1,5 +1,5 @@
 <!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # 他のフォーマットに書き出す
 
@@ -28,7 +28,7 @@ Word などのアプリで編集できる `.docx` ファイルを保存します
 
 ## 注釈の概要
 
-File > Export Annotations Summary (⇧⌘E) を選択すると、注釈の一覧を保存できます。デフォルトでは Markdown ファイルになります。スプレッドシートとして保存するには、ファイルの拡張子を `.csv` にします。
+File > Export Annotations Summary (⇧⌘E) を選択すると、書類の注釈の一覧を、ほかのアプリの注釈も含めて、作成者、ステータス、返信とともに保存できます。デフォルトでは Markdown ファイルになります。スプレッドシートとして保存するには、ファイルの拡張子を `.csv` にします。
 
 ## 測定値
 

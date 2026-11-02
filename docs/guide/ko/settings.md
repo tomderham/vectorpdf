@@ -1,5 +1,5 @@
-<!-- keywords: 설정, 환경설정, 옵션, 업데이트, 업데이트 확인, 브라우저, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 71eda28f956d -->
+<!-- keywords: 설정, 환경설정, 옵션, 업데이트, 업데이트 확인, 브라우저, 작성자, 주석 작성자, settings, preferences, options, updates, update, check for updates, browser, author, annotation author -->
+<!-- source: b346a18588b3 -->
 
 # 설정
 
@@ -7,6 +7,7 @@ VectorPDF > Settings를 선택하거나 ⌘, 키를 누릅니다.
 
 | 설정 | 기능 |
 | --- | --- |
+| Annotation Author | 주석과 답글에 저장되는 이름입니다. 비어 있으면 VectorPDF는 Mac 사용자 이름을 사용합니다. |
 | Use Agent | macOS 26 이상에서 사이드바에 [Ask About This Document](agent.md) 탭을 표시합니다. |
 | AI Synthesis Engine | macOS 27에서 [Agent의 답변을 작성하는 주체](agent-engines.md)를 선택합니다. |
 | PDF Color | [페이지가 표시되는 방식](pdf-colors.md)을 Follow System, Light, Dark 또는 Sepia로 설정합니다. |

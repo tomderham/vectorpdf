@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # Kontextmenüs
 
@@ -12,9 +12,12 @@ Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befeh
 | Ausgewählter Text | Copy Text, Look Up, Translate Selection, Start Speaking oder Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Ein ausgewählter Bereich | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Ein Link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Eine Hervorhebung, Unterstreichung oder Durchstreichung | Der passende Befehl „Remove“ |
-| Ein Textfeld oder eine Legende | Edit Text Box oder Edit Callout Note und der Löschbefehl |
-| Eine Zeichnung, ein Stempel oder eine Messung | Der Löschbefehl |
+| Eine Hervorhebung, Unterstreichung oder Durchstreichung | Comments… und der passende Befehl „Remove“ |
+| Ein Textfeld | Comments…, Edit Text Box und der Löschbefehl |
+| Eine Legende | Comments…, Edit Callout Note, Line Ending und der Löschbefehl |
+| Eine Notiz oder der Umriss einer Revisionswolke | Comments… und der Löschbefehl |
+| Eine Zeichnung, ein Stempel oder eine Messung | Comments… und der Löschbefehl |
+| Eine früher im Dokument gesicherte oder in einer anderen App erstellte Anmerkung | Comments… und die Befehle für eine andere Stelle auf der Seite |
 | Eine andere Stelle auf der Seite | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Wenn du mit der rechten Maustaste auf einen Verweis im Text klickst und zugehörige Dokumente in anderen Tabs geöffnet sind, enthält das Menü außerdem Befehle, um [zu ihm zu gehen oder ihn zu finden](cross-document-references.md).

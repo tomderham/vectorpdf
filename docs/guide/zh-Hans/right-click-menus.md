@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # 右键菜单
 
@@ -12,9 +12,12 @@
 | 所选文本 | Copy Text、Look Up、Translate Selection、Start Speaking 或 Stop Speaking、Highlight、Underline、Strikethrough、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 所选区域 | Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 链接 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| 高亮、下划线或删除线 | 相应的 Remove 命令 |
-| 文本框或标注框 | Edit Text Box 或 Edit Callout Note，以及删除命令 |
-| 绘图、图章或测量结果 | 删除命令 |
+| 高亮、下划线或删除线 | Comments…，以及相应的 Remove 命令 |
+| 文本框 | Comments…、Edit Text Box，以及删除命令 |
+| 标注框 | Comments…、Edit Callout Note、Line Ending，以及删除命令 |
+| 便笺或修订云线的轮廓 | Comments…，以及删除命令 |
+| 绘图、图章或测量结果 | Comments…，以及删除命令 |
+| 之前存储在文稿中或在其他应用中创建的注释 | Comments…，以及页面上其他位置的命令 |
 | 页面上的其他任何位置 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 如果你右键点按纯文本引用，并且相关文稿已在其他标签页中打开，菜单还会提供[前往或查找该引用](cross-document-references.md)的命令。

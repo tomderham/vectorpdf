@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # Menu di scelta rapida
 
@@ -12,9 +12,12 @@ Fai clic con il tasto destro, oppure fai clic tenendo premuto il tasto Control, 
 | Testo selezionato | Copy Text, Look Up, Translate Selection, Start Speaking o Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un'area selezionata | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Un'evidenziazione, una sottolineatura o una barratura | Il comando Remove corrispondente |
-| Una casella di testo o un richiamo | Edit Text Box o Edit Callout Note, e il comando di eliminazione |
-| Un disegno, un timbro o una misurazione | Il comando di eliminazione |
+| Un'evidenziazione, una sottolineatura o una barratura | Comments… e il comando Remove corrispondente |
+| Una casella di testo | Comments…, Edit Text Box e il comando di eliminazione |
+| Un richiamo | Comments…, Edit Callout Note, Line Ending e il comando di eliminazione |
+| Una nota o il contorno di una nuvola di revisione | Comments… e il comando di eliminazione |
+| Un disegno, un timbro o una misurazione | Comments… e il comando di eliminazione |
+| Un'annotazione salvata in precedenza nel documento o creata in un'altra app | Comments… e i comandi di qualsiasi altro punto della pagina |
 | Qualsiasi altro punto della pagina | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Se fai clic con il tasto destro su un riferimento in testo semplice e in altri pannelli sono aperti documenti correlati, il menu include anche i comandi per [raggiungerlo o trovarlo](cross-document-references.md).

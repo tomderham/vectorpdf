@@ -1,4 +1,4 @@
-<!-- source: c677ec539fe2 -->
+<!-- source: 92b6722546ac -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -42,7 +42,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 ## Markieren und signieren
 
 - [Hervorheben, unterstreichen und durchstreichen](text-markup.md)
-- [Zeichnen, Text und Legenden hinzufügen](draw-and-notes.md)
+- [Zeichnen, Notizen, Text und Legenden hinzufügen](draw-and-notes.md)
 - [Stempel und Unterschriften](stamps.md)
 - [Formulare ausfüllen](forms.md)
 

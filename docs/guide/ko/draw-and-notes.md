@@ -1,7 +1,7 @@
-<!-- keywords: 그리기, 드로잉, 잉크, 펜, 자유형, 텍스트 상자, 설명선, 메모, 노트, 코멘트, 주석, 지우개, draw, drawing, ink, pen, freehand, text box, callout, callouts, note, notes, comment, comments, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: e5d42d3b0399 -->
+<!-- keywords: 그리기, 드로잉, 잉크, 펜, 자유형, 텍스트 상자, 설명선, 메모, 노트, 코멘트, 주석, 지우개, 스티커 메모, 답글, 상태, 작성자, 리비전 클라우드, 클라우드, 선 끝, 화살표, draw, drawing, ink, pen, freehand, text box, callout, callouts, note, notes, comment, comments, sticky note, reply, replies, status, author, revision cloud, cloud, line ending, arrow, annotate, annotation, annotations, eraser, PDF -->
+<!-- source: 6536089d28a3 -->
 
-# 그리기, 텍스트 및 설명선 추가하기
+# 그리기, 메모, 텍스트 및 설명선 추가하기
 
 ⇧⌘A 키를 누르거나 Markup Toolbar 버튼을 클릭하여 Markup 도구 막대를 표시합니다. 도구를 선택한 다음 색상과 크기를 선택합니다. 도구 사용을 마치려면 Escape 키를 누르거나 도구 막대의 첫 번째 도구인 Text Selection Mode를 선택합니다.
 
@@ -25,6 +25,43 @@
 
 나중에 화살표가 가리키는 지점과 메모를 각각 드래그할 수 있습니다.
 
+열린 화살표, 마름모, 슬래시 등 선의 끝 모양을 선택하려면 그리기 전에 도구 막대의 Line Ending 메뉴를 사용합니다. 기존 설명선을 변경하려면 오른쪽 클릭하고 Line Ending을 선택합니다.
+
+## 스티커 메모 추가하기
+
+스티커 메모는 코멘트가 담긴 페이지의 작은 아이콘입니다.
+
+1. 스티커 메모 도구를 선택합니다.
+2. 메모를 놓을 위치를 클릭한 다음 입력합니다.
+3. 다른 곳을 클릭하여 마칩니다. 비어 있는 메모는 제거됩니다.
+
+메모를 읽거나 변경하려면 이중 클릭합니다.
+
+## 리비전 클라우드 추가하기
+
+리비전 클라우드는 변경되었거나 검토가 필요한 영역을 표시합니다.
+
+1. 리비전 클라우드 도구를 선택한 다음 호 크기로 Small, Medium 또는 Large를 선택합니다.
+2. 영역을 가로질러 드래그합니다.
+
+클라우드를 선택하거나 오른쪽 클릭하려면 윤곽선을 사용합니다. 따라서 안쪽의 텍스트는 계속 선택할 수 있습니다.
+
+## 주석에 답글 달기
+
+주석을 오른쪽 클릭하고 Comments…를 선택하면 누가 언제 만들었는지 볼 수 있습니다. 다른 사람이나 다른 앱의 주석에서도 마찬가지입니다. 여기에서 다음을 수행할 수 있습니다.
+
+- Reply 필드에 입력하고 Return 키를 눌러 답글을 추가합니다.
+- Status 메뉴를 사용하여 Accepted, Rejected, Cancelled 또는 Completed로 표시합니다.
+- 휴지통 버튼을 클릭하여 답글과 함께 삭제합니다.
+
+메모를 이중 클릭해도 같은 코멘트가 열립니다.
+
+주석에 표시되는 이름은 [설정](settings.md)의 Annotation Author에서 가져옵니다.
+
+## 모든 주석 보기
+
+Markup 도구 막대 오른쪽의 Annotations 버튼을 클릭하면 문서의 모든 주석이 나열됩니다. 상단의 메뉴를 사용하여 유형, 작성자, 날짜 또는 상태별로 필터링할 수 있습니다. 주석을 선택하고 Show on Page를 클릭하거나 이중 클릭하면 해당 페이지로 이동합니다.
+
 ## 주석 변경하기
 
 | 원하는 작업 | 방법 |
@@ -34,6 +71,6 @@
 | 크기 조절하기 | 선택한 다음 모서리 핸들을 드래그합니다. |
 | 삭제하기 | 선택하고 Delete 키를 누르거나, 오른쪽 클릭하고 Delete Drawing 또는 Delete Text Box와 같은 삭제 명령을 선택합니다. |
 
-Markup 도구 막대의 Eraser를 사용하면 주석을 클릭하거나 그 위로 드래그하여 삭제할 수 있습니다.
+Markup 도구 막대의 Eraser를 사용하면 주석을 클릭하거나 그 위로 드래그하여 삭제할 수 있습니다. 주석을 삭제하면 답글도 함께 삭제됩니다.
 
-주석은 [저장](save.md)할 때 표준 주석으로 PDF에 저장되므로 다른 PDF 앱에서도 나타납니다. 주석을 페이지에 고정하려면 [평면화된 PDF를 내보냅니다](export.md#flattened-pdf).
+주석은 [저장](save.md)할 때 표준 주석으로 PDF에 저장되므로 작성자, 답글 및 상태와 함께 다른 PDF 앱에서도 나타납니다. 주석을 페이지에 고정하려면 [평면화된 PDF를 내보냅니다](export.md#flattened-pdf).

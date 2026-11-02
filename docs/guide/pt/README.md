@@ -1,4 +1,4 @@
-<!-- source: c677ec539fe2 -->
+<!-- source: 92b6722546ac -->
 
 # Manual do Usuário do VectorPDF
 
@@ -42,7 +42,7 @@ O VectorPDF é um leitor de PDF rápido para artigos técnicos, especificações
 ## Marcar e assinar
 
 - [Realçar, sublinhar e tachar](text-markup.md)
-- [Desenhar, adicionar texto e textos explicativos](draw-and-notes.md)
+- [Desenhar, adicionar notas, texto e textos explicativos](draw-and-notes.md)
 - [Carimbos e assinaturas](stamps.md)
 - [Preencher formulários](forms.md)
 

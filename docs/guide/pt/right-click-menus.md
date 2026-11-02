@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # Menus do botão direito
 
@@ -12,9 +12,12 @@ Clique com o botão direito, ou clique com a tecla Control pressionada, para ver
 | Texto selecionado | Copy Text, Look Up, Translate Selection, Start Speaking ou Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Uma área selecionada | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Um link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Um realce, sublinhado ou tachado | O comando Remove correspondente |
-| Uma caixa de texto ou texto explicativo | Edit Text Box ou Edit Callout Note e o comando de apagar |
-| Um desenho, carimbo ou medição | O comando de apagar |
+| Um realce, sublinhado ou tachado | Comments… e o comando Remove correspondente |
+| Uma caixa de texto | Comments…, Edit Text Box e o comando de apagar |
+| Um texto explicativo | Comments…, Edit Callout Note, Line Ending e o comando de apagar |
+| Uma nota ou o contorno de uma nuvem de revisão | Comments… e o comando de apagar |
+| Um desenho, carimbo ou medição | Comments… e o comando de apagar |
+| Uma anotação salva antes no documento ou criada em outro app | Comments… e os comandos de qualquer outro lugar da página |
 | Qualquer outro lugar da página | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Se você clicar com o botão direito em uma referência em texto simples e houver documentos relacionados abertos em outras abas, o menu também terá comandos para [ir até ela ou encontrá-la](cross-document-references.md).

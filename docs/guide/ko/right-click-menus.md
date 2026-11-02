@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 13f45f0ff809 -->
+<!-- source: 2b458fccb693 -->
 
 # 오른쪽 클릭 메뉴
 
@@ -12,9 +12,12 @@
 | 선택한 텍스트 | Copy Text, Look Up, Translate Selection, Start Speaking 또는 Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | 선택한 영역 | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | 링크 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| 하이라이트, 밑줄 또는 취소선 | 해당하는 Remove 명령 |
-| 텍스트 상자 또는 설명선 | Edit Text Box 또는 Edit Callout Note 및 삭제 명령 |
-| 그린 항목, 스탬프 또는 측정 | 삭제 명령 |
+| 하이라이트, 밑줄 또는 취소선 | Comments… 및 해당하는 Remove 명령 |
+| 텍스트 상자 | Comments…, Edit Text Box 및 삭제 명령 |
+| 설명선 | Comments…, Edit Callout Note, Line Ending 및 삭제 명령 |
+| 메모 또는 리비전 클라우드의 윤곽선 | Comments… 및 삭제 명령 |
+| 그린 항목, 스탬프 또는 측정 | Comments… 및 삭제 명령 |
+| 이전에 문서에 저장되었거나 다른 앱에서 만든 주석 | Comments… 및 페이지의 다른 위치에 대한 명령 |
 | 페이지의 기타 위치 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 일반 텍스트 참조를 오른쪽 클릭했을 때 다른 탭에 관련 문서가 열려 있으면 메뉴에 [참조 대상으로 이동하거나 찾는](cross-document-references.md) 명령도 표시됩니다.

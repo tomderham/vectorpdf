@@ -1,5 +1,5 @@
 <!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # 导出为其他格式
 
@@ -28,7 +28,7 @@
 
 ## 注释摘要
 
-选取 File > Export Annotations Summary (⇧⌘E) 可存储注释列表。默认情况下，它是一个 Markdown 文件。将文件扩展名设为 `.csv` 可改为存储电子表格。
+选取 File > Export Annotations Summary (⇧⌘E) 可存储文稿的注释列表，包括其他应用中的注释，以及它们的作者、状态和回复。默认情况下，它是一个 Markdown 文件。将文件扩展名设为 `.csv` 可改为存储电子表格。
 
 ## 测量结果
 

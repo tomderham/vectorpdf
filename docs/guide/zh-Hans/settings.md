@@ -1,5 +1,5 @@
-<!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 71eda28f956d -->
+<!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, 作者, 注释作者, settings, preferences, options, updates, update, check for updates, browser, author, annotation author -->
+<!-- source: b346a18588b3 -->
 
 # 设置
 
@@ -7,6 +7,7 @@
 
 | 设置 | 作用 |
 | --- | --- |
+| Annotation Author | 随注释和回复一起存储的名字。如果留空，VectorPDF 会使用你的 Mac 用户名。 |
 | Use Agent | 在 macOS 26 或更高版本上，在边栏中显示 [Ask About This Document](agent.md) 标签页。 |
 | AI Synthesis Engine | 在 macOS 27 上，选择[由什么撰写 Agent 的回答](agent-engines.md)。 |
 | PDF Color | 设置[页面的外观](pdf-colors.md)：Follow System、Light、Dark 或 Sepia。 |

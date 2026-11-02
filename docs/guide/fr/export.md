@@ -1,5 +1,5 @@
 <!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: bfda5c49e81e -->
+<!-- source: c72be921ec25 -->
 
 # Exporter vers d’autres formats
 
@@ -28,7 +28,7 @@ Enregistre un PDF dont les annotations et les champs de formulaire font partie i
 
 ## Résumé des annotations
 
-Choisissez File > Export Annotations Summary (⇧⌘E) pour enregistrer la liste de vos annotations. Par défaut, il s’agit d’un fichier Markdown. Donnez au fichier l’extension `.csv` pour enregistrer plutôt une feuille de calcul.
+Choisissez File > Export Annotations Summary (⇧⌘E) pour enregistrer la liste des annotations du document, y compris celles d’autres apps, avec leurs auteurs, statuts et réponses. Par défaut, il s’agit d’un fichier Markdown. Donnez au fichier l’extension `.csv` pour enregistrer plutôt une feuille de calcul.
 
 ## Mesures
 

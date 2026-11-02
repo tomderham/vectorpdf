@@ -1,4 +1,4 @@
-<!-- source: c677ec539fe2 -->
+<!-- source: 92b6722546ac -->
 
 # VectorPDF ユーザガイド
 
@@ -42,7 +42,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 ## マークアップと署名
 
 - [ハイライト、下線、取り消し線](text-markup.md)
-- [描画、テキスト、吹き出し](draw-and-notes.md)
+- [描画、メモ、テキスト、吹き出し](draw-and-notes.md)
 - [スタンプと署名](stamps.md)
 - [フォームに入力する](forms.md)
 

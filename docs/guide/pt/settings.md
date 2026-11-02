@@ -1,5 +1,5 @@
-<!-- keywords: ajustes, preferências, opções, atualizações, atualizar, verificar atualizações, navegador, settings, preferences, options, updates, update, check for updates, browser -->
-<!-- source: 71eda28f956d -->
+<!-- keywords: ajustes, preferências, opções, atualizações, atualizar, verificar atualizações, navegador, autor, autor das anotações, settings, preferences, options, updates, update, check for updates, browser, author, annotation author -->
+<!-- source: b346a18588b3 -->
 
 # Ajustes
 
@@ -7,6 +7,7 @@ Escolha VectorPDF > Settings ou pressione ⌘,.
 
 | Ajuste | O que faz |
 | --- | --- |
+| Annotation Author | O nome salvo nas suas anotações e respostas. Se estiver vazio, o VectorPDF usa o seu nome de usuário do Mac. |
 | Use Agent | Mostra a aba [Ask About This Document](agent.md) na barra lateral, no macOS 26 ou posterior. |
 | AI Synthesis Engine | Escolhe [o que redige as respostas do Agent](agent-engines.md), no macOS 27. |
 | PDF Color | Define [a aparência das páginas](pdf-colors.md): Follow System, Light, Dark ou Sepia. |
