@@ -298,8 +298,15 @@ def table_cells(line):
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def convert(markdown):
+def warning_flags(markdown):
+    """Whether each blockquote is a warning. A translation follows its English page's flags, so
+    the word "Warning" can be translated."""
+    return [text.startswith("> **Warning") for text in re.findall(r"^> .*(?:\n> .*)*", markdown, re.MULTILINE)]
+
+
+def convert(markdown, warnings=None):
     lines = markdown.splitlines()
+    warnings = iter(warning_flags(markdown) if warnings is None else warnings)
     output = []
     i = 0
 
@@ -316,7 +323,8 @@ def convert(markdown):
         elif (heading := re.match(r"^(#{1,3}) +(.*)$", line)):
             level = len(heading.group(1))
             text = re.sub(HEADING_ID, "", heading.group(2))
-            output.append(f'<h{level} id="{heading_id(heading.group(2))}">{inline(text)}</h{level}>')
+            target = heading_id(heading.group(2))
+            output.append(f'<h{level}{f" id=\"{target}\"" if target else ""}>{inline(text)}</h{level}>')
             i += 1
         elif re.match(r"^ *([-*]|\d+\.) +", line):
             block, i = parse_list(lines, i, 0)
@@ -329,7 +337,7 @@ def convert(markdown):
                 i += 1
 
             text = " ".join(quote)
-            css = ' class="warning"' if text.startswith("**Warning") else ""
+            css = ' class="warning"' if next(warnings, False) else ""
             output.append(f"<blockquote{css}><p>{inline(text)}</p></blockquote>")
         elif line.startswith("|"):
             header = table_cells(line)
@@ -508,14 +516,17 @@ def build_language(guide_dir, translation_dir, pages_dir, icon):
 
     search_pages = []
 
+    english_pages = language_pages(guide_dir, None)
+
     for name, source in sorted(pages.items()):
         comments, markdown = split_comments(source)
+        warnings = warning_flags(split_comments(english_pages[name])[1])
         title = page_title(markdown, Path(name).stem)
         is_index = name == "README.md"
         target = pages_dir / ("index.html" if is_index else Path(name).with_suffix(".html").name)
 
         if not is_index:
-            text = html.unescape(re.sub(r"<[^>]+>", " ", convert(markdown)))
+            text = html.unescape(re.sub(r"<[^>]+>", " ", convert(markdown, warnings)))
             search_pages.append({"href": target.name, "title": title, "keywords": comments["keywords"], "text": " ".join(text.split())})
 
         target.write_text(PAGE_TEMPLATE.format(
@@ -526,7 +537,7 @@ def build_language(guide_dir, translation_dir, pages_dir, icon):
             keywords=html.escape(comments["keywords"]),
             title=html.escape(search_title(title, strings)),
             body_class=' class="landing"' if is_index else "",
-            body=landing(markdown) if is_index else convert(markdown)), encoding="utf-8")
+            body=landing(markdown) if is_index else convert(markdown, warnings)), encoding="utf-8")
 
     (pages_dir / "search.js").write_text(f"var guidePages = {json.dumps(search_pages, ensure_ascii=False)};\n", encoding="utf-8")
 

@@ -1,0 +1,32 @@
+<!-- keywords: abrir, abrir PDF, abrir arquivo, recentes, senha, nuvem, recarregar, arrastar, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
+<!-- source: 0d5e3c24fe3f -->
+
+# Abrir documentos
+
+## Abrir um PDF
+
+- **Em uma nova janela:** escolha File > Open PDF ou pressione ⌘O.
+- **Em uma nova aba:** escolha File > Open PDF in New Tab ou pressione ⌥⌘O.
+- **No Finder:** clique em um PDF com o botão direito e escolha Open With > VectorPDF. Para abrir todos os PDFs no VectorPDF, selecione um PDF, escolha File > Get Info no Finder e altere “Open with”.
+- **Arrastando:** arraste um PDF para a tela Start para abri-lo ali, ou para um documento aberto para abri-lo em uma nova aba.
+- **Em uma lista:** escolha File > Open Recent ou use o menu [Favorites](favorites-and-tab-groups.md). Na tela Start, clique em um documento com o botão direito para abri-lo em uma nova aba ou janela.
+
+## PDFs protegidos por senha
+
+O VectorPDF pede a senha quando você abre um PDF protegido. Consulte [Senhas e criptografia](passwords.md).
+
+## PDFs em armazenamento na nuvem
+
+O VectorPDF reconhece arquivos no iCloud Drive, Google Drive, Dropbox, OneDrive e Box. Se um arquivo ainda não estiver no seu Mac, o VectorPDF o baixa antes de abri-lo e mostra o progresso. Se o download não terminar, você verá uma mensagem e poderá tentar novamente quando estiver conectado.
+
+## Quando um arquivo é alterado
+
+O VectorPDF monitora cada arquivo aberto. Se outro app alterar o arquivo, o documento é recarregado automaticamente. Isso é útil se você estiver gerando um PDF com LaTeX ou outra ferramenta e quiser mantê-lo aberto.
+
+Se você tiver alterações não salvas, o VectorPDF perguntará se deseja usar **Reload from Disk**, que descarta suas alterações, ou **Keep My Changes**.
+
+Se você mover ou renomear um arquivo no Finder, o documento aberto o acompanhará.
+
+## Fechar um documento
+
+Feche uma aba ou janela como de costume. Se houver alterações não salvas, o VectorPDF perguntará se deseja salvá-las. O VectorPDF se lembra de [onde você estava](reading-positions.md) para a próxima vez.

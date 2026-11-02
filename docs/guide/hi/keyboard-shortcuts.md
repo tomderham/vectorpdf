@@ -1,0 +1,89 @@
+<!-- keywords: कीबोर्ड, शॉर्टकट, कुंजियाँ, हॉट की, जेस्चर, ट्रैकपैड, माउस, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
+<!-- source: f18a657869c3 -->
+
+# कीबोर्ड शॉर्टकट
+
+इनमें से कई कमांड राइट-क्लिक मेनू में भी हैं, जिन्हें नीचे की तालिकाओं में बताया गया है। [राइट-क्लिक मेनू](right-click-menus.md) देखें।
+
+## दस्तावेज़
+
+| क्रिया | शॉर्टकट |
+| --- | --- |
+| New Window | ⌘N |
+| New Tab | ⌘T |
+| Open PDF | ⌘O |
+| Open PDF in New Tab | ⌥⌘O |
+| Insert Pages from PDF | ⌥⌘I, या किसी थंबनेल पर राइट-क्लिक करें |
+| Duplicate Pages | ⇧⌘D, या किसी थंबनेल पर राइट-क्लिक करें |
+| Save | ⌘S |
+| Save As | ⇧⌘S |
+| Save Encrypted with Password | ⌥⌘S |
+| Export Annotations Summary | ⇧⌘E |
+| Show in Finder | ⇧⌘R |
+| Print | ⌘P |
+| Document Properties | ⌘I |
+| Add to or Remove from Favorites | ⌘D, या दस्तावेज़ के शीर्षक पर राइट-क्लिक करें |
+| Settings | ⌘, |
+| VectorPDF Help | ⇧⌘? |
+
+## नेविगेशन
+
+| क्रिया | शॉर्टकट |
+| --- | --- |
+| Back | ⌘[ |
+| Forward | ⌘] |
+| Previous Page | ⌥Up Arrow, ⌥Left Arrow या Left Arrow |
+| Next Page | ⌥Down Arrow, ⌥Right Arrow या Right Arrow |
+| First Page | ⌘Up Arrow या ⌘Home |
+| Last Page | ⌘Down Arrow या ⌘End |
+| पेज में आगे या पीछे | Space या ⇧Space |
+
+## दृश्य
+
+| क्रिया | शॉर्टकट |
+| --- | --- |
+| Zoom In | ⌘+ |
+| Zoom Out | ⌘− |
+| Actual Size | ⌘1 |
+| Zoom to Fit Width | ⌘9 |
+| Zoom to Fit Window | ⌥⌘0 |
+| Two Pages या Single Page | ⌥⌘2 |
+| Show या Hide Markup Toolbar | ⇧⌘A |
+| Show या Hide Measurement Toolbar | ⇧⌘M |
+| Show या Hide Redact Toolbar | ⌥⌘R |
+
+## खोज और टेक्स्ट
+
+| क्रिया | शॉर्टकट | राइट-क्लिक |
+| --- | --- | --- |
+| Find | ⌘F | |
+| Find Next | ⌘G, या खोज फ़ील्ड में Return | |
+| Find Previous | ⇧⌘G, या खोज फ़ील्ड में ⇧Return | |
+| Copy | ⌘C | चयनित टेक्स्ट |
+| Highlight | ⇧⌘H | चयनित टेक्स्ट |
+| Underline | ⇧⌘U | चयनित टेक्स्ट |
+| Strikethrough | ⇧⌘X | चयनित टेक्स्ट |
+| Stop Speaking | ⌥⌘. | चयनित टेक्स्ट |
+| Add Anchor | ⌘B | चयन, लिंक या पेज |
+
+## माउस और ट्रैकपैड
+
+| क्रिया | जेस्चर |
+| --- | --- |
+| किसी लिंक का प्रीव्यू देखें | उस पर ⌘ दबाए रखें, या फ़ोर्स क्लिक करें |
+| किसी लिंक को नई विंडो में खोलें | ⌘-क्लिक |
+| कोई शब्द चुनें | डबल-क्लिक |
+| कोई लाइन चुनें | ट्रिपल-क्लिक |
+| कोई क्षेत्र चुनें | ⌥-ड्रैग |
+| ज़ूम करें | पिंच |
+
+## ऐनोटेशन और माप
+
+| क्रिया | शॉर्टकट | राइट-क्लिक |
+| --- | --- | --- |
+| चुना गया टेक्स्ट बॉक्स या कॉलआउट संपादित करें | Return | ऐनोटेशन |
+| चुना गया ऐनोटेशन हटाएँ | Delete | ऐनोटेशन |
+| चुना गया ऐनोटेशन ले जाएँ | Arrow keys, या 10 पॉइंट के लिए ⇧Arrow keys | |
+| परिमाप या क्षेत्रफल पूरा करें | Return | |
+| माप को 0°, 45° या 90° तक सीमित करें | ⇧ दबाए रखें | |
+| रद्द करें, या मौजूदा टूल से बाहर निकलें | Escape | |

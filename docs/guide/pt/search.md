@@ -1,0 +1,44 @@
+<!-- keywords: buscar, busca, localizar, localizar próximo, maiúsculas e minúsculas, palavra inteira, busca inteligente, padrões ignorados, expressão regular, etiquetas, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
+<!-- source: 9b70f3b5ae8c -->
+
+# Buscar em um documento
+
+## Encontrar texto
+
+1. Pressione ⌘F. O VectorPDF mostra a aba Search na barra lateral.
+2. Digite o que você procura. Os resultados aparecem à medida que são encontrados, a partir da página em que você está.
+
+Cada resultado mostra a página e o texto ao redor, e todas as correspondências ficam realçadas no documento.
+
+## Navegar entre os resultados
+
+| Para | Faça o seguinte |
+| --- | --- |
+| Ir para o próximo resultado | Pressione Return ou ⌘G, ou clique na seta para baixo |
+| Ir para o resultado anterior | Pressione ⇧Return ou ⇧⌘G, ou clique na seta para cima |
+| Ir para qualquer resultado | Clique nele |
+| Percorrer a lista | Clique em um resultado e pressione as teclas de seta |
+
+Clique em um resultado com o botão direito para [criar uma âncora](anchors.md) a partir dele ou abri-lo em uma nova janela.
+
+## Opções de busca {#search-options}
+
+Clique no botão de opções ao lado do campo de busca:
+
+- **Match Case:** encontra somente texto com as mesmas maiúsculas e minúsculas.
+- **Whole Word:** não encontra correspondências dentro de palavras maiores.
+- **Smart Search:** fica ativado, a menos que você o desative. Espaços, hifens, travessões e quebras de linha são tratados como equivalentes, de modo que “end-to-end” também encontra “end to end”, mesmo em uma quebra de linha. Aspas retas e curvas também são tratadas como equivalentes.
+
+## Ignorar elementos que atrapalham o texto {#ignore-clutter-in-the-text}
+
+Alguns documentos colocam marcadores no meio das frases, como números de citação, o que impede que uma expressão seja encontrada. O Smart Search pode ignorá-los.
+
+1. Escolha VectorPDF > Settings.
+2. Ao lado de Ignored Search Patterns, clique em Edit.
+3. Adicione um dos padrões prontos ou sua própria expressão regular e ative-o.
+
+Os padrões prontos abrangem citações numéricas como [12], símbolos de marca registrada, paginação com asterisco como *123 e etiquetas de comentários do IEEE 802.11.
+
+## Documentos digitalizados
+
+Páginas digitalizadas não têm texto para buscar até serem reconhecidas. Consulte [Buscar em páginas digitalizadas com OCR](scanned-pages.md).

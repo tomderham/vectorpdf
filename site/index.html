@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VectorPDF: a fast, native PDF reader for technical documents</title>
+<meta name="description" content="Hold Command over a reference to see what it points to, without losing your page. A free, open-source PDF reader for the Mac, built for papers, specifications, contracts and drawings.">
+<meta property="og:title" content="VectorPDF">
+<meta property="og:description" content="A fast, native Mac PDF reader for technical documents. Free and open source.">
+<meta property="og:image" content="images/window-light.png">
+<link rel="icon" href="images/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <img class="icon" src="images/icon.png" alt="" width="96" height="96">
+  <h1>VectorPDF</h1>
+  <p class="lead">Read technical documents without losing your place.</p>
+  <p class="sub">Hold Command over a reference to an equation, figure, table or citation, and see it right where you are. A fast, native PDF reader for papers, specifications, contracts and drawings.</p>
+  <p class="actions">
+    <a class="button" href="https://github.com/tomderham/vectorpdf/releases/latest">Download for Mac</a>
+    <a class="secondary" href="https://github.com/tomderham/vectorpdf">View on GitHub</a>
+  </p>
+  <p class="note">Free and open source. Requires macOS 15 or later on Apple silicon.</p>
+</header>
+
+<figure class="shot">
+  <picture>
+    <source srcset="images/window-dark.png" media="(prefers-color-scheme: dark)">
+    <img src="images/window-light.png" alt="VectorPDF showing RFC 9110, with its outline in the sidebar" width="1800" height="1120">
+  </picture>
+</figure>
+
+<main>
+<section class="feature">
+  <h2>Follow a reference, and stay on your page</h2>
+  <p>Technical documents send you elsewhere constantly: “see Equation 3”, “as shown in Figure 2”, “[14]”. With Link Peek, hold <kbd>⌘</kbd> over a link and its target appears beside the pointer. Let go and it's gone.</p>
+  <p>The preview fits what you're looking at: a few lines for an equation, the opening paragraph for a section, the top of a table or figure.</p>
+</section>
+
+<section class="feature">
+  <h2>References that cross documents</h2>
+  <p>Standards cite other standards, and contracts refer to their schedules, usually in plain text with no link at all. Open the related documents as tabs, then right-click “Section 8.8.3 of [HTTP]” or “Clause 4.2 of the Master Agreement” to preview that section in the other tab and jump to it.</p>
+</section>
+
+<section class="grid">
+  <h2>Everything else you need from a PDF app</h2>
+  <div class="cards">
+    <article>
+      <h3>Reads the way you do</h3>
+      <p>Selections stay in one column and skip margin line numbers. Open very long documents without waiting, and carry on where you left off.</p>
+    </article>
+    <article>
+      <h3>Search that understands PDFs</h3>
+      <p>Phrases are found across line breaks, hyphens and dashes. Ignore clutter such as citation numbers or comment tags, and search scanned pages with on-device OCR.</p>
+    </article>
+    <article>
+      <h3>Anchors</h3>
+      <p>Save a passage, an area of a page or a link's target, and jump back in a click. Keep a figure open in its own window while you read.</p>
+    </article>
+    <article>
+      <h3>Tabs and Tab Groups</h3>
+      <p>Keep related documents together, save them as a named group, and reopen the whole set in one step.</p>
+    </article>
+    <article>
+      <h3>Markup and forms</h3>
+      <p>Highlight, underline, draw, and add text boxes, callouts and stamps. Fill in PDF forms and add a visual signature.</p>
+    </article>
+    <article>
+      <h3>Measure drawings</h3>
+      <p>Set a scale, calibrate from a known length, then measure lengths, perimeters, areas and angles, and export a takeoff table.</p>
+    </article>
+    <article>
+      <h3>Real redaction</h3>
+      <p>Redaction removes the text, image pixels and line art from the file, rather than covering them. Find names, numbers and patterns, then review each match.</p>
+    </article>
+    <article>
+      <h3>Rearrange and export</h3>
+      <p>Reorder, rotate, insert, extract and split pages. Encrypt with AES-256, and export to text, Word, SVG or a flattened PDF.</p>
+    </article>
+    <article>
+      <h3>Ask about a document</h3>
+      <p>Ask a question and get an answer with its sources. The Agent is optional, and finds relevant passages on your Mac. It needs macOS 26 or later.</p>
+    </article>
+  </div>
+</section>
+
+<section class="privacy">
+  <h2>Your documents stay yours</h2>
+  <p>VectorPDF has no accounts, analytics, telemetry or crash reporting. Your documents are processed on your Mac, and nothing from them is sent to the developer. The few things that use the network, such as update checks and the Agent's optional online engines, are <a href="https://github.com/tomderham/vectorpdf/blob/main/PRIVACY.md">listed in full</a>.</p>
+</section>
+
+<section class="native">
+  <h2>Built for the Mac</h2>
+  <p>VectorPDF is a native app written in Swift, using AppKit and SwiftUI, on Artifex's MuPDF rendering engine. It's free software under the GNU AGPL, so you can read every line.</p>
+</section>
+</main>
+
+<footer>
+  <p class="actions">
+    <a class="button" href="https://github.com/tomderham/vectorpdf/releases/latest">Download for Mac</a>
+  </p>
+  <p><a href="https://github.com/tomderham/vectorpdf/blob/main/docs/guide/README.md">User Guide</a> · <a href="https://github.com/tomderham/vectorpdf/blob/main/PRIVACY.md">Privacy</a> · <a href="https://github.com/tomderham/vectorpdf/issues">Report a bug</a> · <a href="https://github.com/tomderham/vectorpdf/blob/main/LICENSE">License</a></p>
+  <p class="note">PDF rendering by MuPDF, © Artifex Software, Inc. The document shown is RFC 9110, © IETF Trust.</p>
+</footer>
+</body>
+</html>
