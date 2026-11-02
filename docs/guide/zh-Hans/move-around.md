@@ -1,5 +1,5 @@
-<!-- keywords: 导航, 滚动, 页面, 前往页面, 返回, 前进, 箭头键, 跳转, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: 页面标签, 页码, 图纸编号, 导航, 滚动, 页面, 前往页面, 返回, 前进, 箭头键, 跳转, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # 在文稿中移动
 
@@ -23,6 +23,10 @@
 ## 前往某一页
 
 点按工具栏中的页码，键入要前往的页码，然后按下 Return 键。按下 Escape 键可取消。
+
+有些文档会为页面设置自己的名称，例如前言部分的 `iv` 或图纸的 `A-101`。此时，VectorPDF 会在工具栏、页面指示器和缩略图中显示该标签，并在旁边显示页面的位置，例如 `iv (4 of 300)`。输入标签即可前往该页面。如果某个标签被多次使用，将前往下一个带有该标签的页面。要按位置前往页面，请输入 `#` 和数字，例如 `#13`。
+
+Print 和 Split PDF 始终按位置计算页面，从文件的第一页开始。
 
 ## 返回之前的位置
 

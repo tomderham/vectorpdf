@@ -1,4 +1,4 @@
-<!-- keywords: navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
+<!-- keywords: navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
 
 # Move around a document
 
@@ -22,6 +22,10 @@ In Two-Page Mode, these keys turn a whole spread.
 ## Go to a page
 
 Click the page number in the toolbar, type the page you want, then press Return. Press Escape to cancel.
+
+Some documents name their own pages, such as `iv` for front matter or `A-101` for a drawing sheet. VectorPDF then shows that label in the toolbar, the page indicator and the thumbnails, with the page's position beside it, as in `iv (4 of 300)`. Type a label to go to that page. If a label is used more than once, you go to the next page that has it. To go to a page by its position, type `#` and the number, such as `#13`.
+
+Print and Split PDF always count pages by position, from the first page of the file.
 
 ## Go back to where you were
 

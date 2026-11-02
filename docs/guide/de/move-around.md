@@ -1,5 +1,5 @@
-<!-- keywords: navigieren, Navigation, scrollen, Seite, Seiten, zu Seite gehen, zurück, vorwärts, Pfeiltasten, springen, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: Seitenbeschriftungen, Seitenzahlen, Blattnummern, navigieren, Navigation, scrollen, Seite, Seiten, zu Seite gehen, zurück, vorwärts, Pfeiltasten, springen, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # In einem Dokument navigieren
 
@@ -23,6 +23,10 @@ Im Two-Page Mode blättern diese Tasten um eine ganze Doppelseite.
 ## Zu einer Seite gehen
 
 Klicke in der Symbolleiste auf die Seitenzahl, gib die gewünschte Seite ein und drücke dann die Return-Taste. Drücke die Escape-Taste, um abzubrechen.
+
+Manche Dokumente benennen ihre Seiten selbst, zum Beispiel `iv` für die Titelei oder `A-101` für ein Zeichnungsblatt. VectorPDF zeigt diese Beschriftung dann in der Symbolleiste, in der Seitenanzeige und bei den Miniaturen an, zusammen mit der Position der Seite, wie in `iv (4 of 300)`. Gib eine Beschriftung ein, um zu dieser Seite zu gehen. Wird eine Beschriftung mehrfach verwendet, gelangst du zur nächsten Seite mit dieser Beschriftung. Um eine Seite über ihre Position aufzurufen, gib `#` und die Zahl ein, zum Beispiel `#13`.
+
+Print und Split PDF zählen die Seiten immer nach ihrer Position, beginnend mit der ersten Seite der Datei.
 
 ## Zur vorherigen Stelle zurückkehren
 

@@ -2286,6 +2286,302 @@ int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int del
     return 0;
 }
 
+// MARK: - Page labels
+//
+// A label range starts at a page and runs to the start of the next range. A range of one page
+// names that page, like a sheet code, so it moves with the page. A longer range numbers positions,
+// so moving a page within it leaves the numbers in order.
+
+// pdf_page_label recurses through /Kids with no check for cycles, and spells out a Roman numeral
+// one M at a time, so a crafted file could overflow the stack or stall it. Trees past these limits
+// count as malformed, and are never passed to it.
+#define VP_LABEL_MAX_DEPTH 32
+#define VP_LABEL_MAX_NODES 65536
+#define VP_LABEL_MAX_ROMAN_START 100000
+
+typedef struct {
+    int start;
+    int length;
+    pdf_obj *label;   // NULL for pages before the first range, which are numbered from their index
+} vp_label_range;
+
+typedef struct {
+    vp_label_range *ranges;
+    int count;
+    int page_count;
+    int nodes;
+    int malformed;
+} vp_label_walk;
+
+struct mupdf_page_labels {
+    pdf_obj *tree;
+    vp_label_range *ranges;
+    int count;
+    int page_count;
+};
+
+static pdf_obj *vp_label_tree(fz_context *ctx, pdf_document *pdoc) {
+    pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+    return pdf_dict_get(ctx, root, PDF_NAME(PageLabels));
+}
+
+static int vp_label_is_safe(fz_context *ctx, pdf_obj *label) {
+    pdf_obj *style = pdf_dict_get(ctx, label, PDF_NAME(S));
+    if (style != PDF_NAME(R) && style != PDF_NAME(r)) return 1;
+    return pdf_dict_get_int(ctx, label, PDF_NAME(St)) <= VP_LABEL_MAX_ROMAN_START;
+}
+
+static void vp_walk_label_node(fz_context *ctx, pdf_obj *node, int depth, vp_label_walk *walk) {
+    if (walk->malformed) return;
+    if (depth > VP_LABEL_MAX_DEPTH || ++walk->nodes > VP_LABEL_MAX_NODES) {
+        walk->malformed = 1;
+        return;
+    }
+    pdf_obj *kids = pdf_dict_get(ctx, node, PDF_NAME(Kids));
+    for (int i = 0; i < pdf_array_len(ctx, kids); i++) {
+        vp_walk_label_node(ctx, pdf_array_get(ctx, kids, i), depth + 1, walk);
+    }
+    pdf_obj *nums = pdf_dict_get(ctx, node, PDF_NAME(Nums));
+    for (int i = 0; i + 1 < pdf_array_len(ctx, nums); i += 2) {
+        int key = pdf_array_get_int(ctx, nums, i);
+        pdf_obj *label = pdf_array_get(ctx, nums, i + 1);
+        if (key < 0 || key >= walk->page_count) continue;
+        if (!vp_label_is_safe(ctx, label)) {
+            walk->malformed = 1;
+            return;
+        }
+        // A malformed tree can repeat a key. MuPDF reads the last one.
+        vp_label_range *last = walk->count > 0 ? &walk->ranges[walk->count - 1] : NULL;
+        if (last && key < last->start) continue;
+        if (last && key == last->start) {
+            last->label = label;
+        } else {
+            walk->ranges[walk->count].start = key;
+            walk->ranges[walk->count].length = 0;
+            walk->ranges[walk->count].label = label;
+            walk->count++;
+        }
+    }
+}
+
+/// Reads the tree into `walk`, with one range per stretch of pages. `walk->ranges` is the caller's
+/// to free. No ranges means the document has no usable labels.
+static void vp_load_label_ranges(fz_context *ctx, pdf_document *pdoc, pdf_obj *tree, vp_label_walk *walk) {
+    memset(walk, 0, sizeof(*walk));
+    walk->page_count = pdf_count_pages(ctx, pdoc);
+    // Keys ascend and are below page_count, and one more for the pages before the first range.
+    walk->ranges = (vp_label_range *)fz_malloc(ctx, (walk->page_count + 1) * sizeof(vp_label_range));
+    vp_walk_label_node(ctx, tree, 0, walk);
+    if (walk->malformed) walk->count = 0;
+    if (walk->count > 0 && walk->ranges[0].start > 0) {
+        memmove(walk->ranges + 1, walk->ranges, walk->count * sizeof(vp_label_range));
+        walk->ranges[0].start = 0;
+        walk->ranges[0].label = NULL;
+        walk->count++;
+    }
+    for (int i = 0; i < walk->count; i++) {
+        int end = i + 1 < walk->count ? walk->ranges[i + 1].start : walk->page_count;
+        walk->ranges[i].length = end - walk->ranges[i].start;
+    }
+}
+
+int mupdf_pdf_has_page_labels(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    int has_labels = 0;
+    vp_label_walk walk = { 0 };
+    fz_var(has_labels);
+    fz_var(walk);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        pdf_obj *tree = pdoc ? vp_label_tree(ctx, pdoc) : NULL;
+        if (tree) {
+            vp_load_label_ranges(ctx, pdoc, tree, &walk);
+            has_labels = walk.count > 0;
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, walk.ranges);
+    } fz_catch(ctx) {
+        return 0;
+    }
+    return has_labels;
+}
+
+int mupdf_pdf_page_label(fz_context *ctx, fz_document *doc, int pageno, char *buf, int size, const char **out_error) {
+    if (!ctx || !doc || !buf || size <= 0) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        pdf_page_label(ctx, pdoc, pageno, buf, size);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+mupdf_page_labels *mupdf_pdf_take_page_labels(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return NULL;
+    mupdf_page_labels *labels = NULL;
+    vp_label_walk walk = { 0 };
+    fz_var(labels);
+    fz_var(walk);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc) {
+            labels = fz_malloc_struct(ctx, mupdf_page_labels);
+            labels->page_count = pdf_count_pages(ctx, pdoc);
+            pdf_obj *tree = vp_label_tree(ctx, pdoc);
+            if (tree) {
+                vp_load_label_ranges(ctx, pdoc, tree, &walk);
+                labels->tree = pdf_keep_obj(ctx, tree);
+                labels->ranges = walk.ranges;
+                labels->count = walk.count;
+                walk.ranges = NULL;
+                pdf_dict_del(ctx, pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root)), PDF_NAME(PageLabels));
+            }
+        }
+    } fz_catch(ctx) {
+        fz_free(ctx, walk.ranges);
+        if (labels) {
+            pdf_drop_obj(ctx, labels->tree);
+            fz_free(ctx, labels->ranges);
+            fz_free(ctx, labels);
+        }
+        return NULL;
+    }
+    return labels;
+}
+
+/// Pushes the label for the run of pages that starts `consumed` pages into `range`.
+static void vp_push_label_run(fz_context *ctx, pdf_document *pdoc, pdf_obj *nums, const vp_label_range *range, int consumed) {
+    if (range->label && consumed == 0) {
+        pdf_array_push(ctx, nums, range->label);
+        return;
+    }
+    pdf_obj *run = range->label ? pdf_copy_dict(ctx, range->label) : pdf_new_dict(ctx, pdoc, 2);
+    fz_try(ctx) {
+        int start = range->label ? fz_maxi(pdf_dict_get_int(ctx, range->label, PDF_NAME(St)), 1) : range->start + 1;
+        if (!range->label) pdf_dict_put(ctx, run, PDF_NAME(S), PDF_NAME(D));
+        pdf_dict_put_int(ctx, run, PDF_NAME(St), start + consumed);
+        pdf_array_push(ctx, nums, run);
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, run);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+/// Pages an edit added: they carry on the numbered range they're next to. Beside a page that has
+/// its own label there's nothing to carry on, so they're numbered by position.
+enum { VP_LABEL_ADDED = -1, VP_LABEL_POSITION = -2 };
+
+static void vp_write_label_ranges(fz_context *ctx, pdf_document *pdoc, const mupdf_page_labels *labels, const int *page_map, int count) {
+    int *assigned = NULL;
+    int *owner = NULL;
+    int *kept = NULL;
+    fz_var(assigned);
+    fz_var(owner);
+    fz_var(kept);
+    fz_try(ctx) {
+        assigned = (int *)fz_malloc(ctx, count * sizeof(int));
+        owner = (int *)fz_malloc(ctx, labels->page_count * sizeof(int));
+        kept = (int *)fz_calloc(ctx, labels->count, sizeof(int));
+        for (int r = 0; r < labels->count; r++) {
+            for (int i = 0; i < labels->ranges[r].length; i++) owner[labels->ranges[r].start + i] = r;
+        }
+        for (int i = 0; i < count; i++) {
+            if (page_map[i] >= 0 && page_map[i] < labels->page_count) kept[owner[page_map[i]]]++;
+        }
+
+        // Pages in numbered ranges take up the numbers in order, however they were rearranged.
+        // A range keeps as many pages as survived the edit.
+        int next = 0, taken = 0;
+        for (int i = 0; i < count; i++) {
+            int old = page_map[i];
+            if (old < 0 || old >= labels->page_count) {
+                assigned[i] = VP_LABEL_ADDED;
+            } else if (labels->ranges[owner[old]].length == 1) {
+                assigned[i] = owner[old];
+            } else {
+                while (labels->ranges[next].length == 1 || taken == kept[next]) {
+                    next++;
+                    taken = 0;
+                }
+                assigned[i] = next;
+                taken++;
+            }
+        }
+        for (int i = 1; i < count; i++) {
+            if (assigned[i] == VP_LABEL_ADDED && assigned[i - 1] >= 0 && labels->ranges[assigned[i - 1]].length > 1) {
+                assigned[i] = assigned[i - 1];
+            }
+        }
+        for (int i = count - 2; i >= 0; i--) {
+            if (assigned[i] == VP_LABEL_ADDED && assigned[i + 1] >= 0 && labels->ranges[assigned[i + 1]].length > 1) {
+                assigned[i] = assigned[i + 1];
+            }
+        }
+        for (int i = 0; i < count; i++) {
+            if (assigned[i] == VP_LABEL_ADDED) assigned[i] = VP_LABEL_POSITION;
+        }
+
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        pdf_obj *tree = pdf_dict_put_dict(ctx, root, PDF_NAME(PageLabels), 1);
+        pdf_obj *nums = pdf_dict_put_array(ctx, tree, PDF_NAME(Nums), 2 * labels->count);
+        memset(kept, 0, labels->count * sizeof(int));
+        for (int i = 0; i < count; i++) {
+            int r = assigned[i];
+            int starts_run = i == 0 || assigned[i - 1] != r;
+            if (r == VP_LABEL_POSITION) {
+                if (starts_run) {
+                    pdf_array_push_int(ctx, nums, i);
+                    pdf_obj *run = pdf_array_push_dict(ctx, nums, 2);
+                    pdf_dict_put(ctx, run, PDF_NAME(S), PDF_NAME(D));
+                    pdf_dict_put_int(ctx, run, PDF_NAME(St), i + 1);
+                }
+            } else {
+                if (starts_run) {
+                    pdf_array_push_int(ctx, nums, i);
+                    vp_push_label_run(ctx, pdoc, nums, &labels->ranges[r], kept[r]);
+                }
+                kept[r]++;
+            }
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, assigned);
+        fz_free(ctx, owner);
+        fz_free(ctx, kept);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+int mupdf_pdf_restore_page_labels(fz_context *ctx, fz_document *doc, mupdf_page_labels *labels, const int *page_map, int count, const char **out_error) {
+    if (!ctx || !doc || !labels) return 0;
+    int failed = 0;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        // Clears the tree MuPDF creates when a page is inserted first.
+        pdf_dict_del(ctx, root, PDF_NAME(PageLabels));
+        if (!page_map) {
+            if (labels->tree) pdf_dict_put(ctx, root, PDF_NAME(PageLabels), labels->tree);
+        } else if (labels->count > 0 && count > 0) {
+            vp_write_label_ranges(ctx, pdoc, labels, page_map, count);
+        }
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        failed = fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    pdf_drop_obj(ctx, labels->tree);
+    fz_free(ctx, labels->ranges);
+    fz_free(ctx, labels);
+    return failed;
+}
+
+// MARK: - Page edits
+
 int mupdf_pdf_delete_page(fz_context *ctx, fz_document *doc, int pageno, const char **out_error) {
     if (!ctx || !doc) return -1;
     fz_try(ctx) {

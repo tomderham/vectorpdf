@@ -1,5 +1,5 @@
-<!-- keywords: navigare, navigazione, scorrere, pagina, pagine, vai alla pagina, indietro, avanti, tasti freccia, saltare, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: etichette di pagina, numeri di pagina, numeri di tavola, navigare, navigazione, scorrere, pagina, pagine, vai alla pagina, indietro, avanti, tasti freccia, saltare, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # Spostarsi in un documento
 
@@ -23,6 +23,10 @@ In Two-Page Mode, questi tasti sfogliano un'intera doppia pagina.
 ## Andare a una pagina
 
 Fai clic sul numero di pagina nella barra degli strumenti, digita la pagina desiderata, quindi premi Return. Premi Escape per annullare.
+
+Alcuni documenti danno un nome alle proprie pagine, come `iv` per le pagine introduttive o `A-101` per una tavola di disegno. VectorPDF mostra allora questa etichetta nella barra degli strumenti, nell’indicatore di pagina e nelle miniature, insieme alla posizione della pagina, come in `iv (4 of 300)`. Digita un’etichetta per andare a quella pagina. Se un’etichetta è usata più volte, vai alla pagina successiva che la riporta. Per andare a una pagina in base alla sua posizione, digita `#` e il numero, come `#13`.
+
+Print e Split PDF contano sempre le pagine in base alla posizione, a partire dalla prima pagina del file.
 
 ## Tornare al punto precedente
 

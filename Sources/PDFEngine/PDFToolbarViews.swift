@@ -805,7 +805,7 @@ public struct EditablePagePill: View {
                         onCommit: { val in commit(with: val) },
                         onCancel: { isEditing = false }
                     )
-                    .frame(width: numberWidth + 8, height: 20)
+                    .frame(width: isLabelled ? 100 : numberWidth + 8, height: 20)
                     .background(
                         Capsule(style: .continuous)
                             .fill(Color(nsColor: .textBackgroundColor))
@@ -816,13 +816,15 @@ public struct EditablePagePill: View {
                     )
                 } else {
                     Button {
-                        editValue = "\(viewModel.currentPageIndex + 1)"
+                        editValue = currentLabel
                         isEditing = true
                     } label: {
-                        Text("\(viewModel.currentPageIndex + 1)")
+                        Text(currentLabel)
                             .font(.caption.monospacedDigit().bold())
                             .foregroundStyle(isWindowKey ? Color.primary : Color.secondary)
-                            .frame(minWidth: numberWidth)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(minWidth: numberWidth, maxWidth: 140)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
                             .background(
@@ -831,10 +833,10 @@ public struct EditablePagePill: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    .help("Click to jump to page number")
+                    .help(isLabelled ? "Click to jump to a page by its label or number" : "Click to jump to page number")
                 }
 
-                Text("of \(pageCount)")
+                Text(isLabelled ? "(\(viewModel.currentPageIndex + 1) of \(pageCount))" : "of \(pageCount)")
                     .font(.caption)
                     .foregroundStyle(isWindowKey ? Color.primary : Color.secondary)
                     .padding(.trailing, 2)
@@ -851,10 +853,20 @@ public struct EditablePagePill: View {
         .trackWindowActive($isWindowKey)
     }
     
+    private var isLabelled: Bool {
+        viewModel.document?.pageLabels != nil
+    }
+
+    private var currentLabel: String {
+        viewModel.document?.displayLabel(forPage: viewModel.currentPageIndex) ?? "\(viewModel.currentPageIndex + 1)"
+    }
+
     private func commit(with value: String) {
-        if let target = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            let clamped = min(max(target, 1), pageCount)
-            viewModel.jumpToPage(clamped - 1)
+        let current = viewModel.currentPageIndex
+        // The chevrons commit first, so an untouched field mustn't go to another page with this label.
+        let isUntouched = value.trimmingCharacters(in: .whitespacesAndNewlines) == currentLabel
+        if let target = isUntouched ? current : viewModel.document?.pageIndex(forJumpTo: value, from: current) {
+            viewModel.jumpToPage(target)
         }
         isEditing = false
     }
@@ -1093,6 +1105,12 @@ public struct FloatingReaderHUD: View {
         isHovered || isTemporarilyVisible
     }
 
+    private var indicatorText: String {
+        let page = viewModel.currentPageIndex
+        guard let doc = viewModel.document, doc.pageLabels != nil else { return "Page \(page + 1) of \(pageCount)" }
+        return "Page \(doc.displayLabel(forPage: page)) (\(page + 1) of \(pageCount))"
+    }
+
     public init(viewModel: PDFViewerViewModel, pageCount: Int) {
         self.viewModel = viewModel
         self.pageCount = pageCount
@@ -1114,7 +1132,7 @@ public struct FloatingReaderHUD: View {
             .disabled(!viewModel.canGoPreviousPage)
             .help("Previous Page")
 
-            Text("Page \(viewModel.currentPageIndex + 1) of \(pageCount)")
+            Text(indicatorText)
                 .font(.caption.monospacedDigit().weight(.medium))
                 .foregroundStyle(.primary)
 

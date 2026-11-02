@@ -380,9 +380,12 @@ public struct PDFThumbnailGridView: View {
                                         .scaleEffect(isDragged ? 0.96 : 1.0)
                                         .animation(.easeInOut(duration: 0.15), value: isDragged)
 
-                                    Text("\(pageIndex + 1)")
+                                    Text(doc.displayLabel(forPage: pageIndex))
                                         .font(isSelected ? .caption.bold() : .caption)
                                         .foregroundColor(isSelected ? (isWindowKey ? .accentColor : .primary) : .secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .help(doc.pageLabels != nil ? "Page \(pageIndex + 1) of \(pageCount)" : "")
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 4)

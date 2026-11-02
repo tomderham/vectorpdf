@@ -67,6 +67,9 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public private(set) var pageYOffsets: [CGFloat]
     public private(set) var totalHeight: CGFloat
     public internal(set) var outline: [PDFOutlineNode]
+    /// The document's own name for each page, such as `iv` or `A-101`. Nil when it has none, or
+    /// when they match the page's position, so nothing needs to tell the two apart.
+    public private(set) var pageLabels: [String]?
     private var hasStrippedDocumentData = false
 
     /// Whether pageBounds[i] reflects exact inspected dimensions rather than a placeholder.
@@ -201,8 +204,24 @@ public final class PDFDocumentCore: @unchecked Sendable {
         } else {
             self.outline = []
         }
+        self.pageLabels = readPageLabels(pageCount: totalPages)
     }
-    
+
+    private func readPageLabels(pageCount: Int) -> [String]? {
+        guard mupdf_pdf_has_page_labels(ctx, doc) != 0 else { return nil }
+        var buffer = [CChar](repeating: 0, count: 256)
+        let labels = (0..<pageCount).map { index -> String in
+            // A range can give pages an empty label, which leaves nothing to show.
+            buffer[0] = 0
+            mupdf_pdf_page_label(ctx, doc, Int32(index), &buffer, Int32(buffer.count), nil)
+            let bytes = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            let label = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            return label.isEmpty ? String(index + 1) : label
+        }
+        let matchPositions = labels.enumerated().allSatisfy { $0.element == String($0.offset + 1) }
+        return matchPositions ? nil : labels
+    }
+
     deinit {
         mupdf_document_drop(ctx, doc)
         PDFContextManager.shared.dropContext(ctx)
@@ -1112,6 +1131,29 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
+    // MARK: - Page Labels
+
+    /// What to call a page in the interface: its label, or its position if it hasn't got one.
+    public func displayLabel(forPage pageIndex: Int) -> String {
+        if let pageLabels, pageLabels.indices.contains(pageIndex) { return pageLabels[pageIndex] }
+        return String(pageIndex + 1)
+    }
+
+    /// The page to go to for what someone typed: a label, then a number as a position in the
+    /// document, clamped to it. `#13` is always a position, for when a label `13` hides that page.
+    /// Numbering can restart, so a label used more than once finds the next one after `currentPage`.
+    public func pageIndex(forJumpTo input: String, from currentPage: Int) -> Int? {
+        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+        if let pageLabels {
+            let order = Array(pageLabels.indices.dropFirst(currentPage + 1)) + Array(pageLabels.indices.prefix(currentPage + 1))
+            if let exact = order.first(where: { pageLabels[$0] == text }) { return exact }
+            if let similar = order.first(where: { pageLabels[$0].caseInsensitiveCompare(text) == .orderedSame }) { return similar }
+        }
+        guard let position = Int(text.hasPrefix("#") ? String(text.dropFirst()) : text) else { return nil }
+        return min(max(position, 1), pageCount) - 1
+    }
+
     // MARK: - Page Manipulation
     public func rotatePage(_ pageIndex: Int, by degrees: Int = 90) throws {
         lock.lock()
@@ -1125,11 +1167,37 @@ public final class PDFDocumentCore: @unchecked Sendable {
         rebuildPageLayoutAndOutline()
     }
 
+    /// Runs a page edit with the document's labels taken out, then puts them back according to
+    /// `pageMap`, which lists each page's previous index in its new order, with -1 for a page the
+    /// edit added. It's only called if the edit succeeds. Call with `lock` held.
+    private func preservingPageLabels(_ edit: () -> Int32, pageMap: () -> [Int]) -> Int32 {
+        let labels = mupdf_pdf_take_page_labels(ctx, doc)
+        let ret = edit()
+        if ret == 0 {
+            let map = pageMap().map { Int32($0) }
+            mupdf_pdf_restore_page_labels(ctx, doc, labels, map, Int32(map.count), nil)
+        } else {
+            mupdf_pdf_restore_page_labels(ctx, doc, labels, nil, 0, nil)
+        }
+        return ret
+    }
+
+    /// `pageMap` for pages added at `slot`.
+    private func pageMap(inserting count: Int, atSlot slot: Int) -> [Int] {
+        var map = Array(0..<pageCount)
+        map.insert(contentsOf: repeatElement(-1, count: count), at: min(max(slot, 0), pageCount))
+        return map
+    }
+
     public func deletePage(_ pageIndex: Int) throws {
         lock.lock()
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
-        let ret = mupdf_pdf_delete_page(ctx, doc, Int32(pageIndex), &errorMsg)
+        let ret = preservingPageLabels {
+            mupdf_pdf_delete_page(ctx, doc, Int32(pageIndex), &errorMsg)
+        } pageMap: {
+            (0..<pageCount).filter { $0 != pageIndex }
+        }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete page"
             throw PDFError.operationFailed(msg)
@@ -1141,7 +1209,13 @@ public final class PDFDocumentCore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
-        let ret = mupdf_pdf_reorder_page(ctx, doc, Int32(fromIndex), Int32(toIndex), &errorMsg)
+        let ret = preservingPageLabels {
+            mupdf_pdf_reorder_page(ctx, doc, Int32(fromIndex), Int32(toIndex), &errorMsg)
+        } pageMap: {
+            var map = Array(0..<pageCount)
+            map.insert(map.remove(at: fromIndex), at: toIndex)
+            return map
+        }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to reorder page"
             throw PDFError.operationFailed(msg)
@@ -1155,8 +1229,14 @@ public final class PDFDocumentCore: @unchecked Sendable {
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
         let int32Indices = fromIndices.map { Int32($0) }
-        let ret = int32Indices.withUnsafeBufferPointer { buf in
-            mupdf_pdf_reorder_pages(ctx, doc, buf.baseAddress, Int32(buf.count), Int32(destSlot), &errorMsg)
+        let ret = preservingPageLabels {
+            int32Indices.withUnsafeBufferPointer { buf in
+                mupdf_pdf_reorder_pages(ctx, doc, buf.baseAddress, Int32(buf.count), Int32(destSlot), &errorMsg)
+            }
+        } pageMap: {
+            var map = Array(0..<pageCount).filter { !fromIndices.contains($0) }
+            map.insert(contentsOf: fromIndices, at: destSlot - fromIndices.filter { $0 < destSlot }.count)
+            return map
         }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to reorder pages"
@@ -1171,8 +1251,12 @@ public final class PDFDocumentCore: @unchecked Sendable {
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
         let int32Indices = pageIndices.map { Int32($0) }
-        let ret = int32Indices.withUnsafeBufferPointer { buf in
-            mupdf_pdf_delete_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &errorMsg)
+        let ret = preservingPageLabels {
+            int32Indices.withUnsafeBufferPointer { buf in
+                mupdf_pdf_delete_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &errorMsg)
+            }
+        } pageMap: {
+            (0..<pageCount).filter { !pageIndices.contains($0) }
         }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to delete pages"
@@ -1257,8 +1341,12 @@ public final class PDFDocumentCore: @unchecked Sendable {
         var insertedSlot: Int32 = 0
         var errorMsg: UnsafePointer<CChar>?
         let int32Indices = pageIndices.map { Int32($0) }
-        let ret = int32Indices.withUnsafeBufferPointer { buf in
-            mupdf_pdf_duplicate_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &insertedSlot, &errorMsg)
+        let ret = preservingPageLabels {
+            int32Indices.withUnsafeBufferPointer { buf in
+                mupdf_pdf_duplicate_pages(ctx, doc, buf.baseAddress, Int32(buf.count), &insertedSlot, &errorMsg)
+            }
+        } pageMap: {
+            pageMap(inserting: pageIndices.count, atSlot: Int(insertedSlot))
         }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to duplicate pages"
@@ -1273,7 +1361,11 @@ public final class PDFDocumentCore: @unchecked Sendable {
         defer { lock.unlock() }
         var importedCount: Int32 = 0
         var errorMsg: UnsafePointer<CChar>?
-        let ret = mupdf_pdf_import_pages(ctx, doc, fileURL.path, Int32(slot), &importedCount, &errorMsg)
+        let ret = preservingPageLabels {
+            mupdf_pdf_import_pages(ctx, doc, fileURL.path, Int32(slot), &importedCount, &errorMsg)
+        } pageMap: {
+            pageMap(inserting: Int(importedCount), atSlot: slot)
+        }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to import pages from \(fileURL.lastPathComponent)"
             throw PDFError.operationFailed(msg)
@@ -1288,7 +1380,11 @@ public final class PDFDocumentCore: @unchecked Sendable {
         var errorMsg: UnsafePointer<CChar>?
         let w = Float(width ?? 0)
         let h = Float(height ?? 0)
-        let ret = mupdf_pdf_insert_blank_page(ctx, doc, Int32(slot), w, h, &errorMsg)
+        let ret = preservingPageLabels {
+            mupdf_pdf_insert_blank_page(ctx, doc, Int32(slot), w, h, &errorMsg)
+        } pageMap: {
+            pageMap(inserting: 1, atSlot: slot)
+        }
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to insert blank page"
             throw PDFError.operationFailed(msg)

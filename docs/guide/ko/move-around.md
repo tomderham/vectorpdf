@@ -1,5 +1,5 @@
-<!-- keywords: 탐색, 이동, 스크롤, 페이지, 페이지로 이동, 뒤로, 앞으로, 화살표 키, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: 페이지 레이블, 페이지 번호, 도면 번호, 탐색, 이동, 스크롤, 페이지, 페이지로 이동, 뒤로, 앞으로, 화살표 키, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # 문서 내에서 이동하기
 
@@ -23,6 +23,10 @@ Two-Page Mode에서는 이 키를 사용하면 두 페이지 펼침면이 통째
 ## 특정 페이지로 이동하기
 
 도구 막대의 페이지 번호를 클릭하고 원하는 페이지를 입력한 다음 Return 키를 누릅니다. 취소하려면 Escape 키를 누릅니다.
+
+일부 문서는 앞부분의 `iv`나 도면의 `A-101`처럼 페이지에 자체 이름을 붙입니다. 이 경우 VectorPDF는 도구 막대, 페이지 표시기, 썸네일에 해당 레이블을 표시하고, `iv (4 of 300)`처럼 페이지의 위치도 함께 보여 줍니다. 레이블을 입력하면 해당 페이지로 이동합니다. 같은 레이블이 여러 번 사용되었다면 그 레이블이 있는 다음 페이지로 이동합니다. 위치로 페이지를 찾아가려면 `#13`처럼 `#`와 번호를 입력합니다.
+
+Print와 Split PDF는 항상 파일의 첫 페이지부터 센 위치로 페이지를 계산합니다.
 
 ## 이전 위치로 돌아가기
 

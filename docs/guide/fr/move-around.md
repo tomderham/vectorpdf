@@ -1,5 +1,5 @@
-<!-- keywords: naviguer, faire défiler, aller à la page, retour, avancer, touches fléchées, accéder, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: étiquettes de page, numéros de page, numéros de plan, naviguer, faire défiler, aller à la page, retour, avancer, touches fléchées, accéder, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # Se déplacer dans un document
 
@@ -23,6 +23,10 @@ En Two-Page Mode, ces touches tournent une double page entière.
 ## Accéder à une page
 
 Cliquez sur le numéro de page dans la barre d’outils, saisissez la page souhaitée, puis appuyez sur Return. Appuyez sur Escape pour annuler.
+
+Certains documents nomment eux-mêmes leurs pages, par exemple `iv` pour les pages liminaires ou `A-101` pour un plan. VectorPDF affiche alors cette étiquette dans la barre d’outils, l’indicateur de page et les vignettes, avec la position de la page à côté, comme dans `iv (4 of 300)`. Saisissez une étiquette pour accéder à cette page. Si une étiquette est utilisée plusieurs fois, vous accédez à la page suivante qui la porte. Pour accéder à une page par sa position, saisissez `#` suivi du numéro, par exemple `#13`.
+
+Print et Split PDF comptent toujours les pages selon leur position, à partir de la première page du fichier.
 
 ## Revenir à l’endroit précédent
 

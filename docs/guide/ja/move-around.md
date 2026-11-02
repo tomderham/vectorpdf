@@ -1,5 +1,5 @@
-<!-- keywords: 移動, ナビゲーション, スクロール, ページ, ページへ移動, 戻る, 進む, 矢印キー, ジャンプ, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: ページラベル, ページ番号, 図面番号, 移動, ナビゲーション, スクロール, ページ, ページへ移動, 戻る, 進む, 矢印キー, ジャンプ, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # 書類内を移動する
 
@@ -23,6 +23,10 @@ Two-Page Mode では、これらのキーで見開き単位で移動します。
 ## 指定したページに移動する
 
 ツールバーのページ番号をクリックし、移動先のページを入力して、Return キーを押します。キャンセルするには Escape キーを押します。
+
+文書によっては、前付の `iv` や図面の `A-101` のように、ページに独自の名前が付いています。その場合、VectorPDF はツールバー、ページインジケータ、サムネイルにそのラベルを表示し、`iv (4 of 300)` のようにページの位置も併せて示します。ラベルを入力すると、そのページに移動します。同じラベルが複数ある場合は、そのラベルを持つ次のページに移動します。位置を指定してページに移動するには、`#13` のように `#` と番号を入力します。
+
+Print と Split PDF では、常にファイルの最初のページから数えた位置でページを数えます。
 
 ## 元の場所に戻る
 

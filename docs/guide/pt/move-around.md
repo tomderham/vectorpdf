@@ -1,5 +1,5 @@
-<!-- keywords: navegar, navegação, rolar, página, páginas, ir para a página, voltar, avançar, teclas de seta, saltar, navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
-<!-- source: 542d49632c84 -->
+<!-- keywords: etiquetas de página, números de página, números de folha, navegar, navegação, rolar, página, páginas, ir para a página, voltar, avançar, teclas de seta, saltar, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
+<!-- source: e30f4f6cb6d9 -->
 
 # Navegar por um documento
 
@@ -23,6 +23,10 @@ Em Two-Page Mode, essas teclas viram um par de páginas inteiro.
 ## Ir para uma página
 
 Clique no número da página na barra de ferramentas, digite a página desejada e pressione Return. Pressione Escape para cancelar.
+
+Alguns documentos dão nome às suas próprias páginas, como `iv` nas páginas iniciais ou `A-101` numa folha de desenho. O VectorPDF mostra então essa etiqueta na barra de ferramentas, no indicador de página e nas miniaturas, com a posição da página ao lado, como em `iv (4 of 300)`. Digite uma etiqueta para ir para essa página. Se uma etiqueta for usada mais de uma vez, você vai para a página seguinte que a tem. Para ir para uma página pela posição, digite `#` e o número, como `#13`.
+
+Print e Split PDF contam sempre as páginas pela posição, a partir da primeira página do arquivo.
 
 ## Voltar para onde você estava
 

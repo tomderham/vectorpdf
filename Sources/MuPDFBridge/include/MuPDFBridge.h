@@ -186,6 +186,19 @@ int mupdf_pdf_duplicate_pages(fz_context *ctx, fz_document *doc, const int *page
 int mupdf_pdf_import_pages(fz_context *ctx, fz_document *doc, const char *src_path, int insert_slot, int *out_imported_count, const char **out_error);
 int mupdf_pdf_insert_blank_page(fz_context *ctx, fz_document *doc, int insert_slot, float width, float height, const char **out_error);
 
+// Page Labels
+// Whether the document has a /PageLabels tree that's safe to read; if not, pages have no labels.
+int mupdf_pdf_has_page_labels(fz_context *ctx, fz_document *doc);
+int mupdf_pdf_page_label(fz_context *ctx, fz_document *doc, int pageno, char *buf, int size, const char **out_error);
+
+// MuPDF shifts labels when pages are inserted or deleted, so it can't move a label with its page,
+// and it adds labels to a document that had none. To avoid that, take the labels out before a page
+// edit and restore them afterwards. `page_map[new_index]` is the page's index before the edit, or
+// -1 for a page the edit added. Pass a NULL map if the edit failed, which puts back what was there.
+typedef struct mupdf_page_labels mupdf_page_labels;
+mupdf_page_labels *mupdf_pdf_take_page_labels(fz_context *ctx, fz_document *doc);
+int mupdf_pdf_restore_page_labels(fz_context *ctx, fz_document *doc, mupdf_page_labels *labels, const int *page_map, int count, const char **out_error);
+
 // Store & Memory Management
 // No fz_empty_store wrapper: the store is shared by every cloned context, and emptying it frees
 // items other threads are still using. Shrinking evicts only unused items, so is safe.
