@@ -7,7 +7,9 @@
 <meta name="description" content="Hold Command over a reference to see what it points to, without losing your page. A free, open-source PDF reader for the Mac, built for papers, specifications, contracts and drawings.">
 <meta property="og:title" content="VectorPDF">
 <meta property="og:description" content="A fast, native Mac PDF reader for technical documents. Free and open source.">
-<meta property="og:image" content="images/window-light.png">
+<meta property="og:url" content="https://tomderham.github.io/vectorpdf/">
+<meta property="og:image" content="https://tomderham.github.io/vectorpdf/images/link-peek.png">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="google-site-verification" content="U_kyzQIQbXGRUtsFIapcFXOg931TqrCYWAGfByrRuhM">
 <link rel="icon" href="images/icon.png">
 <link rel="stylesheet" href="style.css">
@@ -25,6 +27,11 @@
 </header>
 
 <figure class="shot">
+  <!-- When docs/demo has produced link-peek.mp4, put it in site/images and replace the picture with:
+  <video autoplay muted loop playsinline poster="images/link-peek.png" width="1800" height="1129" aria-label="Holding Command over references in FIPS 197 previews each target in place">
+    <source src="images/link-peek.mp4" type="video/mp4">
+  </video>
+  -->
   <picture>
     <source srcset="images/window-dark.png" media="(prefers-color-scheme: dark)">
     <img src="images/window-light.png" alt="VectorPDF showing RFC 9110, with its outline in the sidebar" width="1800" height="1120">
@@ -55,7 +62,7 @@
   <h2>Search that finds what's really there</h2>
   <p>PDF text is messy. Phrases break across lines, hyphens and dashes vary, and quotes come in several styles. Smart Search treats all of these as the same, so “end-to-end” also finds “end to end”, even across a line break. Results stream into the sidebar as they're found, starting from where you're reading.</p>
   <p>Some documents go further and scatter markers through their sentences, so the phrase you want isn't literally on the page: citation numbers like [12], trademark symbols, star paging in court opinions, or comment tags like (#1234) in standards drafts. Tell VectorPDF what to ignore, with a ready-made pattern or your own regular expression, and search reads straight past them while still highlighting the right words on the page.</p>
-  <p>Scanned pages are covered too, with on-device OCR. When a result matters, right-click it to keep it as an anchor.</p>
+  <p>Scanned pages are covered too: on-device OCR makes them searchable, and you can select and copy their text. When a result matters, right-click it to keep it as an anchor.</p>
   </div>
   <img src="images/search.png" alt="The Search tab listing 232 results for MSCS, grouped by page, with the current match highlighted in the document" width="858" height="1200" loading="lazy">
 </section>
@@ -77,8 +84,8 @@
 </figure>
 
 <section class="feature">
-  <h2>Mark up, sign and fill in</h2>
-  <p>Highlight, underline, draw, and add text boxes, callouts and stamps. Fill in PDF forms and add a visual signature. Markups are standard PDF annotations, so they appear in other PDF apps too.</p>
+  <h2>Mark up, review, sign and fill in</h2>
+  <p>Highlight, underline, draw, and add text boxes, callouts and stamps. Reviewing with others? Add sticky notes and revision clouds, reply to comments, and mark each one with a status. Fill in PDF forms and add a visual signature. Markups are standard PDF annotations, so they appear in other PDF apps too.</p>
 </section>
 <figure class="figure">
   <img src="images/markup.png" alt="The Markup toolbar over RFC 9110, with a freehand circle, a callout and a highlight on the page" width="1800" height="850" loading="lazy">

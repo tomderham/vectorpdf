@@ -30,7 +30,7 @@ h1 { margin: 0; font-size: 3.1rem; line-height: 1.1; letter-spacing: -0.02em; }
 .note { margin: 14px 0 0; color: var(--muted); font-size: 0.85rem; }
 
 .shot { max-width: 1120px; margin: 0 auto; }
-.shot img { display: block; width: 100%; height: auto; border-radius: 12px;
+.shot img, .shot video { display: block; width: 100%; height: auto; border-radius: 12px;
             box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28); }
 
 main { max-width: 1040px; margin: 0 auto; }
