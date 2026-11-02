@@ -407,6 +407,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeRedactionMatchId: UUID? = nil
 
     var redactionSearchTask: Task<Void, Never>?
+    /// Whether a markup, measurement or redaction toolbar is showing under the title bar.
+    var isDocumentToolbarVisible: Bool { isMarkupBarVisible || isMeasurementBarVisible || isRedactionBarVisible }
     /// The document whose redaction alert has been accepted; it's shown once per open document.
     weak var redactionNoticeDocument: PDFDocumentCore?
 

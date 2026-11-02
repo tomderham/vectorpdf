@@ -89,8 +89,7 @@ final class PDFViewerWindow: NSWindow {
                         return
                     }
                     // A single click on blank title bar lands on TitlebarDragStrip and falls through
-                    // to AppKit, which moves the window. Not performDrag(with:): AppKit never saw
-                    // that move begin ("Window move completed without beginning").
+                    // to AppKit, which moves the window, or to its mouseDown while a toolbar is open.
                 }
             }
         }
@@ -462,7 +461,9 @@ final class TitlebarDragStrip: NSView {
         frameView.addSubview(strip, positioned: .above, relativeTo: content)
     }
 
-    override var mouseDownCanMoveWindow: Bool { true }
+    override var mouseDownCanMoveWindow: Bool {
+        !startsOwnWindowMove(at: window?.mouseLocationOutsideOfEventStream ?? .zero)
+    }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
@@ -478,7 +479,28 @@ final class TitlebarDragStrip: NSView {
         return self
     }
 
-    // AppKit moves the window (mouseDownCanMoveWindow); PDFViewerWindow.sendEvent handles
-    // activation and double-click. Nothing for SwiftUI underneath.
-    override func mouseDown(with event: NSEvent) {}
+    /// AppKit moves the window from here, except above the document area while a toolbar is open
+    /// under the title bar, when it doesn't start a move (the view hit is the same; the reason
+    /// isn't known). performDrag(with:) covers that case only: anywhere else it would be a second
+    /// move competing with AppKit's, and the window falls behind the pointer.
+    private func startsOwnWindowMove(at locationInWindow: NSPoint) -> Bool {
+        guard let window, PDFViewerAppCoordinator.shared.viewModel(for: window)?.isDocumentToolbarVisible == true else {
+            return false
+        }
+        return !isOverSidebar(locationInWindow)
+    }
+
+    private func isOverSidebar(_ locationInWindow: NSPoint) -> Bool {
+        func splitView(in view: NSView) -> NSSplitView? {
+            (view as? NSSplitView) ?? view.subviews.lazy.compactMap(splitView).first
+        }
+        guard let content = window?.contentView, let split = splitView(in: content),
+              let sidebar = split.arrangedSubviews.first, !split.isSubviewCollapsed(sidebar) else { return false }
+        return locationInWindow.x <= sidebar.convert(sidebar.bounds, to: nil).maxX
+    }
+
+    // PDFViewerWindow.sendEvent handles activation and double-click. Nothing for SwiftUI underneath.
+    override func mouseDown(with event: NSEvent) {
+        if startsOwnWindowMove(at: event.locationInWindow) { window?.performDrag(with: event) }
+    }
 }
