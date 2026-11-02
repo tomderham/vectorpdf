@@ -30,7 +30,7 @@ Check your connection, and that the file downloads in the Finder, then try again
 
 ## The Agent is unavailable or shows only passages
 
-The Agent needs macOS 26 or later, and writing answers on-device needs Apple Intelligence to be turned on and ready. If indexing fails, click Retry in the Agent tab. See [Choose how the Agent answers](agent-engines.md).
+The Agent needs macOS 26 or later, and writing answers on-device needs Apple Intelligence to be turned on and ready. If indexing fails, click Retry in the Ask About This Document tab. See [Choose how the Agent answers](agent-engines.md).
 
 ## An online model isn't answering
 

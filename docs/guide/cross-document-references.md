@@ -11,7 +11,7 @@ Standards cite other standards, and contracts refer to their schedules, usually 
 3. Choose one of these:
    - **Go to** the matching heading, to preview it. From the preview you can go there.
    - Hold ⌘ while the menu is open to change the command to **Open**, which goes straight there without a preview.
-   - **Find in Other Tabs**, to search the text of your other tabs.
+   - **Find “reference” in Other Tabs**, where “reference” is the text you clicked, to search the text of your other tabs.
 
 VectorPDF matches references against the other document's outline, or against its headings if it has no outline. If the same heading appears in several tabs, the preview lists each one.
 

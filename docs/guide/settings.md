@@ -6,7 +6,7 @@ Choose VectorPDF > Settings, or press ⌘,.
 
 | Setting | What it does |
 | --- | --- |
-| Use Agent | Shows the [Agent](agent.md) tab in the sidebar, on macOS 26 or later. |
+| Use Agent | Shows the [Ask About This Document](agent.md) tab in the sidebar, on macOS 26 or later. |
 | AI Synthesis Engine | Chooses [what writes the Agent's answers](agent-engines.md), on macOS 27. |
 | PDF Color | Sets [how pages look](pdf-colors.md): Follow System, Light, Dark or Sepia. |
 | Open Links In | Chooses the browser for web links. |

@@ -6,7 +6,7 @@ An anchor is a saved place in a document: a passage of text, an area of a page, 
 
 ## Create an anchor
 
-- Select text, or hold ⌥ and drag to select an area, then press ⌘B.
+- Select text, or hold ⌥ and drag to select an area, then press ⌘B or choose Anchors > Add Anchor.
 - Right-click a selection, link or place on the page, then choose **Create Anchor**.
 - Right-click a [search result](search.md) or an [outline](outline-and-thumbnails.md) entry, then choose **Create Anchor**.
 

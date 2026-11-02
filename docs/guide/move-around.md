@@ -14,7 +14,7 @@ From the keyboard:
 | Up Arrow, Down Arrow | Scroll within a page that's taller than the window, then move to the next page. If the page fits in the window, move a page at a time. |
 | Page Up, Page Down | Scroll a larger step, then move to the next page |
 | Space, ⇧Space | Forward or backward, the same as Page Down and Page Up |
-| ⌥Up Arrow, ⌥Down Arrow | Previous or next page |
+| ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Previous or next page |
 | ⌘Up Arrow, ⌘Down Arrow | First or last page |
 
 In Two-Page Mode, these keys turn a whole spread.

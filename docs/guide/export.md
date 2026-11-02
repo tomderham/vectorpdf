@@ -2,7 +2,7 @@
 
 # Export to other formats
 
-Choose File > Export Document As, then choose a format.
+To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics or Flattened PDF. The annotations summary and measurements have their own commands.
 
 ## Plain text
 

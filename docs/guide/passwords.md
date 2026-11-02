@@ -14,7 +14,7 @@ VectorPDF asks for the password when you open a protected PDF. If you click Canc
 
 The copy is encrypted with AES-256, and needs the password to open.
 
-> **Warning:** Keep the password safe. There's no way to recover an encrypted PDF if you lose it.
+> **Warning:** Keep the password safe. If you lose it, there's no way to recover the encrypted PDF.
 
 ## See a document's permissions
 

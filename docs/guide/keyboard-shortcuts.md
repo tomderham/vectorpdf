@@ -2,7 +2,7 @@
 
 # Keyboard shortcuts
 
-Many of these commands are also on a right-click menu, marked in the tables below. See [Right-click menus](right-click-menus.md).
+Many of these commands are also on a right-click menu, noted below. See [Right-click menus](right-click-menus.md).
 
 ## Documents
 
@@ -43,7 +43,7 @@ Many of these commands are also on a right-click menu, marked in the tables belo
 | --- | --- |
 | Zoom In | ⌘+ |
 | Zoom Out | ⌘− |
-| Actual Size | ⌘1 |
+| Actual Size (100%) | ⌘1 |
 | Zoom to Fit Width | ⌘9 |
 | Zoom to Fit Window | ⌥⌘0 |
 | Two Pages or Single Page | ⌥⌘2 |
@@ -63,7 +63,7 @@ Many of these commands are also on a right-click menu, marked in the tables belo
 | Underline | ⇧⌘U | Selected text |
 | Strikethrough | ⇧⌘X | Selected text |
 | Stop Speaking | ⌥⌘. | Selected text |
-| Add Anchor | ⌘B | Selection, link or page |
+| Add Anchor | ⌘B | Selection, link or page, as Create Anchor |
 
 ## Mouse and trackpad
 

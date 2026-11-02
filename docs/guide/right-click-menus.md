@@ -23,7 +23,7 @@ If you right-click a plain-text reference and related documents are open in othe
 | Right-click | Commands |
 | --- | --- |
 | An outline entry | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| A thumbnail | Rotate, Duplicate, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up or Down, Delete. See [Rearrange pages](pages.md). |
+| A thumbnail | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. With several pages selected, the commands name how many, such as Delete 3 Pages. See [Rearrange pages](pages.md). |
 | A search result | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 
@@ -31,7 +31,7 @@ If you right-click a plain-text reference and related documents are open in othe
 
 | Right-click | Commands |
 | --- | --- |
-| The document's title, or an empty part of the toolbar | Add to or remove from Favorites, Save All Open Tabs as a Group, Update Group with Open Tabs, and your Tab Groups and Favorites |
+| The document's title, or an empty part of the toolbar | Add to or remove from Favorites, Save All Open Tabs as a Group, Update Group “name” with Open Tabs, and your Tab Groups and Favorites |
 | A row on the Start screen | Open, Open in New Tab, Open in New Window, Show in Finder, and Remove or Delete |
 
 Some commands appear only when they apply. For example, Save All Open Tabs as a Group needs more than one tab, and anchor commands aren't available in a window opened from an anchor.
