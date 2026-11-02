@@ -37,34 +37,63 @@
   <p>Technical documents send you elsewhere constantly: “see Equation 3”, “as shown in Figure 2”, “[14]”. With Link Peek, hold <kbd>⌘</kbd> over a link and its target appears beside the pointer. Let go and it's gone.</p>
   <p>The preview fits what you're looking at: a few lines for an equation, the opening paragraph for a section, the top of a table or figure.</p>
 </section>
+<figure class="figure">
+  <img src="images/link-peek.png" alt="Holding Command over a link to Equation 4.5 in FIPS 197 previews the equation over the page" width="1800" height="1129" loading="lazy">
+</figure>
 
 <section class="feature">
   <h2>References that cross documents</h2>
-  <p>Standards cite other standards, and contracts refer to their schedules, usually in plain text with no link at all. Open the related documents as tabs, then right-click “Section 8.8.3 of [HTTP]” or “Clause 4.2 of the Master Agreement” to preview that section in the other tab and jump to it.</p>
+  <p>Standards cite other standards, and contracts refer to their schedules, usually in plain text with no link at all. Open the related documents as tabs, then right-click “Section 8.8.3 of [HTTP]” or “Clause 4.2 of the Master Agreement”. VectorPDF finds that section in the other tab, shows it to you, and takes you there.</p>
+  <p>Web links work too: if a link points to a document you have open, such as one RFC citing another, it previews there instead of opening your browser.</p>
+</section>
+<figure class="figure">
+  <img src="images/cross-document.png" alt="A reference in RFC 9111 to Section 5.6.7 of HTTP previews that section from RFC 9110, open in the next tab" width="1800" height="1070" loading="lazy">
+</figure>
+
+<section class="split" id="search">
+  <div>
+  <h2>Search that finds what's really there</h2>
+  <p>PDF text is messy. Phrases break across lines, hyphens and dashes vary, and quotes come in several styles. Smart Search treats all of these as the same, so “end-to-end” also finds “end to end”, even across a line break. Results stream into the sidebar as they're found, starting from where you're reading.</p>
+  <p>Some documents go further and scatter markers through their sentences, so the phrase you want isn't literally on the page: citation numbers like [12], trademark symbols, star paging in court opinions, or comment tags like (#1234) in standards drafts. Tell VectorPDF what to ignore, with a ready-made pattern or your own regular expression, and search reads straight past them while still highlighting the right words on the page.</p>
+  <p>Scanned pages are covered too, with on-device OCR. When a result matters, right-click it to keep it as an anchor.</p>
+  </div>
+  <img src="images/search.png" alt="The Search tab listing 232 results for MSCS, grouped by page, with the current match highlighted in the document" width="858" height="1200" loading="lazy">
 </section>
 
+<section class="split" id="anchors">
+  <div>
+  <h2>Anchors: your working set, across every document</h2>
+  <p>Reading a specification means holding several places in your head. Anchors hold them for you. Save a passage, an area of a page, a link's target, a search result or an outline entry, and it becomes a card with a preview in the sidebar. Click it to jump straight back.</p>
+  <p>Choose <strong>All Tabs</strong> and you see the anchors from every document in the window together, grouped by document. Click one and VectorPDF switches to that tab and takes you to the place, so you can move between a standard, the draft that amends it and the contract that cites them without losing your thread.</p>
+  </div>
+  <img src="images/anchors.png" alt="The Anchors tab set to All Tabs, listing anchors grouped by document with their pages and previews" width="648" height="1200" loading="lazy">
+</section>
+
+<section class="feature">
+  <p>Need a figure or definition in view while you read? Open any anchor in a window of its own. Those windows close along with the document they came from, so there's nothing left to tidy up.</p>
+</section>
+<figure class="figure">
+  <img src="images/anchor-windows.png" alt="Two small anchor windows beside a document window, each showing a saved place in RFC 9110" width="1800" height="1057" loading="lazy">
+</figure>
+
+<section class="feature">
+  <h2>Mark up, sign and fill in</h2>
+  <p>Highlight, underline, draw, and add text boxes, callouts and stamps. Fill in PDF forms and add a visual signature. Markups are standard PDF annotations, so they appear in other PDF apps too.</p>
+</section>
+<figure class="figure">
+  <img src="images/markup.png" alt="The Markup toolbar over RFC 9110, with a freehand circle, a callout and a highlight on the page" width="1800" height="850" loading="lazy">
+</figure>
+
 <section class="grid">
-  <h2>Everything else you need from a PDF app</h2>
+  <h2>And the rest of what you need from a PDF app</h2>
   <div class="cards">
     <article>
       <h3>Reads the way you do</h3>
       <p>Selections stay in one column and skip margin line numbers. Open very long documents without waiting, and carry on where you left off.</p>
     </article>
     <article>
-      <h3>Search that understands PDFs</h3>
-      <p>Phrases are found across line breaks, hyphens and dashes. Ignore clutter such as citation numbers or comment tags, and search scanned pages with on-device OCR.</p>
-    </article>
-    <article>
-      <h3>Anchors</h3>
-      <p>Save a passage, an area of a page or a link's target, and jump back in a click. Keep a figure open in its own window while you read.</p>
-    </article>
-    <article>
       <h3>Tabs and Tab Groups</h3>
       <p>Keep related documents together, save them as a named group, and reopen the whole set in one step.</p>
-    </article>
-    <article>
-      <h3>Markup and forms</h3>
-      <p>Highlight, underline, draw, and add text boxes, callouts and stamps. Fill in PDF forms and add a visual signature.</p>
     </article>
     <article>
       <h3>Measure drawings</h3>
@@ -101,7 +130,7 @@
     <a class="button" href="https://github.com/tomderham/vectorpdf/releases/latest">Download for Mac</a>
   </p>
   <p><a href="https://github.com/tomderham/vectorpdf/blob/main/docs/guide/README.md">User Guide</a> · <a href="https://github.com/tomderham/vectorpdf/blob/main/PRIVACY.md">Privacy</a> · <a href="https://github.com/tomderham/vectorpdf/issues">Report a bug</a> · <a href="https://github.com/tomderham/vectorpdf/blob/main/LICENSE">License</a></p>
-  <p class="note">PDF rendering by MuPDF, © Artifex Software, Inc. The document shown is RFC 9110, © IETF Trust.</p>
+  <p class="note">PDF rendering by MuPDF, © Artifex Software, Inc. Documents shown are FIPS 197 (NIST), RFC 9110 and RFC 9111 (© IETF Trust), and IEEE 802.11 drafts.</p>
 </footer>
 </body>
 </html>

@@ -40,6 +40,15 @@ h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .feature, .privacy, .native { max-width: 680px; margin: 0 auto; }
 .feature p, .privacy p, .native p { margin: 0 0 12px; }
 
+.figure { max-width: 1040px; margin: 28px auto 0; }
+.figure img { display: block; width: 100%; height: auto; border-radius: 12px;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22); }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 44px; align-items: center; }
+.split p { margin: 0 0 12px; }
+.split img { display: block; width: 100%; height: auto; border-radius: 12px;
+             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22); }
+
 .grid h2 { text-align: center; margin-bottom: 28px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .cards article { padding: 20px; border-radius: 14px; background: var(--panel); }
@@ -47,6 +56,11 @@ h3 { margin: 0 0 6px; font-size: 1.05rem; }
 
 footer { max-width: 760px; margin: 0 auto; padding: 72px 0 48px; text-align: center; font-size: 0.95rem; }
 footer p { margin: 14px 0 0; }
+
+@media (max-width: 820px) {
+    .split { display: block; max-width: 680px; margin: 0 auto; }
+    .split img { max-width: 340px; margin: 24px auto 0; }
+}
 
 @media (max-width: 600px) {
     body { font-size: 17px; }
