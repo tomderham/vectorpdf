@@ -1,3 +1,5 @@
+<!-- keywords: window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
+
 # The VectorPDF window
 
 Each VectorPDF window has a toolbar, a sidebar and the document itself. Windows can hold several documents as [tabs](tabs-and-windows.md).

@@ -1,3 +1,5 @@
+<!-- keywords: properties, document info, metadata, author, title, security, permissions, fonts, page size, MediaBox, CropBox, PDF -->
+
 # Document properties
 
 Choose File > Document Properties, or press ⌘I. Choose a tab at the top:

@@ -1,3 +1,5 @@
+<!-- keywords: takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
+
 # Takeoff table
 
 The takeoff table is a schedule of every measurement in a document, with its page, type, value and scale, and totals for length and area.

@@ -1,3 +1,5 @@
+<!-- keywords: OCR, scan, scanned, scans, text recognition, recognize text, image, Run OCR -->
+
 # Search scanned pages with OCR
 
 A scanned page is a picture of text. VectorPDF can recognize the text using optical character recognition (OCR), on your Mac, so you can search it.

@@ -4,13 +4,20 @@
 Uses only the Python standard library, plus Xcode's hiutil for the search indexes.
 The converter supports just the Markdown the guide uses: headings, paragraphs, bold,
 italics, inline code, links, images, bullet and numbered lists (nested by two spaces),
-tables, fenced code blocks and blockquotes.
+tables, fenced code blocks and blockquotes. A page can start with a <!-- keywords: ... --> comment,
+and a heading can fix its link target with a trailing {#id}.
+
+Each folder in docs/guide with a strings.json is a translation, built into its own .lproj. A
+translated page starts with <!-- source: hash -->, the hash of the English page it was made from
+(see source_hash). A page that's missing, or whose English page has since changed, is built from
+the English page instead, so nobody follows outdated steps.
 
 Tips only draws its own sidebar for Apple's online books, so the book draws one in the page and
 connects it to the sidebar button in Tips' toolbar.
 """
 
 import argparse
+import hashlib
 import html
 import json
 import plistlib
@@ -19,15 +26,23 @@ import shutil
 import subprocess
 from pathlib import Path
 
-BOOK_TITLE = "VectorPDF User Guide"
 ICON = "icon_256x256.png"
+ENGLISH_STRINGS = {
+    "book_title": "VectorPDF User Guide",
+    "welcome": "Welcome",
+    "search": "Search this guide",
+    "no_results": "No results in this guide",
+    "page_title": "{title} in VectorPDF",
+}
 
 PAGE_TEMPLATE = """<!doctype html>
-<html lang="en">
+<html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-{apple_title}<title>{title}</title>
+{apple_title}<meta name="description" content="{description}">
+<meta name="keywords" content="{keywords}">
+<title>{title}</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body{body_class}>
@@ -37,6 +52,7 @@ PAGE_TEMPLATE = """<!doctype html>
 {body}
 </main>
 </section>
+<script src="search.js"></script>
 <script src="toc.js"></script>
 </body>
 </html>
@@ -52,11 +68,12 @@ STYLESHEET = """:root {
     --note: rgba(127, 127, 127, 0.11);
     --warning: rgba(255, 159, 10, 0.16);
     --text: #1d1d1f;
+    --field: rgba(255, 255, 255, 0.75);
 }
 @media (prefers-color-scheme: dark) {
     :root {
         --sidebar: #2b2b2d; --selected: rgba(255, 255, 255, 0.14); --hover: rgba(255, 255, 255, 0.06);
-        --link: #4da3ff; --text: #f5f5f7;
+        --link: #4da3ff; --text: #f5f5f7; --field: rgba(255, 255, 255, 0.08);
     }
 }
 html, body { height: 100%; margin: 0; }
@@ -80,6 +97,13 @@ body.toc-hidden #toc { display: none; }
                        border-top: 1.5px solid; border-right: 1.5px solid; opacity: 0.6;
                        transform: rotate(45deg); transition: transform 0.12s; }
 #toc details[open] > summary::before { transform: translateY(-1px) rotate(135deg); }
+#guide-search { display: block; box-sizing: border-box; width: 100%; margin-bottom: 8px; padding: 5px 10px;
+                border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: inherit;
+                font: inherit; outline: none; -webkit-appearance: none; appearance: none; }
+#guide-search:focus { border-color: var(--link); }
+#guide-results a { padding-left: 10px; }
+#guide-results .none { padding: 7px 10px; opacity: 0.6; }
+[hidden] { display: none !important; }
 @media (max-width: 640px) { #toc { display: none; } }
 
 section { flex: 1; min-width: 0; height: 100%; overflow-y: auto; box-sizing: border-box; padding: 28px 48px 64px; }
@@ -106,8 +130,13 @@ blockquote.warning { background: var(--warning); }
 
 # Fills in the sidebar. It's a script so that the sidebar's text isn't indexed on every page,
 # which would make every page match a search for any page's title. Each page is a full load, so
-# the sidebar's state is kept in session storage.
-TOC_SCRIPT = """document.getElementById("toc").innerHTML = {toc};
+# the sidebar's state is kept in session storage. Tips mixes every app's help in its own search, and
+# common words can miss this guide altogether, so the sidebar has a search of its own.
+TOC_SCRIPT = """document.getElementById("toc").innerHTML =
+    '<input id="guide-search" type="search">' +
+    '<ul id="guide-results" hidden></ul><div id="guide-contents">' + {toc} + '</div>';
+document.getElementById("guide-search").placeholder = {search};
+document.getElementById("guide-search").setAttribute("aria-label", {search});
 var page = location.pathname.split("/").pop();
 document.querySelectorAll("#toc a").forEach(function (a) {{
     if (a.getAttribute("href") !== page) return;
@@ -134,6 +163,57 @@ document.querySelectorAll("#toc details").forEach(function (group) {{
         store("openGroups", JSON.stringify(names));
     }});
 }});
+
+function searchGuide(query) {{
+    var terms = query.toLowerCase().split(/\\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return guidePages.map(function (p) {{
+        var title = p.title.toLowerCase(), keywords = p.keywords.toLowerCase(), text = p.text.toLowerCase();
+        var score = 0;
+        for (var i = 0; i < terms.length; i++) {{
+            var t = terms[i];
+            var s = (title.indexOf(t) >= 0 ? 4 : 0) + (keywords.indexOf(t) >= 0 ? 2 : 0) + (text.indexOf(t) >= 0 ? 1 : 0);
+            if (!s) return null;
+            score += s;
+        }}
+        return {{ page: p, score: score }};
+    }}).filter(Boolean).sort(function (a, b) {{ return b.score - a.score; }}).map(function (r) {{ return r.page; }});
+}}
+
+var searchField = document.getElementById("guide-search");
+var results = document.getElementById("guide-results");
+function showResults() {{
+    var query = searchField.value.trim();
+    store("guideSearch", searchField.value);
+    results.hidden = !query;
+    document.getElementById("guide-contents").hidden = !!query;
+    results.textContent = "";
+    if (!query) return;
+    var found = searchGuide(query);
+    found.forEach(function (p) {{
+        var link = document.createElement("a");
+        link.href = p.href;
+        link.textContent = p.title;
+        if (p.href === page) link.className = "current";
+        var item = document.createElement("li");
+        item.appendChild(link);
+        results.appendChild(item);
+    }});
+    if (!found.length) {{
+        var none = document.createElement("li");
+        none.className = "none";
+        none.textContent = {no_results};
+        results.appendChild(none);
+    }}
+}}
+searchField.addEventListener("input", showResults);
+searchField.addEventListener("keydown", function (event) {{
+    if (event.key !== "Escape") return;
+    searchField.value = "";
+    showResults();
+}});
+searchField.value = load("guideSearch") || "";
+showResults();
 
 var toc = document.getElementById("toc");
 toc.scrollTop = Number(load("tocScroll")) || 0;
@@ -182,6 +262,14 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", re.sub(r"[*`]", "", text).lower()).strip("-")
 
 
+HEADING_ID = r" *\{#([a-z0-9-]+)\}$"
+
+
+def heading_id(text):
+    match = re.search(HEADING_ID, text)
+    return match.group(1) if match else slug(text)
+
+
 def parse_list(lines, start, indent):
     pattern = re.compile(r"^( *)([-*]|\d+\.) +(.*)$")
     tag = "ol" if pattern.match(lines[start]).group(2)[0].isdigit() else "ul"
@@ -227,8 +315,8 @@ def convert(markdown):
             i = end + 1
         elif (heading := re.match(r"^(#{1,3}) +(.*)$", line)):
             level = len(heading.group(1))
-            text = heading.group(2)
-            output.append(f'<h{level} id="{slug(text)}">{inline(text)}</h{level}>')
+            text = re.sub(HEADING_ID, "", heading.group(2))
+            output.append(f'<h{level} id="{heading_id(heading.group(2))}">{inline(text)}</h{level}>')
             i += 1
         elif re.match(r"^ *([-*]|\d+\.) +", line):
             block, i = parse_list(lines, i, 0)
@@ -267,12 +355,12 @@ def convert(markdown):
     return "\n".join(output)
 
 
-def toc_html(guide_dir):
+def toc_html(index_markdown, strings):
     """The index page's headings and links are the sidebar's groups and pages."""
-    output = ['<ul><li><a href="index.html">Welcome</a></li>']
+    output = [f'<ul><li><a href="index.html">{html.escape(strings["welcome"])}</a></li>']
     in_group = False
 
-    for line in (guide_dir / "README.md").read_text(encoding="utf-8").splitlines():
+    for line in index_markdown.splitlines():
         if line.startswith("## "):
             if in_group:
                 output.append("</ul></details></li>")
@@ -289,6 +377,35 @@ def page_title(markdown, fallback):
     return match.group(1) if match else fallback
 
 
+def split_comments(markdown):
+    """A page's keywords and source hash are in comments at its top, which stay hidden on GitHub."""
+    found = {"keywords": "", "source": ""}
+
+    while (match := re.match(r"<!-- (keywords|source): (.*?) -->\n+", markdown)):
+        found[match.group(1)] = match.group(2)
+        markdown = markdown[match.end():]
+
+    return found, markdown
+
+
+def source_hash(markdown):
+    return hashlib.sha256(split_comments(markdown)[1].encode("utf-8")).hexdigest()[:12]
+
+
+def description(markdown):
+    """The page's first paragraph, which Tips shows under the title in search results."""
+    for line in markdown.splitlines():
+        if line.strip() and not re.match(r"^(#|\||>|```|-|\*|\d+\.)", line):
+            text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)
+            return re.sub(r"[*`]", "", text)
+    return ""
+
+
+def search_title(title, strings):
+    """Search lists every app's help together, so titles name the app, as Apple's do."""
+    return title if "VectorPDF" in title else strings["page_title"].format(title=title)
+
+
 def landing(markdown):
     """The index page's title and first paragraph form a hero beside the app icon."""
     title, tagline, rest = markdown.split("\n\n", 2)
@@ -296,11 +413,10 @@ def landing(markdown):
             f'<img src="{ICON}" alt=""></div>\n{convert(rest)}')
 
 
-def check_links(guide_dir):
+def check_links(pages, name_of_guide):
     """Fails the build on a link to a page or heading that doesn't exist, or a page not in the sidebar."""
     problems = []
-    pages = {path.name: path.read_text(encoding="utf-8") for path in guide_dir.glob("*.md")}
-    anchors = {name: {slug(h) for h in re.findall(r"^#{1,3} +(.*)$", text, re.MULTILINE)} for name, text in pages.items()}
+    anchors = {name: {heading_id(h) for h in re.findall(r"^#{1,3} +(.*)$", text, re.MULTILINE)} for name, text in pages.items()}
 
     for name, text in pages.items():
         for target in re.findall(r"\]\(([^)\s]+)\)", text):
@@ -320,24 +436,123 @@ def check_links(guide_dir):
             problems.append(f"{name}: not listed in README.md")
 
     if problems:
-        raise SystemExit("error: problems in the guide:\n  " + "\n  ".join(problems))
+        raise SystemExit(f"error: problems in the {name_of_guide} guide:\n  " + "\n  ".join(problems))
+
+
+# Bold in English, but telling the reader what to do rather than naming something on screen.
+INSTRUCTIONS = {"Double-click", "Drag", "Force Click", "Triple-click"}
+
+
+def protected_terms(markdown):
+    """What a translation must keep as it is, so readers can find it in the English app: shortcuts,
+    menu paths, and bold labels in title case, such as **Create Anchor and Open in New Window**."""
+    word = r"[A-Z][A-Za-z0-9&-]*"
+    name = rf"{word}(?: {word})*"
+    small = r"(?:a|an|and|as|at|by|for|from|in|of|on|or|the|to|with)"
+    terms = set(re.findall(r"[⌃⌥⇧⌘]+(?:[A-Za-z0-9,.+−?]|\[|\])", markdown))
+    terms |= {re.sub(r"^(Choose|Click|Open) ", "", path) for path in re.findall(rf"{name}(?: > {name})+", markdown)}
+    terms |= set(re.findall(rf"\*\*({word}(?: (?:{word}|{small}))*)\*\*", markdown)) - INSTRUCTIONS
+    return terms
+
+
+def check_translation(path, translated, english):
+    missing = sorted(term for term in protected_terms(english) if term not in translated)
+
+    if missing:
+        raise SystemExit(f"error: {path} changed or dropped: " + ", ".join(missing))
+
+
+def language_pages(guide_dir, translation_dir):
+    """The English pages, replaced by each translated page that's still up to date."""
+    pages = {path.name: path.read_text(encoding="utf-8") for path in guide_dir.glob("*.md")}
+
+    if translation_dir is None:
+        return pages
+
+    for path in translation_dir.glob("*.md"):
+        translated = path.read_text(encoding="utf-8")
+
+        if path.name not in pages:
+            raise SystemExit(f"error: {path} has no English page")
+        if split_comments(translated)[0]["source"] == source_hash(pages[path.name]):
+            check_translation(path, translated, pages[path.name])
+            pages[path.name] = translated
+        else:
+            print(f"warning: {path} is out of date, using the English page")
+
+    return pages
+
+
+def build_language(guide_dir, translation_dir, pages_dir, icon):
+    language = translation_dir.name if translation_dir else "en"
+    strings = dict(ENGLISH_STRINGS)
+
+    if translation_dir:
+        strings.update(json.loads((translation_dir / "strings.json").read_text(encoding="utf-8")))
+
+    pages = language_pages(guide_dir, translation_dir)
+    check_links(pages, language)
+    pages_dir.mkdir(parents=True)
+
+    if translation_dir:
+        with open(pages_dir / "InfoPlist.strings", "wb") as info:
+            plistlib.dump({"HPDBookTitle": strings["book_title"]}, info)
+
+    index_markdown = split_comments(pages["README.md"])[1]
+    (pages_dir / "style.css").write_text(STYLESHEET, encoding="utf-8")
+    (pages_dir / "toc.js").write_text(TOC_SCRIPT.format(
+        toc=json.dumps(toc_html(index_markdown, strings), ensure_ascii=False),
+        search=json.dumps(strings["search"], ensure_ascii=False),
+        no_results=json.dumps(strings["no_results"], ensure_ascii=False)), encoding="utf-8")
+    shutil.copy(icon, pages_dir / ICON)
+
+    search_pages = []
+
+    for name, source in sorted(pages.items()):
+        comments, markdown = split_comments(source)
+        title = page_title(markdown, Path(name).stem)
+        is_index = name == "README.md"
+        target = pages_dir / ("index.html" if is_index else Path(name).with_suffix(".html").name)
+
+        if not is_index:
+            text = html.unescape(re.sub(r"<[^>]+>", " ", convert(markdown)))
+            search_pages.append({"href": target.name, "title": title, "keywords": comments["keywords"], "text": " ".join(text.split())})
+
+        target.write_text(PAGE_TEMPLATE.format(
+            lang=language,
+            # The help viewer uses this tag to find the book's title page
+            apple_title=f'<meta name="AppleTitle" content="{html.escape(strings["book_title"])}">\n' if is_index else "",
+            description=html.escape(description(markdown)),
+            keywords=html.escape(comments["keywords"]),
+            title=html.escape(search_title(title, strings)),
+            body_class=' class="landing"' if is_index else "",
+            body=landing(markdown) if is_index else convert(markdown)), encoding="utf-8")
+
+    (pages_dir / "search.js").write_text(f"var guidePages = {json.dumps(search_pages, ensure_ascii=False)};\n", encoding="utf-8")
+
+    images = guide_dir / "images"
+
+    if images.is_dir():
+        shutil.copytree(images, pages_dir / "images")
+
+    # Spotlight-format index (required since macOS 10.14), plus the older format
+    locale = ["-l", language]
+    subprocess.run(["hiutil", "-I", "corespotlight", "-Caf", str(pages_dir / "VectorPDF.cshelpindex"), *locale, str(pages_dir)], check=True)
+    subprocess.run(["hiutil", "-I", "lsm", "-Caf", str(pages_dir / "VectorPDF.helpindex"), *locale, str(pages_dir)], check=True)
 
 
 def build_book(guide_dir, resources_dir, version, bundle_id, icon):
-    check_links(guide_dir)
-
     book = resources_dir / "VectorPDF.help"
     shutil.rmtree(book, ignore_errors=True)
 
-    pages_dir = book / "Contents" / "Resources" / "en.lproj"
-    pages_dir.mkdir(parents=True)
+    (book / "Contents" / "Resources").mkdir(parents=True)
 
     with open(book / "Contents" / "Info.plist", "wb") as info:
         plistlib.dump({
             "CFBundleDevelopmentRegion": "en",
             "CFBundleIdentifier": bundle_id,
             "CFBundleInfoDictionaryVersion": "6.0",
-            "CFBundleName": BOOK_TITLE,
+            "CFBundleName": ENGLISH_STRINGS["book_title"],
             "CFBundlePackageType": "BNDL",
             "CFBundleShortVersionString": version,
             "CFBundleSignature": "hbwr",
@@ -346,35 +561,16 @@ def build_book(guide_dir, resources_dir, version, bundle_id, icon):
             "HPDBookCSIndexPath": "VectorPDF.cshelpindex",
             "HPDBookIconPath": ICON,
             "HPDBookIndexPath": "VectorPDF.helpindex",
-            "HPDBookTitle": BOOK_TITLE,
+            "HPDBookTitle": ENGLISH_STRINGS["book_title"],
             "HPDBookType": "3",
         }, info)
 
-    (pages_dir / "style.css").write_text(STYLESHEET, encoding="utf-8")
-    (pages_dir / "toc.js").write_text(TOC_SCRIPT.format(toc=json.dumps(toc_html(guide_dir))), encoding="utf-8")
-    shutil.copy(icon, pages_dir / ICON)
+    resources = book / "Contents" / "Resources"
+    build_language(guide_dir, None, resources / "en.lproj", icon)
 
-    for source in sorted(guide_dir.glob("*.md")):
-        markdown = source.read_text(encoding="utf-8")
-        title = page_title(markdown, source.stem)
-        is_index = source.name == "README.md"
-        target = pages_dir / ("index.html" if is_index else source.with_suffix(".html").name)
-
-        target.write_text(PAGE_TEMPLATE.format(
-            # The help viewer uses this tag to find the book's title page
-            apple_title=f'<meta name="AppleTitle" content="{BOOK_TITLE}">\n' if is_index else "",
-            title=html.escape(title),
-            body_class=' class="landing"' if is_index else "",
-            body=landing(markdown) if is_index else convert(markdown)), encoding="utf-8")
-
-    images = guide_dir / "images"
-
-    if images.is_dir():
-        shutil.copytree(images, pages_dir / "images")
-
-    # Spotlight-format index (required since macOS 10.14), plus the older format
-    subprocess.run(["hiutil", "-I", "corespotlight", "-Caf", str(pages_dir / "VectorPDF.cshelpindex"), str(pages_dir)], check=True)
-    subprocess.run(["hiutil", "-I", "lsm", "-Caf", str(pages_dir / "VectorPDF.helpindex"), str(pages_dir)], check=True)
+    for strings_file in sorted(guide_dir.glob("*/strings.json")):
+        translation_dir = strings_file.parent
+        build_language(guide_dir, translation_dir, resources / f"{translation_dir.name}.lproj", icon)
 
 
 def main():

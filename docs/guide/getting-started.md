@@ -1,3 +1,5 @@
+<!-- keywords: start, begin, first steps, new, install, requirements, PDF, overview -->
+
 # Get started with VectorPDF
 
 VectorPDF needs macOS 15 or later on a Mac with Apple silicon. Drag it to your Applications folder to install it.
@@ -24,4 +26,4 @@ You can also open a PDF from the Finder with [Open With](open-documents.md), or 
 
 The menu bar, sidebar and toolbars cover most features, and right-clicking gives you the commands that fit what's under the pointer. See [The VectorPDF window](the-window.md) for a tour, [Right-click menus](right-click-menus.md) for what's in each menu, and [Keyboard shortcuts](keyboard-shortcuts.md) for the full list.
 
-To search this guide, use the search field at the top of this window.
+To search this guide, use the Search this guide field at the top of the sidebar. The search field at the top of this window searches the help for all your apps.

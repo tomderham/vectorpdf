@@ -1,3 +1,5 @@
+<!-- keywords: anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
+
 # Anchors
 
 An anchor is a saved place in a document: a passage of text, an area of a page, or a target of a link. Anchors are kept separately from the PDF, and don't change it.

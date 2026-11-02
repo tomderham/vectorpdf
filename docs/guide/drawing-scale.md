@@ -1,3 +1,5 @@
+<!-- keywords: scale, calibrate, calibration, drawing, architectural, metric, engineering, ratio -->
+
 # Set a drawing scale
 
 To get real-world measurements from a drawing, VectorPDF needs to know its scale. Press ⇧⌘M to show the Measurement toolbar, then click the scale button to open Drawing Scale Calibration.

@@ -1,3 +1,5 @@
+<!-- keywords: outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar -->
+
 # Outline and thumbnails
 
 Click the Outline & Thumbnails tab at the top of the sidebar, then choose **Outline** or **Thumbnails**.

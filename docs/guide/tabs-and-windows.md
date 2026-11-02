@@ -1,3 +1,5 @@
+<!-- keywords: tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
+
 # Tabs and windows
 
 ## Tabs

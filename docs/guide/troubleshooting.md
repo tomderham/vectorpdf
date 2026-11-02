@@ -1,3 +1,5 @@
+<!-- keywords: troubleshooting, problem, problems, not working, help, fix, support -->
+
 # Troubleshooting
 
 ## I can't select text, follow links or use markup tools

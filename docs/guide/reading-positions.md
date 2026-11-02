@@ -1,3 +1,5 @@
+<!-- keywords: reading position, resume, last page, sync, iCloud, Handoff, continue, other Mac -->
+
 # Reading positions, iCloud and Handoff
 
 ## Pick up where you left off

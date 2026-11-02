@@ -1,3 +1,5 @@
+<!-- keywords: reference, references, cross-reference, other document, other tab, section, clause, standard, specification, contract, RFC -->
+
 # References across documents
 
 Standards cite other standards, and contracts refer to their schedules, usually in plain text rather than with links. If you open the related documents as tabs in one window, VectorPDF can follow those references.

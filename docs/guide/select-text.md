@@ -1,3 +1,5 @@
+<!-- keywords: select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
+
 # Select, copy and look up text
 
 ## Select text

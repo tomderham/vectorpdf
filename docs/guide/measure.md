@@ -1,3 +1,5 @@
+<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
+
 # Measure lengths, areas and angles
 
 Press ⇧⌘M to show the Measurement toolbar. If your drawing is to scale, [set the scale](drawing-scale.md) first.

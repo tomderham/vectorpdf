@@ -1,3 +1,5 @@
+<!-- keywords: navigate, navigation, scroll, page, pages, go to page, back, forward, arrow keys, jump -->
+
 # Move around a document
 
 ## Scroll and turn pages

@@ -1,3 +1,5 @@
+<!-- keywords: page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
+
 # Rearrange pages
 
 Page changes are made in the [Thumbnails](outline-and-thumbnails.md) view of the sidebar. They become part of the file when you [save](save.md).

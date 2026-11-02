@@ -1,3 +1,5 @@
+<!-- keywords: redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
+
 # Redact sensitive content
 
 Redaction permanently removes content from a PDF. VectorPDF deletes the text, image pixels and line art under the redacted area from the file, along with any annotations and form fields that touch it. It doesn't just cover them with a box, and earlier revisions aren't kept when you save.

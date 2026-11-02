@@ -1,3 +1,5 @@
+<!-- keywords: zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
+
 # Zoom, rotate and page layout
 
 ## Zoom

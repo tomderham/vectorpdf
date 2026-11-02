@@ -1,3 +1,5 @@
+<!-- keywords: privacy, data, network, telemetry, analytics, iCloud, security -->
+
 # Privacy
 
 VectorPDF has no accounts, analytics, telemetry or crash reporting. Your documents are processed on your Mac, and nothing from them is sent to the developer.

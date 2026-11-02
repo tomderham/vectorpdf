@@ -1,3 +1,5 @@
+<!-- keywords: split, divide, separate, extract, pages, PDF -->
+
 # Split a PDF
 
 1. Choose File > Split PDF.

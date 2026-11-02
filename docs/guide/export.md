@@ -1,3 +1,5 @@
+<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
+
 # Export to other formats
 
 Choose File > Export Document As, then choose a format.

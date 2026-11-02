@@ -1,3 +1,5 @@
+<!-- keywords: draw, drawing, ink, pen, freehand, text box, callout, callouts, note, notes, comment, comments, annotate, annotation, annotations, eraser, PDF -->
+
 # Draw, add text and callouts
 
 Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To finish with a tool, press Escape or choose Text Selection Mode, the first tool in the toolbar.

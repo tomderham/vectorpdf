@@ -1,3 +1,5 @@
+<!-- keywords: favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
+
 # Favorites and Tab Groups
 
 ## Favorites

@@ -1,3 +1,5 @@
+<!-- keywords: settings, preferences, options, updates, update, check for updates, browser -->
+
 # Settings
 
 Choose VectorPDF > Settings, or press ⌘,.

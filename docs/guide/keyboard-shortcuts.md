@@ -1,3 +1,5 @@
+<!-- keywords: keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
+
 # Keyboard shortcuts
 
 Many of these commands are also on a right-click menu, marked in the tables below. See [Right-click menus](right-click-menus.md).

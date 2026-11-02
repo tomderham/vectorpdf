@@ -1,3 +1,5 @@
+<!-- keywords: right-click, right click, Control-click, context menu, context menus, shortcut menu -->
+
 # Right-click menus
 
 Right-click, or Control-click, to see commands for what's under the pointer. The menu you get depends on where you click.

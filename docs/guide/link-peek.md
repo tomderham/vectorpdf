@@ -1,3 +1,5 @@
+<!-- keywords: link, links, peek, preview, hover, Force Click, reference, references, citation, equation, figure, table, new window, hyperlink -->
+
 # Preview links with Link Peek
 
 Technical documents are full of references: “see Equation 3”, “as shown in Figure 2”, “[14]”. Link Peek shows you the target where you are, so you don't lose your place.

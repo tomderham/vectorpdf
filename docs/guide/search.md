@@ -1,3 +1,5 @@
+<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
+
 # Search a document
 
 ## Find text

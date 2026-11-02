@@ -1,3 +1,5 @@
+<!-- keywords: print, printing, printer, scale to fit, auto rotate, PDF -->
+
 # Print
 
 Choose File > Print, or press ⌘P.

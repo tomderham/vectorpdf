@@ -1,3 +1,5 @@
+<!-- keywords: stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
+
 # Stamps and signatures
 
 A stamp is an image, such as your signature or initials, that you can place on any page.

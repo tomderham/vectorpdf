@@ -1,3 +1,5 @@
+<!-- keywords: form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
+
 # Fill in forms
 
 VectorPDF works with interactive PDF forms (AcroForms). Fields appear on the page, ready to use.

@@ -1,3 +1,5 @@
+<!-- keywords: open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
+
 # Open documents
 
 ## Open a PDF

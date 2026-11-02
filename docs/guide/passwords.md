@@ -1,3 +1,5 @@
+<!-- keywords: password, passwords, encrypt, encrypted, encryption, AES, protect, protected, security, permissions, lock, PDF -->
+
 # Passwords and encryption
 
 ## Open a protected PDF

@@ -1,3 +1,5 @@
+<!-- keywords: Agent, AI, engine, on-device, Private Cloud Compute, online model, API key, OpenAI, Gemini, OpenRouter -->
+
 # Choose how the Agent answers
 
 The search for relevant passages always happens on your Mac. You can choose what writes the answer in VectorPDF > Settings > AI Synthesis Engine. This setting needs macOS 27.

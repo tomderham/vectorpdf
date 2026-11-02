@@ -1,3 +1,5 @@
+<!-- keywords: color, colors, dark, dark mode, sepia, light, theme, themes, night, appearance, invert -->
+
 # Change PDF colors
 
 VectorPDF can change how a document's pages look, whatever the appearance of macOS. This is useful for reading in a dark room. It doesn't change the PDF.

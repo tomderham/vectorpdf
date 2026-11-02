@@ -1,3 +1,5 @@
+<!-- keywords: Agent, AI, ask, question, questions, Apple Intelligence, answers, sources, summarize, chat -->
+
 # Ask about a document
 
 The Agent answers questions about the open document, and shows you the passages its answer comes from. It needs macOS 26 or later.

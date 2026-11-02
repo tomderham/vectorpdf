@@ -1,3 +1,5 @@
+<!-- keywords: highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
+
 # Highlight, underline and strike through
 
 ## Mark up selected text
