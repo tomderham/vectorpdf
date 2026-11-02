@@ -1634,6 +1634,112 @@ static void delete_annots_touching_rects(fz_context *ctx, pdf_page *page, const 
     } while (deleted);
 }
 
+// pdf_redact_page only touches the page. The text it removes can also be anywhere in the document's
+// own data, and there's no way to match it there: a region can cover a scan, so the text isn't
+// known, and the metadata can spell a name differently. So all of it goes. Bookmarks are the
+// exception, since a reader navigates by them: mupdf_pdf_rename_outline_items edits their titles.
+static void strip_object_data(fz_context *ctx, pdf_obj *obj) {
+    if (!pdf_is_dict(ctx, obj)) return;
+    // Any object can carry XMP or an application's private copy of the content (/PieceInfo), and
+    // /Thumb is a picture of the unredacted page.
+    pdf_dict_del(ctx, obj, PDF_NAME(Metadata));
+    pdf_dict_del(ctx, obj, PDF_NAME(PieceInfo));
+    pdf_dict_del(ctx, obj, PDF_NAME(Thumb));
+    pdf_dict_del(ctx, obj, PDF_NAME(AF));
+    pdf_dict_del(ctx, obj, PDF_NAME(EF));
+    // A structure element (/Type is optional) keeps its tags for reading order, but not their text.
+    if (pdf_is_name(ctx, pdf_dict_get(ctx, obj, PDF_NAME(S))) && pdf_dict_get(ctx, obj, PDF_NAME(P))) {
+        pdf_dict_del(ctx, obj, PDF_NAME(Alt));
+        pdf_dict_del(ctx, obj, PDF_NAME(ActualText));
+        pdf_dict_del(ctx, obj, PDF_NAME(E));
+        pdf_dict_del(ctx, obj, PDF_NAME(T));
+    }
+}
+
+// `budget` is the number of items left to visit, which ends a malformed outline that loops.
+static void rename_outline_items(fz_context *ctx, pdf_obj *item, const char *title, const char *new_title, int *budget) {
+    while (pdf_is_dict(ctx, item) && (*budget)-- > 0) {
+        if (strcmp(pdf_to_text_string(ctx, pdf_dict_get(ctx, item, PDF_NAME(Title))), title) == 0) {
+            pdf_dict_put_text_string(ctx, item, PDF_NAME(Title), new_title);
+        }
+        rename_outline_items(ctx, pdf_dict_get(ctx, item, PDF_NAME(First)), title, new_title, budget);
+        item = pdf_dict_get(ctx, item, PDF_NAME(Next));
+    }
+}
+
+int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error) {
+    if (!ctx || !doc || !title || !new_title) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        pdf_obj *outlines = pdf_dict_getl(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root), PDF_NAME(Outlines), NULL);
+        int budget = pdf_xref_len(ctx, pdoc);
+        rename_outline_items(ctx, pdf_dict_get(ctx, outlines, PDF_NAME(First)), title, new_title, &budget);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_strip_document_data(fz_context *ctx, fz_document *doc, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *page = NULL;
+    fz_var(page);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+
+        pdf_obj *trailer = pdf_trailer(ctx, pdoc);
+        pdf_dict_del(ctx, trailer, PDF_NAME(Info));
+        pdf_obj *root = pdf_dict_get(ctx, trailer, PDF_NAME(Root));
+        pdf_dict_del(ctx, root, PDF_NAME(Collection));
+        pdf_obj *names = pdf_dict_get(ctx, root, PDF_NAME(Names));
+        if (pdf_is_dict(ctx, names)) pdf_dict_del(ctx, names, PDF_NAME(EmbeddedFiles));
+        // Hybrid forms keep every field's value in the XFA too, where deleting a widget can't reach.
+        pdf_obj *acroform = pdf_dict_get(ctx, root, PDF_NAME(AcroForm));
+        if (pdf_is_dict(ctx, acroform)) pdf_dict_del(ctx, acroform, PDF_NAME(XFA));
+
+        int page_count = pdf_count_pages(ctx, pdoc);
+        for (int p = 0; p < page_count; p++) {
+            page = pdf_load_page(ctx, pdoc, p);
+            pdf_annot *annot = pdf_first_annot(ctx, page);
+            while (annot) {
+                pdf_annot *next = pdf_next_annot(ctx, annot);
+                if (pdf_annot_type(ctx, annot) == PDF_ANNOT_FILE_ATTACHMENT) {
+                    pdf_delete_annot(ctx, page, annot);
+                    // Deleting can also take the annotation's popup, which may have been `next`.
+                    next = pdf_first_annot(ctx, page);
+                }
+                annot = next;
+            }
+            pdf_drop_page(ctx, page);
+            page = NULL;
+        }
+
+        int xref_len = pdf_xref_len(ctx, pdoc);
+        for (int num = 1; num < xref_len; num++) {
+            pdf_obj *obj = NULL;
+            fz_var(obj);
+            fz_try(ctx) {
+                obj = pdf_load_object(ctx, pdoc, num);
+                strip_object_data(ctx, obj);
+            } fz_always(ctx) {
+                pdf_drop_obj(ctx, obj);
+            } fz_catch(ctx) {
+                // A damaged object has to stop nothing: the writer can't carry its content either.
+                fz_report_error(ctx);
+            }
+        }
+    } fz_always(ctx) {
+        if (page) pdf_drop_page(ctx, page);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error) {
     if (!ctx || !doc) return -1;
     pdf_page *ppage = NULL;

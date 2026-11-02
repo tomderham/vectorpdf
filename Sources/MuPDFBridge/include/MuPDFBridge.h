@@ -167,6 +167,8 @@ int mupdf_pdf_get_page_scale(fz_context *ctx, fz_document *doc, int pageno,
                              char *out_unit, size_t unit_cap,
                              float *out_pts_per_unit, int *out_found,
                              const char **out_error);
+int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error);
+int mupdf_pdf_strip_document_data(fz_context *ctx, fz_document *doc, const char **out_error);
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);
 int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);

@@ -24,9 +24,51 @@ import ObjectiveC
 extension PDFViewerViewModel {
     // MARK: - Redaction & Security Scrubbing
 
+    /// Runs `apply`, first explaining what redaction does and doesn't remove if this is the
+    /// document's first redaction. The alert is shown once per open document.
+    private func confirmFirstRedaction(of doc: PDFDocumentCore, then apply: @escaping @MainActor () -> Void) {
+        guard redactionNoticeDocument !== doc, !Self.isRunningTests else {
+            apply()
+            return
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Redaction Reaches Beyond the Page"
+        alert.informativeText = """
+            Removed from the whole document: metadata, attachments, page thumbnails, alternative text and XFA form data.
+
+            Bookmarks stay, with each redacted word replaced by \(PDFDocumentCore.redactedTitlePlaceholder). Text in images and scans can't be matched, so check the bookmarks yourself after redacting those.
+
+            Not removed, and could still contain the text: named destinations, page labels, layer names and JavaScript.
+            """
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Redact")   // .alertFirstButtonReturn
+        alert.addButton(withTitle: "Cancel")   // .alertSecondButtonReturn
+
+        let handle: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            // The document may have been closed or replaced while the alert was up.
+            guard let self, self.document === doc, response == .alertFirstButtonReturn else { return }
+            self.redactionNoticeDocument = doc
+            apply()
+        }
+        if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            alert.beginSheetModal(for: window) { response in
+                MainActor.assumeIsolated { handle(response) }
+            }
+        } else {
+            handle(alert.runModal())
+        }
+    }
+
     /// Directly and immediately applies a redaction box over a user-drawn region.
     public func applyRedactionRegion(pageIndex: Int, rect: CGRect) {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
+        confirmFirstRedaction(of: doc) { [weak self] in
+            self?.redactRegion(pageIndex: pageIndex, rect: rect, in: doc)
+        }
+    }
+
+    private func redactRegion(pageIndex: Int, rect: CGRect, in doc: PDFDocumentCore) {
         let mode: Int32 = (redactionColor == .black) ? 1 : 2
         do {
             try doc.applyRedactions(pageIndex: pageIndex, rects: [rect], mode: mode)
@@ -38,9 +80,14 @@ extension PDFViewerViewModel {
 
     /// Directly and immediately applies the chosen RedactAction (.redact, .delete) to all selected search matches.
     public func applySelectedMatches() {
-        let selected = redactionMatches.filter { $0.isSelected }
-        guard !selected.isEmpty, let doc = document else { return }
+        guard redactionMatches.contains(where: \.isSelected), let doc = document else { return }
+        confirmFirstRedaction(of: doc) { [weak self] in
+            self?.redactSelectedMatches(in: doc)
+        }
+    }
 
+    private func redactSelectedMatches(in doc: PDFDocumentCore) {
+        let selected = redactionMatches.filter { $0.isSelected }
         var affectedPages = Set<Int>()
         let isBlack = (redactionColor == .black)
         let byPage = Dictionary(grouping: selected, by: { $0.result.pageIndex })
@@ -51,12 +98,13 @@ extension PDFViewerViewModel {
                     ? [item.result.rect.insetBy(dx: -1.0, dy: -1.0)]
                     : item.result.highlightQuads.map { $0.boundingRect.insetBy(dx: -1.0, dy: -1.0) }
             }
+            let matchedText = items.map(\.result.matchedText)
 
             switch replaceAction {
             case .redact:
                 let mode: Int32 = isBlack ? 1 : 2
                 do {
-                    try doc.applyRedactions(pageIndex: pIdx, rects: rects, mode: mode)
+                    try doc.applyRedactions(pageIndex: pIdx, rects: rects, mode: mode, redactedText: matchedText)
                     affectedPages.insert(pIdx)
                 } catch {
                     print("Failed to apply redactions on page \(pIdx): \(error)")
@@ -64,7 +112,7 @@ extension PDFViewerViewModel {
 
             case .remove:
                 do {
-                    try doc.applyRedactions(pageIndex: pIdx, rects: rects, mode: 0)
+                    try doc.applyRedactions(pageIndex: pIdx, rects: rects, mode: 0, redactedText: matchedText)
                     affectedPages.insert(pIdx)
                 } catch {
                     print("Failed to remove text on page \(pIdx): \(error)")

@@ -1,8 +1,14 @@
-<!-- keywords: redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, PDF -->
+<!-- keywords: redact, redaction, redactions, remove, black out, sensitive, SSN, credit card, email, phone, date, find and redact, metadata, bookmarks, attachments, PDF -->
 
 # Redact sensitive content
 
 Redaction permanently removes content from a PDF. VectorPDF deletes the text, image pixels and line art under the redacted area from the file, along with any annotations and form fields that touch it. It doesn't just cover them with a box, and earlier revisions aren't kept when you save.
+
+The first time you redact in a document, an alert explains what else changes:
+
+- **Removed from the whole document:** metadata such as the title and author, attachments, page thumbnails, alternative text for accessibility, and XFA form data. To keep these, redact a copy.
+- **Bookmarks stay,** and each redacted word in their titles is replaced with [Redacted]. Text in images and scans can't be matched, so check the bookmarks yourself after redacting those.
+- **Not removed:** named destinations, page labels, layer names and JavaScript. These could still contain the text.
 
 > **Warning:** Redaction takes effect as soon as you apply it, and there's no Undo. Your original file doesn't change until you save, so to start again, close the document without saving. Keep a copy of the original, and use Save As to save the redacted version under a new name.
 

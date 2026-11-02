@@ -407,6 +407,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeRedactionMatchId: UUID? = nil
 
     var redactionSearchTask: Task<Void, Never>?
+    /// The document whose redaction alert has been accepted; it's shown once per open document.
+    weak var redactionNoticeDocument: PDFDocumentCore?
 
     // Agent Tab: semantic search (always available on-device) plus optional on-device
     // synthesis (Apple Intelligence-gated) over the currently open document only — see

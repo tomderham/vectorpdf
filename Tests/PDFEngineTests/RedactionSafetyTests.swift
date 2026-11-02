@@ -361,4 +361,140 @@ struct RedactionSafetyTests {
         // A single revision: nothing to roll back to.
         #expect(raw.components(separatedBy: "%%EOF").count - 1 == 1)
     }
+
+    // MARK: Data outside the pages
+
+    /// One page reading "PUBLICLINE", with "LEAKNAME" repeated everywhere a PDF keeps text outside
+    /// its pages. The number after each one says where a survivor came from.
+    private func writeDocumentDataPDF(at url: URL) throws {
+        writeRawPDF(at: url, objects: [
+            "<< /Type /Catalog /Pages 2 0 R /Outlines 6 0 R /Metadata 8 0 R /StructTreeRoot 14 0 R"
+                + " /Names << /EmbeddedFiles << /Names [(LEAKNAME1.txt) 9 0 R] >> >> /AF [9 0 R]"
+                + " /AcroForm << /Fields [] /XFA 11 0 R >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >>"
+                + " /Annots [13 0 R] /Thumb 12 0 R /PieceInfo << /App << /Private (LEAKNAME5) >> >> >>",
+            stream("BT /F1 12 Tf 72 700 Td (LEAKNAME0) Tj ET\nBT /F1 12 Tf 72 400 Td (PUBLICLINE) Tj ET"),
+            helvetica,
+            "<< /Type /Outlines /First 7 0 R /Last 19 0 R /Count 2 >>",
+            "<< /Title (Statement of LEAKNAME0, part 1) /Parent 6 0 R /Next 19 0 R /Dest [3 0 R /Fit] >>",
+            stream("<x:xmpmeta>LEAKNAME3</x:xmpmeta>", dict: "/Type /Metadata /Subtype /XML"),
+            "<< /Type /Filespec /F (LEAKNAME1.txt) /EF << /F 10 0 R >> >>",
+            stream("LEAKNAME4", dict: "/Type /EmbeddedFile"),
+            stream("<xdp>LEAKNAME6</xdp>"),
+            stream("LEAKNAME7"),
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [500 100 518 118] /Contents (LEAKNAME8) /FS 16 0 R >>",
+            "<< /Type /StructTreeRoot /K 15 0 R >>",
+            "<< /S /Figure /P 14 0 R /Pg 3 0 R /Alt (LEAKNAME9) /ActualText (LEAKNAMEA) /E (LEAKNAMEB) /T (LEAKNAMEC) >>",
+            "<< /Type /Filespec /F (LEAKNAMED.txt) /EF << /F 17 0 R >> >>",
+            stream("LEAKNAMEE", dict: "/Type /EmbeddedFile"),
+            "<< /Title (LEAKNAMEF) /Author (LEAKNAMEG) /Subject (LEAKNAMEH) /Keywords (LEAKNAMEI) >>",
+            "<< /Title (KEPTBOOKMARK) /Parent 6 0 R /Prev 7 0 R /Dest [3 0 R /Fit] >>",
+        ])
+        // The file has no way to name /Info from writeRawPDF's trailer; add it as a later revision,
+        // which also checks that it's the current trailer that counts.
+        var bytes = try String(contentsOf: url, encoding: .isoLatin1)
+        let prevXref = try #require(bytes.components(separatedBy: "startxref\n").last?.split(separator: "\n").first)
+        let xrefOffset = bytes.utf8.count
+        bytes += "xref\n0 0\ntrailer\n<< /Size 20 /Root 1 0 R /Info 18 0 R /Prev \(prevXref) >>\nstartxref\n\(xrefOffset)\n%%EOF\n"
+        try Data(bytes.utf8).write(to: url)
+    }
+
+    @Test(arguments: [Int32(1), Int32(2), Int32(0)])
+    func redactionRemovesDataOutsideThePages(mode: Int32) throws {
+        let src = scratchURL("docdata_src.pdf")
+        let out = scratchURL("docdata_out.pdf")
+        defer { for u in [src, out] { try? FileManager.default.removeItem(at: u) } }
+        try writeDocumentDataPDF(at: src)
+        for marker in "013456789ABCDEFGHI" {
+            #expect(try decodedFileText(src).contains("LEAKNAME\(marker)"), "fixture lacks \(marker)")
+        }
+
+        let doc = try PDFDocumentCore(filePath: src.path)
+        #expect(doc.getMetadata().author == "LEAKNAMEG")
+        let line = try #require(doc.loadStructuredPage(for: 0)?.allLines.first { $0.text.contains("LEAKNAME") })
+        try doc.applyRedactions(pageIndex: 0, rects: [line.bbox.insetBy(dx: -2, dy: -2)], mode: mode)
+        let redactedTitles = ["Statement of [Redacted], part 1", "KEPTBOOKMARK"]
+        #expect(doc.outline.map(\.title) == redactedTitles)
+        try doc.save(to: out.path)
+
+        let raw = try decodedFileText(out)
+        let survivors = "013456789ABCDEFGHI".filter { raw.contains("LEAKNAME\($0)") }
+        #expect(survivors.isEmpty, "still in the file: \(survivors)")
+        #expect(!raw.contains("LEAKNAME"))
+        #expect(raw.contains("PUBLICLINE"))
+
+        let saved = try PDFDocumentCore(filePath: out.path)
+        #expect(saved.outline.map(\.title) == redactedTitles)
+        #expect(saved.outline.allSatisfy { $0.targetPage == 0 })
+        #expect(saved.getMetadata().title.isEmpty)
+        #expect(saved.getMetadata().author.isEmpty)
+        #expect(saved.extractText(pageIndex: 0)?.contains("PUBLICLINE") == true)
+    }
+
+    @Test func bookmarkTitlesLoseWholeWordsInAnyCaseAndOrder() {
+        let words: Set<String> = ["John", "Smith", "123-45-6789"]
+        #expect(PDFDocumentCore.redactedTitle("Smith, JOHN", words: words) == "[Redacted], [Redacted]")
+        #expect(PDFDocumentCore.redactedTitle("SSN 123-45-6789 on file", words: words) == "SSN [Redacted] on file")
+        #expect(PDFDocumentCore.redactedTitle("Smithson and Johnson", words: words) == "Smithson and Johnson")
+        #expect(PDFDocumentCore.redactedTitle("Anything", words: []) == "Anything")
+    }
+
+    @Test func regionCrossingPartOfAWordCountsTheWholeWord() throws {
+        let src = scratchURL("docdata_partial.pdf")
+        defer { try? FileManager.default.removeItem(at: src) }
+        try writeDocumentDataPDF(at: src)
+
+        let doc = try PDFDocumentCore(filePath: src.path)
+        let line = try #require(doc.loadStructuredPage(for: 0)?.allLines.first { $0.text.contains("LEAKNAME") })
+        try doc.applyRedactions(pageIndex: 0, rects: [CGRect(x: line.bbox.minX, y: line.bbox.minY, width: line.bbox.width / 2, height: line.bbox.height)], mode: 1)
+        #expect(doc.outline.first?.title == "Statement of [Redacted], part 1")
+    }
+
+    @Test func textKnownOnlyFromOCRStillReachesBookmarks() throws {
+        let src = scratchURL("docdata_ocr.pdf")
+        defer { try? FileManager.default.removeItem(at: src) }
+        try writeDocumentDataPDF(at: src)
+
+        let doc = try PDFDocumentCore(filePath: src.path)
+        // An area with no text under it: the only word comes from the match.
+        try doc.applyRedactions(pageIndex: 0, rects: [CGRect(x: 300, y: 500, width: 20, height: 20)], mode: 1, redactedText: ["Statement"])
+        #expect(doc.outline.first?.title == "[Redacted] of LEAKNAME0, part 1")
+    }
+
+    @Test @MainActor func redactingThroughTheViewerRenamesItsBookmarks() async throws {
+        let url = scratchURL("docdata_viewer.pdf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try writeDocumentDataPDF(at: url)
+
+        let vm = PDFViewerViewModel()
+        vm.isTransientWindow = true
+        await vm.loadDocument(from: url.path)
+        #expect(vm.document?.outline.first?.title == "Statement of LEAKNAME0, part 1")
+        vm.editRedactTab = .findAndRedact
+        vm.replaceAction = .remove
+        vm.redactionPreset = .customText
+        vm.redactionSearchQuery = "LEAKNAME0"
+        vm.performRedactionSearch()
+        await awaitRedactionSearch(vm, expecting: 1)
+        vm.applySelectedMatches()
+        #expect(vm.document?.outline.first?.title == "Statement of [Redacted], part 1")
+        vm.saveDocument()
+
+        #expect(!(try decodedFileText(url)).contains("LEAKNAME"))
+    }
+
+    @Test func savingWithoutRedactingKeepsDocumentData() throws {
+        let src = scratchURL("docdata_keep_src.pdf")
+        let out = scratchURL("docdata_keep_out.pdf")
+        defer { for u in [src, out] { try? FileManager.default.removeItem(at: u) } }
+        try writeDocumentDataPDF(at: src)
+
+        try PDFDocumentCore(filePath: src.path).save(to: out.path)
+
+        let saved = try PDFDocumentCore(filePath: out.path)
+        #expect(saved.outline.map(\.title) == ["Statement of LEAKNAME0, part 1", "KEPTBOOKMARK"])
+        #expect(saved.getMetadata().author == "LEAKNAMEG")
+        #expect(try decodedFileText(out).contains("LEAKNAME4"))
+    }
 }

@@ -64,6 +64,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public private(set) var pageYOffsets: [CGFloat]
     public private(set) var totalHeight: CGFloat
     public internal(set) var outline: [PDFOutlineNode]
+    private var hasStrippedDocumentData = false
 
     /// Whether pageBounds[i] reflects exact inspected dimensions rather than a placeholder.
     private var hasExactBounds: [Bool]
@@ -481,14 +482,31 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
     /// Permanently redacts all content covered by the given rectangles on `pageIndex`, including
     /// annotations and form fields that touch them (their comments and values can repeat the text).
+    /// The first redaction also removes the document's metadata, attachments and other data outside
+    /// its pages, which can repeat the text too; see `mupdf_pdf_strip_document_data`. Bookmarks stay,
+    /// with the redacted words replaced in their titles.
     /// - Parameters:
     ///   - mode: 1 = Blackout Region (burns black boxes, scrubs line art and images),
     ///           2 = Whiteout Region (burns white boxes, scrubs line art and images),
     ///           0 = Text Only (excises text, leaves surrounding line art and images intact).
-    public func applyRedactions(pageIndex: Int, rects: [CGRect], mode: Int32 = 1) throws {
+    ///   - redactedText: Text known to be under `rects` that the page's own text may not have,
+    ///     such as a match found by OCR.
+    public func applyRedactions(pageIndex: Int, rects: [CGRect], mode: Int32 = 1, redactedText: [String] = []) throws {
         guard !rects.isEmpty else { return }
+        // Read before the text is removed, and before taking the lock, which this also takes.
+        let words = redactedWords(pageIndex: pageIndex, rects: rects, redactedText: redactedText)
         lock.lock()
         defer { lock.unlock() }
+
+        if !hasStrippedDocumentData {
+            var stripError: UnsafePointer<CChar>?
+            if mupdf_pdf_strip_document_data(ctx, doc, &stripError) != 0 {
+                let msg = stripError != nil ? String(cString: stripError!) : "Failed to remove document data"
+                throw PDFError.saveFailed(msg)
+            }
+            hasStrippedDocumentData = true
+        }
+        try redactOutlineTitles(words: words)
 
         let fzRects = rects.map { r in
             fz_rect(
@@ -514,6 +532,75 @@ public final class PDFDocumentCore: @unchecked Sendable {
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to apply redactions"
             throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// What replaces a redacted word in a bookmark's title.
+    static let redactedTitlePlaceholder = "[Redacted]"
+
+    /// `title` with every whole-word occurrence of `words` replaced, ignoring case.
+    static func redactedTitle(_ title: String, words: Set<String>) -> String {
+        guard !words.isEmpty else { return title }
+        // Longest first, so a word that starts with another is replaced whole.
+        let alternatives = words.sorted { $0.count > $1.count }.map(NSRegularExpression.escapedPattern(for:))
+        let pattern = "(?<![\\p{L}\\p{N}])(?:" + alternatives.joined(separator: "|") + ")(?![\\p{L}\\p{N}])"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return redactedTitlePlaceholder
+        }
+        let range = NSRange(title.startIndex..., in: title)
+        let template = NSRegularExpression.escapedTemplate(for: redactedTitlePlaceholder)
+        return regex.stringByReplacingMatches(in: title, range: range, withTemplate: template)
+    }
+
+    /// The words under `rects`, whole even if a region only crosses part of one, plus those of
+    /// `redactedText`. Words rather than the phrase, because a bookmark may read "Smith, John"
+    /// where the page reads "John Smith".
+    private func redactedWords(pageIndex: Int, rects: [CGRect], redactedText: [String]) -> Set<String> {
+        let trimmed = CharacterSet.punctuationCharacters.union(.symbols)
+        var words = Set(redactedText.flatMap { $0.split(whereSeparator: \.isWhitespace) }
+            .map { $0.trimmingCharacters(in: trimmed) })
+        for line in loadStructuredPage(for: pageIndex)?.allLines ?? [] {
+            var word = ""
+            var isRedacted = false
+            for character in line.characters + [nil] {
+                if let character, !character.char.isWhitespace {
+                    word.append(character.char)
+                    let box = character.quad.boundingRect
+                    isRedacted = isRedacted || rects.contains { $0.contains(CGPoint(x: box.midX, y: box.midY)) }
+                    continue
+                }
+                if isRedacted { words.insert(word.trimmingCharacters(in: trimmed)) }
+                word = ""
+                isRedacted = false
+            }
+        }
+        words.remove("")
+        return words
+    }
+
+    /// Call with `lock` held.
+    private func redactOutlineTitles(words: Set<String>) throws {
+        func titles(_ nodes: [PDFOutlineNode]) -> [String] {
+            nodes.flatMap { [$0.title] + titles($0.children) }
+        }
+        var renamed = false
+        for title in Set(titles(outline)) {
+            let newTitle = Self.redactedTitle(title, words: words)
+            guard newTitle != title else { continue }
+            var errorMsg: UnsafePointer<CChar>?
+            if mupdf_pdf_rename_outline_items(ctx, doc, title, newTitle, &errorMsg) != 0 {
+                let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to edit bookmarks"
+                throw PDFError.saveFailed(msg)
+            }
+            renamed = true
+        }
+        guard renamed else { return }
+        var outlinePtr: FZOutline?
+        if mupdf_document_load_outline(ctx, doc, &outlinePtr, nil) == 0, let out = outlinePtr {
+            outline = PDFDocumentCore.parseOutline(out)
+            mupdf_outline_drop(ctx, out)
+        } else {
+            outline = []
         }
     }
 
