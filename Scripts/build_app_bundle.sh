@@ -36,6 +36,11 @@ cp "$BUILT_BINARY" "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME"
 cp Resources/AppIcon/AppIcon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp Resources/AppIcon/DocumentIcon.icns "$APP_BUNDLE/Contents/Resources/DocumentIcon.icns"
 
+echo "Building the help book..."
+HELP_BOOK_ID="$BUNDLE_ID.help"
+python3 Scripts/build_help.py --guide docs/guide --resources "$APP_BUNDLE/Contents/Resources" \
+    --version "$APP_VERSION" --bundle-id "$HELP_BOOK_ID" --icon Resources/AppIcon/AppIcon.iconset/icon_256x256.png
+
 cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -57,6 +62,10 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <string>AppIcon.icns</string>
     <key>CFBundleIconName</key>
     <string>AppIcon</string>
+    <key>CFBundleHelpBookFolder</key>
+    <string>VectorPDF.help</string>
+    <key>CFBundleHelpBookName</key>
+    <string>$HELP_BOOK_ID</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

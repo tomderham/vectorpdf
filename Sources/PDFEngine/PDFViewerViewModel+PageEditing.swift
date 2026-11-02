@@ -592,6 +592,17 @@ extension PDFViewerViewModel {
         duplicateSelectedThumbnails()
     }
 
+    /// The Duplicate Pages command: the selected thumbnails if they include the page being read,
+    /// otherwise that page. Clicking a thumbnail goes to its page, so a selection without it is
+    /// left over from earlier, and may no longer be in view.
+    public func duplicateCurrentPages() {
+        if selectedThumbnailPageIndices.contains(currentPageIndex) {
+            duplicateSelectedThumbnails()
+        } else {
+            duplicatePage(currentPageIndex)
+        }
+    }
+
     public func insertBlankPage(after pageIndex: Int) {
         guard let doc = document else { return }
         let targetSlot = min(max(0, pageIndex + 1), doc.pageCount)

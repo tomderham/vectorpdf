@@ -211,6 +211,30 @@ struct PageEditingTests {
         #expect(try pageLabels(ofFileAt: saved, among: labels) == ["Alpha", "Bravo", "Bravo", "Charlie", "Delta", "Alpha", "Delta"])
     }
 
+    @MainActor @Test func duplicateCommandIgnoresASelectionWithoutTheCurrentPage() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("duplicate_command.pdf")
+        let labels = Array(natoLabels.prefix(4))
+        makeLabelledPDF(at: url, labels: labels)
+
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let doc = try #require(vm.document)
+
+        // Left over from earlier: the reader has since moved to the first page.
+        vm.selectedThumbnailPageIndices = [3]
+        vm.currentPageIndex = 0
+        vm.duplicateCurrentPages()
+        #expect(pageLabels(of: doc, among: labels) == ["Alpha", "Alpha", "Bravo", "Charlie", "Delta"])
+
+        // A selection including the current page is used whole.
+        vm.selectedThumbnailPageIndices = [0, 2]
+        vm.currentPageIndex = 2
+        vm.duplicateCurrentPages()
+        #expect(pageLabels(of: doc, among: labels) == ["Alpha", "Alpha", "Bravo", "Alpha", "Bravo", "Charlie", "Delta"])
+    }
+
     @Test func duplicateCarriesTheOriginalsAnnotations() throws {
         let dir = try makeScratchDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }

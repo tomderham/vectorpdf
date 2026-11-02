@@ -34,3 +34,7 @@
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
    - After changing MuPDF, the bridge, or how documents are used across threads, run the concurrency stress test: `VECTORPDF_STRESS_TESTS=1 swift test --filter ConcurrencyStress`.
    - Always run tests and verify zero regressions before committing.
+
+5. **User Guide:**
+   - The help book is built from the Markdown in `docs/guide/` by `Scripts/build_help.py`, which `Scripts/build_app_bundle.sh` runs. When a feature, menu item, shortcut or setting changes, update the guide in the same commit. When a command is on a context menu, say so in the guide as well as giving its keyboard shortcut, and keep `right-click-menus.md` up to date. New pages must be listed in `docs/guide/README.md`, which sets the sidebar; the build fails on broken links.
+   - Tips only shows the book when the app is in `/Applications`; running elsewhere isn't supported for Help. Test with a separate `BUNDLE_ID` copy rather than replacing an installed app.

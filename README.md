@@ -11,7 +11,7 @@ A fast, native macOS PDF reader for technical papers, specifications, and drawin
 
 **Download:** the latest signed and notarized DMG is on the [Releases page](https://github.com/tomderham/vectorpdf/releases). The app checks GitHub for new releases (you can turn this off in Settings).
 
-[Privacy](PRIVACY.md) · [Contributing](CONTRIBUTING.md) · [Report a bug](https://github.com/tomderham/vectorpdf/issues)
+[User Guide](docs/guide/README.md) · [Privacy](PRIVACY.md) · [Contributing](CONTRIBUTING.md) · [Report a bug](https://github.com/tomderham/vectorpdf/issues)
 
 ---
 
@@ -20,7 +20,7 @@ A fast, native macOS PDF reader for technical papers, specifications, and drawin
 **Reading & navigation**
 - **Virtualized scrolling:** Only pages near the viewport are rendered; very long documents open without laying out every page up front. Single-page, two-page, and book (cover-offset) layouts, page rotation, and fit-width / fit-window zoom.
 - **Display-list caching:** Compiled page display lists (`fz_display_list`) are replayed when re-rendering at a new zoom instead of re-parsing content streams.
-- **Search:** Streaming full-text search with match case, whole word, and regular-expression options, plus a smart pattern builder for common formats.
+- **Search:** Streaming full-text search with match case and whole word options. Smart Search matches across spaces, hyphens, dashes, line breaks, and quote styles, and can look past text you set as ignored patterns (regular expressions in Settings), such as comment tags inside technical documents.
 - **Outline, thumbnails & history:** Table-of-contents tree, thumbnail grid (with drag-and-drop page reordering), and Back/Forward navigation history.
 - **Reading themes:** Light, dark (luminance inversion that preserves hues), and sepia, using MuPDF pixmap operations.
 - **Resume where you left off:** Last page and zoom are remembered per document.

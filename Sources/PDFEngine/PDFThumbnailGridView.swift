@@ -580,13 +580,6 @@ public struct PDFThumbnailGridView: View {
                     .animation(.easeInOut(duration: 0.15), value: viewModel.activeThumbnailDropSlot)
                     .padding(.vertical, 12)
                 }
-                .onKeyPress(.init("d"), phases: .down) { press in
-                    if press.modifiers.contains(.command) && !press.modifiers.contains(.shift) && !press.modifiers.contains(.option) {
-                        viewModel.duplicateSelectedThumbnails()
-                        return .handled
-                    }
-                    return .ignored
-                }
                 .onChange(of: viewModel.currentPageIndex) { _, newIndex in
                     withAnimation(.easeInOut(duration: 0.2)) {
                         proxy.scrollTo(newIndex, anchor: .center)

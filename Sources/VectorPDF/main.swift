@@ -193,6 +193,16 @@ func promptOpenFileGlobal(inNewTab: Bool) {
     panel.begin(completionHandler: completion)
 }
 
+/// Opens the user guide in Tips, by identifier because NSApplication's showHelp: reports
+/// "Help isn't available" for this app. Tips only reads a book from an app in /Applications.
+@MainActor
+func showHelpBook() {
+    guard let book = Bundle.main.object(forInfoDictionaryKey: "CFBundleHelpBookName") as? String,
+          let url = URL(string: "help:openbook=\(book)") else { return }
+    NSHelpManager.shared.registerBooks(in: .main)
+    NSWorkspace.shared.open(url)
+}
+
 // Snapshot windows are managed by SnapshotWindowManager.
 
 @main
@@ -289,6 +299,12 @@ struct VectorPDF: App {
                 resolvedViewModel?.promptImportPDF(atSlot: nil)
             }
             .keyboardShortcut("i", modifiers: [.command, .option])
+            .disabled(!hasDocument)
+
+            Button("Duplicate Pages") {
+                resolvedViewModel?.duplicateCurrentPages()
+            }
+            .keyboardShortcut("d", modifiers: [.command, .shift])
             .disabled(!hasDocument)
 
             // Reads NSDocumentController recent documents list directly.
@@ -673,6 +689,13 @@ struct VectorPDF: App {
             }
         }
         
+        CommandGroup(replacing: .help) {
+            Button("VectorPDF Help") {
+                showHelpBook()
+            }
+            .keyboardShortcut("?", modifiers: .command)
+        }
+
         CommandMenu("Go") {
             Button("Back") {
                 resolvedViewModel?.goBack()

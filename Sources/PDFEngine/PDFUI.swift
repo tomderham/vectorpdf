@@ -329,7 +329,7 @@ public struct PDFViewerMainView: View {
                             Text("No Favorites Yet")
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(.secondary)
-                            Text("Open a PDF and click the star in the toolbar to pin it here for quick access.")
+                            Text("Open a PDF and press ⌘D to pin it here for quick access.")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                                 .multilineTextAlignment(.center)
