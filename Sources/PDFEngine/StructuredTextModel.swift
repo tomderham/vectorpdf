@@ -425,8 +425,13 @@ public struct StructuredPage: Sendable {
         }
 
         // Match vector strokes against text characters across all text blocks to detect underlines and strikethroughs
-        let vectorBlocks = blocks.filter { $0.type == .vector }
-        if !vectorBlocks.isEmpty {
+        // Only thin horizontal strokes can be a decoration. Sorted by height on the page, so each
+        // line looks only at those level with it: a CAD drawing has over 100,000 vector blocks,
+        // and checking each against every line took seconds.
+        let strokes = blocks.filter { $0.type == .vector && $0.bbox.height <= 2.5 && $0.bbox.width >= 2.5 }
+            .map(\.bbox)
+            .sorted { $0.midY < $1.midY }
+        if !strokes.isEmpty {
             for bIdx in 0..<blocks.count {
                 guard blocks[bIdx].type == .text else { continue }
                 for lIdx in 0..<blocks[bIdx].lines.count {
@@ -434,9 +439,13 @@ public struct StructuredPage: Sendable {
                     let lineMinY = line.bbox.minY - 3.5
                     let lineMaxY = line.bbox.maxY + 3.5
 
-                    let candidateVectors = vectorBlocks.filter { v in
-                        v.bbox.height <= 2.5 && v.bbox.width >= 2.5 && v.bbox.midY >= lineMinY && v.bbox.midY <= lineMaxY
+                    // The first stroke at or below lineMinY, by binary search.
+                    var low = 0, high = strokes.count
+                    while low < high {
+                        let mid = (low + high) / 2
+                        if strokes[mid].midY < lineMinY { low = mid + 1 } else { high = mid }
                     }
+                    let candidateVectors = strokes[low...].prefix { $0.midY <= lineMaxY }
                     guard !candidateVectors.isEmpty else { continue }
 
                     var updatedCharacters = line.characters
@@ -448,12 +457,12 @@ public struct StructuredPage: Sendable {
                         let charBaseline = char.origin.y
 
                         for v in candidateVectors {
-                            guard charMidX >= (v.bbox.minX - 0.5) && charMidX <= (v.bbox.maxX + 0.5) else { continue }
+                            guard charMidX >= (v.minX - 0.5) && charMidX <= (v.maxX + 0.5) else { continue }
 
-                            if v.bbox.midY >= charBaseline - 1.2 && v.bbox.midY <= charBaseline + 3.0 {
+                            if v.midY >= charBaseline - 1.2 && v.midY <= charBaseline + 3.0 {
                                 updatedCharacters[cIdx].isUnderline = true
                                 lineChanged = true
-                            } else if v.bbox.midY < charBaseline - 1.5 && v.bbox.midY >= charBaseline - CGFloat(char.size) * 0.85 {
+                            } else if v.midY < charBaseline - 1.5 && v.midY >= charBaseline - CGFloat(char.size) * 0.85 {
                                 updatedCharacters[cIdx].isStrikethrough = true
                                 lineChanged = true
                             }

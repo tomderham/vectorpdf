@@ -5468,3 +5468,41 @@ func createFormSamplePDF(at fileURL: URL) {
     vm.isLiveZooming = false
     #expect(vm.renderedPages[0] === after)
 }
+
+/// Underlines and strikethroughs are found by the strokes level with each line, among thousands
+/// of other vector paths, as on a CAD drawing.
+@Test func underlineAndStrikethroughAreFoundAmongManyStrokes() throws {
+    let dir = try makeScratchDirectory()
+    defer { try? FileManager.default.removeItem(at: dir) }
+    let url = dir.appendingPathComponent("decorations.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    let context = try #require(CGContext(url as CFURL, mediaBox: &mediaBox, nil))
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    context.beginPDFPage(nil)
+    let font = NSFont(name: "Helvetica", size: 24) ?? NSFont.systemFont(ofSize: 24)
+    for (row, text) in ["Underlined words", "Struck words", "Plain words"].enumerated() {
+        let origin = NSPoint(x: 72, y: 600 - CGFloat(row) * 60)
+        (text as NSString).draw(at: origin, withAttributes: [.font: font])
+        let width = (text as NSString).size(withAttributes: [.font: font]).width
+        let baseline = origin.y - font.descender
+        context.setFillColor(NSColor.black.cgColor)
+        if row == 0 { context.fill(CGRect(x: origin.x, y: baseline - 2.6, width: width, height: 1.2)) }
+        if row == 1 { context.fill(CGRect(x: origin.x, y: baseline + 7, width: width, height: 1.2)) }
+    }
+    // A drawing's worth of short thin strokes elsewhere on the page.
+    for i in 0..<5000 {
+        context.fill(CGRect(x: 40 + CGFloat(i % 100) * 5, y: 60 + CGFloat(i / 100) * 5, width: 3, height: 0.5))
+    }
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: url.path)
+    let page = try #require(doc.loadStructuredPage(for: 0))
+    func line(_ prefix: String) throws -> TextLine {
+        try #require(page.allLines.first { $0.text.hasPrefix(prefix) })
+    }
+    let letters = { (line: TextLine) in line.characters.filter { $0.char != " " } }
+    #expect(try letters(line("Underlined")).allSatisfy { $0.isUnderline && !$0.isStrikethrough })
+    #expect(try letters(line("Struck")).allSatisfy { $0.isStrikethrough && !$0.isUnderline })
+    #expect(try letters(line("Plain")).allSatisfy { !$0.isUnderline && !$0.isStrikethrough })
+}
