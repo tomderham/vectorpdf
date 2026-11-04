@@ -5551,3 +5551,41 @@ func createFormSamplePDF(at fileURL: URL) {
     let underlined = try #require(underlinedLine)
     #expect(underlined.characters.allSatisfy { $0.isUnderline })
 }
+
+/// Text a clipping path hides isn't selectable or searchable, though it's inside the clip's
+/// bounding box: a CAD drawing in an L-shaped viewport keeps its own copy of the sheet's legend
+/// in the cut-out corner, under the legend that shows.
+@Test func textHiddenByAClipIsLeftOut() async throws {
+    let dir = try makeScratchDirectory()
+    defer { try? FileManager.default.removeItem(at: dir) }
+    let url = dir.appendingPathComponent("clipped.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 600, height: 400)
+    let context = try #require(CGContext(url as CFURL, mediaBox: &mediaBox, nil))
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    context.beginPDFPage(nil)
+    let font = NSFont(name: "Helvetica", size: 18) ?? NSFont.systemFont(ofSize: 18)
+    // A viewport covering the page but its top-right corner.
+    context.saveGState()
+    context.beginPath()
+    context.addLines(between: [CGPoint(x: 20, y: 20), CGPoint(x: 580, y: 20), CGPoint(x: 580, y: 200),
+                               CGPoint(x: 350, y: 200), CGPoint(x: 350, y: 380), CGPoint(x: 20, y: 380)])
+    context.closePath()
+    context.clip()
+    ("Viewport text" as NSString).draw(at: NSPoint(x: 60, y: 300), withAttributes: [.font: font])
+    ("Hiddencopy" as NSString).draw(at: NSPoint(x: 400, y: 300), withAttributes: [.font: font])
+    context.restoreGState()
+    ("Legend label" as NSString).draw(at: NSPoint(x: 400, y: 260), withAttributes: [.font: font])
+    context.endPDFPage()
+    context.closePDF()
+
+    let doc = try PDFDocumentCore(filePath: url.path)
+    let text = try #require(doc.loadStructuredPage(for: 0)).plainText
+    #expect(text.contains("Viewport text"))
+    #expect(text.contains("Legend label"))
+    #expect(!text.contains("Hiddencopy"))
+
+    let search = PDFSearchActor(workerCount: 1)
+    try await search.openDocument(filePath: url.path)
+    #expect(try await search.search(query: "Hiddencopy").isEmpty)
+    #expect(try await !search.search(query: "Legend label").isEmpty)
+}

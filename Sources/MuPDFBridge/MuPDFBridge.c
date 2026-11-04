@@ -16,6 +16,7 @@
 //
 
 #include "include/MuPDFBridge.h"
+#include "TextClipFilter.h"
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -413,7 +414,8 @@ int mupdf_stext_page_load(fz_context *ctx, fz_page *page, fz_stext_page **out_st
         /* No FZ_STEXT_DEHYPHENATE: hyphenated words are joined in Swift (LineJoin), which skips
          * margin line numbers; MuPDF's plain text would glue the next line number on ("divi4"). */
         opts.flags = FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
-        *out_stext = fz_new_stext_page_from_page(ctx, page, &opts);
+        /* Without the text the page's clipping paths hide, which MuPDF would include. */
+        *out_stext = vp_new_stext_page_clipped(ctx, page, NULL, &opts);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
         return fz_caught(ctx) ? fz_caught(ctx) : -1;
@@ -429,7 +431,7 @@ int mupdf_stext_page_load_from_display_list(fz_context *ctx, fz_display_list *li
         fz_stext_options opts;
         memset(&opts, 0, sizeof(opts));
         opts.flags = FZ_STEXT_PRESERVE_WHITESPACE | FZ_STEXT_PRESERVE_IMAGES | FZ_STEXT_COLLECT_VECTORS | FZ_STEXT_LAZY_VECTORS;
-        *out_stext = fz_new_stext_page_from_display_list(ctx, list, &opts);
+        *out_stext = vp_new_stext_page_clipped(ctx, NULL, list, &opts);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
         return fz_caught(ctx) ? fz_caught(ctx) : -1;

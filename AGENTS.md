@@ -19,6 +19,7 @@
    - All AppKit / UI interactions must be `@MainActor`-safe.
    - The vendored MuPDF is 1.28.5 **plus cherry-picked upstream fixes** in `Vendor/patches/` (store thread-safety, Bug 709849). When a MuPDF release includes them, rebase onto that tag and delete the patches — see "Backported patches" in `Vendor/README.md`.
    - Never empty MuPDF's store (`fz_empty_store`): it is shared by every cloned context, and emptying it frees items other threads are using. Its size limit bounds memory on its own.
+   - Structured text comes from `vp_new_stext_page_clipped` (`TextClipFilter.c`), not `fz_new_stext_page_from_page`: it leaves out text the page's clipping paths hide, which MuPDF keeps. Load structured text through it everywhere, or hidden text turns up in selection and search.
    - Search workers use independent contexts (`mupdf_context_create_independent`) rather than clones, so they don't contend on the allocation lock. They share nothing with other contexts but the FreeType lock: never pass a document, page or other MuPDF object between them, and never clone one.
 
 2. **Windowing & Native Appearance:**
