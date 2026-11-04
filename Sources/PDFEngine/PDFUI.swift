@@ -749,10 +749,12 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(2)
                             .help("Anchors")
-                        Image(systemName: "text.bubble")
-                            .imageScale(.medium)
-                            .tag(4)
-                            .help("Comments")
+                        if viewModel.hasAnnotationThreads {
+                            Image(systemName: "text.bubble")
+                                .imageScale(.medium)
+                                .tag(4)
+                                .help("Comments")
+                        }
                         if appCoordinator.showAgentTab {
                             Image(systemName: "sparkles")
                                 .imageScale(.medium)
@@ -766,9 +768,9 @@ public struct PDFViewerMainView: View {
                     .segmentedControlTooltips([
                         "Outline & Thumbnails",
                         "Search Document (Cmd+F)",
-                        "Anchors",
-                        "Comments"
-                    ] + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
+                        "Anchors"
+                    ] + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
+                      + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
                         if newValue == 3 {
                             viewModel.startAgentIndexingIfNeeded()
@@ -778,6 +780,12 @@ public struct PDFViewerMainView: View {
                         // Rebuild index on content change if Agent tab is visible.
                         if newState == .idle && selectedSidebarTab == 3 {
                             viewModel.startAgentIndexingIfNeeded()
+                        }
+                    }
+                    .onChange(of: viewModel.hasAnnotationThreads) { _, stillShown in
+                        // The last annotation was deleted, or another document opened.
+                        if !stillShown && selectedSidebarTab == 4 {
+                            selectedSidebarTab = 0
                         }
                     }
                     .onChange(of: appCoordinator.showAgentTab) { _, stillShown in

@@ -61,6 +61,7 @@ extension PDFViewerViewModel {
         ocrResults.removeAll()
         detectedScannedPages.removeAll()
         pageScaleConfigs.removeAll()
+        noteAnnotationsChanged(onPage: nil)
         // Back/Forward entries are page indices too, and now name different pages.
         navigationHistory.removeAll()
         navigationHistoryIndex = -1

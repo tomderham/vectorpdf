@@ -23,12 +23,12 @@ import SwiftUI
 /// double-clicking also opens its comments there, to reply or set a status.
 struct AnnotationsSidebarView: View {
     @ObservedObject var viewModel: PDFViewerViewModel
-    @State private var threadsByPage: [Int: [PDFAnnotationThread]] = [:]
-    @State private var isLoading = true
     @State private var filter = PDFAnnotationFilter()
     @State private var selection: PDFAnnotationThread.ID?
-    /// Bumped to read every page again, when anything but a single page may have changed.
-    @State private var fullReloads = 0
+
+    private var threadsByPage: [Int: [PDFAnnotationThread]] {
+        viewModel.annotationThreadsByPage ?? [:]
+    }
 
     private var allThreads: [PDFAnnotationThread] {
         threadsByPage.keys.sorted().flatMap { threadsByPage[$0] ?? [] }
@@ -45,7 +45,7 @@ struct AnnotationsSidebarView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            if isLoading {
+            if viewModel.annotationThreadsByPage == nil {
                 ProgressView()
                     .controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,25 +55,16 @@ struct AnnotationsSidebarView: View {
                 } description: {
                     Text("Annotations and their replies appear here. To reply to one, double-click it on the page.")
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if visibleByPage.isEmpty {
                 ContentUnavailableView {
                     Label("No Matching Comments", systemImage: "line.3.horizontal.decrease.circle")
                 } actions: {
                     Button("Show All") { filter = PDFAnnotationFilter() }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 list
-            }
-        }
-        .task(id: "\(viewModel.document?.filePath ?? "")|\(fullReloads)") {
-            await loadAllPages()
-        }
-        .onChange(of: viewModel.annotationChange) { _, change in
-            if let page = change.page {
-                let threads = viewModel.annotationThreads(pageIndex: page)
-                threadsByPage[page] = threads.isEmpty ? nil : threads
-            } else {
-                fullReloads += 1
             }
         }
     }
@@ -162,25 +153,6 @@ struct AnnotationsSidebarView: View {
 
     /// Reads every page's annotations, letting the window keep up between pages: a long
     /// document takes a moment.
-    private func loadAllPages() async {
-        guard let pageCount = viewModel.document?.pageCount else {
-            threadsByPage = [:]
-            isLoading = false
-            return
-        }
-        isLoading = true
-        var found: [Int: [PDFAnnotationThread]] = [:]
-        for page in 0..<pageCount {
-            let threads = viewModel.annotationThreads(pageIndex: page)
-            if !threads.isEmpty { found[page] = threads }
-            if page % 100 == 99 {
-                await Task.yield()
-                if Task.isCancelled { return }
-            }
-        }
-        threadsByPage = found
-        isLoading = false
-    }
 }
 
 /// One annotation in the Comments tab: its kind and color, who made it and when, its status,

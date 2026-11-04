@@ -77,9 +77,46 @@ extension PDFViewerViewModel {
         noteAnnotationsChanged(onPage: page)
     }
 
-    /// Tells the Comments sidebar to read `page`'s annotations again, or every page's for nil.
+    /// Reads `page`'s annotations again for the Comments sidebar, or every page's for nil.
     func noteAnnotationsChanged(onPage page: Int?) {
         annotationChange = AnnotationChange(revision: annotationChange.revision &+ 1, page: page)
+        // While every page is being read, that read may already have passed this page.
+        if let page, annotationThreadsTask == nil, annotationThreadsByPage != nil {
+            // Callers note the change before they finish writing it (removeAnnotation deletes
+            // the object afterwards), so read the page once they're done.
+            Task { @MainActor [weak self] in
+                guard let self, self.annotationThreadsTask == nil, self.annotationThreadsByPage != nil else { return }
+                let threads = self.annotationThreads(pageIndex: page)
+                self.annotationThreadsByPage?[page] = threads.isEmpty ? nil : threads
+            }
+        } else {
+            reloadAllAnnotationThreads()
+        }
+    }
+
+    /// Reads every page's annotations off the main thread, which takes a while in a long document.
+    private func reloadAllAnnotationThreads() {
+        annotationThreadsTask?.cancel()
+        annotationThreadsByPage = nil
+        guard let doc = document else {
+            annotationThreadsTask = nil
+            annotationThreadsByPage = [:]
+            return
+        }
+        annotationThreadsTask = Task { [weak self] in
+            let found = await Task.detached(priority: .userInitiated) { () -> [Int: [PDFAnnotationThread]]? in
+                var found: [Int: [PDFAnnotationThread]] = [:]
+                for page in 0..<doc.pageCount {
+                    if Task.isCancelled { return nil }
+                    let threads = doc.annotationThreads(pageIndex: page)
+                    if !threads.isEmpty { found[page] = threads }
+                }
+                return found
+            }.value
+            guard let self, !Task.isCancelled, let found, self.document === doc else { return }
+            self.annotationThreadsByPage = found
+            self.annotationThreadsTask = nil
+        }
     }
 
     /// Scrolls to an annotation, selects it if it was made in this session and briefly

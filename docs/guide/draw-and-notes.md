@@ -64,7 +64,7 @@ Your name on annotations comes from Annotation Author in [Settings](settings.md)
 
 ## See all annotations
 
-Click the Comments tab in the sidebar to list every annotation in the document by page, with its comment, status and replies. Click one to go to it on the page. Double-click it to open its comments there, to reply or change its status. Use the filter button at the top to show only one type, author, status or date.
+Click the Comments tab in the sidebar to list every annotation in the document by page, with its comment, status and replies. The tab appears once the document has an annotation. Click one to go to it on the page. Double-click it to open its comments there, to reply or change its status. Use the filter button at the top to show only one type, author, status or date.
 
 For a table you can sort and filter in a larger window, click the Annotations button at the right of the Markup toolbar. Select one and click Show on Page, or double-click it, to go to its page.
 

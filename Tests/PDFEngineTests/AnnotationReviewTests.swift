@@ -304,6 +304,50 @@ struct AnnotationReviewTests {
         #expect(reopened.annotationThreads().first?.replies.count == 1)
     }
 
+    /// Waits for the Comments sidebar's read of every page to finish.
+    private func annotationThreadsLoaded(_ vm: PDFViewerViewModel) async throws -> [Int: [PDFAnnotationThread]] {
+        for _ in 0..<500 where vm.annotationThreadsTask != nil || vm.annotationThreadsByPage == nil {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return try #require(vm.annotationThreadsByPage)
+    }
+
+    /// Waits up to five seconds for `condition`, which the sidebar's page reads make true later.
+    private func eventually(_ condition: () -> Bool) async throws -> Bool {
+        for _ in 0..<500 where !condition() {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return condition()
+    }
+
+    /// The Comments tab is only there while the document has annotations, and keeps up with them.
+    @Test func commentsTabFollowsTheDocumentsAnnotations() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir, pages: 3)
+        #expect(try await annotationThreadsLoaded(vm).isEmpty)
+        #expect(!vm.hasAnnotationThreads)
+
+        let note = try #require(vm.addNoteAnnotation(pageIndex: 1, at: CGPoint(x: 200, y: 300), text: "First"))
+        #expect(try await eventually { vm.hasAnnotationThreads })
+        #expect(vm.annotationThreadsByPage?[1]?.map(\.root.text) == ["First"])
+
+        vm.deleteThread(try thread(vm, note))
+        #expect(try await eventually { !vm.hasAnnotationThreads })
+
+        // Deleting a page with annotations reads the document again.
+        _ = vm.addNoteAnnotation(pageIndex: 0, at: CGPoint(x: 200, y: 300), text: "On a deleted page")
+        #expect(try await eventually { vm.hasAnnotationThreads })
+        vm.deletePage(0)
+        #expect(try await eventually { !vm.hasAnnotationThreads })
+
+        _ = vm.addNoteAnnotation(pageIndex: 1, at: CGPoint(x: 200, y: 300), text: "Kept")
+        vm.saveDocument()
+        let reopened = try await reopen(url)
+        #expect(try await annotationThreadsLoaded(reopened)[1]?.map(\.root.text) == ["Kept"])
+        #expect(reopened.hasAnnotationThreads)
+    }
+
     /// A reply can repeat what the annotation said, so it must not outlive it.
     @Test func deletingAnAnnotationDeletesItsReplies() async throws {
         let dir = try makeScratchDirectory()

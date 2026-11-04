@@ -280,6 +280,17 @@ public final class PDFViewerViewModel: ObservableObject {
     public let undoManager = UndoManager()
     /// Bumped when annotations or their replies change; see `noteAnnotationsChanged`.
     @Published public internal(set) var annotationChange = AnnotationChange()
+    /// Every page's annotations with their replies, for the Comments sidebar, which only shows
+    /// its tab when there are some. Nil while the whole document is being read.
+    @Published public internal(set) var annotationThreadsByPage: [Int: [PDFAnnotationThread]]? {
+        didSet {
+            if let threads = annotationThreadsByPage { hasAnnotationThreads = !threads.isEmpty }
+        }
+    }
+    /// Whether the last read found any annotations; kept while the document is read again, so
+    /// the Comments tab doesn't disappear meanwhile.
+    @Published public private(set) var hasAnnotationThreads = false
+    var annotationThreadsTask: Task<Void, Never>?
     /// The annotation the Comments sidebar last asked to scroll to.
     @Published public internal(set) var annotationReveal: AnnotationReveal?
     /// Annotations deleted this session that the renderer's copy of the file may still hold, by
