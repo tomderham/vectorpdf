@@ -397,10 +397,23 @@ public final class PDFLayoutEngine: Sendable {
             if rootI != rootJ { parent[rootI] = rootJ }
         }
 
-        for i in 0..<allStrokes.count {
-            let boxI = allStrokes[i].bbox.insetBy(dx: -3.5, dy: -3.5)
-            for j in (i + 1)..<allStrokes.count {
-                if boxI.intersects(allStrokes[j].bbox) {
+        // Strokes that touch share a 32 pt square of the page, so only those are compared rather
+        // than every pair: a CAD drawing has tens of thousands of strokes.
+        let bucketSize: CGFloat = 32
+        var buckets: [Int64: [Int]] = [:]
+        for i in allStrokes.indices {
+            let box = allStrokes[i].bbox.insetBy(dx: -3.5, dy: -3.5)
+            for bx in Int(floor(box.minX / bucketSize))...Int(floor(box.maxX / bucketSize)) {
+                for by in Int(floor(box.minY / bucketSize))...Int(floor(box.maxY / bucketSize)) {
+                    buckets[Int64(bx) << 32 | Int64(UInt32(bitPattern: Int32(truncatingIfNeeded: by))), default: []].append(i)
+                }
+            }
+        }
+        for members in buckets.values where members.count > 1 {
+            for a in 0..<(members.count - 1) {
+                let i = members[a]
+                let boxI = allStrokes[i].bbox.insetBy(dx: -3.5, dy: -3.5)
+                for j in members[(a + 1)...] where boxI.intersects(allStrokes[j].bbox) {
                     unionRoots(i, j)
                 }
             }
@@ -450,6 +463,9 @@ public final class PDFLayoutEngine: Sendable {
             }
 
             guard clusterY.count >= 2 && clusterX.count >= 2 else { continue }
+            // Ruling with this many columns or cells is a drawing, not a table: a CAD plan's lines
+            // make a 458 x 335 grid, and filling its cells took seconds.
+            guard clusterX.count - 1 <= 40 && (clusterX.count - 1) * (clusterY.count - 1) <= 4000 else { continue }
 
             let minX = clusterX.first!
             let maxX = clusterX.last!

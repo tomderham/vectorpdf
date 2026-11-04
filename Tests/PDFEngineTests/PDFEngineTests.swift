@@ -5589,3 +5589,32 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(try await search.search(query: "Hiddencopy").isEmpty)
     #expect(try await !search.search(query: "Legend label").isEmpty)
 }
+
+/// A drawing's grid of lines isn't taken for a table, so a CAD plan's ruling doesn't make a table
+/// of hundreds of columns, whose cells took seconds to fill on the first selection.
+@Test func aDrawingsGridIsNotATable() throws {
+    let dir = try makeScratchDirectory()
+    defer { try? FileManager.default.removeItem(at: dir) }
+    let url = dir.appendingPathComponent("grid.pdf")
+    var mediaBox = CGRect(x: 0, y: 0, width: 800, height: 600)
+    let context = try #require(CGContext(url as CFURL, mediaBox: &mediaBox, nil))
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    context.beginPDFPage(nil)
+    context.setStrokeColor(NSColor.black.cgColor)
+    context.setLineWidth(0.5)
+    for i in 0...60 {
+        context.stroke(CGRect(x: 40 + CGFloat(i) * 12, y: 40, width: 0, height: 480))
+    }
+    for i in 0...30 {
+        context.stroke(CGRect(x: 40, y: 40 + CGFloat(i) * 16, width: 720, height: 0))
+    }
+    let font = NSFont(name: "Helvetica", size: 8) ?? NSFont.systemFont(ofSize: 8)
+    for i in 0..<20 {
+        ("\(i * 5)" as NSString).draw(at: NSPoint(x: 42 + CGFloat(i * 3) * 12, y: 44 + CGFloat(i) * 16), withAttributes: [.font: font])
+    }
+    context.endPDFPage()
+    context.closePDF()
+
+    let page = try #require(try PDFDocumentCore(filePath: url.path).loadStructuredPage(for: 0))
+    #expect(PDFLayoutEngine().detectTables(in: page).allSatisfy { !$0.isLattice })
+}
