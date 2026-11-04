@@ -1212,6 +1212,85 @@ public struct FloatingReaderHUD: View {
 }
 
 /// Toolbar button supporting hover and active selection styling.
+/// A toolbar's color control: a swatch of the current color that opens a palette of the others,
+/// as in Preview.
+struct AnnotationColorPicker: View {
+    @Binding var selection: AnnotationColor
+    var helpText = "Color"
+    @State private var isShowingPalette = false
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            isShowingPalette.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                AnnotationColorSwatch(color: selection, size: 16)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 6)
+            .frame(height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(isHovered || isShowingPalette ? Color.primary.opacity(0.08) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help("\(helpText): \(selection.displayName)")
+        .accessibilityLabel(helpText)
+        .accessibilityValue(selection.displayName)
+        .popover(isPresented: $isShowingPalette, arrowEdge: .bottom) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(24), spacing: 10), count: 5), spacing: 10) {
+                ForEach(AnnotationColor.allCases, id: \.self) { color in
+                    Button {
+                        selection = color
+                        isShowingPalette = false
+                    } label: {
+                        AnnotationColorSwatch(color: color, size: 24, isSelected: color == selection)
+                    }
+                    .buttonStyle(.plain)
+                    .help(color.displayName)
+                    .accessibilityLabel(color.displayName)
+                    .accessibilityAddTraits(color == selection ? .isSelected : [])
+                }
+            }
+            .padding(12)
+        }
+    }
+}
+
+/// A round swatch with a hairline edge, so yellow and white show against a light bar and
+/// black against a dark one, and a check mark when it's the current color.
+struct AnnotationColorSwatch: View {
+    let color: AnnotationColor
+    var size: CGFloat
+    var isSelected = false
+
+    private var isLight: Bool {
+        let (r, g, b) = color.rgb
+        return 0.299 * r + 0.587 * g + 0.114 * b > 0.6
+    }
+
+    var body: some View {
+        Circle()
+            .fill(Color(nsColor: color.nsColor).gradient)
+            .overlay(Circle().strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5))
+            .overlay {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: size * 0.42, weight: .bold))
+                        .foregroundStyle(isLight ? Color.black.opacity(0.7) : Color.white)
+                }
+            }
+            .frame(width: size, height: size)
+            .shadow(color: .black.opacity(0.12), radius: 0.5, y: 0.5)
+    }
+}
+
 public struct PreviewToolbarButton<Label: View>: View {
     @State private var isWindowKey = true
     public let isSelected: Bool

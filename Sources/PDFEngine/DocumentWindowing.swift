@@ -35,6 +35,21 @@ final class PDFViewerWindow: NSWindow {
         didSet { TitlebarDragStrip.install(in: self) }
     }
 
+    /// The document's, for Edit > Undo. Asking the delegate isn't enough: the window makes its
+    /// own undo manager before the document's delegate is attached, and keeps using it.
+    override var undoManager: UndoManager? {
+        (delegate as? PDFViewerWindowDelegate)?.viewModel?.undoManager ?? super.undoManager
+    }
+
+    // NSWindow's own undo: and redo: use the undo manager it made, not the one above.
+    @objc func undo(_ sender: Any?) {
+        undoManager?.undo()
+    }
+
+    @objc func redo(_ sender: Any?) {
+        undoManager?.redo()
+    }
+
     override func sendEvent(_ event: NSEvent) {
         let wasKey = isKeyWindow
         if event.type == .leftMouseDown {

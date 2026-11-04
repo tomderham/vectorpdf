@@ -25,6 +25,29 @@ private func page(_ blocks: [TextBlock]) -> StructuredPage {
     StructuredPage(pageIndex: 0, bounds: CGRect(x: 0, y: 0, width: 612, height: 792), blocks: blocks)
 }
 
+/// Writes a one-page PDF showing `lines` in 10 pt Helvetica, 12 pt apart.
+private func writeLinesPDF(_ lines: [String], to url: URL) throws {
+    let content = "BT /F1 10 Tf 12 TL 72 700 Td " + lines.map { "(\($0)) Tj T*" }.joined(separator: " ") + " ET"
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        "<< /Length \(content.utf8.count) >>\nstream\n\(content)\nendstream"
+    ]
+    var file = "%PDF-1.7\n"
+    var offsets: [Int] = []
+    for (index, object) in objects.enumerated() {
+        offsets.append(file.utf8.count)
+        file += "\(index + 1) 0 obj\n\(object)\nendobj\n"
+    }
+    let xref = file.utf8.count
+    file += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n"
+    for offset in offsets { file += String(format: "%010d 00000 n \n", offset) }
+    file += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
+    try Data(file.utf8).write(to: url)
+}
+
 private func runs(_ text: String) -> [TextRun] {
     [TextRun(text: text, isBold: false, isItalic: false, size: 10, fontName: "Helvetica")]
 }
@@ -210,6 +233,29 @@ private func paragraphs(_ elements: [PDFLayoutElement]) -> [(text: String, bbox:
         try await actor.openDocument(filePath: Fixture.url("hr1968-ih.pdf").path)
         let hits = try await actor.search(query: "division")
         #expect(hits.contains { $0.pageIndex == 2 && Set($0.highlightQuads.map { Int($0.boundingRect.midY) }).count >= 2 })
+    }
+
+    /// An identifier a table cell wraps at hyphens before capitals ("DENIED_STA_AFFILIAT-" /
+    /// "ED_WITH…") is found whole, by smart and plain search; a hyphen that belongs is still found.
+    @Test func searchFindsAnIdentifierWrappedAtHyphens() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try writeLinesPDF(["DENIED_STA_AFFILIAT-", "ED_WITH_MLD_WITH_EXIST-", "ING_MLD_ASSOCIATION", "", "", "a cost-", "Benefit study"], to: url)
+        let actor = PDFSearchActor()
+        try await actor.openDocument(filePath: url.path)
+        for options in [SearchOptions(), SearchOptions(smartSearch: false), SearchOptions(wholeWord: true)] {
+            let hits = try await actor.search(query: "DENIED_STA_AFFILIATED_WITH_MLD_WITH_EXISTING_MLD_ASSOCIATION", options: options)
+            #expect(hits.count == 1, "\(options)")
+            #expect(Set(hits.first?.highlightQuads.map { Int($0.boundingRect.midY) } ?? []).count == 3)
+        }
+        #expect(try await actor.search(query: "cost-Benefit", options: SearchOptions(smartSearch: false)).count == 1)
+    }
+
+    /// The index joins a word hyphenated before a capital with its hyphen, and says where it is.
+    @Test func indexRecordsHyphensKeptAtLineBreaks() {
+        let index = page([block([line("AFFILIAT-", x: 72, y: 100), line("ED here", x: 72, y: 114)])]).searchableIndex
+        #expect(index.text == "AFFILIAT-ED here")
+        #expect(index.lineBreakHyphens == [8])
     }
 
     @Test @MainActor func onlyAnaphoricQuestionsAreFollowUps() {

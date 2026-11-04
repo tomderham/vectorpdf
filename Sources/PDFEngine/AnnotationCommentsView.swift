@@ -59,6 +59,50 @@ extension PDFCanvasView {
         popover.show(relativeTo: anchor.intersection(visibleRect).isEmpty ? visibleRect : anchor, of: self, preferredEdge: .maxX)
     }
 
+    /// The annotation whose comments a double-click at `pagePoint` opens. One made in this
+    /// session is hit exactly. One from the file is known only by its bounds, so a shape or
+    /// cloud counts only near its edge, and lines and freehand drawings, whose bounds cover text
+    /// they don't touch, aren't hit at all; they can still be right-clicked.
+    func commentsTarget(at pagePoint: CGPoint, pageIndex: Int) -> Int? {
+        if let annot = viewModel.pageAnnotations[pageIndex]?.reversed().first(where: { $0.contains(pagePoint: pagePoint) }) {
+            return annot.documentObjectNumber
+        }
+        let outlined: Set<String> = ["Square", "Circle", "Polygon"]
+        let unbounded: Set<String> = ["Line", "PolyLine", "Ink"]
+        return viewModel.annotationThreads(pageIndex: pageIndex)
+            .filter { thread in
+                let root = thread.root
+                guard !unbounded.contains(root.subtype), root.rect.insetBy(dx: -3, dy: -3).contains(pagePoint) else { return false }
+                let isOutline = root.isCloud || outlined.contains(root.subtype)
+                return !isOutline || !root.rect.insetBy(dx: 12, dy: 12).contains(pagePoint)
+            }
+            .min { $0.root.rect.width * $0.root.rect.height < $1.root.rect.width * $1.root.rect.height }?
+            .root.objectNumber
+    }
+
+    /// Selects an annotation the Comments sidebar scrolled to, if it was made in this session,
+    /// outlines it for a moment, and opens its comments if asked.
+    func showRevealedAnnotation(_ reveal: AnnotationReveal) {
+        if let annot = viewModel.pageAnnotations[reveal.pageIndex]?.first(where: { $0.documentObjectNumber == reveal.objectNumber }) {
+            selectedAnnotation = (id: annot.id, pageIndex: reveal.pageIndex)
+        } else {
+            selectedAnnotation = nil
+        }
+        revealedAnnotationOutline = (reveal.pageIndex, reveal.rect)
+        needsDisplay = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self, self.revealedAnnotationOutline?.rect == reveal.rect else { return }
+            self.revealedAnnotationOutline = nil
+            self.needsDisplay = true
+        }
+        if reveal.opensComments {
+            // After the scroll, so the popover points at the annotation where it now is.
+            DispatchQueue.main.async { [weak self] in
+                self?.showComments(pageIndex: reveal.pageIndex, objectNumber: reveal.objectNumber)
+            }
+        }
+    }
+
     /// The corner handles of a selected, resizable annotation.
     func drawResizeHandles(around rect: NSRect) {
         let size: CGFloat = 5.0
@@ -92,37 +136,164 @@ extension PDFCanvasView {
     /// looks the same before and after it's saved.
     func drawRevisionCloud(in rect: NSRect, intensity: CGFloat, color: NSColor) {
         guard rect.width > 0, rect.height > 0 else { return }
+        drawRevisionCloud(around: [
+            NSPoint(x: rect.minX, y: rect.minY), NSPoint(x: rect.maxX, y: rect.minY),
+            NSPoint(x: rect.maxX, y: rect.maxY), NSPoint(x: rect.minX, y: rect.maxY)
+        ], intensity: intensity, color: color)
+    }
+
+    /// The same, round the polygon `points` in canvas coordinates: equal arcs, spaced evenly
+    /// along the whole outline, each bulging away from the inside.
+    func drawRevisionCloud(around points: [NSPoint], intensity: CGFloat, color: NSColor) {
+        guard points.count >= 3 else { return }
         let border: CGFloat = 1.5
         let zoom = viewModel.effectiveZoom
         let spacing = (intensity * 6.666667 + border * 0.8333333) * zoom
         let bulge = (intensity * 4.0 + border * 0.5) * zoom * 1.3
-        let corners = [
-            NSPoint(x: rect.minX, y: rect.minY), NSPoint(x: rect.maxX, y: rect.minY),
-            NSPoint(x: rect.maxX, y: rect.maxY), NSPoint(x: rect.minX, y: rect.maxY)
-        ]
+
+        // Points every `spacing` or so round the outline.
+        let closed = points + [points[0]]
+        let lengths = zip(closed, closed.dropFirst()).map { hypot($1.x - $0.x, $1.y - $0.y) }
+        let perimeter = lengths.reduce(0, +)
+        guard perimeter > 0 else { return }
+        let count = max(Int((perimeter / spacing).rounded()), 3)
+        let step = perimeter / CGFloat(count)
+        var stops: [NSPoint] = []
+        var edge = 0
+        var edgeStart: CGFloat = 0
+        for n in 0..<count {
+            let distance = CGFloat(n) * step
+            while edge < lengths.count - 1, distance > edgeStart + lengths[edge] {
+                edgeStart += lengths[edge]
+                edge += 1
+            }
+            let t = lengths[edge] > 0 ? (distance - edgeStart) / lengths[edge] : 0
+            let a = closed[edge], b = closed[edge + 1]
+            stops.append(NSPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t))
+        }
+
+        // Right of the direction of travel is outside when the outline runs the way a
+        // rectangle's corners do from (minX, minY) to (maxX, minY); left otherwise.
+        let outward: CGFloat = CloudOutline.signedArea(points) > 0 ? 1 : -1
+
         let path = NSBezierPath()
         path.lineWidth = max(border * zoom, 1.0)
-        path.move(to: corners[0])
-        for i in 0..<4 {
-            let a = corners[i]
-            let b = corners[(i + 1) % 4]
+        path.lineJoinStyle = .round
+        path.move(to: stops[0])
+        for i in stops.indices {
+            let a = stops[i]
+            let b = stops[(i + 1) % stops.count]
             let length = hypot(b.x - a.x, b.y - a.y)
-            let arcs = max(Int(length / spacing), 1)
-            let ux = (b.x - a.x) / length
-            let uy = (b.y - a.y) / length
-            // Corners run counterclockwise in the canvas's coordinates, so outward is to the right.
-            let nx = uy * (isFlipped ? -1 : 1) * bulge
-            let ny = -ux * (isFlipped ? -1 : 1) * bulge
-            let step = length / CGFloat(arcs)
-            for n in 0..<arcs {
-                let start = NSPoint(x: a.x + ux * step * CGFloat(n), y: a.y + uy * step * CGFloat(n))
-                let end = NSPoint(x: start.x + ux * step, y: start.y + uy * step)
-                path.curve(to: end, controlPoint1: NSPoint(x: start.x + nx, y: start.y + ny), controlPoint2: NSPoint(x: end.x + nx, y: end.y + ny))
-            }
+            guard length > 0 else { continue }
+            let normal = NSPoint(x: outward * (b.y - a.y) / length, y: -outward * (b.x - a.x) / length)
+            path.curve(to: b, controlPoint1: NSPoint(x: a.x + normal.x * bulge, y: a.y + normal.y * bulge),
+                       controlPoint2: NSPoint(x: b.x + normal.x * bulge, y: b.y + normal.y * bulge))
         }
         path.close()
         color.setStroke()
         path.stroke()
+    }
+
+    /// A rectangle or oval filling `box`, or a line through `ends` with `ending` at the last,
+    /// all in canvas points; `strokeWidth` is in page points.
+    func drawShape(_ type: PDFAnnotationType, box: NSRect, ends: [NSPoint], strokeWidth: CGFloat, ending: PDFLineEnding?, color: NSColor) {
+        let zoom = viewModel.effectiveZoom
+        let path: NSBezierPath
+        switch type {
+        case .square:
+            path = NSBezierPath(rect: box)
+        case .circle:
+            path = NSBezierPath(ovalIn: box)
+        case .line where ends.count >= 2:
+            path = NSBezierPath()
+            path.move(to: ends[0])
+            path.line(to: ends[1])
+        default:
+            return
+        }
+        path.lineWidth = max(strokeWidth * zoom, 1.0)
+        color.setStroke()
+        path.stroke()
+        if type == .line, let ending, let head = ending.path(tip: ends[1], dx: ends[0].x - ends[1].x, dy: ends[0].y - ends[1].y, scale: max(1, strokeWidth) * zoom) {
+            head.path.lineWidth = path.lineWidth
+            if head.filled {
+                color.setFill()
+                head.path.fill()
+            } else {
+                head.path.stroke()
+            }
+        }
+    }
+
+    /// An annotation from the file being edited, drawn as the document draws it, where a drag
+    /// in progress would put it, with its selection handles.
+    func drawFileAnnotation(_ annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect) {
+        guard let number = annot.documentObjectNumber, let initialRect = annot.rect else { return }
+        let zoom = viewModel.effectiveZoom
+        let scale = zoom * (window?.backingScaleFactor ?? 2)
+        if let picture = fileAnnotationPictures[number], picture.revision == annot.appearanceRevision, picture.scale == scale {
+            // Drawn already
+        } else if let fresh = viewModel.document?.renderAnnotation(pageIndex: annot.pageIndex, objectNumber: number, scale: scale) {
+            fileAnnotationPictures[number] = (annot.appearanceRevision, scale, fresh.image, fresh.bounds)
+        }
+        let drag = activeAnnotationDrag.flatMap { $0.id == annot.id ? $0 : nil }
+        var rect = initialRect
+        var ends = annot.inkPoints
+        if let drag {
+            if annot.type == .line {
+                ends = updatedLineEnds(of: annot, part: drag.part, delta: drag.currentDelta)
+                if drag.part == .entireAnnotation {
+                    rect = initialRect.offsetBy(dx: drag.currentDelta.width, dy: drag.currentDelta.height)
+                }
+            } else {
+                rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
+            }
+        }
+        if let picture = fileAnnotationPictures[number] {
+            // Its picture, carried the way the drag carries its box.
+            let sx = initialRect.width > 0 ? rect.width / initialRect.width : 1
+            let sy = initialRect.height > 0 ? rect.height / initialRect.height : 1
+            let pageBox = CGRect(
+                x: rect.minX + (picture.bounds.minX - initialRect.minX) * sx,
+                y: rect.minY + (picture.bounds.minY - initialRect.minY) * sy,
+                width: picture.bounds.width * sx,
+                height: picture.bounds.height * sy
+            )
+            let origin = canvasPoint(for: pageBox.origin, pFrame: pFrame, pBounds: pBounds)
+            let box = NSRect(origin: origin, size: CGSize(width: pageBox.width * zoom, height: pageBox.height * zoom))
+            let isDraggingAnEnd = drag.map { $0.part == .lineStart || $0.part == .lineEnd } ?? false
+            NSImage(cgImage: picture.image, size: box.size).draw(in: box, from: .zero, operation: .sourceOver, fraction: isDraggingAnEnd ? 0.35 : 1, respectFlipped: true, hints: nil)
+        }
+        let canvasEnds = ends.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
+        if let drag, drag.part == .lineStart || drag.part == .lineEnd, canvasEnds.count >= 2 {
+            drawShape(.line, box: .zero, ends: canvasEnds, strokeWidth: annot.strokeWidth, ending: annot.lineEnding, color: annot.color.nsColor)
+        }
+        guard selectedAnnotation?.id == annot.id else { return }
+        if annot.type == .line {
+            drawEndHandles(canvasEnds)
+            return
+        }
+        let origin = canvasPoint(for: rect.origin, pFrame: pFrame, pBounds: pBounds)
+        let selRect = NSRect(origin: origin, size: CGSize(width: rect.width * zoom, height: rect.height * zoom)).insetBy(dx: -2.5, dy: -2.5)
+        let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
+        selPath.lineWidth = 1.5
+        NSColor.controlAccentColor.setStroke()
+        selPath.stroke()
+        if annot.isResizableFromFile {
+            drawResizeHandles(around: selRect)
+        }
+    }
+
+    /// The round handles on the ends of a selected line.
+    func drawEndHandles(_ points: [NSPoint]) {
+        for point in points {
+            let handle = NSBezierPath(ovalIn: NSRect(x: point.x - 3.5, y: point.y - 3.5, width: 7, height: 7))
+            NSColor.white.setFill()
+            handle.fill()
+            NSColor.controlAccentColor.setStroke()
+            handle.lineWidth = 1.5
+            handle.stroke()
+        }
     }
 }
 

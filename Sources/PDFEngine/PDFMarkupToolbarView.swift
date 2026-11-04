@@ -36,7 +36,7 @@ public struct PDFMarkupToolbarView: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            // 1. Tool Mode Buttons [Text Select | Draw | Text | Callout | Eraser | Stamp]
+            // 1. Tool Mode Buttons [Text Select | Draw | Text | Callout | Note | Shapes | Eraser | Stamp]
             HStack(spacing: 2) {
                 PreviewToolbarButton(
                     isSelected: viewModel.canvasMode == .select,
@@ -84,12 +84,12 @@ public struct PDFMarkupToolbarView: View {
                 }
 
                 PreviewToolbarButton(
-                    isSelected: viewModel.canvasMode == .cloud,
-                    helpText: "Revision Cloud (Drag around the area under review)"
+                    isSelected: viewModel.canvasMode == .shape,
+                    helpText: "Shapes (Drag to draw a rectangle, oval, line, arrow or revision cloud)"
                 ) {
-                    viewModel.canvasMode = .cloud
+                    viewModel.canvasMode = .shape
                 } label: {
-                    Image(systemName: "cloud")
+                    Image(systemName: "square.on.circle")
                 }
 
                 PreviewToolbarButton(
@@ -223,20 +223,51 @@ public struct PDFMarkupToolbarView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-            case .cloud:
+            case .shape:
                 Divider()
                     .frame(height: 16)
 
-                Picker("Arc Size", selection: $viewModel.selectedCloudArcSize) {
-                    ForEach(PDFCloudArcSize.allCases, id: \.self) { size in
-                        Text(size.displayName).tag(size)
+                Picker("Shape", selection: $viewModel.selectedShape) {
+                    ForEach(PDFShapeKind.allCases, id: \.self) { shape in
+                        Image(systemName: shape.systemImage)
+                            .accessibilityLabel(shape.displayName)
+                            .tag(shape)
                     }
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .controlSize(.small)
-                .frame(width: 155)
-                .help("Revision Cloud Arc Size")
+                .frame(width: 140)
+                .segmentedControlTooltips(PDFShapeKind.allCases.map(\.displayName))
+
+                if viewModel.selectedShape == .cloud {
+                    Text("Drag around the area")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Line Width", selection: $viewModel.drawStrokeWidth) {
+                        Text("Thin").tag(CGFloat(1.5))
+                        Text("Medium").tag(CGFloat(2.5))
+                        Text("Thick").tag(CGFloat(4.5))
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .controlSize(.small)
+                    .frame(width: 155)
+                    .help("Line Width")
+                }
+
+                if viewModel.selectedShape == .line {
+                    Picker("Line Ending", selection: $viewModel.selectedShapeLineEnding) {
+                        ForEach(PDFLineEnding.allCases, id: \.self) { ending in
+                            Text(ending.displayName).tag(ending)
+                        }
+                    }
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .frame(width: 110)
+                    .help("Line Ending (None for a plain line)")
+                }
 
             case .redact:
                 EmptyView()
@@ -265,33 +296,12 @@ public struct PDFMarkupToolbarView: View {
                 EmptyView()
             }
 
-            // 3. Color Palette Swatches (shown for Select, Draw, Text, and Callout modes)
+            // 3. Color (shown for every tool that draws in a color)
             if viewModel.canvasMode != .eraser && viewModel.canvasMode != .redact && viewModel.canvasMode != .stamp {
                 Divider()
                     .frame(height: 16)
 
-                HStack(spacing: 5) {
-                    ForEach(AnnotationColor.allCases, id: \.self) { color in
-                        Button {
-                            viewModel.selectedAnnotationColor = color
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(nsColor: color.nsColor))
-                                    .frame(width: 14, height: 14)
-
-                                if viewModel.selectedAnnotationColor == color {
-                                    Circle()
-                                        .strokeBorder(Color.primary.opacity(0.8), lineWidth: 1.5)
-                                        .frame(width: 19, height: 19)
-                                }
-                            }
-                            .frame(width: 20, height: 20)
-                        }
-                        .buttonStyle(.plain)
-                        .help(color.displayName)
-                    }
-                }
+                AnnotationColorPicker(selection: $viewModel.selectedAnnotationColor)
             }
 
             Spacer()

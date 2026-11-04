@@ -36,6 +36,8 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | First Page | ⌘Up Arrow or ⌘Home |
 | Last Page | ⌘Down Arrow or ⌘End |
 | Forward or backward through the page | Space or ⇧Space |
+| Next Tab | ⇧⌘] or ⌃Tab |
+| Previous Tab | ⇧⌘[ or ⇧⌃Tab |
 
 ## View
 
@@ -74,15 +76,18 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Select a word | Double-click |
 | Select a line | Triple-click |
 | Select an area | ⌥-drag |
+| Open an annotation's comments | Double-click it, except a text box or callout |
 | Zoom | Pinch |
 
 ## Annotations and measurements
 
 | Action | Shortcut | Right-click |
 | --- | --- | --- |
+| Undo or redo an annotation change | ⌘Z or ⇧⌘Z | |
 | Edit selected text box or callout | Return | The annotation |
 | Delete selected annotation | Delete | The annotation |
 | Move selected annotation | Arrow keys, or ⇧Arrow keys for 10 points | |
 | Finish perimeter or area | Return | |
 | Constrain a measurement to 0°, 45° or 90° | Hold ⇧ | |
+| Draw a square or circle, or a line at a multiple of 45° | Hold ⇧ while dragging with the Shapes tool | |
 | Cancel, or leave the current tool | Escape | |

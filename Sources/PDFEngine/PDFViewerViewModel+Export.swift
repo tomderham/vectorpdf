@@ -35,18 +35,18 @@ extension PDFViewerViewModel {
         let threads = annotationThreads()
         let threadsByNumber = Dictionary(threads.map { ($0.root.objectNumber, $0) }, uniquingKeysWith: { first, _ in first })
         let fromFile = Dictionary(grouping: threadsNotInSession(threads), by: { $0.root.pageIndex })
-        let totalCount = pageAnnotations.values.reduce(0) { $0 + $1.count } + fromFile.values.reduce(0) { $0 + $1.count }
+        let totalCount = sessionAnnotations.values.reduce(0) { $0 + $1.count } + fromFile.values.reduce(0) { $0 + $1.count }
         md += "**Total Annotations:** \(totalCount)  \n\n"
         md += "---\n\n"
 
-        let sortedPages = Set(pageAnnotations.keys).union(fromFile.keys).sorted()
+        let sortedPages = Set(sessionAnnotations.keys).union(fromFile.keys).sorted()
         if sortedPages.isEmpty {
             md += "*No annotations found in this document.*\n"
             return md
         }
 
         for pIdx in sortedPages {
-            let annots = pageAnnotations[pIdx] ?? []
+            let annots = sessionAnnotations[pIdx] ?? []
             guard !annots.isEmpty || fromFile[pIdx] != nil else { continue }
             md += "## Page \(pIdx + 1)\n\n"
             for annot in annots {
@@ -77,6 +77,14 @@ extension PDFViewerViewModel {
                     md += "- **[Note]** *(\(colorName))*: \(annot.text)\n"
                 case .cloud:
                     md += "- **[Revision Cloud]** *(\(colorName))*\n"
+                case .square:
+                    md += "- **[Rectangle]** *(\(colorName))*\n"
+                case .circle:
+                    md += "- **[Oval]** *(\(colorName))*\n"
+                case .line:
+                    md += "- **[\(annot.lineEnding == PDFLineEnding.none ? "Line" : "Arrow")]** *(\(colorName))*\n"
+                case .other:
+                    md += "- **[Annotation]** *(\(colorName))*\n"
                 case .measureLength:
                     md += "- **[Dimension]** *(\(colorName))*: \(annot.measurementText.isEmpty ? annot.text : annot.measurementText)\n"
                 case .measurePerimeter:
@@ -100,9 +108,9 @@ extension PDFViewerViewModel {
         return md
     }
 
-    /// Threads for annotations that came with the file, which `pageAnnotations` doesn't hold.
+    /// Threads for annotations that came with the file, which `sessionAnnotations` doesn't hold.
     private func threadsNotInSession(_ threads: [PDFAnnotationThread]) -> [PDFAnnotationThread] {
-        let inSession = Set(pageAnnotations.values.joined().compactMap(\.documentObjectNumber))
+        let inSession = Set(sessionAnnotations.values.joined().compactMap(\.documentObjectNumber))
         return threads.filter { !inSession.contains($0.root.objectNumber) }
     }
 

@@ -77,6 +77,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
     private static let pageSpacing: CGFloat = 16.0
 
     private let lock = NSLock()
+    /// Copies of deleted and edited annotations, for Undo; never saved. Made when first needed.
+    private var holdingDocument: FZDocument?
     private let openedPassword: String?
     
     public init(filePath: String, password: String? = nil) throws {
@@ -223,6 +225,9 @@ public final class PDFDocumentCore: @unchecked Sendable {
     }
 
     deinit {
+        if let holdingDocument {
+            mupdf_document_drop(ctx, holdingDocument)
+        }
         mupdf_document_drop(ctx, doc)
         PDFContextManager.shared.dropContext(ctx)
     }
@@ -389,7 +394,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText, .callout, .stamp, .note, .cloud, .measureLength, .measurePerimeter, .measureArea, .measureAngle: return
+        case .ink, .freeText, .callout, .stamp, .note, .cloud, .square, .circle, .line, .other, .measureLength, .measurePerimeter, .measureArea, .measureAngle: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -518,6 +523,51 @@ public final class PDFDocumentCore: @unchecked Sendable {
         )
         if ret != 0 {
             let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add revision cloud"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Adds a revision cloud round the polygon `vertices` (a Polygon annotation, /BE << /S /C >>).
+    public func addCloud(pageIndex: Int, vertices: [CGPoint], intensity: CGFloat, red: Float, green: Float, blue: Float) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let points = vertices.map { fz_point(x: Float($0.x), y: Float($0.y)) }
+        let ret = points.withUnsafeBufferPointer { buf in
+            mupdf_pdf_add_cloud_polygon_annot(ctx, doc, Int32(pageIndex), buf.baseAddress, Int32(buf.count), Float(intensity), red, green, blue, &errorMsg)
+        }
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add revision cloud"
+            throw PDFError.saveFailed(msg)
+        }
+    }
+
+    /// Adds a rectangle or oval filling `rect`, or a line from `points[0]` to `points[1]` ending in
+    /// `lineEnding`; `type` is `.square`, `.circle` or `.line`.
+    public func addShape(pageIndex: Int, type: PDFAnnotationType, rect: CGRect, points: [CGPoint], strokeWidth: CGFloat, lineEnding: PDFLineEnding, red: Float, green: Float, blue: Float) throws {
+        let kind: Int32
+        let from: CGPoint
+        let to: CGPoint
+        switch type {
+        case .square, .circle:
+            kind = type == .square ? 0 : 1
+            (from, to) = (CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY))
+        case .line where points.count >= 2:
+            kind = 2
+            (from, to) = (points[0], points[1])
+        default:
+            throw PDFError.saveFailed("Not a shape")
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_add_shape_annot(
+            ctx, doc, Int32(pageIndex), kind,
+            Float(from.x), Float(from.y), Float(to.x), Float(to.y),
+            Float(strokeWidth), lineEnding.rawValue, red, green, blue, &errorMsg
+        )
+        if ret != 0 {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to add shape"
             throw PDFError.saveFailed(msg)
         }
     }
@@ -1091,6 +1141,168 @@ public final class PDFDocumentCore: @unchecked Sendable {
             throw PDFError.saveFailed(msg)
         }
         return ret == 1
+    }
+
+    // MARK: - Undo and editing annotations from the file
+
+    /// What the canvas needs to select, move and restyle an annotation, in page space.
+    public struct AnnotationDescription: Sendable, Equatable {
+        public let subtype: String
+        public let rect: CGRect
+        /// Where it's drawn, which can be larger than `rect`.
+        public let bounds: CGRect
+        public let color: AnnotationColor?
+        public let borderWidth: CGFloat
+        public let isCloud: Bool
+        public let isMeasurement: Bool
+        public let lineEnding: PDFLineEnding?
+        /// A line's ends, or a polygon's corners.
+        public let points: [CGPoint]
+    }
+
+    private func holding() -> FZDocument? {
+        if holdingDocument == nil {
+            holdingDocument = mupdf_pdf_new_holding_document(ctx)
+        }
+        return holdingDocument
+    }
+
+    private func check(_ ret: Int32, _ errorMsg: UnsafePointer<CChar>?, _ what: String) throws {
+        if ret < 0 {
+            throw PDFError.saveFailed(errorMsg.map { String(cString: $0) } ?? "Failed to \(what)")
+        }
+    }
+
+    /// The topmost annotation at a page point, as the Eraser would take it: along a line or
+    /// outline, over highlighted text, or within a note, stamp or text box.
+    public func annotationObjectNumber(pageIndex: Int, at pagePoint: CGPoint) -> Int? {
+        lock.lock()
+        defer { lock.unlock() }
+        var objnum: Int32 = 0
+        guard mupdf_pdf_annot_near_point(ctx, doc, Int32(pageIndex), Float(pagePoint.x), Float(pagePoint.y), &objnum, nil) == 0, objnum > 0 else { return nil }
+        return Int(objnum)
+    }
+
+    /// Deletes an annotation with its replies, keeping a copy for `restoreDeletedAnnotation`.
+    /// Returns the copy's index, or nil if no annotation on the page has that number.
+    public func deleteAnnotationKeepingCopy(pageIndex: Int, objectNumber: Int) throws -> Int? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let holding = holding() else { throw PDFError.saveFailed("No room to keep a copy") }
+        var index: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_stash_and_delete_annot(ctx, doc, Int32(pageIndex), Int32(objectNumber), holding, &index, &errorMsg)
+        try check(ret, errorMsg, "delete annotation")
+        return ret == 1 ? Int(index) : nil
+    }
+
+    /// Puts back an annotation `deleteAnnotationKeepingCopy` deleted, with its replies, and
+    /// returns its new object number.
+    public func restoreDeletedAnnotation(pageIndex: Int, copy index: Int) throws -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let holding = holding() else { throw PDFError.saveFailed("No copy kept") }
+        var objnum: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        try check(mupdf_pdf_unstash_annot(ctx, doc, Int32(pageIndex), holding, Int32(index), &objnum, &errorMsg), errorMsg, "restore annotation")
+        return Int(objnum)
+    }
+
+    /// Keeps a copy of an annotation as it is now, for `restoreAnnotation(_:from:)`.
+    public func copyAnnotation(pageIndex: Int, objectNumber: Int) throws -> Int? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let holding = holding() else { throw PDFError.saveFailed("No room to keep a copy") }
+        var index: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_pdf_snapshot_annot(ctx, doc, Int32(pageIndex), Int32(objectNumber), holding, &index, &errorMsg)
+        try check(ret, errorMsg, "copy annotation")
+        return ret == 1 ? Int(index) : nil
+    }
+
+    /// Returns an annotation to how `copyAnnotation` found it, keeping its object number.
+    public func restoreAnnotation(pageIndex: Int, objectNumber: Int, from index: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let holding = holding() else { throw PDFError.saveFailed("No copy kept") }
+        var errorMsg: UnsafePointer<CChar>?
+        try check(mupdf_pdf_restore_annot_snapshot(ctx, doc, Int32(pageIndex), Int32(objectNumber), holding, Int32(index), &errorMsg), errorMsg, "restore annotation")
+    }
+
+    /// Moves an annotation by `delta` in page space, keeping its appearance.
+    public func moveAnnotation(pageIndex: Int, objectNumber: Int, by delta: CGSize) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        try check(mupdf_pdf_translate_annot(ctx, doc, Int32(pageIndex), Int32(objectNumber), Float(delta.width), Float(delta.height), &errorMsg), errorMsg, "move annotation")
+    }
+
+    /// Changes an annotation's color, line width, line ending, box or points, and has MuPDF draw
+    /// it again; nil leaves each as it is.
+    public func restyleAnnotation(pageIndex: Int, objectNumber: Int, color: AnnotationColor? = nil, borderWidth: CGFloat? = nil,
+                                  lineEnding: PDFLineEnding? = nil, rect: CGRect? = nil, points: [CGPoint]? = nil) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let rgb = color?.rgb ?? (red: 0, green: 0, blue: 0)
+        let box = rect ?? .zero
+        let fzPoints = (points ?? []).map { fz_point(x: Float($0.x), y: Float($0.y)) }
+        let ret = fzPoints.withUnsafeBufferPointer { buf in
+            mupdf_pdf_restyle_annot(
+                ctx, doc, Int32(pageIndex), Int32(objectNumber),
+                color == nil ? 0 : 1, rgb.red, rgb.green, rgb.blue,
+                Float(borderWidth ?? -1), lineEnding.map { $0.rawValue } ?? -1,
+                rect == nil ? 0 : 1, Float(box.minX), Float(box.minY), Float(box.maxX), Float(box.maxY),
+                points == nil ? nil : buf.baseAddress, Int32(buf.count), &errorMsg
+            )
+        }
+        try check(ret, errorMsg, "change annotation")
+    }
+
+    public func describeAnnotation(pageIndex: Int, objectNumber: Int) -> AnnotationDescription? {
+        lock.lock()
+        defer { lock.unlock() }
+        var raw = mupdf_annot_description()
+        var points = [fz_point](repeating: fz_point(), count: 512)
+        let ret = points.withUnsafeMutableBufferPointer { buf in
+            mupdf_pdf_describe_annot(ctx, doc, Int32(pageIndex), Int32(objectNumber), &raw, buf.baseAddress, Int32(buf.count), nil)
+        }
+        guard ret == 1 else { return nil }
+        let subtype = withUnsafeBytes(of: &raw.subtype) { String(decoding: $0.prefix(while: { $0 != 0 }), as: UTF8.self) }
+        return AnnotationDescription(
+            subtype: subtype,
+            rect: CGRect(x: CGFloat(raw.x0), y: CGFloat(raw.y0), width: CGFloat(raw.x1 - raw.x0), height: CGFloat(raw.y1 - raw.y0)),
+            bounds: CGRect(x: CGFloat(raw.bx0), y: CGFloat(raw.by0), width: CGFloat(raw.bx1 - raw.bx0), height: CGFloat(raw.by1 - raw.by0)),
+            color: raw.has_color != 0 ? AnnotationColor.nearest(red: raw.r, green: raw.g, blue: raw.b) : nil,
+            borderWidth: CGFloat(raw.border_width),
+            isCloud: raw.is_cloud != 0,
+            isMeasurement: raw.is_measurement != 0,
+            lineEnding: raw.line_ending >= 0 ? PDFLineEnding(rawValue: raw.line_ending) : nil,
+            points: points.prefix(Int(raw.point_count)).map { CGPoint(x: CGFloat($0.x), y: CGFloat($0.y)) }
+        )
+    }
+
+    /// An annotation drawn alone as it appears on the page, at `scale` pixels per point, and
+    /// the page area the image covers.
+    public func renderAnnotation(pageIndex: Int, objectNumber: Int, scale: CGFloat) -> (image: CGImage, bounds: CGRect)? {
+        lock.lock()
+        defer { lock.unlock() }
+        var pixmapPtr: FZPixmap?
+        var bounds = fz_rect()
+        guard mupdf_pdf_render_annot(ctx, doc, Int32(pageIndex), Int32(objectNumber), Float(scale), &pixmapPtr, &bounds, nil) == 0,
+              let pix = pixmapPtr else { return nil }
+        defer { mupdf_pixmap_drop(ctx, pix) }
+        let width = Int(mupdf_pixmap_width(pix))
+        let height = Int(mupdf_pixmap_height(pix))
+        let stride = Int(mupdf_pixmap_stride(pix))
+        guard width > 0, height > 0, mupdf_pixmap_n(pix) == 4, let samples = mupdf_pixmap_samples(pix),
+              let provider = CGDataProvider(data: Data(bytes: samples, count: stride * height) as CFData),
+              let image = CGImage(
+                  width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: stride,
+                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                  provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent
+              ) else { return nil }
+        return (image, CGRect(x: CGFloat(bounds.x0), y: CGFloat(bounds.y0), width: CGFloat(bounds.x1 - bounds.x0), height: CGFloat(bounds.y1 - bounds.y0)))
     }
 
     /// Deletes a highlight annotation located near a point on a page

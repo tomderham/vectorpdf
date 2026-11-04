@@ -14,9 +14,11 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 | A highlight, underline or strikethrough | Comments…, and the matching Remove command |
 | A text box | Comments…, Edit Text Box, and the delete command |
 | A callout | Comments…, Edit Callout Note, Line Ending, and the delete command |
-| A note, or the outline of a revision cloud | Comments…, and the delete command |
+| A note, or the outline of a rectangle, oval or revision cloud | Comments…, and the delete command |
+| A line or arrow | Comments…, Line Ending, and the delete command |
 | A drawing, stamp or measurement | Comments…, and the delete command |
-| An annotation saved in the document earlier, or made in another app | Comments…, and the commands for anywhere else on the page |
+| A shape, cloud, line, note, stamp or text box saved in the document earlier, or made in another app | Comments…, Line Ending for a line, and the delete command |
+| A highlight, drawing or measurement saved in the document earlier, or made in another app | Comments…, and the commands for anywhere else on the page |
 | Anywhere else on the page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 If you right-click a plain-text reference and related documents are open in other tabs, the menu also has commands to [go to it or find it](cross-document-references.md).
@@ -29,6 +31,7 @@ If you right-click a plain-text reference and related documents are open in othe
 | A thumbnail | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. With several pages selected, the commands name how many, such as Delete 3 Pages. See [Rearrange pages](pages.md). |
 | A search result | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
+| An annotation in the Comments tab | Show on Page, Comments…, Delete |
 
 ## In the window
 

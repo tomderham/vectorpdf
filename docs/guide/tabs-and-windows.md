@@ -9,6 +9,7 @@ VectorPDF uses standard macOS window tabs.
 - **New tab:** press ⌘T, or click the + button in the tab bar.
 - **Open a PDF in a new tab:** press ⌥⌘O, or drag it onto an open document.
 - **New window:** press ⌘N for an empty window, or ⌘O to open a PDF in a new window.
+- **Switch tabs:** press ⇧⌘] for the next tab and ⇧⌘[ for the previous one (Go > Next Tab and Go > Previous Tab). ⌃Tab and ⇧⌃Tab work too.
 
 To save the open tabs as a group, right-click the document's title, then choose Save All Open Tabs as a Group. See [Favorites and Tab Groups](favorites-and-tab-groups.md).
 

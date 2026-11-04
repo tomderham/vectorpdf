@@ -22,7 +22,7 @@ Zoom in for accuracy before you measure. Pressing Escape cancels a measurement i
 
 ## Change how measurements look
 
-Use the color palette and line width in the Measurement toolbar before you measure.
+Use the color button and line width in the Measurement toolbar before you measure.
 
 ## Keep or remove measurements
 

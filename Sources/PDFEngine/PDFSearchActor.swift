@@ -178,8 +178,9 @@ public actor PDFSearchActor {
                             ignored.map { $0.stringByReplacingMatches(in: text, range: NSRange(location: 0, length: (text as NSString).length), withTemplate: "") } ?? text
                         }
                         let joined = Self.joiningWrappedLines(pageText)
-                        let hasStextMatch = matches(pageText) || matches(joined)
-                            || (ignored != nil && matches(withoutIgnored(joined)))
+                        let unhyphenated = Self.joiningWrappedLines(pageText, droppingHyphens: true)
+                        let hasStextMatch = matches(pageText) || matches(joined) || matches(unhyphenated)
+                            || (ignored != nil && (matches(withoutIgnored(joined)) || matches(withoutIgnored(unhyphenated))))
 
                         if !hasStextMatch {
                             if let ocr = ocrPages[pageIdx] {
@@ -224,14 +225,20 @@ public actor PDFSearchActor {
                         let pageBounds = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: CGFloat(rect.x1 - rect.x0), height: CGFloat(rect.y1 - rect.y0))
                         
                         let structuredPage = StructuredPage.load(fromStext: stext, pageIndex: pageIdx, pageBounds: pageBounds)
-                        let (indexedText, charQuads) = structuredPage.searchableIndex
+                        let (indexedText, charQuads, lineBreakHyphens) = structuredPage.searchableIndex
                         let nsIndexed = indexedText as NSString
                         // Each match: its range in the index, its text, and the index units it
                         // covers — all of them, or all but an ignored pattern's in the middle.
                         var found = regex.matches(in: indexedText, options: [], range: NSRange(location: 0, length: nsIndexed.length)).map {
                             (range: $0.range, text: nsIndexed.substring(with: $0.range), units: Array($0.range.location..<NSMaxRange($0.range)))
                         }
-                        if let ignored, let stripped = TextWithoutIgnored(indexedText, ignoring: ignored) {
+                        // A hyphen kept at a line break may still split a word: a table cell
+                        // wraps "DENIED_STA_AFFILIAT-" / "ED_WITH…", so also search without them.
+                        var removed = lineBreakHyphens.map { NSRange(location: $0, length: 1) }
+                        if let ignored {
+                            removed += ignored.matches(in: indexedText, range: NSRange(location: 0, length: nsIndexed.length)).map(\.range)
+                        }
+                        if let stripped = TextWithoutIgnored(indexedText, removing: removed) {
                             let strippedNS = stripped.text as NSString
                             let starts = Set(found.map(\.range.location))
                             for match in regex.matches(in: stripped.text, range: NSRange(location: 0, length: strippedNS.length)) where match.range.length > 0 {
@@ -284,10 +291,14 @@ public actor PDFSearchActor {
     }
     
     /// `text` without the lines that hold only a number, such as margin line numbers, and with
-    /// words hyphenated across lines joined up, as `LineJoin` joins them in the index.
-    static func joiningWrappedLines(_ text: String) -> String {
+    /// lines ending in a hyphen joined up, as `LineJoin` joins them in the index: a word
+    /// hyphenated across lines loses its hyphen, another hyphen stays. With `droppingHyphens`,
+    /// every hyphen ending a line goes, so a word broken before a capital ("AFFILIAT-" / "ED")
+    /// is whole too.
+    static func joiningWrappedLines(_ text: String, droppingHyphens: Bool = false) -> String {
         text.replacingOccurrences(of: "(?m)^[ \\t]*\\d{1,4}[ \\t]*\\n", with: "", options: .regularExpression)
             .replacingOccurrences(of: "(\\p{L})[-\u{2010}][ \\t]*\\n[ \\t]*(\\p{Ll})", with: "$1$2", options: .regularExpression)
+            .replacingOccurrences(of: "([-\u{2010}])[ \\t]*\\n[ \\t]*", with: droppingHyphens ? "" : "$1", options: .regularExpression)
             .replacingOccurrences(of: "\u{00AD}[ \\t]*\\n[ \\t]*", with: "", options: .regularExpression)
     }
 

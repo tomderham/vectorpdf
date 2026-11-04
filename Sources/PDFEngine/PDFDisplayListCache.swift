@@ -56,6 +56,13 @@ final class PDFDisplayListCache {
         lruOrder.append(pageIndex)
     }
     
+    func remove(pageIndex: Int, ctx: FZContext) {
+        if let list = cache.removeValue(forKey: pageIndex) {
+            mupdf_display_list_drop(ctx, list)
+        }
+        lruOrder.removeAll { $0 == pageIndex }
+    }
+
     func removeAll(ctx: FZContext) {
         for (_, list) in cache {
             mupdf_display_list_drop(ctx, list)

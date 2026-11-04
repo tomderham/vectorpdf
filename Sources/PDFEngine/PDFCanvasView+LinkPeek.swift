@@ -83,7 +83,7 @@ extension PDFCanvasView {
     private var allowsLinkPeek: Bool {
         guard viewModel.isInteractiveViewingMode else { return false }
         switch viewModel.canvasMode {
-        case .select, .text, .callout, .redact, .note, .cloud: return true
+        case .select, .text, .callout, .redact, .note, .shape: return true
         default: return false
         }
     }

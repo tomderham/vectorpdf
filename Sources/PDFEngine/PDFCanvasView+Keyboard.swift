@@ -180,7 +180,7 @@ extension PDFCanvasView {
             if let sel = selectedAnnotation,
                let list = viewModel.pageAnnotations[sel.pageIndex],
                let annot = list.first(where: { $0.id == sel.id }),
-               annot.type == .freeText || annot.type == .callout {
+               annot.type == .freeText || annot.type == .callout, !annot.isFromFile {
                 startInlineEditing(annotation: annot, pageIndex: sel.pageIndex)
                 return
             }

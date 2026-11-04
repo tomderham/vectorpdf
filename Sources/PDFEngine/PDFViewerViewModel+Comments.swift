@@ -19,6 +19,23 @@
 import AppKit
 import Foundation
 
+/// Which page's annotations last changed, so the Comments sidebar rereads only that page.
+public struct AnnotationChange: Equatable, Sendable {
+    public var revision = 0
+    /// Nil when any page may have changed, such as when a document opens.
+    public var page: Int?
+}
+
+/// A request to scroll to an annotation, from the Comments sidebar.
+public struct AnnotationReveal: Equatable, Sendable {
+    /// Changes with every request, so asking for the same annotation twice scrolls again.
+    public let token: Int
+    public let pageIndex: Int
+    public let objectNumber: Int
+    public let rect: CGRect
+    public let opensComments: Bool
+}
+
 extension PDFViewerViewModel {
     // MARK: - Annotation Comments
 
@@ -37,6 +54,11 @@ extension PDFViewerViewModel {
         return (0..<doc.pageCount).flatMap { doc.annotationThreads(pageIndex: $0) }
     }
 
+    /// The annotations on one page.
+    public func annotationThreads(pageIndex: Int) -> [PDFAnnotationThread] {
+        document?.annotationThreads(pageIndex: pageIndex) ?? []
+    }
+
     public func annotationThread(pageIndex: Int, objectNumber: Int) -> PDFAnnotationThread? {
         document?.annotationThreads(pageIndex: pageIndex).first { $0.root.objectNumber == objectNumber }
     }
@@ -49,9 +71,34 @@ extension PDFViewerViewModel {
             .min { $0.root.rect.width * $0.root.rect.height < $1.root.rect.width * $1.root.rect.height }
     }
 
-    private func markAnnotationsEdited() {
+    private func markAnnotationsEdited(onPage page: Int) {
         isDocumentEdited = true
         currentWindow?.isDocumentEdited = true
+        noteAnnotationsChanged(onPage: page)
+    }
+
+    /// Tells the Comments sidebar to read `page`'s annotations again, or every page's for nil.
+    func noteAnnotationsChanged(onPage page: Int?) {
+        annotationChange = AnnotationChange(revision: annotationChange.revision &+ 1, page: page)
+    }
+
+    /// Scrolls to an annotation, selects it if it was made in this session and briefly
+    /// outlines it; with `opensComments`, opens its comments beside it.
+    public func revealAnnotation(_ thread: PDFAnnotationThread, opensComments: Bool = false) {
+        let page = thread.root.pageIndex
+        guard let doc = document, page >= 0, page < doc.pageCount else { return }
+        loadPageMetadata(page)
+        recordNavigationLocation(page)
+        currentPageIndex = page
+        pruneCaches(around: page)
+        annotationReveal = AnnotationReveal(
+            token: (annotationReveal?.token ?? 0) &+ 1,
+            pageIndex: page,
+            objectNumber: thread.root.objectNumber,
+            rect: thread.root.rect,
+            opensComments: opensComments
+        )
+        Task { await renderPage(page) }
     }
 
     public func addReply(to thread: PDFAnnotationThread, text: String) {
@@ -59,7 +106,7 @@ extension PDFViewerViewModel {
         guard !text.isEmpty, let doc = document else { return }
         do {
             try doc.addAnnotationReply(pageIndex: thread.root.pageIndex, parentObjectNumber: thread.root.objectNumber, text: text, author: Self.annotationAuthor)
-            markAnnotationsEdited()
+            markAnnotationsEdited(onPage: thread.root.pageIndex)
         } catch {
             print("Failed to add reply on page \(thread.root.pageIndex): \(error)")
         }
@@ -76,7 +123,7 @@ extension PDFViewerViewModel {
                 author: author,
                 status: status
             )
-            markAnnotationsEdited()
+            markAnnotationsEdited(onPage: thread.root.pageIndex)
         } catch {
             print("Failed to set status on page \(thread.root.pageIndex): \(error)")
         }
@@ -90,7 +137,7 @@ extension PDFViewerViewModel {
             if let index = pageAnnotations[page]?.firstIndex(where: { $0.documentObjectNumber == thread.root.objectNumber }) {
                 pageAnnotations[page]?[index].text = text
             }
-            markAnnotationsEdited()
+            markAnnotationsEdited(onPage: page)
         } catch {
             print("Failed to change comment on page \(page): \(error)")
         }
@@ -101,8 +148,8 @@ extension PDFViewerViewModel {
         let page = thread.root.pageIndex
         if let annot = pageAnnotations[page]?.first(where: { $0.documentObjectNumber == thread.root.objectNumber }) {
             removeAnnotation(annot)
-        } else if (try? document?.deleteAnnotation(pageIndex: page, objectNumber: thread.root.objectNumber)) == true {
-            finalizeRedactionChanges(affectedPages: [page])
+        } else {
+            deleteFileAnnotation(pageIndex: page, objectNumber: thread.root.objectNumber)
         }
     }
 }

@@ -250,6 +250,26 @@ struct VectorPDF: App {
         return attributed
     }
 
+    /// Apart from `appCommands`, which has as many groups as a builder takes.
+    @CommandsBuilder
+    private var undoCommands: some Commands {
+        // SwiftUI's Undo and Redo stay disabled in these AppKit windows, so send the standard
+        // actions down the responder chain, as AppKit's own items do.
+        CommandGroup(replacing: .undoRedo) {
+            Button(coordinator.undoState.undoTitle) {
+                NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .disabled(!coordinator.undoState.canUndo)
+
+            Button(coordinator.undoState.redoTitle) {
+                NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(!coordinator.undoState.canRedo)
+        }
+    }
+
     @CommandsBuilder
     private var appCommands: some Commands {
         CommandGroup(replacing: .appInfo) {
@@ -741,6 +761,19 @@ struct VectorPDF: App {
             }
             .keyboardShortcut(.downArrow, modifiers: .command)
             .disabled(!hasDocument || !(resolvedViewModel?.canGoNextPage ?? false))
+
+            Divider()
+
+            // As in Safari and Finder. AppKit's Window > Show Next Tab keeps ⌃⇥.
+            Button("Previous Tab") {
+                NSApp.keyWindow?.selectPreviousTab(nil)
+            }
+            .keyboardShortcut("{", modifiers: .command)
+
+            Button("Next Tab") {
+                NSApp.keyWindow?.selectNextTab(nil)
+            }
+            .keyboardShortcut("}", modifiers: .command)
         }
     }
     
@@ -752,6 +785,7 @@ struct VectorPDF: App {
         .defaultLaunchBehavior(.suppressed)
         .commands {
             appCommands
+            undoCommands
         }
     }
 }

@@ -406,14 +406,215 @@ struct AnnotationReviewTests {
         return (window, canvas)
     }
 
-    private func mouse(_ type: NSEvent.EventType, _ canvas: PDFCanvasView, page x: CGFloat, _ y: CGFloat, vm: PDFViewerViewModel, clicks: Int = 1) throws -> NSEvent {
+    private func mouse(_ type: NSEvent.EventType, _ canvas: PDFCanvasView, page x: CGFloat, _ y: CGFloat, vm: PDFViewerViewModel, clicks: Int = 1, flags: NSEvent.ModifierFlags = []) throws -> NSEvent {
         let pFrame = try #require(canvas.pageFrame(for: 0))
         let bounds = try #require(vm.document?.pageBounds[0])
         let local = NSPoint(x: pFrame.minX + (x - bounds.minX) * vm.effectiveZoom, y: pFrame.minY + (y - bounds.minY) * vm.effectiveZoom)
-        return try #require(NSEvent.mouseEvent(with: type, location: canvas.convert(local, to: nil), modifierFlags: [], timestamp: 0, windowNumber: canvas.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: clicks, pressure: 1))
+        return try #require(NSEvent.mouseEvent(with: type, location: canvas.convert(local, to: nil), modifierFlags: flags, timestamp: 0, windowNumber: canvas.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: clicks, pressure: 1))
     }
 
-    /// The cloud tool makes a cloud from a drag, with the arc size chosen in the toolbar.
+    private func drag(_ canvas: PDFCanvasView, vm: PDFViewerViewModel, from start: CGPoint, to end: CGPoint, flags: NSEvent.ModifierFlags = []) throws {
+        canvas.mouseDown(with: try mouse(.leftMouseDown, canvas, page: start.x, start.y, vm: vm, flags: flags))
+        canvas.mouseDragged(with: try mouse(.leftMouseDragged, canvas, page: end.x, end.y, vm: vm, flags: flags))
+        canvas.mouseUp(with: try mouse(.leftMouseUp, canvas, page: end.x, end.y, vm: vm, flags: flags))
+    }
+
+    /// The Shapes tool draws each shape from a drag, as the PDF annotation type other readers
+    /// know; Shift squares a box, and dragging a line moves both its ends.
+    @Test func shapesToolDrawsEachShape() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        let (window, canvas) = makeCanvas(for: vm)
+        defer { withExtendedLifetime(window) {} }
+        vm.isMarkupBarVisible = true
+        vm.canvasMode = .shape
+        vm.selectedAnnotationColor = .blue
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        for (shape, ending, y) in [(PDFShapeKind.rectangle, PDFLineEnding.none, 100.0), (.oval, .none, 250), (.line, .none, 400), (.line, .closedArrow, 550)] {
+            vm.selectedShape = shape
+            vm.selectedShapeLineEnding = ending
+            try drag(canvas, vm: vm, from: CGPoint(x: 100, y: y), to: CGPoint(x: 300, y: y + 100))
+        }
+        let annots = vm.pageAnnotations[0] ?? []
+        #expect(annots.map(\.type) == [.square, .circle, .line, .line])
+        #expect(annots.allSatisfy { $0.color == .blue && $0.documentObjectNumber != nil })
+        #expect(annots[2].lineEnding == PDFLineEnding.none)
+        #expect(annots[3].lineEnding == .closedArrow)
+        let ends = annots[2].inkPoints
+        #expect(ends.count == 2)
+        #expect(abs(ends[0].x - 100) < 1 && abs(ends[0].y - 400) < 1 && abs(ends[1].x - 300) < 1 && abs(ends[1].y - 500) < 1)
+        // Hit only on the outline of a box, or along a line.
+        #expect(annots[0].contains(pagePoint: CGPoint(x: 100, y: 150)))
+        #expect(!annots[0].contains(pagePoint: CGPoint(x: 200, y: 150)))
+        #expect(annots[1].contains(pagePoint: CGPoint(x: 200, y: 250)))
+        #expect(!annots[1].contains(pagePoint: CGPoint(x: 200, y: 300)))
+        #expect(annots[2].contains(pagePoint: CGPoint(x: 200, y: 450)))
+        #expect(!annots[2].contains(pagePoint: CGPoint(x: 200, y: 420)))
+
+        // Dragging the line by its middle moves both ends.
+        try drag(canvas, vm: vm, from: CGPoint(x: 200, y: 450), to: CGPoint(x: 220, y: 470))
+        let moved = try #require(vm.pageAnnotations[0]?.last)
+        #expect(moved.type == .line && moved.id != annots[2].id)
+        #expect(abs(moved.inkPoints[0].x - 120) < 1 && abs(moved.inkPoints[0].y - 420) < 1)
+        #expect(abs(moved.inkPoints[1].x - 320) < 1 && abs(moved.inkPoints[1].y - 520) < 1)
+
+        // Dragging an end moves just that end.
+        let arrow = try #require(vm.pageAnnotations[0]?.first { $0.lineEnding == .closedArrow })
+        try drag(canvas, vm: vm, from: CGPoint(x: 300, y: 650), to: CGPoint(x: 400, y: 600))
+        let longer = try #require(vm.pageAnnotations[0]?.last)
+        #expect(longer.id != arrow.id && longer.lineEnding == .closedArrow)
+        #expect(abs(longer.inkPoints[0].x - 100) < 1 && abs(longer.inkPoints[0].y - 550) < 1)
+        #expect(abs(longer.inkPoints[1].x - 400) < 1 && abs(longer.inkPoints[1].y - 600) < 1)
+
+        // With it selected, the toolbar's width and ending change it.
+        vm.drawStrokeWidth = 4.5
+        try await Task.sleep(nanoseconds: 50_000_000)
+        vm.selectedShapeLineEnding = .diamond
+        try await Task.sleep(nanoseconds: 50_000_000)
+        let restyled = try #require(vm.pageAnnotations[0]?.last)
+        #expect(restyled.strokeWidth == 4.5 && restyled.lineEnding == .diamond)
+        #expect(restyled.inkPoints == longer.inkPoints)
+
+        // Shift makes a rectangle square.
+        vm.selectedShape = .rectangle
+        try drag(canvas, vm: vm, from: CGPoint(x: 400, y: 100), to: CGPoint(x: 450, y: 180), flags: .shift)
+        let square = try #require(vm.pageAnnotations[0]?.last?.rect)
+        #expect(abs(square.width - 80) < 1 && abs(square.height - 80) < 1)
+
+        vm.saveDocument()
+        try withRawAnnotations(url) { dicts in
+            #expect(dicts.compactMap { name($0, "Subtype") }.sorted() == ["Circle", "Line", "Line", "Square", "Square"])
+            // The line's /LE names its ending, for other apps to draw.
+            func endName(_ dict: CGPDFDictionaryRef) -> String? {
+                var endings: CGPDFArrayRef?
+                var value: UnsafePointer<CChar>?
+                guard CGPDFDictionaryGetArray(dict, "LE", &endings), let endings, CGPDFArrayGetName(endings, 1, &value), let value else { return nil }
+                return String(cString: value)
+            }
+            #expect(dicts.compactMap(endName).sorted() == ["Diamond", "None"])
+        }
+    }
+
+    /// Edit > Undo takes back adding, deleting and moving an annotation, and Redo does it again.
+    @Test func undoTakesBackAnnotationChanges() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await openDocument(in: dir)
+        let undo = vm.undoManager
+        // A test has no events to group by, so each step is its own group.
+        undo.groupsByEvent = false
+        func step(_ body: () -> Void) {
+            undo.beginUndoGrouping()
+            body()
+            undo.endUndoGrouping()
+        }
+        func types() -> [PDFAnnotationType] { vm.pageAnnotations[0]?.map(\.type) ?? [] }
+
+        step { vm.addShapeAnnotation(pageIndex: 0, shape: .oval, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 160)) }
+        step { vm.addInkAnnotation(pageIndex: 0, points: [CGPoint(x: 300, y: 300), CGPoint(x: 350, y: 320)]) }
+        #expect(undo.undoMenuItemTitle == "Undo Add Annotation")
+        undo.undo()
+        #expect(undo.redoMenuItemTitle == "Redo Add Annotation")
+        #expect(types() == [.circle])
+        #expect(vm.annotationThreads().count == 1)
+        undo.redo()
+        #expect(types() == [.circle, .ink])
+        #expect(vm.annotationThreads().count == 2)
+
+        let oval = try #require(vm.pageAnnotations[0]?.first)
+        step { vm.removeAnnotation(oval) }
+        #expect(types() == [.ink])
+        #expect(undo.undoMenuItemTitle == "Undo Delete Annotation")
+        undo.undo()
+        let restored = try #require(vm.pageAnnotations[0]?.first { $0.type == .circle })
+        #expect(restored.rect == oval.rect && restored.strokeWidth == oval.strokeWidth)
+        #expect(vm.annotationThreads().count == 2)
+
+        // Undoing a move puts it back, and its replies stay with it.
+        vm.addReply(to: try thread(vm, restored), text: "Keep me")
+        step {
+            vm.beginReplacingAnnotation(restored)
+            defer { vm.finishReplacingAnnotation() }
+            _ = vm.addRestyled(restored, rect: restored.rect!.offsetBy(dx: 50, dy: 0), color: .blue)
+        }
+        undo.undo()
+        let back = try #require(vm.pageAnnotations[0]?.first { $0.type == .circle })
+        #expect(back.rect == oval.rect && back.color == oval.color)
+        #expect(types().count == 2)
+        #expect(try thread(vm, back).replies.map(\.text) == ["Keep me"])
+        undo.redo()
+        #expect(vm.pageAnnotations[0]?.first { $0.type == .circle }?.color == .blue)
+        #expect(types().count == 2)
+
+        // The document window's Edit > Undo uses the same undo manager, even though the window
+        // made one of its own before the document's delegate was attached.
+        let window = PDFViewerWindow(contentRect: NSRect(x: 0, y: 0, width: 100, height: 100), styleMask: [.titled], backing: .buffered, defer: true)
+        _ = window.undoManager
+        let delegate = PDFViewerWindowDelegate(viewModel: vm)
+        window.delegate = delegate
+        #expect(window.undoManager === undo)
+        let count = types().count
+        window.undo(nil)
+        #expect(types().count == count)  // undoing the redone color change: still one oval and the ink
+        #expect(vm.pageAnnotations[0]?.first { $0.type == .circle }?.color == oval.color)
+        withExtendedLifetime(delegate) {}
+    }
+
+    /// A cloud follows the outline dragged round an area, and saves as a cloudy Polygon.
+    @Test func cloudFollowsTheOutlineDragged() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        let (window, canvas) = makeCanvas(for: vm)
+        defer { withExtendedLifetime(window) {} }
+        vm.isMarkupBarVisible = true
+        vm.canvasMode = .shape
+        vm.selectedShape = .cloud
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        // An L-shaped loop, with a little wobble along each side.
+        let corners = [CGPoint(x: 100, y: 100), CGPoint(x: 300, y: 100), CGPoint(x: 300, y: 200),
+                       CGPoint(x: 200, y: 200), CGPoint(x: 200, y: 300), CGPoint(x: 100, y: 300), CGPoint(x: 100, y: 102)]
+        var path: [CGPoint] = []
+        for (a, b) in zip(corners, corners.dropFirst()) {
+            for step in 0..<10 {
+                let t = CGFloat(step) / 10
+                path.append(CGPoint(x: a.x + (b.x - a.x) * t + (step.isMultiple(of: 2) ? 1 : -1), y: a.y + (b.y - a.y) * t))
+            }
+        }
+        canvas.mouseDown(with: try mouse(.leftMouseDown, canvas, page: path[0].x, path[0].y, vm: vm))
+        for point in path.dropFirst() {
+            canvas.mouseDragged(with: try mouse(.leftMouseDragged, canvas, page: point.x, point.y, vm: vm))
+        }
+        canvas.mouseUp(with: try mouse(.leftMouseUp, canvas, page: path.last!.x, path.last!.y, vm: vm))
+
+        let cloud = try #require(vm.pageAnnotations[0]?.first)
+        #expect(cloud.type == .cloud)
+        #expect((5...8).contains(cloud.inkPoints.count), "\(cloud.inkPoints)")
+        // Only near the outline: not inside it, nor in the notch the L leaves.
+        #expect(cloud.contains(pagePoint: CGPoint(x: 250, y: 200)))
+        #expect(!cloud.contains(pagePoint: CGPoint(x: 150, y: 150)))
+        #expect(!cloud.contains(pagePoint: CGPoint(x: 260, y: 260)))
+        #expect(vm.annotationThreads().first?.root.isCloud == true)
+
+        vm.saveDocument()
+        try withRawAnnotations(url) { dicts in
+            #expect(dicts.compactMap { name($0, "Subtype") } == ["Polygon"])
+            var effect: CGPDFDictionaryRef?
+            #expect(CGPDFDictionaryGetDictionary(dicts[0], "BE", &effect) && effect.map { name($0, "S") } == "C")
+        }
+    }
+
+    @Test func cloudOutlineIsAnOvalForAStraightDrag() {
+        let outline = CloudOutline.outline(for: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 50), CGPoint(x: 200, y: 100)])
+        #expect(outline.count == 16)
+        let box = CGRect(enclosing: outline)
+        #expect(abs(box.width - 200) < 0.01 && abs(box.height - 100) < 0.01)
+    }
+
+    /// The Shapes tool makes a revision cloud from a drag, with the arc size set on the model.
     @Test func draggingWithTheCloudToolAddsACloud() async throws {
         let dir = try makeScratchDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -422,7 +623,8 @@ struct AnnotationReviewTests {
         defer { withExtendedLifetime(window) {} }
         do {
             vm.isMarkupBarVisible = true
-            vm.canvasMode = .cloud
+            vm.canvasMode = .shape
+            vm.selectedShape = .cloud
             vm.selectedCloudArcSize = .large
             try await Task.sleep(nanoseconds: 50_000_000)
 
@@ -451,6 +653,186 @@ struct AnnotationReviewTests {
             vm.isMarkupBarVisible = false
             #expect(vm.canvasMode == .select)
         }
+    }
+
+    /// Double-clicking an annotation opens its comments: one made here wherever it's hit, and
+    /// one from the file by its bounds, or near the edge for a shape, but never a line, whose
+    /// bounds cover text it doesn't touch.
+    @Test func doubleClickFindsWhichCommentsToOpen() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 300, y: 300))
+        vm.addShapeAnnotation(pageIndex: 0, shape: .line, from: CGPoint(x: 100, y: 400), to: CGPoint(x: 300, y: 500))
+        vm.addInkAnnotation(pageIndex: 0, points: [CGPoint(x: 400, y: 100), CGPoint(x: 450, y: 150)])
+        vm.saveDocument()
+        let fresh = try await reopen(url)
+        let (window, canvas) = makeCanvas(for: fresh)
+        defer { withExtendedLifetime(window) {} }
+        func target(_ x: CGFloat, _ y: CGFloat) -> String? {
+            canvas.commentsTarget(at: CGPoint(x: x, y: y), pageIndex: 0)
+                .flatMap { number in fresh.annotationThreads(pageIndex: 0).first { $0.root.objectNumber == number }?.root.subtype }
+        }
+        #expect(target(100, 200) == "Square")
+        #expect(target(200, 200) == nil)
+        #expect(target(200, 450) == nil)
+        #expect(target(420, 120) == nil)
+
+        // Made in this session, each is hit along its own outline.
+        fresh.addShapeAnnotation(pageIndex: 1, shape: .line, from: CGPoint(x: 100, y: 400), to: CGPoint(x: 300, y: 500))
+        let line = try #require(fresh.pageAnnotations[1]?.first)
+        #expect(canvas.commentsTarget(at: CGPoint(x: 200, y: 450), pageIndex: 1) == line.documentObjectNumber)
+        #expect(canvas.commentsTarget(at: CGPoint(x: 200, y: 420), pageIndex: 1) == nil)
+    }
+
+    /// The Comments sidebar hears which page changed, and a reveal goes to the annotation's page.
+    @Test func commentsSidebarIsToldWhatChanged() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await openDocument(in: dir)
+        let before = vm.annotationChange.revision
+        let note = try #require(vm.addNoteAnnotation(pageIndex: 1, at: CGPoint(x: 100, y: 100), text: "Check"))
+        #expect(vm.annotationChange.page == 1 && vm.annotationChange.revision > before)
+        let thread = try thread(vm, note)
+        let afterAdd = vm.annotationChange.revision
+        vm.addReply(to: thread, text: "Done")
+        #expect(vm.annotationChange.page == 1 && vm.annotationChange.revision > afterAdd)
+
+        vm.revealAnnotation(thread, opensComments: true)
+        let reveal = try #require(vm.annotationReveal)
+        #expect(vm.currentPageIndex == 1)
+        #expect(reveal.objectNumber == note.documentObjectNumber && reveal.opensComments)
+        vm.revealAnnotation(thread)
+        #expect(vm.annotationReveal?.token != reveal.token)
+    }
+
+    /// Undoing a delete brings an annotation back as it was, replies, author and date included,
+    /// whether it was made here or came with the file and was erased.
+    @Test func undoingADeleteBringsBackReplies() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        vm.undoManager.groupsByEvent = false
+        func step(_ body: () -> Void) {
+            vm.undoManager.beginUndoGrouping()
+            body()
+            vm.undoManager.endUndoGrouping()
+        }
+
+        // Made here.
+        var added: PDFEngine.PDFAnnotation?
+        step { added = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 200)) }
+        let made = try #require(added)
+        vm.addReply(to: try thread(vm, made), text: "Keep me")
+        let created = try thread(vm, made).root.date
+        step { vm.removeAnnotation(made) }
+        #expect(vm.annotationThreads().isEmpty)
+        vm.undoManager.undo()
+        let back = try #require(vm.pageAnnotations[0]?.first)
+        #expect(try thread(vm, back).replies.map(\.text) == ["Keep me"])
+        #expect(try thread(vm, back).root.date == created)
+
+        // From the file, erased.
+        vm.saveDocument()
+        let fresh = try await reopen(url)
+        fresh.undoManager.groupsByEvent = false
+        #expect(fresh.pageAnnotations.isEmpty)
+        fresh.undoManager.beginUndoGrouping()
+        fresh.removeAnnotation(at: CGPoint(x: 100, y: 150), pageIndex: 0)
+        fresh.undoManager.endUndoGrouping()
+        #expect(fresh.annotationThreads().isEmpty)
+        #expect(fresh.hiddenAnnotationNumbers[0]?.isEmpty == false)
+        fresh.undoManager.undo()
+        let restored = try #require(fresh.annotationThreads().first)
+        #expect(restored.root.subtype == "Square")
+        #expect(restored.replies.map(\.text) == ["Keep me"])
+        fresh.undoManager.redo()
+        #expect(fresh.annotationThreads().isEmpty)
+    }
+
+    /// An annotation that came with the file can be picked up: moved, it keeps its own
+    /// appearance, object number and replies; restyled or resized, MuPDF draws it again. Undo
+    /// puts it back each time.
+    @Test func annotationsFromTheFileCanBeMovedAndRestyled() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        let made = try #require(vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 200), color: .red))
+        vm.addReply(to: try thread(vm, made), text: "Still here")
+        vm.addShapeAnnotation(pageIndex: 0, shape: .line, from: CGPoint(x: 100, y: 400), to: CGPoint(x: 300, y: 400), lineEnding: .openArrow, color: .blue)
+        vm.saveDocument()
+
+        let fresh = try await reopen(url)
+        fresh.undoManager.groupsByEvent = false
+        let (window, canvas) = makeCanvas(for: fresh)
+        defer { withExtendedLifetime(window) {} }
+        let square = try #require(fresh.annotationThreads().first { $0.root.subtype == "Square" })
+        let number = square.root.objectNumber
+        let before = try #require(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: number))
+
+        // Dragging its outline picks it up and moves it.
+        fresh.undoManager.beginUndoGrouping()
+        try drag(canvas, vm: fresh, from: CGPoint(x: 100, y: 150), to: CGPoint(x: 130, y: 170))
+        fresh.undoManager.endUndoGrouping()
+        let picked = try #require(fresh.pageAnnotations[0]?.first)
+        #expect(picked.isFromFile && picked.documentObjectNumber == number)
+        #expect(fresh.hiddenAnnotationNumbers[0]?.contains(number) == true)
+        let moved = try #require(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: number))
+        #expect(abs(moved.rect.minX - before.rect.minX - 30) < 0.5 && abs(moved.rect.minY - before.rect.minY - 20) < 0.5)
+        #expect(fresh.annotationThread(pageIndex: 0, objectNumber: number)?.replies.map(\.text) == ["Still here"])
+
+        // Restyled from the toolbar while selected.
+        fresh.undoManager.beginUndoGrouping()
+        fresh.selectedAnnotationColor = .green
+        try await Task.sleep(nanoseconds: 50_000_000)
+        fresh.undoManager.endUndoGrouping()
+        #expect(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: number)?.color == .green)
+        fresh.undoManager.undo()
+        #expect(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: number)?.color == .red)
+        fresh.undoManager.undo()
+        #expect(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: number)?.rect == before.rect)
+
+        // A line's end can be dragged; the other stays put.
+        let line = try #require(fresh.annotationThreads().first { $0.root.subtype == "Line" })
+        fresh.undoManager.beginUndoGrouping()
+        try drag(canvas, vm: fresh, from: CGPoint(x: 300, y: 400), to: CGPoint(x: 350, y: 450))
+        fresh.undoManager.endUndoGrouping()
+        let ends = try #require(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: line.root.objectNumber)).points
+        #expect(abs(ends[0].x - 100) < 0.5 && abs(ends[0].y - 400) < 0.5)
+        #expect(abs(ends[1].x - 350) < 0.5 && abs(ends[1].y - 450) < 0.5)
+        #expect(fresh.document?.describeAnnotation(pageIndex: 0, objectNumber: line.root.objectNumber)?.lineEnding == .openArrow)
+
+        // Saved, it's where it was left, for any app.
+        fresh.saveDocument()
+        let again = try await reopen(url)
+        #expect(again.document?.describeAnnotation(pageIndex: 0, objectNumber: number)?.rect == before.rect)
+        #expect(again.annotationThreads().count == 2)
+    }
+
+    /// The renderer leaves out what the canvas draws itself, so nothing is drawn twice.
+    @Test func rendererLeavesOutHiddenAnnotations() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await openDocument(in: dir)
+        vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 300, y: 300), strokeWidth: 4.5, color: .red)
+        vm.saveDocument()
+        let number = try #require(vm.pageAnnotations[0]?.first?.documentObjectNumber)
+
+        let actor = PDFRenderActor()
+        try await actor.openDocument(filePath: url.path)
+        func redAt100() async throws -> Bool {
+            let image = try await actor.renderPage(pageIndex: 0, scale: 1).image
+            let context = try #require(CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+            let data = try #require(context.data).assumingMemoryBound(to: UInt8.self)
+            // (100, 200) on the page, top-down, is row 200 of the bitmap, whose rows run top-down too.
+            let pixel = data + 200 * image.width * 4 + 100 * 4
+            return pixel[0] > 200 && pixel[1] < 120
+        }
+        #expect(try await redAt100())
+        await actor.setHiddenAnnotations([0: [number]])
+        #expect(try await !redAt100())
+        #expect(vm.hiddenAnnotationNumbers[0] == [number])
     }
 
     /// Dragging across a cloud's interior leaves it alone for text selection underneath.
@@ -498,7 +880,7 @@ struct AnnotationReviewTests {
         let dir = try makeScratchDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         let (vm, _) = try await openDocument(in: dir)
-        for mode in [CanvasMode.select, .draw, .text, .callout, .note, .cloud, .eraser, .stamp] {
+        for mode in [CanvasMode.select, .draw, .text, .callout, .note, .shape, .eraser, .stamp] {
             vm.canvasMode = mode
             let view = NSHostingView(rootView: PDFMarkupToolbarView(viewModel: vm))
             view.layoutSubtreeIfNeeded()

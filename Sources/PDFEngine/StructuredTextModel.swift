@@ -241,11 +241,14 @@ public struct StructuredPage: Sendable {
         allLines.flatMap { $0.characters }
     }
     
-    /// Builds unified plain text where each character offset maps 1:1 to an optional PDFQuad on the page
-    public var searchableIndex: (text: String, quads: [PDFQuad?]) {
+    /// Builds unified plain text where each character offset maps 1:1 to an optional PDFQuad on the page.
+    /// `lineBreakHyphens` are the offsets of hyphens kept at the end of a line ("AFFILIAT-" / "ED"),
+    /// which may be breaking a word all the same.
+    public var searchableIndex: (text: String, quads: [PDFQuad?], lineBreakHyphens: [Int]) {
         var fullText = ""
         var quads: [PDFQuad?] = []
-        
+        var lineBreakHyphens: [Int] = []
+
         func append(_ line: TextLine) {
             for char in line.characters {
                 fullText.append(char.char)
@@ -272,6 +275,9 @@ public struct StructuredPage: Sendable {
                 removeLast(while: { "-\u{00AD}\u{2010}".contains($0) })
             case .hyphen:
                 removeLast(while: \.isWhitespace)
+                if let last = fullText.last, "-\u{2010}".contains(last) {
+                    lineBreakHyphens.append(quads.count - String(last).utf16.count)
+                }
             case .space:
                 appendBreak(" ")
             }
@@ -306,7 +312,7 @@ public struct StructuredPage: Sendable {
             wroteBlock = true
             append(line)
         }
-        return (fullText, quads)
+        return (fullText, quads, lineBreakHyphens)
     }
     
     /// Loads structured text from an already loaded stext page

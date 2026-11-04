@@ -86,8 +86,8 @@ public struct IgnoredSearchPattern: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
-/// Text with every match of an ignored pattern removed, and where each of its UTF-16 units came
-/// from in the original, so a match in it can be highlighted on the page.
+/// Text with every match of an ignored pattern (or other ranges) removed, and where each of its
+/// UTF-16 units came from in the original, so a match in it can be highlighted on the page.
 struct TextWithoutIgnored {
     let text: String
     /// `offsets[i]` is the original UTF-16 offset of unit `i` of `text`; one more entry, at the
@@ -97,12 +97,17 @@ struct TextWithoutIgnored {
     /// Nil when nothing in `original` matches `ignored`.
     init?(_ original: String, ignoring ignored: NSRegularExpression) {
         let ns = original as NSString
-        let matches = ignored.matches(in: original, range: NSRange(location: 0, length: ns.length))
-        guard !matches.isEmpty else { return nil }
+        self.init(original, removing: ignored.matches(in: original, range: NSRange(location: 0, length: ns.length)).map(\.range))
+    }
+
+    /// Nil when `ranges` is empty.
+    init?(_ original: String, removing ranges: [NSRange]) {
+        guard !ranges.isEmpty else { return nil }
+        let ns = original as NSString
         var kept = ""
         var offsets: [Int] = []
         var cursor = 0
-        for range in matches.map(\.range) + [NSRange(location: ns.length, length: 0)] {
+        for range in ranges.sorted(by: { $0.location < $1.location }) + [NSRange(location: ns.length, length: 0)] {
             if range.location > cursor {
                 kept += ns.substring(with: NSRange(location: cursor, length: range.location - cursor))
                 offsets.append(contentsOf: cursor..<range.location)

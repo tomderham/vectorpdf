@@ -139,29 +139,8 @@ public struct PDFMeasurementToolbarView: View {
             Divider()
                 .frame(height: 16)
 
-            // 5. Color Palette Swatches
-            HStack(spacing: 5) {
-                ForEach(AnnotationColor.allCases, id: \.self) { color in
-                    Button {
-                        viewModel.selectedAnnotationColor = color
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color(nsColor: color.nsColor))
-                                .frame(width: 14, height: 14)
-
-                            if viewModel.selectedAnnotationColor == color {
-                                Circle()
-                                    .strokeBorder(Color.primary.opacity(0.8), lineWidth: 1.5)
-                                    .frame(width: 19, height: 19)
-                            }
-                        }
-                        .frame(width: 20, height: 20)
-                    }
-                    .buttonStyle(.plain)
-                    .help(color.displayName)
-                }
-            }
+            // 5. Color
+            AnnotationColorPicker(selection: $viewModel.selectedAnnotationColor, helpText: "Dimension Color")
 
             Divider()
                 .frame(height: 16)

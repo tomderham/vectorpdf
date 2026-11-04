@@ -252,7 +252,7 @@ public final class PDFViewerViewModel: ObservableObject {
                 isMeasurementBarVisible = false
                 isRedactionBarVisible = false
             } else {
-                if canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .stamp || canvasMode == .eraser || canvasMode == .note || canvasMode == .cloud {
+                if canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .stamp || canvasMode == .eraser || canvasMode == .note || canvasMode == .shape {
                     canvasMode = .select
                 }
                 pendingSignatureData = nil
@@ -265,10 +265,29 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
     @Published public var selectedLineEnding: PDFLineEnding = .closedArrow
-    @Published public var selectedCloudArcSize: PDFCloudArcSize = .medium
+    /// The PDF's largest standard arcs, for clouds that look like clouds.
+    @Published public var selectedCloudArcSize: PDFCloudArcSize = .large
+    @Published public var selectedShape: PDFShapeKind = .rectangle
+    /// What the Shapes tool's lines end with: None for a plain line.
+    @Published public var selectedShapeLineEnding: PDFLineEnding = .openArrow
     @Published public var isShowingAnnotationsTable: Bool = false
     /// The annotation being replaced, between beginReplacingAnnotation and finishReplacingAnnotation.
     var annotationBeingReplaced: PDFAnnotation?
+    /// What replaced `annotationBeingReplaced`, once it's written.
+    var annotationReplacement: PDFAnnotation?
+    /// Undo and Redo for annotations added, changed and removed this session. The window hands
+    /// it to Edit > Undo (see `PDFViewerWindowDelegate`).
+    public let undoManager = UndoManager()
+    /// Bumped when annotations or their replies change; see `noteAnnotationsChanged`.
+    @Published public internal(set) var annotationChange = AnnotationChange()
+    /// The annotation the Comments sidebar last asked to scroll to.
+    @Published public internal(set) var annotationReveal: AnnotationReveal?
+    /// Annotations deleted this session that the renderer's copy of the file may still hold, by
+    /// page and object number, so it leaves them out.
+    var removedAnnotationNumbers: [Int: Set<Int>] = [:]
+    /// What the renderer was last told to leave out (see `syncHiddenAnnotations`).
+    var hiddenAnnotationNumbers: [Int: Set<Int>] = [:]
+    private var pageAnnotationsCancellable: AnyCancellable?
 
     // Engineering Measurement & Takeoff
     @Published public var isMeasurementBarVisible: Bool = false {
@@ -276,7 +295,7 @@ public final class PDFViewerViewModel: ObservableObject {
             if isMeasurementBarVisible {
                 isMarkupBarVisible = false
                 isRedactionBarVisible = false
-                if canvasMode == .select || canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .redact || canvasMode == .stamp || canvasMode == .note || canvasMode == .cloud {
+                if canvasMode == .select || canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .redact || canvasMode == .stamp || canvasMode == .note || canvasMode == .shape {
                     canvasMode = .measureLength
                 }
             } else {
@@ -544,6 +563,12 @@ public final class PDFViewerViewModel: ObservableObject {
                 Task { await self.renderPage(self.currentPageIndex) }
             }
 
+        // @Published sends before the change, with the new value.
+        pageAnnotationsCancellable = $pageAnnotations
+            .sink { [weak self] annotations in
+                MainActor.assumeIsolated { self?.syncHiddenAnnotations(annotations) }
+            }
+
         NotificationCenter.default.addObserver(
             forName: ReadingStateManager.didSyncExternallyNotification,
             object: nil,
@@ -662,6 +687,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.activeSelection = nil
             self.additionalSelectionPages = []
             self.pageAnnotations = [:]
+            self.forgetAnnotationEdits()
+            self.noteAnnotationsChanged(onPage: nil)
             self.pageScaleConfigs = [:]
             self.ocrResults = [:]
             self.detectedScannedPages = []
@@ -791,8 +818,10 @@ public final class PDFViewerViewModel: ObservableObject {
         await loadDocument(from: path, password: password)
     }
     
-    public func renderPage(_ pageIndex: Int) async {
-        guard renderedPages[pageIndex] == nil, !pagesCurrentlyRendering.contains(pageIndex) else { return }
+    /// Renders a page if it hasn't been; with `replacing`, again, keeping the old picture on
+    /// screen until the new one is ready.
+    public func renderPage(_ pageIndex: Int, replacing: Bool = false) async {
+        guard replacing || renderedPages[pageIndex] == nil, !pagesCurrentlyRendering.contains(pageIndex) else { return }
         guard isRenderActorReady else {
             pagesAwaitingRenderActor.insert(pageIndex)
             return
@@ -1091,6 +1120,10 @@ public final class PDFViewerWindowDelegate: NSObject, NSWindowDelegate {
     public func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard let vm = viewModel else { return true }
         return vm.promptSaveBeforeClosingIfNeeded()
+    }
+
+    public func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
+        viewModel?.undoManager
     }
 
     public func windowDidBecomeKey(_ notification: Notification) {

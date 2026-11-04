@@ -63,10 +63,17 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var currentCalloutStart: CGPoint?
     var currentCalloutEnd: CGPoint?
 
-    // Revision cloud drafting in-progress state
-    var currentCloudPage: Int?
-    var currentCloudStart: CGPoint?
-    var currentCloudEnd: CGPoint?
+    // Shape drafting in-progress state
+    var currentShapePage: Int?
+    var currentShapeStart: CGPoint?
+    var currentShapeEnd: CGPoint?
+    /// The path dragged so far for a revision cloud, which follows it.
+    var currentShapePath: [CGPoint] = []
+    /// An annotation chosen in the Comments sidebar, outlined for a moment so it can be found.
+    var revealedAnnotationOutline: (pageIndex: Int, rect: CGRect)?
+    /// Pictures of annotations from the file being edited, as the document draws them, by object
+    /// number, with the revision and scale each was drawn for.
+    var fileAnnotationPictures: [Int: (revision: Int, scale: CGFloat, image: CGImage, bounds: CGRect)] = [:]
 
     /// The comments popover anchored to an annotation, while it's open.
     var commentsPopover: NSPopover?
@@ -97,6 +104,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         case calloutTextBox
         case calloutTargetPoint
         case calloutKneePoint
+        case lineStart
+        case lineEnd
     }
     var selectedAnnotation: (id: UUID, pageIndex: Int)?
     var activeAnnotationDrag: (
@@ -299,6 +308,33 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             .store(in: &cancellables)
 
+        viewModel.$drawStrokeWidth
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] width in
+                self?.restyleSelectedShape(strokeWidth: width)
+            }
+            .store(in: &cancellables)
+
+        viewModel.$annotationReveal
+            .compactMap { $0 }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] reveal in
+                self?.showRevealedAnnotation(reveal)
+            }
+            .store(in: &cancellables)
+
+        viewModel.$selectedShapeLineEnding
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] ending in
+                self?.restyleSelectedShape(lineEnding: ending)
+            }
+            .store(in: &cancellables)
+
         // Clear in-progress drafting state on mode change.
         viewModel.$canvasMode
             .removeDuplicates()
@@ -320,9 +356,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         currentCalloutPage = nil
         currentCalloutStart = nil
         currentCalloutEnd = nil
-        currentCloudPage = nil
-        currentCloudStart = nil
-        currentCloudEnd = nil
+        currentShapePage = nil
+        currentShapeStart = nil
+        currentShapeEnd = nil
+        currentShapePath = []
         currentRedactionPage = nil
         currentRedactionStart = nil
         currentRedactionEnd = nil

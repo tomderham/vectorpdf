@@ -29,6 +29,8 @@ final class RenderResource: @unchecked Sendable {
     /// cache hit, and to report a page's real bounds back to PDFDocumentCore the first time it's
     /// rendered (see renderPage's RenderedPage result and PDFDocumentCore.recordActualPageBounds).
     var pageBoundsCache: [Int: CGRect] = [:]
+    /// Annotations left out of each page, by object number: the canvas draws them itself.
+    var hiddenAnnotations: [Int: [Int32]] = [:]
 
     init(cacheCapacity: Int) {
         self.ctx = PDFContextManager.shared.makeClonedContext()
@@ -87,6 +89,15 @@ public actor PDFRenderActor {
         self.currentPath = filePath
     }
     
+    /// Leaves these annotations, by page and object number, out of pages drawn from now on.
+    public func setHiddenAnnotations(_ hidden: [Int: Set<Int>]) {
+        let new = hidden.filter { !$0.value.isEmpty }.mapValues { $0.sorted().map(Int32.init) }
+        for page in Set(new.keys).union(resource.hiddenAnnotations.keys) where new[page] != resource.hiddenAnnotations[page] {
+            resource.listCache.remove(pageIndex: page, ctx: resource.ctx)
+        }
+        resource.hiddenAnnotations = new
+    }
+
     /// Maximum pixel dimension for a rendered page bitmap to bound memory usage at high zoom.
     private static let maxRenderDimension: Float = 4096
 
@@ -138,7 +149,8 @@ public actor PDFRenderActor {
 
         // Create display list and insert into cache
         var listPtr: FZDisplayList?
-        if mupdf_display_list_create(ctx, page, &listPtr, nil) == 0, let list = listPtr {
+        let hidden = resource.hiddenAnnotations[pageIndex] ?? []
+        if mupdf_display_list_create_hiding(ctx, page, hidden, Int32(hidden.count), &listPtr, nil) == 0, let list = listPtr {
             resource.listCache.insert(pageIndex: pageIndex, list: list, ctx: ctx)
             let ret = mupdf_render_display_list(ctx, list, scaleF, scaleF, &pixmapPtr, &errorMsg)
             guard ret == 0, let pix = pixmapPtr else {

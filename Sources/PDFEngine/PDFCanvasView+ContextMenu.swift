@@ -66,14 +66,13 @@ extension PDFCanvasView {
 
         // Right-clicking an existing annotation offers removal
         if let (pIdx, _, pPoint) = pageInfo(at: point),
-           let annots = viewModel.pageAnnotations[pIdx],
-           let hitAnnot = annots.first(where: { $0.contains(pagePoint: pPoint) }) {
+           let hitAnnot = annotationForCommands(at: pPoint, pageIndex: pIdx) {
             let menu = NSMenu(title: "Annotation")
             if hitAnnot.documentObjectNumber != nil {
                 menu.addItem(makeCommentsItem(representing: (pIdx, hitAnnot.documentObjectNumber ?? 0)))
                 menu.addItem(NSMenuItem.separator())
             }
-            if hitAnnot.type == .freeText || hitAnnot.type == .callout {
+            if (hitAnnot.type == .freeText || hitAnnot.type == .callout) && !hitAnnot.isFromFile {
                 let editTitle = hitAnnot.type == .callout ? "Edit Callout Note" : "Edit Text Box"
                 let editItem = NSMenuItem(title: editTitle, action: #selector(editHitAnnotationAction(_:)), keyEquivalent: "")
                 editItem.image = NSImage(systemSymbolName: "pencil", accessibilityDescription: nil)
@@ -83,6 +82,10 @@ extension PDFCanvasView {
                 if hitAnnot.type == .callout {
                     menu.addItem(makeLineEndingItem(for: hitAnnot))
                 }
+                menu.addItem(NSMenuItem.separator())
+            }
+            if hitAnnot.type == .line {
+                menu.addItem(makeLineEndingItem(for: hitAnnot))
                 menu.addItem(NSMenuItem.separator())
             }
             let removeTitle: String
@@ -96,6 +99,10 @@ extension PDFCanvasView {
             case .stamp: removeTitle = "Delete Signature"
             case .note: removeTitle = "Delete Note"
             case .cloud: removeTitle = "Delete Revision Cloud"
+            case .other: removeTitle = "Delete Annotation"
+            case .square: removeTitle = "Delete Rectangle"
+            case .circle: removeTitle = "Delete Oval"
+            case .line: removeTitle = hitAnnot.lineEnding == PDFLineEnding.none ? "Delete Line" : "Delete Arrow"
             case .measureLength: removeTitle = "Delete Dimension"
             case .measurePerimeter: removeTitle = "Delete Perimeter"
             case .measureArea: removeTitle = "Delete Area Takeoff"
@@ -163,6 +170,16 @@ extension PDFCanvasView {
         showComments(pageIndex: target[0], objectNumber: target[1])
     }
 
+    /// The topmost annotation at a point, for its right-click commands. One that came with the
+    /// file is found as precisely as the document allows, and picked up so it has the same ones.
+    private func annotationForCommands(at pagePoint: CGPoint, pageIndex: Int) -> PDFAnnotation? {
+        let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIndex, at: pagePoint)
+        let shown = viewModel.pageAnnotations[pageIndex]?.last { annot in
+            annot.isFromFile ? annot.documentObjectNumber == fileHit : annot.contains(pagePoint: pagePoint)
+        }
+        return shown ?? fileHit.flatMap { viewModel.pickUpFileAnnotation(pageIndex: pageIndex, objectNumber: $0) }
+    }
+
     private func makeLineEndingItem(for annot: PDFAnnotation) -> NSMenuItem {
         let item = NSMenuItem(title: "Line Ending", action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: "Line Ending")
@@ -171,7 +188,7 @@ extension PDFCanvasView {
             choice.target = self
             choice.tag = Int(ending.rawValue)
             choice.representedObject = annot
-            choice.state = ending == (annot.lineEnding ?? .closedArrow) ? .on : .off
+            choice.state = ending == (annot.lineEnding ?? (annot.type == .line ? PDFLineEnding.none : .closedArrow)) ? .on : .off
             submenu.addItem(choice)
         }
         item.submenu = submenu
@@ -181,8 +198,22 @@ extension PDFCanvasView {
     @objc private func setLineEndingAction(_ sender: NSMenuItem) {
         guard let annot = sender.representedObject as? PDFAnnotation,
               let ending = PDFLineEnding(rawValue: Int32(sender.tag)),
-              ending != annot.lineEnding,
-              let rect = annot.rect, let target = annot.targetPoint, let knee = annot.kneePoint else { return }
+              ending != annot.lineEnding else { return }
+        if annot.isFromFile {
+            viewModel.editFileAnnotation(annot) { try $0.restyleAnnotation(pageIndex: annot.pageIndex, objectNumber: $1, lineEnding: ending) }
+            needsDisplay = true
+            return
+        }
+        if annot.type == .line {
+            viewModel.beginReplacingAnnotation(annot)
+            defer { viewModel.finishReplacingAnnotation() }
+            if let updated = viewModel.addRestyledShape(annot, lineEnding: ending) {
+                selectedAnnotation = (id: updated.id, pageIndex: annot.pageIndex)
+            }
+            needsDisplay = true
+            return
+        }
+        guard let rect = annot.rect, let target = annot.targetPoint, let knee = annot.kneePoint else { return }
         viewModel.beginReplacingAnnotation(annot)
         defer { viewModel.finishReplacingAnnotation() }
         if let updated = viewModel.addCalloutAnnotation(

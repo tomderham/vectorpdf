@@ -111,15 +111,16 @@ extension PDFCanvasView {
             return
         }
 
-        // For .select, .text, .callout and .cloud modes: Check if clicked on an existing annotation that can move
-        if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .cloud {
-            if let (pageIdx, _, pagePoint) = pageInfo(at: point),
-               let list = viewModel.pageAnnotations[pageIdx] {
+        // For .select, .text, .callout and .shape modes: Check if clicked on an existing annotation that can move
+        if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .shape {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                let list = viewModel.pageAnnotations[pageIdx] ?? []
 
                 // 1. If an annotation is already selected on this page, check if clicking on its corner resize handles
                 if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
                    let selAnnot = list.first(where: { $0.id == sel.id }),
-                   selAnnot.type != .note,
+                   selAnnot.type != .note, selAnnot.type != .line,
+                   !selAnnot.isFromFile || selAnnot.isResizableFromFile,
                    let r = selAnnot.rect,
                    let resizePart = hitTestResizeHandle(for: r, on: pageIdx, canvasPoint: point) {
                     activeAnnotationDrag = (
@@ -134,9 +135,16 @@ extension PDFCanvasView {
                     return
                 }
 
-                // 2. Check if clicked on an annotation body or callout target/knee
-                if let hit = list.reversed().first(where: { ($0.type == .callout || $0.type == .freeText || $0.type == .stamp || $0.type == .note || $0.type == .cloud) && $0.contains(pagePoint: pagePoint, tolerance: 6.0) }) {
-                    if event.clickCount == 2, hit.type == .note || hit.type == .cloud, let number = hit.documentObjectNumber {
+                // 2. Check if clicked on an annotation body or callout target/knee. One that came
+                // with the file is found as precisely as the document allows, and picked up.
+                let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIdx, at: pagePoint)
+                let shownHit = list.reversed().first(where: { annot in
+                    annot.isFromFile
+                        ? annot.documentObjectNumber == fileHit
+                        : (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
+                })
+                if let hit = shownHit ?? fileHit.flatMap({ viewModel.pickUpFileAnnotation(pageIndex: pageIdx, objectNumber: $0) }) {
+                    if event.clickCount == 2, hit.isFromFile || (hit.type != .freeText && hit.type != .callout), let number = hit.documentObjectNumber {
                         showComments(pageIndex: pageIdx, objectNumber: number)
                         return
                     } else if event.clickCount == 2 && hit.type != .stamp {
@@ -148,8 +156,20 @@ extension PDFCanvasView {
                             viewModel.selectedFontSize = fs
                         }
                         viewModel.selectedAnnotationColor = hit.color
+                        // The toolbar shows the shape's own width and ending, to change them.
+                        if hit.type == .square || hit.type == .circle || hit.type == .line {
+                            viewModel.drawStrokeWidth = hit.strokeWidth
+                        }
+                        if hit.type == .line, let ending = hit.lineEnding {
+                            viewModel.selectedShapeLineEnding = ending
+                        }
 
-                        let part = hit.type == .callout ? calloutDragPart(for: hit, at: pagePoint) : .entireAnnotation
+                        let part: DraggingAnnotationPart
+                        switch hit.type {
+                        case .callout where !hit.isFromFile: part = calloutDragPart(for: hit, at: pagePoint)
+                        case .line: part = lineDragPart(for: hit, at: pagePoint)
+                        default: part = .entireAnnotation
+                        }
                         activeAnnotationDrag = (
                             id: hit.id,
                             pageIndex: pageIdx,
@@ -165,12 +185,12 @@ extension PDFCanvasView {
             }
         }
 
-        // Double-clicking a note that came with the file opens it
+        // Double-clicking any other annotation opens its comments, as in Acrobat: a highlight,
+        // drawing or measurement made here, or one that came with the file.
         if viewModel.canvasMode == .select, event.clickCount == 2,
            let (pageIdx, _, pagePoint) = pageInfo(at: point),
-           let thread = viewModel.annotationThread(pageIndex: pageIdx, at: pagePoint),
-           thread.root.subtype == "Text" {
-            showComments(pageIndex: pageIdx, objectNumber: thread.root.objectNumber)
+           let number = commentsTarget(at: pagePoint, pageIndex: pageIdx) {
+            showComments(pageIndex: pageIdx, objectNumber: number)
             return
         }
 
@@ -268,12 +288,13 @@ extension PDFCanvasView {
             return
         }
 
-        // In cloud mode: start a new revision cloud
-        if viewModel.canvasMode == .cloud {
+        // In shape mode: start a new shape
+        if viewModel.canvasMode == .shape {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
-                currentCloudPage = pageIdx
-                currentCloudStart = pagePoint
-                currentCloudEnd = pagePoint
+                currentShapePage = pageIdx
+                currentShapeStart = pagePoint
+                currentShapeEnd = pagePoint
+                currentShapePath = [pagePoint]
                 needsDisplay = true
             }
             return
@@ -379,16 +400,35 @@ extension PDFCanvasView {
             return
         }
 
-        if viewModel.canvasMode == .cloud {
-            guard let dragPageIdx = currentCloudPage,
+        if viewModel.canvasMode == .shape {
+            guard let dragPageIdx = currentShapePage,
+                  let start = currentShapeStart,
                   let pFrame = pageFrame(for: dragPageIdx),
                   let doc = viewModel.document else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
             let pBounds = doc.pageBounds[dragPageIdx]
-            currentCloudEnd = CGPoint(
+            var end = CGPoint(
                 x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
                 y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
             )
+            // A cloud follows the path dragged.
+            if viewModel.selectedShape == .cloud {
+                currentShapePath.append(end)
+            }
+            // Shift makes a square or circle, or keeps a line to a multiple of 45°.
+            if event.modifierFlags.contains(.shift), viewModel.selectedShape != .cloud {
+                let dx = end.x - start.x
+                let dy = end.y - start.y
+                if viewModel.selectedShape.isBoxed {
+                    let side = max(abs(dx), abs(dy))
+                    end = CGPoint(x: start.x + (dx < 0 ? -side : side), y: start.y + (dy < 0 ? -side : side))
+                } else {
+                    let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
+                    let length = hypot(dx, dy)
+                    end = CGPoint(x: start.x + cos(angle) * length, y: start.y + sin(angle) * length)
+                }
+            }
+            currentShapeEnd = end
             needsDisplay = true
             return
         }
@@ -499,7 +539,9 @@ extension PDFCanvasView {
             let dx = drag.currentDelta.width
             let dy = drag.currentDelta.height
             let dist = hypot(dx, dy)
-            if dist > 2.0 {
+            if dist > 2.0, drag.initialAnnotation.isFromFile {
+                commitFileAnnotationDrag(drag.initialAnnotation, part: drag.part, delta: drag.currentDelta)
+            } else if dist > 2.0 {
                 let orig = drag.initialAnnotation
                 let pIdx = drag.pageIndex
                 viewModel.beginReplacingAnnotation(orig)
@@ -524,6 +566,8 @@ extension PDFCanvasView {
                         targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
                         kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
                         rect = rect.offsetBy(dx: dx, dy: dy)
+                        case .lineStart, .lineEnd:
+                        break
                     }
 
                     if let updated = viewModel.addCalloutAnnotation(
@@ -538,7 +582,11 @@ extension PDFCanvasView {
                     ) {
                         selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                     }
-                } else if orig.type == .note || orig.type == .cloud {
+                } else if orig.type == .line {
+                    if let updated = viewModel.addRestyledShape(orig, ends: updatedLineEnds(of: orig, part: drag.part, delta: drag.currentDelta)) {
+                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                    }
+                } else if orig.type == .note || orig.isShape {
                     let rect = updatedRect(from: orig.rect ?? .zero, part: drag.part, delta: drag.currentDelta)
                     if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
                         selectedAnnotation = (id: updated.id, pageIndex: pIdx)
@@ -585,17 +633,32 @@ extension PDFCanvasView {
             return
         }
 
-        if viewModel.canvasMode == .cloud {
-            if let pIdx = currentCloudPage, let start = currentCloudStart, let end = currentCloudEnd {
-                let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x), height: abs(end.y - start.y))
-                if rect.width > 8 && rect.height > 8,
-                   let annot = viewModel.addCloudAnnotation(pageIndex: pIdx, rect: rect, arcSize: viewModel.selectedCloudArcSize, color: viewModel.selectedAnnotationColor) {
+        if viewModel.canvasMode == .shape {
+            if let pIdx = currentShapePage, let start = currentShapeStart, let end = currentShapeEnd {
+                let shape = viewModel.selectedShape
+                let (width, height) = (abs(end.x - start.x), abs(end.y - start.y))
+                let annot: PDFAnnotation?
+                if shape == .cloud {
+                    // Round the path dragged, or an oval across a straight drag; not a click.
+                    let box = CGRect(enclosing: currentShapePath)
+                    annot = box.width > 8 && box.height > 8
+                        ? viewModel.addCloudAnnotation(pageIndex: pIdx, outline: CloudOutline.outline(for: currentShapePath), intensity: viewModel.selectedCloudArcSize.rawValue, color: viewModel.selectedAnnotationColor)
+                        : nil
+                } else {
+                    // Big enough to have been meant, rather than a click.
+                    let isBigEnough = shape.isBoxed ? width > 4 && height > 4 : hypot(width, height) > 4
+                    annot = isBigEnough
+                        ? viewModel.addShapeAnnotation(pageIndex: pIdx, shape: shape, from: start, to: end, strokeWidth: viewModel.drawStrokeWidth, lineEnding: viewModel.selectedShapeLineEnding, color: viewModel.selectedAnnotationColor)
+                        : nil
+                }
+                if let annot {
                     selectedAnnotation = (id: annot.id, pageIndex: pIdx)
                 }
             }
-            currentCloudPage = nil
-            currentCloudStart = nil
-            currentCloudEnd = nil
+            currentShapePage = nil
+            currentShapeStart = nil
+            currentShapeEnd = nil
+            currentShapePath = []
             needsDisplay = true
             return
         }

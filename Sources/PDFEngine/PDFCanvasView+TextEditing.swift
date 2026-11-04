@@ -86,6 +86,77 @@ extension PDFCanvasView {
         return CGRect(x: x0, y: y0, width: max(x1 - x0, minW), height: max(y1 - y0, minH))
     }
 
+    /// The ends of `line` after dragging `part` by `delta`: one end, or the whole line.
+    internal func updatedLineEnds(of line: PDFAnnotation, part: DraggingAnnotationPart, delta: CGSize) -> [CGPoint] {
+        let ends = line.inkPoints
+        guard ends.count >= 2 else { return ends }
+        func moved(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x + delta.width, y: p.y + delta.height) }
+        switch part {
+        case .lineStart: return [moved(ends[0]), ends[1]]
+        case .lineEnd: return [ends[0], moved(ends[1])]
+        default: return ends.map(moved)
+        }
+    }
+
+    /// Which end of `line` is under `pagePoint`, for dragging it, or the whole line.
+    internal func lineDragPart(for line: PDFAnnotation, at pagePoint: CGPoint) -> DraggingAnnotationPart {
+        let reach = 8.0 / max(viewModel.effectiveZoom, 0.01)
+        if let end = line.inkPoints.last, hypot(pagePoint.x - end.x, pagePoint.y - end.y) <= reach { return .lineEnd }
+        if let start = line.inkPoints.first, hypot(pagePoint.x - start.x, pagePoint.y - start.y) <= reach { return .lineStart }
+        return .entireAnnotation
+    }
+
+    /// Applies a drag of an annotation from the file: moved, it keeps its own appearance;
+    /// resized, or with a line's end moved, MuPDF draws it again.
+    func commitFileAnnotationDrag(_ annot: PDFAnnotation, part: DraggingAnnotationPart, delta: CGSize) {
+        let page = annot.pageIndex
+        let updated: PDFAnnotation?
+        switch part {
+        case .lineStart, .lineEnd:
+            let ends = updatedLineEnds(of: annot, part: part, delta: delta)
+            updated = viewModel.editFileAnnotation(annot) { try $0.restyleAnnotation(pageIndex: page, objectNumber: $1, points: ends) }
+        case .resizeTopLeft, .resizeTopRight, .resizeBottomLeft, .resizeBottomRight:
+            guard annot.isResizableFromFile, let rect = annot.rect else { return }
+            let resized = updatedRect(from: rect, part: part, delta: delta)
+            if annot.inkPoints.count >= 3 {
+                let corners = annot.inkPoints(fittedTo: resized)
+                updated = viewModel.editFileAnnotation(annot) { try $0.restyleAnnotation(pageIndex: page, objectNumber: $1, points: corners) }
+            } else {
+                updated = viewModel.editFileAnnotation(annot) { try $0.restyleAnnotation(pageIndex: page, objectNumber: $1, rect: resized) }
+            }
+        default:
+            updated = viewModel.editFileAnnotation(annot) { try $0.moveAnnotation(pageIndex: page, objectNumber: $1, by: delta) }
+        }
+        if let updated {
+            selectedAnnotation = (id: updated.id, pageIndex: page)
+        }
+    }
+
+    /// Gives the selected rectangle, oval or line the line width or line ending just chosen in
+    /// the toolbar.
+    func restyleSelectedShape(strokeWidth: CGFloat? = nil, lineEnding: PDFLineEnding? = nil) {
+        guard activeInlineTextField == nil,
+              let (targetId, pIdx) = selectedAnnotation,
+              let annot = viewModel.pageAnnotations[pIdx]?.first(where: { $0.id == targetId }),
+              annot.type == .square || annot.type == .circle || annot.type == .line || (annot.isFromFile && annot.type == .cloud) else { return }
+        let widthChanges = strokeWidth.map { $0 != annot.strokeWidth } ?? false
+        let endingChanges = annot.type == .line && (lineEnding.map { $0 != annot.lineEnding } ?? false)
+        guard widthChanges || endingChanges else { return }
+        if annot.isFromFile {
+            viewModel.editFileAnnotation(annot) {
+                try $0.restyleAnnotation(pageIndex: pIdx, objectNumber: $1, borderWidth: widthChanges ? strokeWidth : nil, lineEnding: endingChanges ? lineEnding : nil)
+            }
+            needsDisplay = true
+            return
+        }
+        viewModel.beginReplacingAnnotation(annot)
+        defer { viewModel.finishReplacingAnnotation() }
+        if let updated = viewModel.addRestyledShape(annot, strokeWidth: widthChanges ? strokeWidth : nil, lineEnding: endingChanges ? lineEnding : nil) {
+            selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+        }
+        needsDisplay = true
+    }
+
     internal func computeTextBoxSize(text: String, fontSize: CGFloat, maxWidth: CGFloat) -> CGSize {
         let font = NSFont.systemFont(ofSize: fontSize)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
@@ -243,7 +314,12 @@ extension PDFCanvasView {
               let orig = list.first(where: { $0.id == sel.id }) else { return }
         // Only kinds that can be re-created below may be removed — anything else (a measurement,
         // ink, a text markup) would simply be deleted by an arrow key.
-        guard orig.type == .callout || orig.type == .freeText || orig.type == .note || orig.type == .cloud || (orig.type == .stamp && orig.stampImageData != nil) else { return }
+        if orig.isFromFile {
+            viewModel.editFileAnnotation(orig) { try $0.moveAnnotation(pageIndex: sel.pageIndex, objectNumber: $1, by: CGSize(width: dx, height: dy)) }
+            needsDisplay = true
+            return
+        }
+        guard orig.type == .callout || orig.type == .freeText || orig.type == .note || orig.isShape || (orig.type == .stamp && orig.stampImageData != nil) else { return }
         viewModel.beginReplacingAnnotation(orig)
         defer { viewModel.finishReplacingAnnotation() }
         if orig.type == .callout {
@@ -262,7 +338,7 @@ extension PDFCanvasView {
             ) {
                 selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
             }
-        } else if orig.type == .note || orig.type == .cloud {
+        } else if orig.type == .note || orig.isShape {
             let rect = (orig.rect ?? .zero).offsetBy(dx: dx, dy: dy)
             if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
                 selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
@@ -400,7 +476,7 @@ extension PDFCanvasView {
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText),
+           (annot.type == .callout || annot.type == .freeText), !annot.isFromFile,
            annot.fontSize != newSize {
 
             viewModel.beginReplacingAnnotation(annot)
@@ -455,9 +531,17 @@ extension PDFCanvasView {
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.type == .cloud) {
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile) {
 
             guard annot.color != newColor else { return }
+            if annot.isFromFile {
+                // Text boxes and stamps keep the colors their app drew them in.
+                if annot.type != .freeText && annot.type != .stamp {
+                    viewModel.editFileAnnotation(annot) { try $0.restyleAnnotation(pageIndex: pIdx, objectNumber: $1, color: newColor) }
+                    needsDisplay = true
+                }
+                return
+            }
             viewModel.beginReplacingAnnotation(annot)
             defer { viewModel.finishReplacingAnnotation() }
             let text = annot.text
@@ -479,7 +563,7 @@ extension PDFCanvasView {
                 ) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
-            } else if annot.type == .note || annot.type == .cloud, let r = annot.rect {
+            } else if annot.type == .note || annot.isShape, let r = annot.rect {
                 if let updated = viewModel.addRestyled(annot, rect: r, color: newColor) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }

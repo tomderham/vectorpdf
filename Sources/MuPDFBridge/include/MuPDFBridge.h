@@ -58,6 +58,7 @@ int mupdf_page_bounds(fz_context *ctx, fz_page *page, fz_rect *out_rect, const c
 void mupdf_page_drop(fz_context *ctx, fz_page *page);
 
 // Display List
+int mupdf_display_list_create_hiding(fz_context *ctx, fz_page *page, const int *hidden, int hidden_count, fz_display_list **out_list, const char **out_error);
 int mupdf_display_list_create(fz_context *ctx, fz_page *page, fz_display_list **out_list, const char **out_error);
 void mupdf_display_list_drop(fz_context *ctx, fz_display_list *list);
 
@@ -139,12 +140,50 @@ int mupdf_pdf_add_callout_annot(fz_context *ctx, fz_document *doc, int pageno,
                                 const char *text, float font_size, int line_ending,
                                 float r, float g, float b,
                                 const char **out_error);
+typedef struct {
+    char subtype[32];
+    /* /Rect, and the area it's drawn in, in page space. */
+    float x0, y0, x1, y1;
+    float bx0, by0, bx1, by1;
+    int has_color;
+    float r, g, b;
+    float border_width;
+    int is_cloud;
+    int is_measurement;
+    /* A line's end style, or -1. */
+    int line_ending;
+    int point_count;
+} mupdf_annot_description;
+
+fz_document *mupdf_pdf_new_holding_document(fz_context *ctx);
+int mupdf_pdf_stash_and_delete_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum, fz_document *holding, int *out_index, const char **out_error);
+int mupdf_pdf_unstash_annot(fz_context *ctx, fz_document *doc, int pageno, fz_document *holding, int index, int *out_objnum, const char **out_error);
+int mupdf_pdf_snapshot_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum, fz_document *holding, int *out_index, const char **out_error);
+int mupdf_pdf_restore_annot_snapshot(fz_context *ctx, fz_document *doc, int pageno, int objnum, fz_document *holding, int index, const char **out_error);
+int mupdf_pdf_translate_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum, float dx, float dy, const char **out_error);
+int mupdf_pdf_restyle_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum,
+                            int has_color, float r, float g, float b, float width, int line_ending,
+                            int has_rect, float x0, float y0, float x1, float y1,
+                            const fz_point *points, int count, const char **out_error);
+int mupdf_pdf_describe_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum, mupdf_annot_description *out,
+                             fz_point *points, int max_points, const char **out_error);
+int mupdf_pdf_render_annot(fz_context *ctx, fz_document *doc, int pageno, int objnum, float scale,
+                           fz_pixmap **out_pixmap, fz_rect *out_bounds, const char **out_error);
+int mupdf_pdf_annot_near_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, int *out_objnum, const char **out_error);
 int mupdf_pdf_add_cloud_annot(fz_context *ctx, fz_document *doc, int pageno,
                               float x0, float y0, float x1, float y1, float intensity,
                               float r, float g, float b, const char **out_error);
+int mupdf_pdf_add_cloud_polygon_annot(fz_context *ctx, fz_document *doc, int pageno,
+                                      const fz_point *points, int count, float intensity,
+                                      float r, float g, float b, const char **out_error);
 int mupdf_pdf_add_note_annot(fz_context *ctx, fz_document *doc, int pageno,
                              float x0, float y0, float x1, float y1, const char *text,
                              float r, float g, float b, const char **out_error);
+/* kind: 0 rectangle (Square) and 1 oval (Circle) fill the box (x0, y0)-(x1, y1); 2 is a Line
+ * from (x0, y0) to (x1, y1), with line_ending at (x1, y1). */
+int mupdf_pdf_add_shape_annot(fz_context *ctx, fz_document *doc, int pageno, int kind,
+                              float x0, float y0, float x1, float y1, float width, int line_ending,
+                              float r, float g, float b, const char **out_error);
 int mupdf_pdf_set_annot_author(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *author, const char **out_error);
 int mupdf_pdf_set_annot_comment(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char *text, const char **out_error);
 int mupdf_pdf_add_annot_reply(fz_context *ctx, fz_document *doc, int pageno, int parent_objnum,

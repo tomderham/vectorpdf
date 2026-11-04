@@ -121,11 +121,122 @@ public enum PDFAnnotationType: String, Codable, Sendable {
     case callout
     case stamp
     case note
+    /// A revision cloud: a Polygon annotation round `inkPoints`, or, without them, a Square
+    /// annotation filling `rect`; either with a cloudy border.
     case cloud
+    /// A rectangle (a Square annotation).
+    case square
+    /// An oval (a Circle annotation).
+    case circle
+    /// A line or arrow (a Line annotation), from `inkPoints[0]` to `inkPoints[1]`.
+    case line
+    /// An annotation from another app of a kind VectorPDF doesn't make, such as a polygon or a
+    /// file attachment. It can be moved as a whole.
+    case other
     case measureLength
     case measurePerimeter
     case measureArea
     case measureAngle
+}
+
+/// What the Shapes tool draws.
+public enum PDFShapeKind: String, CaseIterable, Sendable {
+    case rectangle
+    case oval
+    /// A line, or an arrow: its end is `selectedShapeLineEnding`.
+    case line
+    /// A revision cloud around the outline dragged.
+    case cloud
+
+    public var displayName: String {
+        switch self {
+        case .rectangle: return "Rectangle"
+        case .oval: return "Oval"
+        case .line: return "Line or Arrow"
+        case .cloud: return "Revision Cloud"
+        }
+    }
+
+    public var systemImage: String {
+        switch self {
+        case .rectangle: return "rectangle"
+        case .oval: return "oval"
+        case .line: return "arrow.up.right"
+        case .cloud: return "cloud"
+        }
+    }
+
+    /// Whether the shape fills the box dragged out, rather than running between its corners.
+    public var isBoxed: Bool {
+        self == .rectangle || self == .oval
+    }
+}
+
+extension CGRect {
+    /// The smallest rectangle holding all of `points`.
+    init(enclosing points: [CGPoint]) {
+        let xs = points.map(\.x), ys = points.map(\.y)
+        guard let minX = xs.min(), let maxX = xs.max(), let minY = ys.min(), let maxY = ys.max() else { self = .zero; return }
+        self = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+}
+
+/// Outlines for revision clouds.
+enum CloudOutline {
+    /// `points`, a path dragged by hand, with the corners that matter kept and the jitter
+    /// between them dropped (Ramer–Douglas–Peucker), so each side gets whole arcs.
+    static func simplified(_ points: [CGPoint], tolerance: CGFloat = 4) -> [CGPoint] {
+        guard points.count > 2 else { return points }
+        func distance(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+            let dx = b.x - a.x, dy = b.y - a.y
+            let length = hypot(dx, dy)
+            guard length > 0 else { return hypot(p.x - a.x, p.y - a.y) }
+            return abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) / length
+        }
+        var keep = Array(repeating: false, count: points.count)
+        keep[0] = true
+        keep[points.count - 1] = true
+        var stack = [(0, points.count - 1)]
+        while let (first, last) = stack.popLast() {
+            guard last > first + 1 else { continue }
+            var farthest = first
+            var greatest: CGFloat = 0
+            for i in (first + 1)..<last {
+                let d = distance(points[i], points[first], points[last])
+                if d > greatest { greatest = d; farthest = i }
+            }
+            if greatest > tolerance {
+                keep[farthest] = true
+                stack.append((first, farthest))
+                stack.append((farthest, last))
+            }
+        }
+        return points.indices.filter { keep[$0] }.map { points[$0] }
+    }
+
+    /// Twice the signed area of the polygon `points`: positive when they run the way the
+    /// corners of a rectangle do from (minX, minY) to (maxX, minY).
+    static func signedArea(_ points: [CGPoint]) -> CGFloat {
+        guard points.count > 2 else { return 0 }
+        return points.indices.reduce(0) { sum, i in
+            let a = points[i], b = points[(i + 1) % points.count]
+            return sum + a.x * b.y - b.x * a.y
+        }
+    }
+
+    /// The outline for a cloud dragged along `path`: the path itself, simplified, if it goes
+    /// round an area; otherwise, for a drag across, an oval filling the box it crosses.
+    static func outline(for path: [CGPoint]) -> [CGPoint] {
+        let box = CGRect(enclosing: path)
+        let simple = simplified(path)
+        if simple.count >= 3, abs(signedArea(simple)) / 2 > box.width * box.height * 0.25 {
+            return simple
+        }
+        return (0..<16).map { i in
+            let angle = CGFloat(i) / 16 * 2 * .pi
+            return CGPoint(x: box.midX + cos(angle) * box.width / 2, y: box.midY + sin(angle) * box.height / 2)
+        }
+    }
 }
 
 /// The shape at the end of a callout's leader line. Raw values are MuPDF's `pdf_line_ending`.
@@ -153,19 +264,20 @@ public enum PDFLineEnding: Int32, Codable, CaseIterable, Sendable {
     }
 
     /// The ending for a tip at `tip` on a line running along (dx, dy), and whether to fill it.
-    /// The sizes match `ap_line_ending` in the bridge so saved and on-screen callouts agree.
-    func path(tip: NSPoint, dx: CGFloat, dy: CGFloat) -> (path: NSBezierPath, filled: Bool)? {
+    /// The sizes match `ap_line_ending` in the bridge so saved and on-screen callouts agree;
+    /// `scale` enlarges it, for a thicker line or a zoomed page.
+    func path(tip: NSPoint, dx: CGFloat, dy: CGFloat, scale: CGFloat = 1) -> (path: NSBezierPath, filled: Bool)? {
         let len = hypot(dx, dy)
         guard len > 0.1 else { return nil }
         let u = NSPoint(x: dx / len, y: dy / len)
         let p = NSPoint(x: -u.y, y: u.x)
-        let l: CGFloat = 8.0
-        let w: CGFloat = 4.0
+        let l: CGFloat = 8.0 * scale
+        let w: CGFloat = 4.0 * scale
         func at(_ along: CGFloat, _ across: CGFloat) -> NSPoint {
             NSPoint(x: tip.x + u.x * along + p.x * across, y: tip.y + u.y * along + p.y * across)
         }
         let path = NSBezierPath()
-        path.lineWidth = 1.5
+        path.lineWidth = 1.5 * scale
         func polygon(_ points: [NSPoint]) {
             path.move(to: points[0])
             points.dropFirst().forEach { path.line(to: $0) }
@@ -224,7 +336,8 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     case eraser
     case stamp
     case note
-    case cloud
+    /// Rectangles, ovals, lines, arrows and revision clouds; `selectedShape` says which.
+    case shape
     case measureLength
     case measurePerimeter
     case measureArea
@@ -251,13 +364,27 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     public let measurementValue: Double
     public let measurementText: String
     public let leaderOffset: CGFloat
-    /// The callout's line ending; nil for anything else.
+    /// The ending of a callout's leader or of a line (at `inkPoints[1]`); nil for anything else.
     public let lineEnding: PDFLineEnding?
     /// The revision cloud's /BE /I; nil for anything else.
     public let cloudIntensity: CGFloat?
     public let dateCreated: Date
     /// The PDF object number for in-session annotations.
     public var documentObjectNumber: Int?
+    /// For an annotation that came with the file, picked up to move or restyle: its PDF subtype,
+    /// such as "Square". The canvas draws it as the document does, not from the fields above,
+    /// which only say where it is for selecting and dragging.
+    public var fileSubtype: String?
+    /// Bumped whenever an annotation from the file changes, so its picture is drawn again.
+    public var appearanceRevision = 0
+
+    public var isFromFile: Bool { fileSubtype != nil }
+
+    /// Whether an annotation from the file can be resized by its corners: one MuPDF can draw
+    /// again from its entries at the new size.
+    public var isResizableFromFile: Bool {
+        isFromFile && (type == .square || type == .circle || (type == .cloud && (inkPoints.count >= 3 || fileSubtype == "Square")))
+    }
 
     public init(
         id: UUID = UUID(),
@@ -313,6 +440,22 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         return boundingRect
     }
 
+    /// A revision cloud, rectangle, oval or line: drawn from `rect`, which moving or resizing
+    /// changes. A line's `rect` is the box its ends are corners of.
+    public var isShape: Bool {
+        type == .cloud || type == .square || type == .circle || type == .line
+    }
+
+    /// `inkPoints` moved and scaled as `rect` is to become `newRect`, as a line's ends are when
+    /// it's dragged.
+    public func inkPoints(fittedTo newRect: CGRect) -> [CGPoint] {
+        let old = rect ?? newRect
+        return inkPoints.map { p in
+            CGPoint(x: newRect.minX + (p.x - old.minX) * (old.width > 0 ? newRect.width / old.width : 1),
+                    y: newRect.minY + (p.y - old.minY) * (old.height > 0 ? newRect.height / old.height : 1))
+        }
+    }
+
     /// Points alias for measurementPoints.
     public var points: [CGPoint] {
         return measurementPoints
@@ -330,8 +473,17 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Union bounding rect across quads, ink points, or freeText rect in page coordinates.
     public var boundingRect: CGRect {
-        if type == .freeText || type == .stamp || type == .note || type == .cloud {
+        if type == .freeText || type == .stamp || type == .note || type == .other {
             return rect ?? .zero
+        }
+        if type == .cloud {
+            // A polygon cloud's arcs bulge past its corners.
+            return inkPoints.count >= 3 ? (rect ?? .zero).insetBy(dx: -8, dy: -8) : rect ?? .zero
+        }
+        if type == .square || type == .circle || type == .line {
+            // Room for the stroke, and for an arrowhead past the end of a line.
+            let pad = strokeWidth / 2 + (type == .line && lineEnding != nil && lineEnding != PDFLineEnding.none ? 4.5 * max(1, strokeWidth) : 0)
+            return (rect ?? .zero).insetBy(dx: -pad, dy: -pad)
         }
         if type == .callout {
             var union = rect ?? .zero
@@ -381,16 +533,34 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Checks whether a given page-space point hits this annotation (with a small hit-test margin).
     public func contains(pagePoint: CGPoint, tolerance: CGFloat = 3.0) -> Bool {
-        if type == .freeText || type == .stamp || type == .note {
+        if type == .freeText || type == .stamp || type == .note || type == .other {
             guard let r = rect else { return false }
             return r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint)
         }
-        if type == .cloud {
+        if type == .cloud, inkPoints.count >= 3 {
+            // Only the outline, arcs and all.
+            return inkPoints.indices.contains { i in
+                distanceToSegment(p: pagePoint, a: inkPoints[i], b: inkPoints[(i + 1) % inkPoints.count]) <= tolerance + 8.0
+            }
+        }
+        if type == .cloud || type == .square {
             // Only the outline: a cloud rings content that people still need to select.
             guard let r = rect else { return false }
             let margin = tolerance + 6.0
             return r.insetBy(dx: -margin, dy: -margin).contains(pagePoint)
                 && !r.insetBy(dx: margin, dy: margin).contains(pagePoint)
+        }
+        if type == .circle {
+            // Only the outline, as for a cloud: how far the point is from the ellipse, roughly.
+            guard let r = rect, r.width > 0, r.height > 0 else { return false }
+            let nx = (pagePoint.x - r.midX) / (r.width / 2)
+            let ny = (pagePoint.y - r.midY) / (r.height / 2)
+            let distance = abs(hypot(nx, ny) - 1) * min(r.width, r.height) / 2
+            return distance <= tolerance + 6.0
+        }
+        if type == .line {
+            guard inkPoints.count >= 2 else { return false }
+            return distanceToSegment(p: pagePoint, a: inkPoints[0], b: inkPoints[1]) <= tolerance + strokeWidth / 2 + 3.0
         }
         if type == .callout {
             if let r = rect, r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint) {

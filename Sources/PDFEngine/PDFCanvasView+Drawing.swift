@@ -163,6 +163,10 @@ extension PDFCanvasView {
                 // 2.5 Page Annotations (Highlights, Underlines, Strikeouts, Freehand Ink, FreeText)
                 if let annots = viewModel.pageAnnotations[pageIdx] {
                     for annot in annots {
+                        if annot.isFromFile {
+                            drawFileAnnotation(annot, pFrame: pFrame, pBounds: pBounds)
+                            continue
+                        }
                         switch annot.type {
                         case .highlight:
                             annot.color.highlightFillColor.setFill()
@@ -301,7 +305,7 @@ extension PDFCanvasView {
                             let str = annot.text as NSString
                             str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
 
-                        case .note, .cloud:
+                        case .note, .cloud, .square, .circle, .line:
                             guard let initialRect = annot.rect else { continue }
                             var rect = initialRect
                             if let drag = activeAnnotationDrag, drag.id == annot.id {
@@ -313,19 +317,33 @@ extension PDFCanvasView {
                                 width: rect.width * viewModel.effectiveZoom,
                                 height: rect.height * viewModel.effectiveZoom
                             )
-                            if annot.type == .note {
+                            var pagePoints = annot.inkPoints(fittedTo: rect)
+                            if annot.type == .line, let drag = activeAnnotationDrag, drag.id == annot.id {
+                                pagePoints = updatedLineEnds(of: annot, part: drag.part, delta: drag.currentDelta)
+                            }
+                            let ends = pagePoints.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
+                            switch annot.type {
+                            case .note:
                                 drawNoteIcon(in: boxRect, color: annot.color.nsColor)
-                            } else {
+                            case .cloud where ends.count >= 3:
+                                drawRevisionCloud(around: ends, intensity: annot.cloudIntensity ?? PDFCloudArcSize.medium.rawValue, color: annot.color.nsColor)
+                            case .cloud:
                                 drawRevisionCloud(in: boxRect, intensity: annot.cloudIntensity ?? PDFCloudArcSize.medium.rawValue, color: annot.color.nsColor)
+                            default:
+                                drawShape(annot.type, box: boxRect, ends: ends, strokeWidth: annot.strokeWidth, ending: annot.lineEnding, color: annot.color.nsColor)
                             }
                             if selectedAnnotation?.id == annot.id {
-                                let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
-                                let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
-                                selPath.lineWidth = 1.5
-                                NSColor.controlAccentColor.setStroke()
-                                selPath.stroke()
-                                if annot.type == .cloud {
-                                    drawResizeHandles(around: selRect)
+                                if annot.type == .line {
+                                    drawEndHandles(ends)
+                                } else {
+                                    let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
+                                    let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
+                                    selPath.lineWidth = 1.5
+                                    NSColor.controlAccentColor.setStroke()
+                                    selPath.stroke()
+                                    if annot.type != .note {
+                                        drawResizeHandles(around: selRect)
+                                    }
                                 }
                             }
 
@@ -352,6 +370,8 @@ extension PDFCanvasView {
                                     targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
                                     kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
                                     rect = rect.offsetBy(dx: dx, dy: dy)
+                                case .lineStart, .lineEnd:
+                                    break
                                 }
                             }
 
@@ -503,8 +523,21 @@ extension PDFCanvasView {
                             drawMeasureArea(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
                         case .measureAngle:
                             drawMeasureAngle(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
+                        case .other:
+                            break
                         }
                     }
+                }
+
+                // An annotation just chosen in the Comments sidebar
+                if let outline = revealedAnnotationOutline, outline.pageIndex == pageIdx {
+                    let origin = canvasPoint(for: outline.rect.origin, pFrame: pFrame, pBounds: pBounds)
+                    let box = NSRect(origin: origin, size: CGSize(width: outline.rect.width * viewModel.effectiveZoom, height: outline.rect.height * viewModel.effectiveZoom))
+                        .insetBy(dx: -4, dy: -4)
+                    let ring = NSBezierPath(roundedRect: box, xRadius: 4, yRadius: 4)
+                    ring.lineWidth = 2.5
+                    NSColor.controlAccentColor.withAlphaComponent(0.85).setStroke()
+                    ring.stroke()
                 }
             }
             if rotatesAnnotations {
@@ -546,15 +579,32 @@ extension PDFCanvasView {
                 }
             }
 
-            // Live revision cloud dragging in progress
-            if currentCloudPage == pageIdx, let start = currentCloudStart, let end = currentCloudEnd {
+            // Live shape dragging in progress
+            if currentShapePage == pageIdx, let start = currentShapeStart, let end = currentShapeEnd {
                 let p1 = canvasPoint(for: start, pFrame: pFrame, pBounds: pBounds)
                 let p2 = canvasPoint(for: end, pFrame: pFrame, pBounds: pBounds)
-                drawRevisionCloud(
-                    in: NSRect(x: min(p1.x, p2.x), y: min(p1.y, p2.y), width: abs(p2.x - p1.x), height: abs(p2.y - p1.y)),
-                    intensity: viewModel.selectedCloudArcSize.rawValue,
-                    color: viewModel.selectedAnnotationColor.nsColor
-                )
+                let box = NSRect(x: min(p1.x, p2.x), y: min(p1.y, p2.y), width: abs(p2.x - p1.x), height: abs(p2.y - p1.y))
+                let color = viewModel.selectedAnnotationColor.nsColor
+                switch viewModel.selectedShape {
+                case .cloud:
+                    // The cloud it will make, over a faint trail of the path dragged.
+                    let trail = NSBezierPath()
+                    for (i, point) in currentShapePath.map({ canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }).enumerated() {
+                        if i == 0 { trail.move(to: point) } else { trail.line(to: point) }
+                    }
+                    trail.lineWidth = 1
+                    trail.setLineDash([3, 3], count: 2, phase: 0)
+                    color.withAlphaComponent(0.5).setStroke()
+                    trail.stroke()
+                    let outline = CloudOutline.outline(for: currentShapePath).map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
+                    drawRevisionCloud(around: outline, intensity: viewModel.selectedCloudArcSize.rawValue, color: color)
+                case .rectangle:
+                    drawShape(.square, box: box, ends: [], strokeWidth: viewModel.drawStrokeWidth, ending: nil, color: color)
+                case .oval:
+                    drawShape(.circle, box: box, ends: [], strokeWidth: viewModel.drawStrokeWidth, ending: nil, color: color)
+                case .line:
+                    drawShape(.line, box: box, ends: [p1, p2], strokeWidth: viewModel.drawStrokeWidth, ending: viewModel.selectedShapeLineEnding, color: color)
+                }
             }
 
             // 2.7 Live Redaction Dragging in Progress

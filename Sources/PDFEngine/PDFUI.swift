@@ -749,6 +749,10 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(2)
                             .help("Anchors")
+                        Image(systemName: "text.bubble")
+                            .imageScale(.medium)
+                            .tag(4)
+                            .help("Comments")
                         if appCoordinator.showAgentTab {
                             Image(systemName: "sparkles")
                                 .imageScale(.medium)
@@ -762,7 +766,8 @@ public struct PDFViewerMainView: View {
                     .segmentedControlTooltips([
                         "Outline & Thumbnails",
                         "Search Document (Cmd+F)",
-                        "Anchors"
+                        "Anchors",
+                        "Comments"
                     ] + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
                         if newValue == 3 {
@@ -1162,6 +1167,8 @@ public struct PDFViewerMainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onAppear { groupAnchors.refresh() }
+                } else if selectedSidebarTab == 4 {
+                    AnnotationsSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 3 {
                     // Agent Tab: semantic search and on-device synthesis for the current document.
                     VStack(spacing: 0) {

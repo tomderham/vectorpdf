@@ -307,6 +307,42 @@ public final class PDFViewerAppCoordinator: ObservableObject {
             .sink { [weak self] speaking in
                 self?.isSpeaking = speaking
             }
+        for name in [Notification.Name.NSUndoManagerDidCloseUndoGroup, .NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange,
+                     NSWindow.didBecomeKeyNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateUndoState() }
+            }
+        }
+    }
+
+    // MARK: - Edit > Undo and Redo
+
+    /// The undo manager Edit > Undo uses: the first responder's, as AppKit's own item would.
+    public var keyUndoManager: UndoManager? {
+        NSApp.keyWindow?.firstResponder?.undoManager ?? NSApp.keyWindow?.undoManager
+    }
+
+    /// What Edit > Undo and Redo show. SwiftUI's own items don't reach the undo managers of
+    /// these AppKit windows, so the menu has its own, refreshed from this.
+    @Published public private(set) var undoState = UndoState()
+
+    public struct UndoState: Equatable {
+        public var undoTitle = "Undo"
+        public var redoTitle = "Redo"
+        public var canUndo = false
+        public var canRedo = false
+    }
+
+    private func updateUndoState() {
+        let manager = keyUndoManager
+        let state = UndoState(
+            undoTitle: manager?.undoMenuItemTitle ?? "Undo",
+            redoTitle: manager?.redoMenuItemTitle ?? "Redo",
+            canUndo: manager?.canUndo ?? false,
+            canRedo: manager?.canRedo ?? false
+        )
+        // Typing closes an undo group per keystroke; only republish, and rebuild the menus, on a change.
+        if state != undoState { undoState = state }
     }
 
     private var speechCancellable: AnyCancellable?
