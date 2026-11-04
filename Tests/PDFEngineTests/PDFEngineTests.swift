@@ -5469,40 +5469,85 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(vm.renderedPages[0] === after)
 }
 
-/// Underlines and strikethroughs are found by the strokes level with each line, among thousands
-/// of other vector paths, as on a CAD drawing.
-@Test func underlineAndStrikethroughAreFoundAmongManyStrokes() throws {
+/// Underlines and strikethroughs are found for the Word export at any size (thickness and position
+/// relative to the font size), but not from a rule running well past the text, and quickly among
+/// thousands of other vector paths as on a CAD drawing.
+@Test func underlineAndStrikethroughAreFoundAtAnySize() throws {
     let dir = try makeScratchDirectory()
     defer { try? FileManager.default.removeItem(at: dir) }
     let url = dir.appendingPathComponent("decorations.pdf")
-    var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+    var mediaBox = CGRect(x: 0, y: 0, width: 1000, height: 1000)
     let context = try #require(CGContext(url as CFURL, mediaBox: &mediaBox, nil))
     NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
     context.beginPDFPage(nil)
-    let font = NSFont(name: "Helvetica", size: 24) ?? NSFont.systemFont(ofSize: 24)
-    for (row, text) in ["Underlined words", "Struck words", "Plain words"].enumerated() {
-        let origin = NSPoint(x: 72, y: 600 - CGFloat(row) * 60)
+    context.setFillColor(NSColor.black.cgColor)
+    context.setStrokeColor(NSColor.black.cgColor)
+
+    enum Decoration { case underline, strike, strokedUnderline, rule, none }
+    // Text, size, decoration, and the stroke's thickness and distance below (+) or above (-)
+    // the baseline.
+    let rows: [(String, CGFloat, Decoration, CGFloat, CGFloat)] = [
+        ("Underlined words", 24, .underline, 1.2, 2.6),
+        ("Struck words", 24, .strike, 1.2, -7),
+        ("Stroked underline", 24, .strokedUnderline, 1, 3),
+        ("Plain words", 24, .none, 0, 0),
+        ("Cell above a rule", 24, .rule, 1, 3),
+        ("Poster", 72, .underline, 5, 8),
+        ("Banner", 72, .strike, 5, -22),
+    ]
+    var y: CGFloat = 900
+    for (text, size, decoration, thickness, offset) in rows {
+        let font = NSFont(name: "Helvetica", size: size) ?? NSFont.systemFont(ofSize: size)
+        y -= size * 1.8
+        let origin = NSPoint(x: 72, y: y)
         (text as NSString).draw(at: origin, withAttributes: [.font: font])
         let width = (text as NSString).size(withAttributes: [.font: font]).width
         let baseline = origin.y - font.descender
-        context.setFillColor(NSColor.black.cgColor)
-        if row == 0 { context.fill(CGRect(x: origin.x, y: baseline - 2.6, width: width, height: 1.2)) }
-        if row == 1 { context.fill(CGRect(x: origin.x, y: baseline + 7, width: width, height: 1.2)) }
+        switch decoration {
+        case .underline, .strike:
+            context.fill(CGRect(x: origin.x, y: baseline - offset - thickness / 2, width: width, height: thickness))
+        case .strokedUnderline:
+            context.setLineWidth(thickness)
+            context.move(to: CGPoint(x: origin.x, y: baseline - offset))
+            context.addLine(to: CGPoint(x: origin.x + width, y: baseline - offset))
+            context.strokePath()
+        case .rule:
+            // A table rule, running 300 pt past the cell's text.
+            context.fill(CGRect(x: origin.x - 20, y: baseline - offset - thickness / 2, width: width + 320, height: thickness))
+        case .none:
+            break
+        }
     }
     // A drawing's worth of short thin strokes elsewhere on the page.
     for i in 0..<5000 {
-        context.fill(CGRect(x: 40 + CGFloat(i % 100) * 5, y: 60 + CGFloat(i / 100) * 5, width: 3, height: 0.5))
+        context.fill(CGRect(x: 40 + CGFloat(i % 100) * 5, y: 20 + CGFloat(i / 100) * 3, width: 3, height: 0.5))
     }
     context.endPDFPage()
     context.closePDF()
 
     let doc = try PDFDocumentCore(filePath: url.path)
-    let page = try #require(doc.loadStructuredPage(for: 0))
-    func line(_ prefix: String) throws -> TextLine {
-        try #require(page.allLines.first { $0.text.hasPrefix(prefix) })
+    let loaded = try #require(doc.loadStructuredPage(for: 0))
+    // Reading the page for display doesn't look for them.
+    #expect(loaded.allCharacters.allSatisfy { !$0.isUnderline && !$0.isStrikethrough })
+    let page = loaded.withTextDecorations()
+    func letters(_ prefix: String) throws -> [TextCharacter] {
+        let line = page.allLines.first { $0.text.hasPrefix(prefix) }
+        return try #require(line, "no line \(prefix)").characters.filter { $0.char != " " }
     }
-    let letters = { (line: TextLine) in line.characters.filter { $0.char != " " } }
-    #expect(try letters(line("Underlined")).allSatisfy { $0.isUnderline && !$0.isStrikethrough })
-    #expect(try letters(line("Struck")).allSatisfy { $0.isStrikethrough && !$0.isUnderline })
-    #expect(try letters(line("Plain")).allSatisfy { !$0.isUnderline && !$0.isStrikethrough })
+    for prefix in ["Underlined", "Stroked", "Poster"] {
+        let chars = try letters(prefix)
+        #expect(chars.allSatisfy { $0.isUnderline && !$0.isStrikethrough }, "\(prefix)")
+    }
+    for prefix in ["Struck", "Banner"] {
+        let chars = try letters(prefix)
+        #expect(chars.allSatisfy { $0.isStrikethrough && !$0.isUnderline }, "\(prefix)")
+    }
+    for prefix in ["Plain", "Cell"] {
+        let chars = try letters(prefix)
+        #expect(chars.allSatisfy { !$0.isUnderline && !$0.isStrikethrough }, "\(prefix)")
+    }
+    // The space between two underlined words is underlined too.
+    let underlinedLine = page.allLines.first { $0.text.hasPrefix("Underlined") }
+    let underlined = try #require(underlinedLine)
+    #expect(underlined.characters.allSatisfy { $0.isUnderline })
 }

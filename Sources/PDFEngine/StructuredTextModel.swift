@@ -315,6 +315,103 @@ public struct StructuredPage: Sendable {
         return (fullText, quads, lineBreakHyphens)
     }
     
+    /// The page with its underlined and struck-through characters marked, for the Word export,
+    /// the only thing that uses them; reading a page for display doesn't pay for this. Found
+    /// from the page's thin horizontal strokes, with limits that scale with the font size so a
+    /// poster's thick underline counts too. A stroke that runs well past the text it's under is
+    /// a table rule, box edge or form line instead.
+    ///
+    /// MuPDF can do this itself (FZ_STEXT_COLLECT_STYLES, then FZ_STEXT_UNDERLINE and
+    /// FZ_STEXT_STRIKEOUT on each character), and this should move to it if its detection
+    /// improves. In 1.28 it marks any stroke crossing the bottom of a character, so table rules
+    /// and form lines underline the text above them and fraction bars strike out equations.
+    public func withTextDecorations() -> StructuredPage {
+        // Sorted by height on the page, so each line looks only at the strokes level with it:
+        // a CAD drawing has over 100,000 vector blocks.
+        let strokes = blocks.filter { $0.type == .vector && $0.bbox.width >= 2.5 && $0.bbox.height < $0.bbox.width }
+            .map(\.bbox)
+            .sorted { $0.midY < $1.midY }
+        guard !strokes.isEmpty else { return self }
+        var blocks = self.blocks
+        for bIdx in blocks.indices where blocks[bIdx].type == .text {
+            for lIdx in blocks[bIdx].lines.indices {
+                let line = blocks[bIdx].lines[lIdx]
+                guard let size = line.characters.map({ CGFloat($0.size) }).max(), size > 0 else { continue }
+                let reach = max(3.5, size * 0.3)
+                let lineMinY = line.bbox.minY - reach
+                let lineMaxY = line.bbox.maxY + reach
+                // Further past either end of the text than this, a stroke isn't decorating it.
+                let overhang = max(6, size)
+
+                // The first stroke at or below lineMinY, by binary search.
+                var low = 0, high = strokes.count
+                while low < high {
+                    let mid = (low + high) / 2
+                    if strokes[mid].midY < lineMinY { low = mid + 1 } else { high = mid }
+                }
+                let candidateVectors = strokes[low...].prefix { $0.midY <= lineMaxY }.filter {
+                    $0.minX >= line.bbox.minX - overhang && $0.maxX <= line.bbox.maxX + overhang
+                }
+                guard !candidateVectors.isEmpty else { continue }
+
+                var updatedCharacters = line.characters
+                var lineChanged = false
+
+                for cIdx in 0..<updatedCharacters.count {
+                    let char = updatedCharacters[cIdx]
+                    let charSize = CGFloat(char.size)
+                    let charMidX = char.boundingRect.midX
+                    let charBaseline = char.origin.y
+                    // An underline is about a fifteenth of the size thick; allow twice that.
+                    let maxThickness = max(2.5, charSize * 0.15)
+
+                    for v in candidateVectors where v.height <= maxThickness {
+                        guard charMidX >= (v.minX - 0.5) && charMidX <= (v.maxX + 0.5) else { continue }
+
+                        if v.midY >= charBaseline - max(1.2, charSize * 0.05) && v.midY <= charBaseline + max(3.0, charSize * 0.25) {
+                            updatedCharacters[cIdx].isUnderline = true
+                            lineChanged = true
+                        } else if v.midY < charBaseline - max(1.5, charSize * 0.1) && v.midY >= charBaseline - charSize * 0.85 {
+                            updatedCharacters[cIdx].isStrikethrough = true
+                            lineChanged = true
+                        }
+                    }
+                }
+
+                // A space between decorated characters is decorated too.
+                for cIdx in 0..<updatedCharacters.count {
+                    guard updatedCharacters[cIdx].char == " " else { continue }
+                    var prevIdx = cIdx - 1
+                    while prevIdx >= 0 && updatedCharacters[prevIdx].char == " " {
+                        prevIdx -= 1
+                    }
+                    var nextIdx = cIdx + 1
+                    while nextIdx < updatedCharacters.count && updatedCharacters[nextIdx].char == " " {
+                        nextIdx += 1
+                    }
+
+                    if prevIdx >= 0 && nextIdx < updatedCharacters.count {
+                        if updatedCharacters[prevIdx].isUnderline && updatedCharacters[nextIdx].isUnderline {
+                            updatedCharacters[cIdx].isUnderline = true
+                            lineChanged = true
+                        }
+                        if updatedCharacters[prevIdx].isStrikethrough && updatedCharacters[nextIdx].isStrikethrough {
+                            updatedCharacters[cIdx].isStrikethrough = true
+                            lineChanged = true
+                        }
+                    }
+                }
+
+                if lineChanged {
+                    blocks[bIdx].lines[lIdx] = TextLine(bbox: line.bbox, characters: updatedCharacters)
+                }
+            }
+        }
+        var page = StructuredPage(pageIndex: pageIndex, bounds: bounds, blocks: blocks)
+        page.pageTransform = pageTransform
+        return page
+    }
+
     /// Loads structured text from an already loaded stext page
     public static func load(fromStext stext: FZStextPage, pageIndex: Int, pageBounds: CGRect, ctx: FZContext? = nil) -> StructuredPage {
         var blocks: [TextBlock] = []
@@ -424,82 +521,7 @@ public struct StructuredPage: Sendable {
             blockPtr = mupdf_stext_next_block(b)
         }
 
-        // Match vector strokes against text characters across all text blocks to detect underlines and strikethroughs
-        // Only thin horizontal strokes can be a decoration. Sorted by height on the page, so each
-        // line looks only at those level with it: a CAD drawing has over 100,000 vector blocks,
-        // and checking each against every line took seconds.
-        let strokes = blocks.filter { $0.type == .vector && $0.bbox.height <= 2.5 && $0.bbox.width >= 2.5 }
-            .map(\.bbox)
-            .sorted { $0.midY < $1.midY }
-        if !strokes.isEmpty {
-            for bIdx in 0..<blocks.count {
-                guard blocks[bIdx].type == .text else { continue }
-                for lIdx in 0..<blocks[bIdx].lines.count {
-                    let line = blocks[bIdx].lines[lIdx]
-                    let lineMinY = line.bbox.minY - 3.5
-                    let lineMaxY = line.bbox.maxY + 3.5
-
-                    // The first stroke at or below lineMinY, by binary search.
-                    var low = 0, high = strokes.count
-                    while low < high {
-                        let mid = (low + high) / 2
-                        if strokes[mid].midY < lineMinY { low = mid + 1 } else { high = mid }
-                    }
-                    let candidateVectors = strokes[low...].prefix { $0.midY <= lineMaxY }
-                    guard !candidateVectors.isEmpty else { continue }
-
-                    var updatedCharacters = line.characters
-                    var lineChanged = false
-
-                    for cIdx in 0..<updatedCharacters.count {
-                        let char = updatedCharacters[cIdx]
-                        let charMidX = char.boundingRect.midX
-                        let charBaseline = char.origin.y
-
-                        for v in candidateVectors {
-                            guard charMidX >= (v.minX - 0.5) && charMidX <= (v.maxX + 0.5) else { continue }
-
-                            if v.midY >= charBaseline - 1.2 && v.midY <= charBaseline + 3.0 {
-                                updatedCharacters[cIdx].isUnderline = true
-                                lineChanged = true
-                            } else if v.midY < charBaseline - 1.5 && v.midY >= charBaseline - CGFloat(char.size) * 0.85 {
-                                updatedCharacters[cIdx].isStrikethrough = true
-                                lineChanged = true
-                            }
-                        }
-                    }
-
-                    // Post-process: interpolate underline and strikethrough across spaces between decorated characters
-                    for cIdx in 0..<updatedCharacters.count {
-                        guard updatedCharacters[cIdx].char == " " else { continue }
-                        var prevIdx = cIdx - 1
-                        while prevIdx >= 0 && updatedCharacters[prevIdx].char == " " {
-                            prevIdx -= 1
-                        }
-                        var nextIdx = cIdx + 1
-                        while nextIdx < updatedCharacters.count && updatedCharacters[nextIdx].char == " " {
-                            nextIdx += 1
-                        }
-
-                        if prevIdx >= 0 && nextIdx < updatedCharacters.count {
-                            if updatedCharacters[prevIdx].isUnderline && updatedCharacters[nextIdx].isUnderline {
-                                updatedCharacters[cIdx].isUnderline = true
-                                lineChanged = true
-                            }
-                            if updatedCharacters[prevIdx].isStrikethrough && updatedCharacters[nextIdx].isStrikethrough {
-                                updatedCharacters[cIdx].isStrikethrough = true
-                                lineChanged = true
-                            }
-                        }
-                    }
-
-                    if lineChanged {
-                        blocks[bIdx].lines[lIdx] = TextLine(bbox: line.bbox, characters: updatedCharacters)
-                    }
-                }
-            }
-        }
-        
+        // Underlines and strikethroughs are found only for the Word export: see withTextDecorations.
         return StructuredPage(pageIndex: pageIndex, bounds: pageBounds, blocks: blocks)
     }
     

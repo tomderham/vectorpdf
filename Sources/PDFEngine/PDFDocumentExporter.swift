@@ -319,7 +319,7 @@ public final class PDFDocumentExporter: Sendable {
         var reconstructedPages: [ReconstructedPage] = []
 
         for pIdx in indices {
-            guard let stext = document.loadStructuredPage(for: pIdx) else { continue }
+            guard let stext = document.loadStructuredPage(for: pIdx)?.withTextDecorations() else { continue }
             let allChars = stext.blocks.filter { $0.type == .text }.flatMap { $0.lines }.flatMap { $0.characters }
             let validSizes = allChars.map { $0.size }.filter { $0 > 0 }.sorted()
             let baseFontSize: Float = validSizes.isEmpty ? 11.0 : validSizes[validSizes.count / 2]
