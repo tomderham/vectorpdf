@@ -44,9 +44,10 @@ extension PDFViewerViewModel {
         setZoom(1.0)
     }
     
+    /// The pages keep their bitmaps until they're rendered again at the new zoom (see
+    /// `hasCurrentRender`), so they don't flash blank.
     public func setZoom(_ newZoom: CGFloat) {
         zoomScale = newZoom
-        renderedPages = [:]
         Task { await renderPage(currentPageIndex) }
     }
 

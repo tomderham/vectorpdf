@@ -5440,3 +5440,31 @@ func createFormSamplePDF(at fileURL: URL) {
 
 
 
+
+/// A zoom keeps each page's bitmap until it's rendered at the new zoom, so pages don't flash
+/// blank, and the page is rendered again sharp.
+@MainActor
+@Test func zoomKeepsBitmapsUntilTheyAreRenderedAgain() async throws {
+    let vm = PDFViewerViewModel()
+    vm.isTransientWindow = true
+    await vm.loadDocument(from: Fixture.lcmsTutorial.path)
+    await vm.renderPage(0)
+    let before = try #require(vm.renderedPages[0])
+    #expect(vm.hasCurrentRender(of: 0))
+
+    vm.setZoom(vm.zoomScale * 2)
+    #expect(vm.renderedPages[0] === before)
+    #expect(!vm.hasCurrentRender(of: 0))
+
+    await vm.renderPage(0)
+    #expect(vm.hasCurrentRender(of: 0))
+    let after = try #require(vm.renderedPages[0])
+    #expect(after !== before)
+    #expect(abs(after.size.width - before.size.width * 2) < 1)
+
+    // A pinch renders nothing until it ends.
+    vm.isLiveZooming = true
+    vm.zoomScale *= 1.5
+    vm.isLiveZooming = false
+    #expect(vm.renderedPages[0] === after)
+}

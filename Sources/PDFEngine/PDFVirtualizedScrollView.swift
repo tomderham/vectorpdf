@@ -119,6 +119,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
+        // Two-finger scrolling pans in any direction once zoomed in, not one axis at a time.
+        scrollView.usesPredominantAxisScrolling = false
         scrollView.drawsBackground = true
         scrollView.backgroundColor = NSColor.underPageBackgroundColor
         
@@ -390,6 +392,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             if isBegan {
                 isPinching = true
+                viewModel.isLiveZooming = true
                 pinchBaseZoom = viewModel.zoomScale
                 pinchAccumulatedScale = 1.0
                 
@@ -422,6 +425,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             
             if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
                 isPinching = false
+                viewModel.isLiveZooming = false
                 let finalZoom = min(max(pinchBaseZoom * pinchAccumulatedScale, 0.10), 4.0)
                 viewModel.setZoom(finalZoom)
                 return

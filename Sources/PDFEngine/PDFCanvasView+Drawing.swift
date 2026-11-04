@@ -111,8 +111,9 @@ extension PDFCanvasView {
                 } else {
                     displayImg.draw(in: alignedFrame)
                 }
-            } else {
-                // Asynchronously render on demand
+            }
+            if !viewModel.hasCurrentRender(of: pageIdx) && !viewModel.isLiveZooming {
+                // Render on demand, or again after a zoom; the old bitmap stays meanwhile.
                 Task { @MainActor [weak self] in
                     await self?.viewModel.renderPage(pageIdx)
                     self?.viewModel.loadPageMetadata(pageIdx)

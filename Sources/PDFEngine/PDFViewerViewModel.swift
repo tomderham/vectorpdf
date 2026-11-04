@@ -75,6 +75,12 @@ public final class PDFViewerViewModel: ObservableObject {
     /// Indicates whether renderActor has opened the current document.
     var isRenderActorReady = false
     private var pagesAwaitingRenderActor: Set<Int> = []
+    /// The zoom each of `renderedPages` was rendered at. After a zoom a page keeps its old
+    /// bitmap, stretched to its new size, until the sharp one is ready, rather than going blank.
+    private var renderedPageZooms: [Int: CGFloat] = [:]
+    /// True while a pinch is changing the zoom with every event: pages render once it ends,
+    /// not at each step.
+    public var isLiveZooming = false
     @Published public var documentTitle: String = "VectorPDF"
 
     /// Whole-document display-only rotation in 90-degree increments.
@@ -856,7 +862,7 @@ public final class PDFViewerViewModel: ObservableObject {
     /// Renders a page if it hasn't been; with `replacing`, again, keeping the old picture on
     /// screen until the new one is ready.
     public func renderPage(_ pageIndex: Int, replacing: Bool = false) async {
-        guard replacing || renderedPages[pageIndex] == nil, !pagesCurrentlyRendering.contains(pageIndex) else { return }
+        guard replacing || !hasCurrentRender(of: pageIndex), !pagesCurrentlyRendering.contains(pageIndex) else { return }
         guard isRenderActorReady else {
             pagesAwaitingRenderActor.insert(pageIndex)
             return
@@ -887,6 +893,7 @@ public final class PDFViewerViewModel: ObservableObject {
                     size: NSSize(width: rendered.nativeBounds.width * startZoom, height: rendered.nativeBounds.height * startZoom)
                 )
                 renderedPages[pageIndex] = nsImage
+                renderedPageZooms[pageIndex] = startZoom
                 // Update page bounds and layout if placeholder dimensions differed.
                 if document?.recordActualPageBounds(rendered.nativeBounds, forPage: pageIndex) == true {
                     recomputeEffectiveLayout()
@@ -902,9 +909,15 @@ public final class PDFViewerViewModel: ObservableObject {
         pagesCurrentlyRendering.remove(pageIndex)
         // A request that arrived while this one was in flight was dropped by the guard above, so a
         // discarded result has to be redone here or the page would stay blank.
-        if isStale {
+        if isStale && !isLiveZooming {
             await renderPage(pageIndex)
         }
+    }
+
+    /// Whether the page has a bitmap rendered at the current zoom. One from before a zoom still
+    /// draws, stretched, until this is true.
+    public func hasCurrentRender(of pageIndex: Int) -> Bool {
+        renderedPages[pageIndex] != nil && renderedPageZooms[pageIndex] == effectiveZoom
     }
 
     public func evictRenderedPage(_ pageIndex: Int) {
