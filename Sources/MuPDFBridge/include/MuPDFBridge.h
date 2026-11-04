@@ -31,6 +31,10 @@ extern "C" {
 fz_context *mupdf_context_create(size_t max_store_bytes);
 fz_context *mupdf_context_clone(fz_context *base);
 void mupdf_context_drop(fz_context *ctx);
+// A root context sharing nothing with the others but the FreeType lock, for a thread that does a
+// lot of work on its own; never clone it. Drop it with mupdf_context_drop_independent.
+fz_context *mupdf_context_create_independent(size_t max_store_bytes);
+void mupdf_context_drop_independent(fz_context *ctx);
 
 // Document Lifecycle
 int mupdf_document_open(fz_context *ctx, const char *path, fz_document **out_doc, const char **out_error);

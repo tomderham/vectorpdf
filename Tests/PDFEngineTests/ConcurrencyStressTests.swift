@@ -49,9 +49,14 @@ struct ConcurrencyStressTests {
                             }
                         }
                     }
+                    let nextPath = Fixture.url(files[(i + 1) % files.count]).path
                     group.addTask {
+                        // Search with all its workers, opening another document part way through.
                         let actor = PDFSearchActor()
                         try? await actor.openDocument(filePath: path)
+                        async let hits = actor.search(query: "the")
+                        try? await actor.openDocument(filePath: nextPath)
+                        _ = try? await hits
                         _ = try? await actor.search(query: "the")
                     }
                     group.addTask {

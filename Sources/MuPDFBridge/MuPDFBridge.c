@@ -16,30 +16,27 @@
 //
 
 #include "include/MuPDFBridge.h"
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <pthread.h>
+#include <os/lock.h>
 #include <time.h>
 
-// Thread Synchronization Locks for MuPDF context cloning
-static pthread_mutex_t g_mupdf_locks[FZ_LOCK_MAX];
-static pthread_once_t g_mupdf_locks_once = PTHREAD_ONCE_INIT;
-
-static void mupdf_init_locks(void) {
-    for (int i = 0; i < FZ_LOCK_MAX; i++) {
-        pthread_mutex_init(&g_mupdf_locks[i], NULL);
-    }
-}
+// Thread Synchronization Locks for MuPDF context cloning. Every fz_malloc, fz_free and reference
+// count takes FZ_LOCK_ALLOC, so it is contended whenever several threads work at once;
+// os_unfair_lock hands it over much faster than a default pthread mutex, whose fair hand-off
+// policy suspends a thread on every contended lock.
+static os_unfair_lock g_mupdf_locks[FZ_LOCK_MAX];
 
 static void mupdf_lock(void *user, int lock) {
     if (lock >= 0 && lock < FZ_LOCK_MAX) {
-        pthread_mutex_lock(&g_mupdf_locks[lock]);
+        os_unfair_lock_lock(&g_mupdf_locks[lock]);
     }
 }
 
 static void mupdf_unlock(void *user, int lock) {
     if (lock >= 0 && lock < FZ_LOCK_MAX) {
-        pthread_mutex_unlock(&g_mupdf_locks[lock]);
+        os_unfair_lock_unlock(&g_mupdf_locks[lock]);
     }
 }
 
@@ -51,8 +48,6 @@ static void mupdf_quiet_warning(void *user, const char *message) {
 
 // Context Lifecycle
 fz_context *mupdf_context_create(size_t max_store_bytes) {
-    pthread_once(&g_mupdf_locks_once, mupdf_init_locks);
-    
     fz_locks_context locks;
     locks.user = NULL;
     locks.lock = mupdf_lock;
@@ -78,6 +73,53 @@ fz_context *mupdf_context_clone(fz_context *base) {
 
 void mupdf_context_drop(fz_context *ctx) {
     if (ctx) fz_drop_context(ctx);
+}
+
+// Independent contexts: their own store, fonts and ALLOC/GLYPHCACHE locks, so threads using them
+// don't wait on each other's allocations and reference counts as cloned contexts do. FREETYPE stays
+// shared with every other context, because MuPDF hands HarfBuzz and OpenJPEG their context through
+// globals guarded by it.
+static void mupdf_independent_lock(void *user, int lock) {
+    if (lock == FZ_LOCK_FREETYPE) {
+        mupdf_lock(NULL, lock);
+    } else if (lock >= 0 && lock < FZ_LOCK_MAX) {
+        os_unfair_lock_lock(&((os_unfair_lock *)user)[lock]);
+    }
+}
+
+static void mupdf_independent_unlock(void *user, int lock) {
+    if (lock == FZ_LOCK_FREETYPE) {
+        mupdf_unlock(NULL, lock);
+    } else if (lock >= 0 && lock < FZ_LOCK_MAX) {
+        os_unfair_lock_unlock(&((os_unfair_lock *)user)[lock]);
+    }
+}
+
+fz_context *mupdf_context_create_independent(size_t max_store_bytes) {
+    os_unfair_lock *own = calloc(FZ_LOCK_MAX, sizeof(os_unfair_lock));
+    if (!own) return NULL;
+
+    fz_locks_context locks;
+    locks.user = own;
+    locks.lock = mupdf_independent_lock;
+    locks.unlock = mupdf_independent_unlock;
+
+    size_t store = (max_store_bytes > 0) ? max_store_bytes : (32 * 1024 * 1024);
+    fz_context *ctx = fz_new_context(NULL, &locks, store);
+    if (!ctx) {
+        free(own);
+        return NULL;
+    }
+    fz_set_warning_callback(ctx, mupdf_quiet_warning, NULL);
+    fz_register_document_handlers(ctx);
+    return ctx;
+}
+
+void mupdf_context_drop_independent(fz_context *ctx) {
+    if (!ctx) return;
+    void *own = ctx->locks.user;
+    fz_drop_context(ctx);
+    free(own);
 }
 
 // Document Lifecycle

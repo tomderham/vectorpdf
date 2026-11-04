@@ -870,7 +870,50 @@ func createMultiPagePDF(at fileURL: URL, pages: Int) {
     // The very first page emitted must be from the local neighborhood (page 40), not page 0
     #expect(firstEmittedPage != nil)
     #expect(firstEmittedPage! >= 40 && firstEmittedPage! <= 119)
-    #expect(firstEmittedPage == 40)
+    // Workers start on the first pages of the window together, so any of them may report first.
+    #expect(firstEmittedPage! < 40 + PDFSearchActor.defaultWorkerCount)
+}
+
+@Test func parallelSearchFindsWhatOneWorkerFinds() async throws {
+    let url = Fixture.url("hr1968-ih.pdf")
+    let serial = PDFSearchActor(workerCount: 1)
+    let parallel = PDFSearchActor(workerCount: 4)
+    try await serial.openDocument(filePath: url.path)
+    try await parallel.openDocument(filePath: url.path)
+
+    // With one worker the stream keeps the old order: the window around nearPage, then forward,
+    // then back.
+    var serialPages: [Int] = []
+    for await result in await serial.searchStream(query: "the", nearPage: 60) where serialPages.last != result.pageIndex {
+        serialPages.append(result.pageIndex)
+    }
+    #expect(serialPages == serialPages.filter { $0 >= 10 } + serialPages.filter { $0 < 10 })
+    #expect(serialPages.filter { $0 >= 10 } == serialPages.filter { $0 >= 10 }.sorted())
+
+    for query in ["the", "Health Administration", "substituting"] {
+        let expected = try await serial.search(query: query)
+        let found = try await parallel.search(query: query)
+        #expect(!expected.isEmpty)
+        #expect(found.map(\.pageIndex) == expected.map(\.pageIndex))
+        #expect(found.map(\.matchedText) == expected.map(\.matchedText))
+        #expect(found.map(\.highlightQuads) == expected.map(\.highlightQuads))
+    }
+}
+
+@Test func openingAnotherDocumentStopsASearch() async throws {
+    let actor = PDFSearchActor(workerCount: 4)
+    try await actor.openDocument(filePath: Fixture.url("hr1968-ih.pdf").path)
+    let stream = await actor.searchStream(query: "the")
+    var pages = Set<Int>()
+    for await result in stream {
+        pages.insert(result.pageIndex)
+        if pages.count == 3 {
+            try await actor.openDocument(filePath: Fixture.lcmsTutorial.path)
+        }
+    }
+    // The workers stop at their current page rather than finishing the old document's 99 pages.
+    #expect(pages.count < 20)
+    #expect(try await !actor.search(query: "Little CMS").isEmpty)
 }
 
 @Test func testSearchBufferSuppressesEarlyJudderAndMaintainsActiveMatch() async throws {

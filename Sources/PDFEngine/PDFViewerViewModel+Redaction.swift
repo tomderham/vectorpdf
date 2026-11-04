@@ -230,7 +230,9 @@ extension PDFViewerViewModel {
 
             for await result in stream {
                 guard !Task.isCancelled else { break }
-                items.append(RedactionMatchItem(result: result, isSelected: true))
+                // Pages arrive out of order; each page's matches come together, in reading order.
+                let item = RedactionMatchItem(result: result, isSelected: true)
+                items.insert(item, at: items.lastIndex { $0.result.pageIndex <= result.pageIndex }.map { $0 + 1 } ?? 0)
                 if items.count < 5 || Date().timeIntervalSince(lastUpdate) > 0.08 {
                     self.redactionMatches = items
                     lastUpdate = Date()

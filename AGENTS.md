@@ -19,6 +19,7 @@
    - All AppKit / UI interactions must be `@MainActor`-safe.
    - The vendored MuPDF is 1.28.5 **plus cherry-picked upstream fixes** in `Vendor/patches/` (store thread-safety, Bug 709849). When a MuPDF release includes them, rebase onto that tag and delete the patches — see "Backported patches" in `Vendor/README.md`.
    - Never empty MuPDF's store (`fz_empty_store`): it is shared by every cloned context, and emptying it frees items other threads are using. Its size limit bounds memory on its own.
+   - Search workers use independent contexts (`mupdf_context_create_independent`) rather than clones, so they don't contend on the allocation lock. They share nothing with other contexts but the FreeType lock: never pass a document, page or other MuPDF object between them, and never clone one.
 
 2. **Windowing & Native Appearance:**
    - Windows use a unified toolbar with tab bar support via `PDFViewerWindow` and `DocumentWindowing`.
@@ -33,6 +34,7 @@
    - Tests that send key events a view deliberately ignores should end its responder chain with `KeySinkResponder` (in `TestTraits.swift`), or AppKit beeps.
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
    - After changing MuPDF, the bridge, or how documents are used across threads, run the concurrency stress test: `VECTORPDF_STRESS_TESTS=1 swift test --filter ConcurrencyStress`.
+   - After changing search or text extraction, compare times with `VECTORPDF_BENCHMARKS=1 swift test --filter SearchBenchmark` (`VECTORPDF_SEARCH_WORKERS=1` for the serial baseline).
    - Always run tests and verify zero regressions before committing.
 
 5. **User Guide:**
