@@ -103,7 +103,7 @@ extension PDFViewerViewModel {
     }
 
     public func saveDocument() {
-        guard let doc = document else { return }
+        guard let doc = document, !isReadOnlyDocument else { return }
         flushPendingFormEdits()
         // Suspend for our own write (an atomic replace, indistinguishable from an external change)
         // to avoid a pointless self-triggered reload; re-arm right after.
@@ -134,7 +134,7 @@ extension PDFViewerViewModel {
     }
     
     public func saveDocumentAs() {
-        guard let doc = document else { return }
+        guard let doc = document, !isReadOnlyDocument else { return }
         flushPendingFormEdits()
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType.pdf]
@@ -170,7 +170,7 @@ extension PDFViewerViewModel {
 
     /// Prompts the user with a save panel to save the open PDF as a flattened document (baking annotations and form widgets into static content).
     public func saveDocumentFlattenedAs() {
-        guard let doc = document else { return }
+        guard let doc = document, !isReadOnlyDocument else { return }
         flushPendingFormEdits()
 
         let panel = NSSavePanel()
@@ -230,7 +230,7 @@ extension PDFViewerViewModel {
 
     /// Prompts the user for a destination and password, then saves the current PDF encrypted with AES-256.
     public func saveDocumentEncryptedAs() {
-        guard let doc = document else { return }
+        guard let doc = document, !isReadOnlyDocument else { return }
         flushPendingFormEdits()
         
         let panel = NSSavePanel()
@@ -422,7 +422,7 @@ extension PDFViewerViewModel {
     }
 
     public func showSplitPDF() {
-        guard document != nil else { return }
+        guard document != nil, !isReadOnlyDocument else { return }
         self.isShowingSplitPDF = true
     }
 }

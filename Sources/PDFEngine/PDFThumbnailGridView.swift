@@ -150,6 +150,7 @@ public struct ThumbnailPageDropDelegate: DropDelegate {
     let viewModel: PDFViewerViewModel
 
     public func validateDrop(info: DropInfo) -> Bool {
+        guard !viewModel.isReadOnlyDocument else { return false }
         let isInternalDrag = !viewModel.draggedThumbnailPageIndices.isEmpty || viewModel.draggedThumbnailPageIndex != nil
         let hasExternalPDF = info.hasItemsConforming(to: [UTType.pdf, UTType.fileURL])
         return isInternalDrag || hasExternalPDF
@@ -241,6 +242,10 @@ public struct ThumbnailPageDropDelegate: DropDelegate {
 public struct BottomZoneDropDelegate: DropDelegate {
     let pageCount: Int
     let viewModel: PDFViewerViewModel
+
+    public func validateDrop(info: DropInfo) -> Bool {
+        !viewModel.isReadOnlyDocument
+    }
 
     public func dropEntered(info: DropInfo) {
         viewModel.activeThumbnailDropSlot = pageCount
@@ -421,138 +426,141 @@ public struct PDFThumbnailGridView: View {
                                 viewModel.selectThumbnail(pageIndex: pageIndex, isShift: isShift, isCommand: isCmd)
                             }
                             .contextMenu {
-                                let isMulti = viewModel.selectedThumbnailPageIndices.contains(pageIndex) && viewModel.selectedThumbnailPageIndices.count > 1
-                                let count = viewModel.selectedThumbnailPageIndices.count
+                                // Every item edits pages, which EPUB, XPS, CBZ and FB2 can't have.
+                                if !viewModel.isReadOnlyDocument {
+                                    let isMulti = viewModel.selectedThumbnailPageIndices.contains(pageIndex) && viewModel.selectedThumbnailPageIndices.count > 1
+                                    let count = viewModel.selectedThumbnailPageIndices.count
 
-                                if isMulti {
-                                    Button {
-                                        viewModel.rotateSelectedThumbnails(by: 90)
-                                    } label: {
-                                        Label("Rotate \(count) Pages Clockwise", systemImage: "rotate.right")
-                                    }
-
-                                    Button {
-                                        viewModel.rotateSelectedThumbnails(by: -90)
-                                    } label: {
-                                        Label("Rotate \(count) Pages Counterclockwise", systemImage: "rotate.left")
-                                    }
-
-                                    Button {
-                                        viewModel.rotateSelectedThumbnails(by: 180)
-                                    } label: {
-                                        Label("Rotate \(count) Pages 180°", systemImage: "arrow.triangle.2.circlepath")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        viewModel.duplicateSelectedThumbnails()
-                                    } label: {
-                                        Label("Duplicate \(count) Pages", systemImage: "plus.rectangle.on.rectangle")
-                                    }
-
-                                    Button {
-                                        viewModel.insertBlankPageAtSelection()
-                                    } label: {
-                                        Label("Insert Blank Page", systemImage: "plus.rectangle")
-                                    }
-
-                                    Button {
-                                        let insertSlot = (viewModel.selectedThumbnailPageIndices.max() ?? pageIndex) + 1
-                                        viewModel.promptImportPDF(atSlot: insertSlot)
-                                    } label: {
-                                        Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        viewModel.extractSelectedThumbnails()
-                                    } label: {
-                                        Label("Save \(count) selected pages as a PDF…", systemImage: "arrow.up.forward.square")
-                                    }
-
-                                    Divider()
-
-                                    Button(role: .destructive) {
-                                        viewModel.deleteSelectedThumbnails()
-                                    } label: {
-                                        Label("Delete \(count) Pages", systemImage: "trash")
-                                    }
-                                    .disabled(count >= pageCount)
-                                } else {
-                                    Button {
-                                        viewModel.rotatePage(pageIndex, by: 90)
-                                    } label: {
-                                        Label("Rotate Clockwise", systemImage: "rotate.right")
-                                    }
-
-                                    Button {
-                                        viewModel.rotatePage(pageIndex, by: -90)
-                                    } label: {
-                                        Label("Rotate Counterclockwise", systemImage: "rotate.left")
-                                    }
-
-                                    Button {
-                                        viewModel.rotatePage(pageIndex, by: 180)
-                                    } label: {
-                                        Label("Rotate 180°", systemImage: "arrow.triangle.2.circlepath")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        viewModel.duplicatePage(pageIndex)
-                                    } label: {
-                                        Label("Duplicate Page", systemImage: "plus.rectangle.on.rectangle")
-                                    }
-
-                                    Button {
-                                        viewModel.insertBlankPage(after: pageIndex)
-                                    } label: {
-                                        Label("Insert Blank Page", systemImage: "plus.rectangle")
-                                    }
-
-                                    Button {
-                                        viewModel.promptImportPDF(atSlot: pageIndex + 1)
-                                    } label: {
-                                        Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
-                                    }
-
-                                    Divider()
-
-                                    Button {
-                                        viewModel.extractPage(pageIndex)
-                                    } label: {
-                                        Label("Save selected page as a PDF…", systemImage: "arrow.up.forward.square")
-                                    }
-
-                                    Divider()
-
-                                    if pageIndex > 0 {
+                                    if isMulti {
                                         Button {
-                                            viewModel.reorderPage(from: pageIndex, to: pageIndex - 1)
+                                            viewModel.rotateSelectedThumbnails(by: 90)
                                         } label: {
-                                            Label("Move Page Up", systemImage: "arrow.up")
+                                            Label("Rotate \(count) Pages Clockwise", systemImage: "rotate.right")
                                         }
-                                    }
 
-                                    if pageIndex < pageCount - 1 {
                                         Button {
-                                            viewModel.reorderPage(from: pageIndex, to: pageIndex + 1)
+                                            viewModel.rotateSelectedThumbnails(by: -90)
                                         } label: {
-                                            Label("Move Page Down", systemImage: "arrow.down")
+                                            Label("Rotate \(count) Pages Counterclockwise", systemImage: "rotate.left")
                                         }
-                                    }
 
-                                    Divider()
+                                        Button {
+                                            viewModel.rotateSelectedThumbnails(by: 180)
+                                        } label: {
+                                            Label("Rotate \(count) Pages 180°", systemImage: "arrow.triangle.2.circlepath")
+                                        }
 
-                                    Button(role: .destructive) {
-                                        viewModel.deletePage(pageIndex)
-                                    } label: {
-                                        Label("Delete Page", systemImage: "trash")
+                                        Divider()
+
+                                        Button {
+                                            viewModel.duplicateSelectedThumbnails()
+                                        } label: {
+                                            Label("Duplicate \(count) Pages", systemImage: "plus.rectangle.on.rectangle")
+                                        }
+
+                                        Button {
+                                            viewModel.insertBlankPageAtSelection()
+                                        } label: {
+                                            Label("Insert Blank Page", systemImage: "plus.rectangle")
+                                        }
+
+                                        Button {
+                                            let insertSlot = (viewModel.selectedThumbnailPageIndices.max() ?? pageIndex) + 1
+                                            viewModel.promptImportPDF(atSlot: insertSlot)
+                                        } label: {
+                                            Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
+                                        }
+
+                                        Divider()
+
+                                        Button {
+                                            viewModel.extractSelectedThumbnails()
+                                        } label: {
+                                            Label("Save \(count) selected pages as a PDF…", systemImage: "arrow.up.forward.square")
+                                        }
+
+                                        Divider()
+
+                                        Button(role: .destructive) {
+                                            viewModel.deleteSelectedThumbnails()
+                                        } label: {
+                                            Label("Delete \(count) Pages", systemImage: "trash")
+                                        }
+                                        .disabled(count >= pageCount)
+                                    } else {
+                                        Button {
+                                            viewModel.rotatePage(pageIndex, by: 90)
+                                        } label: {
+                                            Label("Rotate Clockwise", systemImage: "rotate.right")
+                                        }
+
+                                        Button {
+                                            viewModel.rotatePage(pageIndex, by: -90)
+                                        } label: {
+                                            Label("Rotate Counterclockwise", systemImage: "rotate.left")
+                                        }
+
+                                        Button {
+                                            viewModel.rotatePage(pageIndex, by: 180)
+                                        } label: {
+                                            Label("Rotate 180°", systemImage: "arrow.triangle.2.circlepath")
+                                        }
+
+                                        Divider()
+
+                                        Button {
+                                            viewModel.duplicatePage(pageIndex)
+                                        } label: {
+                                            Label("Duplicate Page", systemImage: "plus.rectangle.on.rectangle")
+                                        }
+
+                                        Button {
+                                            viewModel.insertBlankPage(after: pageIndex)
+                                        } label: {
+                                            Label("Insert Blank Page", systemImage: "plus.rectangle")
+                                        }
+
+                                        Button {
+                                            viewModel.promptImportPDF(atSlot: pageIndex + 1)
+                                        } label: {
+                                            Label("Insert Pages from PDF…", systemImage: "arrow.down.doc")
+                                        }
+
+                                        Divider()
+
+                                        Button {
+                                            viewModel.extractPage(pageIndex)
+                                        } label: {
+                                            Label("Save selected page as a PDF…", systemImage: "arrow.up.forward.square")
+                                        }
+
+                                        Divider()
+
+                                        if pageIndex > 0 {
+                                            Button {
+                                                viewModel.reorderPage(from: pageIndex, to: pageIndex - 1)
+                                            } label: {
+                                                Label("Move Page Up", systemImage: "arrow.up")
+                                            }
+                                        }
+
+                                        if pageIndex < pageCount - 1 {
+                                            Button {
+                                                viewModel.reorderPage(from: pageIndex, to: pageIndex + 1)
+                                            } label: {
+                                                Label("Move Page Down", systemImage: "arrow.down")
+                                            }
+                                        }
+
+                                        Divider()
+
+                                        Button(role: .destructive) {
+                                            viewModel.deletePage(pageIndex)
+                                        } label: {
+                                            Label("Delete Page", systemImage: "trash")
+                                        }
+                                        .disabled(pageCount <= 1)
                                     }
-                                    .disabled(pageCount <= 1)
                                 }
                             }
                             .onDrag {

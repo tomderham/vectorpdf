@@ -67,6 +67,9 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public private(set) var pageYOffsets: [CGFloat]
     public private(set) var totalHeight: CGFloat
     public internal(set) var outline: [PDFOutlineNode]
+    /// False for EPUB, XPS, CBZ and FB2 documents, which can be read but not edited or saved:
+    /// they have no annotations, form fields, page labels or drawing scales to read either.
+    public let isPDF: Bool
     /// The document's own name for each page, such as `iv` or `A-101`. Nil when it has none, or
     /// when they match the page's position, so nothing needs to tell the two apart.
     public private(set) var pageLabels: [String]?
@@ -116,6 +119,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
 
         self.doc = doc
+        self.isPDF = mupdf_document_is_pdf(ctx, doc) != 0
         self.pageCount = 0
         self.pageBounds = []
         self.pageYOffsets = []
@@ -210,7 +214,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     }
 
     private func readPageLabels(pageCount: Int) -> [String]? {
-        guard mupdf_pdf_has_page_labels(ctx, doc) != 0 else { return nil }
+        guard isPDF, mupdf_pdf_has_page_labels(ctx, doc) != 0 else { return nil }
         var buffer = [CChar](repeating: 0, count: 256)
         let labels = (0..<pageCount).map { index -> String in
             // A range can give pages an empty label, which leaves nothing to show.
@@ -654,6 +658,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     /// Everything on a page a reviewer would call an annotation, from this app or any other, with
     /// replies and statuses gathered under the annotation they belong to.
     public func annotationThreads(pageIndex: Int) -> [PDFAnnotationThread] {
+        guard isPDF else { return [] }
         lock.lock()
         defer { lock.unlock() }
         var list: UnsafeMutablePointer<mupdf_review_annot>?
@@ -965,7 +970,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
     /// The drawing scale stored on pageIndex, if any.
     public func loadPageScale(pageIndex: Int) -> PDFScaleConfiguration? {
-        guard pageIndex >= 0, pageIndex < pageCount else { return nil }
+        guard isPDF, pageIndex >= 0, pageIndex < pageCount else { return nil }
         lock.lock()
         defer { lock.unlock() }
 
@@ -1060,6 +1065,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
     /// Measurement annotations stored on pageIndex, recomputed from stored geometry.
     public func measurementAnnotations(pageIndex: Int) -> [PDFAnnotation] {
+        guard isPDF else { return [] }
         lock.lock()
         defer { lock.unlock() }
         var total: Int32 = 0
@@ -1121,6 +1127,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     /// Object number of the most recently added annotation on a page (see
     /// mupdf_pdf_last_annot_objnum), or nil if the page has none.
     public func lastAnnotationObjectNumber(pageIndex: Int) -> Int? {
+        guard isPDF else { return nil }
         lock.lock()
         defer { lock.unlock() }
         var objnum: Int32 = 0
@@ -1335,7 +1342,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
     /// Whether a signature stamp annotation exists at widgetRect on pageIndex.
     public func hasSignatureStamp(pageIndex: Int, widgetRect: CGRect) -> Bool {
-        guard pageIndex >= 0, pageIndex < pageBounds.count else { return false }
+        guard isPDF, pageIndex >= 0, pageIndex < pageBounds.count else { return false }
         let pageTopY = pageBounds[pageIndex].maxY
         let nativeRect = CGRect(x: widgetRect.minX, y: pageTopY - widgetRect.maxY, width: widgetRect.width, height: widgetRect.height)
 
@@ -1786,6 +1793,7 @@ extension PDFDocumentCore {
     
     /// Loads interactive form widgets (text fields, checkboxes, dropdowns) for a page
     public func loadFormWidgets(for pageIndex: Int) -> [PDFFormWidget] {
+        guard isPDF else { return [] }
         lock.lock()
         defer { lock.unlock() }
         

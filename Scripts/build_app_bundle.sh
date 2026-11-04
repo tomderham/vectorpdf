@@ -95,6 +95,32 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
                 <string>com.adobe.pdf</string>
             </array>
         </dict>
+        <!-- Formats MuPDF reads but can't save, opened for reading (OpenableDocumentTypes). The
+             extensions are listed too, for when another app's declaration of a type wins. -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>E-Book, Comic or XPS Document</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>org.idpf.epub-container</string>
+                <string>com.microsoft.xps</string>
+                <string>com.microsoft.openxps</string>
+                <string>com.thomasderham.vectorpdf.cbz</string>
+                <string>com.thomasderham.vectorpdf.fb2</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>epub</string>
+                <string>xps</string>
+                <string>oxps</string>
+                <string>cbz</string>
+                <string>fb2</string>
+            </array>
+        </dict>
     </array>
     <key>UTImportedTypeDeclarations</key>
     <array>
@@ -117,6 +143,93 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
                 <key>public.mime-type</key>
                 <array>
                     <string>application/pdf</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.microsoft.xps</string>
+            <key>UTTypeDescription</key>
+            <string>XPS Document</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+                <string>public.composite-content</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>xps</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/vnd.ms-xpsdocument</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.microsoft.openxps</string>
+            <key>UTTypeDescription</key>
+            <string>OpenXPS Document</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+                <string>public.composite-content</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>oxps</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/oxps</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.thomasderham.vectorpdf.cbz</string>
+            <key>UTTypeDescription</key>
+            <string>Comic Book Archive</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.zip-archive</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>cbz</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/vnd.comicbook+zip</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.thomasderham.vectorpdf.fb2</string>
+            <key>UTTypeDescription</key>
+            <string>FictionBook Document</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.xml</string>
+                <string>public.composite-content</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>fb2</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/x-fictionbook+xml</string>
                 </array>
             </dict>
         </dict>

@@ -300,7 +300,7 @@ public struct PDFViewerMainView: View {
             guard totalItems <= 4 else { return [] }
             let favPaths = Set(favoritesManager.favorites.map(\.path))
             return NSDocumentController.shared.recentDocumentURLs
-                .filter { $0.pathExtension.lowercased() == "pdf" && !favPaths.contains($0.path) }
+                .filter { OpenableDocumentTypes.canOpen($0) && !favPaths.contains($0.path) }
                 .prefix(3)
                 .map { $0 }
         }()
@@ -1473,7 +1473,7 @@ public struct PDFViewerMainView: View {
                         Image(systemName: "ruler")
                     }
                 }
-                .disabled(viewModel.document == nil)
+                .disabled(viewModel.document == nil || viewModel.isReadOnlyDocument)
             }
             
             if let doc = viewModel.document {
@@ -1501,7 +1501,7 @@ public struct PDFViewerMainView: View {
             } else {
                 fileURL = nil
             }
-            guard let url = fileURL, url.pathExtension.lowercased() == "pdf" else { return }
+            guard let url = fileURL, OpenableDocumentTypes.canOpen(url) else { return }
             let docPath = url.path
             Task { @MainActor in
                 if self.viewModel.document == nil {

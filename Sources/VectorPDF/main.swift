@@ -99,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.pathExtension.lowercased() == "pdf" {
+        for url in urls where OpenableDocumentTypes.canOpen(url) {
             handleSystemOpenFile(url: url)
         }
     }
@@ -176,11 +176,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @MainActor
 func promptOpenFileGlobal(inNewTab: Bool) {
     let panel = NSOpenPanel()
-    panel.allowedContentTypes = [UTType.pdf]
+    panel.allowedContentTypes = OpenableDocumentTypes.contentTypes
     panel.allowsMultipleSelection = false
     panel.canChooseDirectories = false
     panel.canChooseFiles = true
-    panel.prompt = inNewTab ? "Open PDF in New Tab" : "Open PDF"
+    panel.prompt = inNewTab ? "Open in New Tab" : "Open"
 
     let completion: (NSApplication.ModalResponse) -> Void = { response in
         guard response == .OK, let url = panel.url else { return }
@@ -223,6 +223,11 @@ struct VectorPDF: App {
     
     private var hasDocument: Bool {
         coordinator.hasActiveDocument || (resolvedViewModel?.document != nil)
+    }
+
+    /// A document is open and it's a PDF: EPUB, XPS, CBZ and FB2 open for reading only.
+    private var canEditDocument: Bool {
+        hasDocument && !(resolvedViewModel?.isReadOnlyDocument ?? false)
     }
     
     /// Rich-text credits displayed in the About panel.
@@ -319,13 +324,13 @@ struct VectorPDF: App {
                 resolvedViewModel?.promptImportPDF(atSlot: nil)
             }
             .keyboardShortcut("i", modifiers: [.command, .option])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Button("Duplicate Pages") {
                 resolvedViewModel?.duplicateCurrentPages()
             }
             .keyboardShortcut("d", modifiers: [.command, .shift])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             // Reads NSDocumentController recent documents list directly.
             Menu("Open Recent") {
@@ -357,19 +362,19 @@ struct VectorPDF: App {
                 resolvedViewModel?.saveDocument()
             }
             .keyboardShortcut("s", modifiers: .command)
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
             
             Button("Save As...") {
                 resolvedViewModel?.saveDocumentAs()
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Button("Save Encrypted with Password...") {
                 resolvedViewModel?.saveDocumentEncryptedAs()
             }
             .keyboardShortcut("s", modifiers: [.command, .option])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Divider()
 
@@ -380,7 +385,7 @@ struct VectorPDF: App {
                     NotificationCenter.default.post(name: .showSplitPDFCommand, object: nil)
                 }
             }
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Menu("Export Document As") {
                 Button("Plain Text (.txt)...") {
@@ -395,6 +400,7 @@ struct VectorPDF: App {
                 Button("Flattened PDF (.pdf)...") {
                     resolvedViewModel?.exportDocument(as: .flattenedPDF)
                 }
+                .disabled(!canEditDocument)
             }
             .disabled(!hasDocument)
 
@@ -402,7 +408,7 @@ struct VectorPDF: App {
                 resolvedViewModel?.exportAnnotationsSummary()
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Divider()
 
@@ -568,7 +574,7 @@ struct VectorPDF: App {
                     }
                 }
             }
-            .disabled(!coordinator.hasActiveSelection)
+            .disabled(!coordinator.hasActiveSelection || !canEditDocument)
 
             Menu("Underline Selection") {
                 Button("Underline") {
@@ -591,7 +597,7 @@ struct VectorPDF: App {
                     }
                 }
             }
-            .disabled(!coordinator.hasActiveSelection)
+            .disabled(!coordinator.hasActiveSelection || !canEditDocument)
 
             Menu("Strikethrough Selection") {
                 Button("Strikethrough") {
@@ -614,7 +620,7 @@ struct VectorPDF: App {
                     }
                 }
             }
-            .disabled(!coordinator.hasActiveSelection)
+            .disabled(!coordinator.hasActiveSelection || !canEditDocument)
 
 
 
@@ -640,19 +646,19 @@ struct VectorPDF: App {
                 resolvedViewModel?.isMarkupBarVisible.toggle()
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Button((resolvedViewModel?.isMeasurementBarVisible ?? false) ? "Hide Measurement Toolbar" : "Show Measurement Toolbar") {
                 resolvedViewModel?.toggleMeasurementBar()
             }
             .keyboardShortcut("m", modifiers: [.command, .shift])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Button((resolvedViewModel?.isRedactionBarVisible ?? false) ? "Hide Redact Toolbar" : "Show Redact Toolbar") {
                 resolvedViewModel?.toggleRedactionBar()
             }
             .keyboardShortcut("r", modifiers: [.command, .option])
-            .disabled(!hasDocument)
+            .disabled(!canEditDocument)
 
             Divider()
 

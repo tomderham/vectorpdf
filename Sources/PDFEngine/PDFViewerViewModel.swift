@@ -97,6 +97,12 @@ public final class PDFViewerViewModel: ObservableObject {
     /// position correctly.
     public var isInteractiveViewingMode: Bool { viewRotationDegrees == 0 && !isTwoPageMode }
 
+    /// True for an EPUB, XPS, CBZ or FB2 document, which MuPDF reads but can't save. Like
+    /// two-page mode it's for reading only, but it keeps text selection, links and search: only
+    /// the tools that write to the file are unavailable (markup, measurement, redaction, page
+    /// edits, saving).
+    public var isReadOnlyDocument: Bool { document?.isPDF == false }
+
     /// True from when a document starts opening in this window until it's open or has failed. The
     /// window has no document yet, but it isn't an empty Start window.
     public internal(set) var isLoadingDocument = false
@@ -248,7 +254,9 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var pageAnnotations: [Int: [PDFAnnotation]] = [:]
     @Published public var isMarkupBarVisible: Bool = false {
         didSet {
-            if isMarkupBarVisible {
+            if isMarkupBarVisible && isReadOnlyDocument {
+                isMarkupBarVisible = false
+            } else if isMarkupBarVisible {
                 isMeasurementBarVisible = false
                 isRedactionBarVisible = false
             } else {
@@ -259,7 +267,12 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
     }
-    @Published public var canvasMode: CanvasMode = .select
+    @Published public var canvasMode: CanvasMode = .select {
+        didSet {
+            // Every other mode adds, changes or removes something in the file.
+            if canvasMode != .select && isReadOnlyDocument { canvasMode = .select }
+        }
+    }
     @Published public var selectedAnnotationColor: AnnotationColor = .yellow
     @Published public var drawStrokeWidth: CGFloat = 2.5
     @Published public var selectedFontSize: CGFloat = 13.0
@@ -303,7 +316,9 @@ public final class PDFViewerViewModel: ObservableObject {
     // Engineering Measurement & Takeoff
     @Published public var isMeasurementBarVisible: Bool = false {
         didSet {
-            if isMeasurementBarVisible {
+            if isMeasurementBarVisible && isReadOnlyDocument {
+                isMeasurementBarVisible = false
+            } else if isMeasurementBarVisible {
                 isMarkupBarVisible = false
                 isRedactionBarVisible = false
                 if canvasMode == .select || canvasMode == .draw || canvasMode == .text || canvasMode == .callout || canvasMode == .redact || canvasMode == .stamp || canvasMode == .note || canvasMode == .shape {
@@ -402,7 +417,9 @@ public final class PDFViewerViewModel: ObservableObject {
     // MARK: - Edit & Redact Toolbar State
     @Published public var isRedactionBarVisible: Bool = false {
         didSet {
-            if isRedactionBarVisible {
+            if isRedactionBarVisible && isReadOnlyDocument {
+                isRedactionBarVisible = false
+            } else if isRedactionBarVisible {
                 isMarkupBarVisible = false
                 isMeasurementBarVisible = false
                 if editRedactTab == .redactRegion {
@@ -699,6 +716,13 @@ public final class PDFViewerViewModel: ObservableObject {
             self.additionalSelectionPages = []
             self.pageAnnotations = [:]
             self.forgetAnnotationEdits()
+            if self.isReadOnlyDocument {
+                // Left open from a PDF this window showed before.
+                self.isMarkupBarVisible = false
+                self.isMeasurementBarVisible = false
+                self.isRedactionBarVisible = false
+                self.canvasMode = .select
+            }
             self.noteAnnotationsChanged(onPage: nil)
             self.pageScaleConfigs = [:]
             self.ocrResults = [:]

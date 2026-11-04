@@ -1,6 +1,6 @@
 # Test files
 
-PDFs used by the automated tests (`swift test`) and for trying the app by hand. All are unmodified
+Documents used by the automated tests (`swift test`) and for trying the app by hand. All are unmodified
 originals except `ieee-802.11-draft-layout.pdf`.
 
 | File | What it exercises | Source | License |
@@ -14,6 +14,9 @@ originals except `ieee-802.11-draft-layout.pdf`.
 | `ieee-802.11-draft-layout.pdf` | IEEE 802.11 draft layout: line numbers 1–65, frame-format tables with a numeric Order column, a bit-field figure | Two pages of an 802.11 draft with every letter replaced (see below) | Words removed; layout only |
 | `password-protected-sample.pdf` | Password prompt | Made with `generate_password_protected_pdf.swift` | Same as VectorPDF |
 | `url-link-sample.pdf` | A URI link | Hand-written | Same as VectorPDF |
+| `sample.epub`, `sample.fb2` | E-books with chapters in the outline, laid out into pages | Made with `make_other_formats.py` | Same as VectorPDF |
+| `sample.cbz` | A comic archive of three images | Made with `make_other_formats.py` | Same as VectorPDF |
+| `sample.xps` | Two XPS pages of vector paths | Made with `make_other_formats.py` | Same as VectorPDF |
 
 ## The 802.11 layout page
 

@@ -1,4 +1,4 @@
-<!-- keywords: open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
+<!-- keywords: open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
 
 # Open documents
 
@@ -9,6 +9,12 @@
 - **From the Finder:** right-click a PDF, then choose Open With > VectorPDF. To open all PDFs in VectorPDF, select a PDF, choose File > Get Info in the Finder, change “Open with”, then click Change All.
 - **By dragging:** drag a PDF onto the Start screen to open it there, or onto an open document to open it in a new tab.
 - **From a list:** choose File > Open Recent, or use the [Favorites](favorites-and-tab-groups.md) menu. On the Start screen, right-click a document to open it in a new tab or window.
+
+## E-books, comics and XPS documents
+
+VectorPDF also opens EPUB and FictionBook (FB2) e-books, CBZ comic archives and XPS documents, the same ways as a PDF. An e-book is laid out into pages for reading.
+
+You can read these documents, follow their table of contents, search them, select and copy their text, and add [anchors](anchors.md). They open for reading only: VectorPDF can't save them, so markup, measurement, redaction and page editing aren't available, and Save is dimmed.
 
 ## Password-protected PDFs
 

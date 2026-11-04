@@ -152,6 +152,11 @@ void mupdf_document_drop(fz_context *ctx, fz_document *doc) {
     if (ctx && doc) fz_drop_document(ctx, doc);
 }
 
+int mupdf_document_is_pdf(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    return pdf_document_from_fz_document(ctx, doc) != NULL;
+}
+
 // Password Authentication
 int mupdf_document_needs_password(fz_context *ctx, fz_document *doc, int *out_needs_password, const char **out_error) {
     if (!ctx || !doc || !out_needs_password) return -1;

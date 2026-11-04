@@ -100,7 +100,7 @@ struct HeroDropZoneView: View {
                     } else {
                         url = nil
                     }
-                    guard let fileURL = url, fileURL.pathExtension.lowercased() == "pdf" else { return }
+                    guard let fileURL = url, OpenableDocumentTypes.canOpen(fileURL) else { return }
                     Task { @MainActor in
                         onDropURLs([fileURL])
                     }

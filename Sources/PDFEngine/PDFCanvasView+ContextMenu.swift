@@ -299,55 +299,58 @@ extension PDFCanvasView {
                     menu.addItem(startItem)
                 }
 
-                menu.addItem(NSMenuItem.separator())
+                // Markup writes to the file, which EPUB, XPS, CBZ and FB2 can't be.
+                if !viewModel.isReadOnlyDocument {
+                    menu.addItem(NSMenuItem.separator())
 
-                // Highlight submenu with colors
-                let highlightMenu = NSMenu(title: "Highlight")
-                for color in AnnotationColor.allCases {
-                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(highlightWithColorAction(_:)), keyEquivalent: "")
-                    colorItem.image = color.menuIcon
-                    colorItem.target = self
-                    colorItem.representedObject = color
-                    highlightMenu.addItem(colorItem)
-                }
-                let highlightParentItem = NSMenuItem(title: "Highlight", action: #selector(highlightDefaultAction(_:)), keyEquivalent: "h")
-                highlightParentItem.keyEquivalentModifierMask = [.command, .shift]
-                highlightParentItem.image = NSImage(systemSymbolName: "highlighter", accessibilityDescription: nil)
-                highlightParentItem.target = self
-                highlightParentItem.submenu = highlightMenu
-                menu.addItem(highlightParentItem)
+                    // Highlight submenu with colors
+                    let highlightMenu = NSMenu(title: "Highlight")
+                    for color in AnnotationColor.allCases {
+                        let colorItem = NSMenuItem(title: color.displayName, action: #selector(highlightWithColorAction(_:)), keyEquivalent: "")
+                        colorItem.image = color.menuIcon
+                        colorItem.target = self
+                        colorItem.representedObject = color
+                        highlightMenu.addItem(colorItem)
+                    }
+                    let highlightParentItem = NSMenuItem(title: "Highlight", action: #selector(highlightDefaultAction(_:)), keyEquivalent: "h")
+                    highlightParentItem.keyEquivalentModifierMask = [.command, .shift]
+                    highlightParentItem.image = NSImage(systemSymbolName: "highlighter", accessibilityDescription: nil)
+                    highlightParentItem.target = self
+                    highlightParentItem.submenu = highlightMenu
+                    menu.addItem(highlightParentItem)
 
-                // Underline submenu with colors
-                let underlineMenu = NSMenu(title: "Underline")
-                for color in AnnotationColor.allCases {
-                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(underlineWithColorAction(_:)), keyEquivalent: "")
-                    colorItem.image = color.menuIcon
-                    colorItem.target = self
-                    colorItem.representedObject = color
-                    underlineMenu.addItem(colorItem)
-                }
-                let underlineParentItem = NSMenuItem(title: "Underline", action: #selector(underlineDefaultAction(_:)), keyEquivalent: "u")
-                underlineParentItem.keyEquivalentModifierMask = [.command, .shift]
-                underlineParentItem.image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
-                underlineParentItem.target = self
-                underlineParentItem.submenu = underlineMenu
-                menu.addItem(underlineParentItem)
+                    // Underline submenu with colors
+                    let underlineMenu = NSMenu(title: "Underline")
+                    for color in AnnotationColor.allCases {
+                        let colorItem = NSMenuItem(title: color.displayName, action: #selector(underlineWithColorAction(_:)), keyEquivalent: "")
+                        colorItem.image = color.menuIcon
+                        colorItem.target = self
+                        colorItem.representedObject = color
+                        underlineMenu.addItem(colorItem)
+                    }
+                    let underlineParentItem = NSMenuItem(title: "Underline", action: #selector(underlineDefaultAction(_:)), keyEquivalent: "u")
+                    underlineParentItem.keyEquivalentModifierMask = [.command, .shift]
+                    underlineParentItem.image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
+                    underlineParentItem.target = self
+                    underlineParentItem.submenu = underlineMenu
+                    menu.addItem(underlineParentItem)
 
-                // Strikethrough submenu with colors
-                let strikeMenu = NSMenu(title: "Strikethrough")
-                for color in AnnotationColor.allCases {
-                    let colorItem = NSMenuItem(title: color.displayName, action: #selector(strikethroughWithColorAction(_:)), keyEquivalent: "")
-                    colorItem.image = color.menuIcon
-                    colorItem.target = self
-                    colorItem.representedObject = color
-                    strikeMenu.addItem(colorItem)
+                    // Strikethrough submenu with colors
+                    let strikeMenu = NSMenu(title: "Strikethrough")
+                    for color in AnnotationColor.allCases {
+                        let colorItem = NSMenuItem(title: color.displayName, action: #selector(strikethroughWithColorAction(_:)), keyEquivalent: "")
+                        colorItem.image = color.menuIcon
+                        colorItem.target = self
+                        colorItem.representedObject = color
+                        strikeMenu.addItem(colorItem)
+                    }
+                    let strikeParentItem = NSMenuItem(title: "Strikethrough", action: #selector(strikethroughDefaultAction(_:)), keyEquivalent: "x")
+                    strikeParentItem.keyEquivalentModifierMask = [.command, .shift]
+                    strikeParentItem.image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
+                    strikeParentItem.target = self
+                    strikeParentItem.submenu = strikeMenu
+                    menu.addItem(strikeParentItem)
                 }
-                let strikeParentItem = NSMenuItem(title: "Strikethrough", action: #selector(strikethroughDefaultAction(_:)), keyEquivalent: "x")
-                strikeParentItem.keyEquivalentModifierMask = [.command, .shift]
-                strikeParentItem.image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
-                strikeParentItem.target = self
-                strikeParentItem.submenu = strikeMenu
-                menu.addItem(strikeParentItem)
             }
 
             if !viewModel.isTransientWindow {

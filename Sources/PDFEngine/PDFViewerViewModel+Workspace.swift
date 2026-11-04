@@ -109,11 +109,11 @@ extension PDFViewerViewModel {
 
     public func promptOpenFile(inNewTab: Bool = false) {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType.pdf]
+        panel.allowedContentTypes = OpenableDocumentTypes.contentTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.prompt = inNewTab ? "Open PDF in New Tab" : "Open PDF"
+        panel.prompt = inNewTab ? "Open in New Tab" : "Open"
 
         let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let url = panel.url else { return }

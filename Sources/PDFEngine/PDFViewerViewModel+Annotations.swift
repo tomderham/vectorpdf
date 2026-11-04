@@ -26,7 +26,7 @@ extension PDFViewerViewModel {
 
     @discardableResult
     public func addTextMarkupSelection(type: PDFAnnotationType, color: AnnotationColor = .yellow) -> [PDFAnnotation] {
-        guard let sel = activeSelection, !sel.result.highlightQuads.isEmpty, let doc = document else { return [] }
+        guard let sel = activeSelection, !sel.result.highlightQuads.isEmpty, let doc = document, !isReadOnlyDocument else { return [] }
         var created: [PDFAnnotation] = []
 
         let pIdx = sel.pageIndex

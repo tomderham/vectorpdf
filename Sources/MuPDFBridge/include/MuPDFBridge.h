@@ -44,6 +44,8 @@ void mupdf_document_drop(fz_context *ctx, fz_document *doc);
 // Password Authentication — must be checked/resolved immediately after mupdf_document_open and
 // before any other document access (page count, rendering, etc.), which can fail or return
 // incorrect results on an unauthenticated encrypted document.
+// Whether doc is a PDF; EPUB, XPS, CBZ and FB2 documents can be read but not edited or saved.
+int mupdf_document_is_pdf(fz_context *ctx, fz_document *doc);
 int mupdf_document_needs_password(fz_context *ctx, fz_document *doc, int *out_needs_password, const char **out_error);
 int mupdf_document_authenticate_password(fz_context *ctx, fz_document *doc, const char *password, int *out_authenticated, const char **out_error);
 

@@ -83,6 +83,8 @@ extension PDFViewerViewModel {
 
     public func startThumbnailDrag(pageIndex: Int) {
         self.endThumbnailDrag()
+        // Dragging a thumbnail reorders pages.
+        guard !isReadOnlyDocument else { return }
 
         // If the dragged thumbnail is part of multi-selection, drag the whole selection;
         // otherwise, collapse selection to just this page.
