@@ -1,5 +1,5 @@
 <!-- keywords: ancla, anclas, marcador, marcadores, instantánea, lugar guardado, guardar lugar, volver, marca, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # Anclas
 
@@ -21,14 +21,14 @@ Haz clic en la pestaña Anchors de la barra lateral para ver una tarjeta por cad
 
 - **Ir a un ancla:** haz clic en su tarjeta o elígela en el menú Anchors.
 - **Ver una previsualización más grande:** mantén el puntero sobre la miniatura de la tarjeta.
-- **Ver las anclas de todas las pestañas de la ventana:** elige All Tabs en la parte superior de la pestaña Anchors. Haz clic en una para pasar a esa pestaña.
+- **Ver las anclas de todas las pestañas de la ventana:** si la ventana tiene más de una pestaña, la pestaña Anchors muestra las anclas de todas, agrupadas por pestaña. Haz clic en una para pasar a esa pestaña, o elige This Document en la parte superior para ver solo las de este documento.
 
 Haz clic con el botón derecho en una tarjeta para abrirla en una ventana nueva, copiar su texto o copiar su imagen.
 
 ## Eliminar anclas
 
 - **Un ancla:** haz clic en la × de su tarjeta, o haz clic en ella con el botón derecho y elige Delete Anchor.
-- **Todas las anclas de un documento:** haz clic en Clear All en la pestaña Anchors, o elige Anchors > Clear All Anchors.
+- **Todas las anclas de un documento:** haz clic en Clear All en la pestaña Anchors, o elige Anchors > Clear All Anchors. Si hay más de una pestaña abierta, elige primero This Document en la parte superior.
 
 ## Anclas y cambios en las páginas
 

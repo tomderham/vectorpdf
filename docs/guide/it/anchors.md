@@ -1,5 +1,5 @@
 <!-- keywords: ancoraggio, ancoraggi, ancora, segnalibro, segnalibri, istantanea, posizione salvata, salvare la posizione, tornare indietro, indicatore, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # Ancoraggi
 
@@ -21,14 +21,14 @@ Fai clic sul pannello Anchors nella barra laterale per vedere una scheda per ogn
 
 - **Passare a un ancoraggio:** fai clic sulla sua scheda oppure sceglilo dal menu Anchors.
 - **Vedere un'anteprima più grande:** tieni il puntatore sulla miniatura della scheda.
-- **Vedere gli ancoraggi di tutti i pannelli della finestra:** scegli All Tabs nella parte superiore del pannello Anchors. Fai clic su un ancoraggio per passare al relativo pannello.
+- **Vedere gli ancoraggi di tutti i pannelli della finestra:** se la finestra ha più di un pannello, il pannello Anchors mostra gli ancoraggi di tutti, raggruppati per pannello. Fai clic su un ancoraggio per passare al relativo pannello, oppure scegli This Document in alto per vedere solo quelli di questo documento.
 
 Fai clic con il tasto destro su una scheda per aprirla in una nuova finestra, copiarne il testo o copiarne l'immagine.
 
 ## Eliminare gli ancoraggi
 
 - **Un solo ancoraggio:** fai clic sulla × nella scheda, oppure fai clic con il tasto destro sulla scheda e scegli Delete Anchor.
-- **Tutti gli ancoraggi di un documento:** fai clic su Clear All nel pannello Anchors, oppure scegli Anchors > Clear All Anchors.
+- **Tutti gli ancoraggi di un documento:** fai clic su Clear All nel pannello Anchors, oppure scegli Anchors > Clear All Anchors. Con più pannelli aperti, scegli prima This Document in alto.
 
 ## Ancoraggi e modifiche alle pagine
 

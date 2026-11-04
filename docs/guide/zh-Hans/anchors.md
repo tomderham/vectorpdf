@@ -1,5 +1,5 @@
 <!-- keywords: 锚点, 书签, 快照, 保存的位置, 存储位置, 跳回, 标记, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # 锚点
 
@@ -21,14 +21,14 @@
 
 - **跳到锚点：** 点按其卡片，或者从 Anchors 菜单中选取它。
 - **查看较大的预览：** 将指针停放在卡片的缩略图上。
-- **查看窗口中所有标签页的锚点：** 在 Anchors 标签页顶部选取 All Tabs。点按其中一个锚点可切换到相应的标签页。
+- **查看窗口中所有标签页的锚点：** 窗口中有多个标签页时，Anchors 标签页会按标签页分组显示所有标签页的锚点。点按其中一个锚点可切换到相应的标签页；若只想查看此文稿的锚点，请在顶部选取 This Document。
 
 右键点按卡片可在新窗口中打开它、拷贝其文本或拷贝其图像。
 
 ## 删除锚点
 
 - **单个锚点：** 点按其卡片上的 ×，或者右键点按它并选取 Delete Anchor。
-- **文稿中的所有锚点：** 点按 Anchors 标签页中的 Clear All，或者选取 Anchors > Clear All Anchors。
+- **文稿中的所有锚点：** 点按 Anchors 标签页中的 Clear All，或者选取 Anchors > Clear All Anchors。打开了多个标签页时，请先在顶部选取 This Document。
 
 ## 锚点和页面更改
 

@@ -1,5 +1,5 @@
 <!-- keywords: âncora, âncoras, marcador, marcadores, instantâneo, local salvo, salvar local, voltar, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # Âncoras
 
@@ -21,14 +21,14 @@ Clique na aba Anchors na barra lateral para ver um cartão de cada âncora, ou u
 
 - **Ir para uma âncora:** clique no cartão dela ou escolha-a no menu Anchors.
 - **Ver uma pré-visualização maior:** mantenha o cursor sobre a miniatura do cartão.
-- **Ver as âncoras de todas as abas da janela:** escolha All Tabs na parte superior da aba Anchors. Clique em uma âncora para mudar para aquela aba.
+- **Ver as âncoras de todas as abas da janela:** se a janela tiver mais de uma aba, a aba Anchors mostra as âncoras de todas, agrupadas por aba. Clique em uma âncora para mudar para aquela aba ou escolha This Document na parte superior para ver só as deste documento.
 
 Clique com o botão direito em um cartão para abri-lo em uma nova janela, copiar o texto ou copiar a imagem.
 
 ## Apagar âncoras
 
 - **Uma âncora:** clique no × do cartão, ou clique nele com o botão direito e escolha Delete Anchor.
-- **Todas as âncoras de um documento:** clique em Clear All na aba Anchors ou escolha Anchors > Clear All Anchors.
+- **Todas as âncoras de um documento:** clique em Clear All na aba Anchors ou escolha Anchors > Clear All Anchors. Com mais de uma aba aberta, escolha primeiro This Document na parte superior.
 
 ## Âncoras e alterações de páginas
 

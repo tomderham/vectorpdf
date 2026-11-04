@@ -1,5 +1,5 @@
 <!-- keywords: ancre, ancres, signet, signets, instantané, endroit enregistré, enregistrer un endroit, revenir, repère, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # Ancres
 
@@ -21,14 +21,14 @@ Cliquez sur l’onglet Anchors dans la barre latérale pour voir une carte par a
 
 - **Accéder à une ancre :** cliquez sur sa carte ou choisissez-la dans le menu Anchors.
 - **Voir un aperçu plus grand :** maintenez le pointeur sur la vignette de la carte.
-- **Voir les ancres de tous les onglets de la fenêtre :** choisissez All Tabs en haut de l’onglet Anchors. Cliquez sur une ancre pour passer à son onglet.
+- **Voir les ancres de tous les onglets de la fenêtre :** si la fenêtre a plusieurs onglets, l’onglet Anchors affiche les ancres de chacun, regroupées par onglet. Cliquez sur une ancre pour passer à son onglet, ou choisissez This Document en haut pour ne voir que celles de ce document.
 
 Cliquez avec le bouton droit sur une carte pour l’ouvrir dans une nouvelle fenêtre, copier son texte ou copier son image.
 
 ## Supprimer des ancres
 
 - **Une ancre :** cliquez sur le × de sa carte, ou cliquez dessus avec le bouton droit et choisissez Delete Anchor.
-- **Toutes les ancres d’un document :** cliquez sur Clear All dans l’onglet Anchors, ou choisissez Anchors > Clear All Anchors.
+- **Toutes les ancres d’un document :** cliquez sur Clear All dans l’onglet Anchors, ou choisissez Anchors > Clear All Anchors. Si plusieurs onglets sont ouverts, choisissez d’abord This Document en haut.
 
 ## Ancres et modifications de pages
 

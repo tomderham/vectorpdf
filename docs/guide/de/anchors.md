@@ -1,5 +1,5 @@
 <!-- keywords: Anker, Lesezeichen, Momentaufnahme, gespeicherte Stelle, Stelle merken, zurückspringen, Markierung, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # Anker
 
@@ -21,14 +21,14 @@ Klicke in der Seitenleiste auf den Tab „Anchors“, um für jeden Anker eine K
 
 - **Zu einem Anker springen:** Klicke auf seine Karte oder wähle ihn im Menü „Anchors“ aus.
 - **Größere Vorschau ansehen:** Halte den Zeiger über die Miniatur der Karte.
-- **Anker aus allen Tabs des Fensters ansehen:** Wähle oben im Tab „Anchors“ die Option „All Tabs“. Klicke auf einen Anker, um zu seinem Tab zu wechseln.
+- **Anker aus allen Tabs des Fensters ansehen:** Hat das Fenster mehr als einen Tab, zeigt der Tab „Anchors“ die Anker aus allen Tabs, nach Tab gruppiert. Klicke auf einen Anker, um zu seinem Tab zu wechseln, oder wähle oben „This Document“, um nur die Anker dieses Dokuments zu sehen.
 
 Klicke mit der rechten Maustaste auf eine Karte, um sie in einem neuen Fenster zu öffnen, ihren Text zu kopieren oder ihr Bild zu kopieren.
 
 ## Anker löschen
 
 - **Einen Anker:** Klicke auf das × auf seiner Karte oder klicke mit der rechten Maustaste darauf und wähle „Delete Anchor“.
-- **Alle Anker eines Dokuments:** Klicke im Tab „Anchors“ auf „Clear All“ oder wähle Anchors > Clear All Anchors.
+- **Alle Anker eines Dokuments:** Klicke im Tab „Anchors“ auf „Clear All“ oder wähle Anchors > Clear All Anchors. Sind mehrere Tabs geöffnet, wähle zuerst oben „This Document“.
 
 ## Anker und Seitenänderungen
 

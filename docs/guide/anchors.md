@@ -20,14 +20,14 @@ Click the Anchors tab in the sidebar to see a card for each anchor, or use the A
 
 - **Jump to an anchor:** click its card, or choose it from the Anchors menu.
 - **See a larger preview:** hold the pointer over the card's thumbnail.
-- **See anchors from every tab in the window:** choose All Tabs at the top of the Anchors tab. Click one to switch to that tab.
+- **See anchors from every tab in the window:** when the window has more than one tab, the Anchors tab shows the anchors from all of them, grouped by tab. Click one to switch to that tab, or choose This Document at the top to see only this document's.
 
 Right-click a card to open it in a new window, copy its text, or copy its image.
 
 ## Delete anchors
 
 - **One anchor:** click the × on its card, or right-click it and choose Delete Anchor.
-- **All anchors in a document:** click Clear All in the Anchors tab, or choose Anchors > Clear All Anchors.
+- **All anchors in a document:** click Clear All in the Anchors tab, or choose Anchors > Clear All Anchors. With more than one tab open, choose This Document at the top first.
 
 ## Anchors and page changes
 

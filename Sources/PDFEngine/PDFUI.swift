@@ -136,7 +136,7 @@ public struct PDFViewerMainView: View {
 
     @State private var selectedSidebarTab: Int = 0
     /// Anchors sidebar lists every tab's anchors, not just this document's.
-    @State private var showsAllTabAnchors = false
+    @State private var showsAllTabAnchors = true
     @StateObject private var groupAnchors = GroupAnchorsModel()
     // Rebuilds the segmented control after initial appearance to ensure segment images render.
     @State private var sidebarModePickerRenderKey = false

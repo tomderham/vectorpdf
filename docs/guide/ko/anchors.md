@@ -1,5 +1,5 @@
 <!-- keywords: 앵커, 책갈피, 스냅샷, 저장한 위치, 위치 저장, 돌아가기, 표시, anchor, anchors, bookmark, bookmarks, snapshot, saved place, save place, jump back, marker -->
-<!-- source: f50af3ea4a89 -->
+<!-- source: 1e990b389a0e -->
 
 # 앵커
 
@@ -21,14 +21,14 @@
 
 - **앵커로 이동하기:** 카드를 클릭하거나 Anchors 메뉴에서 해당 앵커를 선택합니다.
 - **더 큰 미리보기 보기:** 카드의 축소판 위에 포인터를 올려놓습니다.
-- **윈도우의 모든 탭에 있는 앵커 보기:** Anchors 탭 상단에서 All Tabs를 선택합니다. 앵커를 클릭하면 해당 탭으로 전환됩니다.
+- **윈도우의 모든 탭에 있는 앵커 보기:** 윈도우에 탭이 두 개 이상 있으면 Anchors 탭에 모든 탭의 앵커가 탭별로 표시됩니다. 앵커를 클릭하면 해당 탭으로 전환되며, 이 문서의 앵커만 보려면 상단에서 This Document를 선택합니다.
 
 카드를 오른쪽 클릭하면 새로운 윈도우에서 열거나, 텍스트를 복사하거나, 이미지를 복사할 수 있습니다.
 
 ## 앵커 삭제하기
 
 - **앵커 하나:** 카드의 ×를 클릭하거나, 카드를 오른쪽 클릭하고 Delete Anchor를 선택합니다.
-- **문서의 모든 앵커:** Anchors 탭에서 Clear All을 클릭하거나 Anchors > Clear All Anchors를 선택합니다.
+- **문서의 모든 앵커:** Anchors 탭에서 Clear All을 클릭하거나 Anchors > Clear All Anchors를 선택합니다. 탭이 두 개 이상 열려 있으면 먼저 상단에서 This Document를 선택합니다.
 
 ## 앵커와 페이지 변경
 
