@@ -1,0 +1,37 @@
+From e1d5bfc0cd9e8f7f52d7a7fdb128335c358ec580 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Tue, 27 Oct 2026 19:08:31 +0000
+Subject: [PATCH] Bug 709913: Fix filtering of type3 fonts.
+
+Do not flush before d0 or d1 operators, so they appear at the
+start of the stream, not wrapped in q/Q.
+---
+ source/pdf/pdf-op-filter.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/source/pdf/pdf-op-filter.c b/source/pdf/pdf-op-filter.c
+index 32f55b9f65..a417cc8e40 100644
+--- a/source/pdf/pdf-op-filter.c
++++ b/source/pdf/pdf-op-filter.c
+@@ -2258,10 +2258,6 @@ pdf_filter_d0(fz_context *ctx, pdf_processor *proc, float wx, float wy)
+ {
+ 	pdf_sanitize_processor *p = (pdf_sanitize_processor*)proc;
+ 
+-	if (fz_is_empty_rect(p->gstate->clip_rect))
+-		return;
+-
+-	filter_flush(ctx, p, FLUSH_OP);
+ 	if (p->super.chain->op_d0)
+ 		p->super.chain->op_d0(ctx, p->super.chain, wx, wy);
+ }
+@@ -2271,10 +2267,6 @@ pdf_filter_d1(fz_context *ctx, pdf_processor *proc, float wx, float wy, float ll
+ {
+ 	pdf_sanitize_processor *p = (pdf_sanitize_processor*)proc;
+ 
+-	if (fz_is_empty_rect(p->gstate->clip_rect))
+-		return;
+-
+-	filter_flush(ctx, p, FLUSH_OP);
+ 	if (p->super.chain->op_d1)
+ 		p->super.chain->op_d1(ctx, p->super.chain, wx, wy, llx, lly, urx, ury);
+ }

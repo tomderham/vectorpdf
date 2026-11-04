@@ -170,7 +170,7 @@ The script checks that the profile grants PCC and includes this Mac, builds unde
 
 ## Vendored Dependencies
 
-This project relies on **MuPDF** (version 1.28.5). To avoid committing a ~60MB binary to Git, `Vendor/MuPDF.xcframework` is built locally from source using `Vendor/build-mupdf.sh`.
+This project relies on **MuPDF** (version 1.28.6, plus upstream fixes in `Vendor/patches/`). To avoid committing a ~60MB binary to Git, `Vendor/MuPDF.xcframework` is built locally from source using `Vendor/build-mupdf.sh`.
 
 To rebuild or update the vendored MuPDF version:
 

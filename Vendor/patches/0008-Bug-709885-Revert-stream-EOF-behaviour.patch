@@ -1,0 +1,35 @@
+From 1ed719e70e4273e475473cd16afd2256bcafb6ba Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Mon, 26 Oct 2026 19:12:19 +0000
+Subject: [PATCH] Bug 709885: Revert stream EOF behaviour.
+
+In commit 71aba1f8d2a851a8b540df7121ed06afe0995e84 I inadvertently
+changed the behaviour of a stream on EOF when bytes remained
+buffered.
+
+Revert that behaviour here.
+
+Thanks to Zachary Travis for the report.
+---
+ include/mupdf/fitz/stream.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/mupdf/fitz/stream.h b/include/mupdf/fitz/stream.h
+index 73268b95c0..c52ab5030d 100644
+--- a/include/mupdf/fitz/stream.h
++++ b/include/mupdf/fitz/stream.h
+@@ -407,11 +407,13 @@ static inline size_t fz_available(fz_context *ctx, fz_stream *stm, size_t max)
+ 	size_t len;
+ 	int c = EOF;
+ 
+-	if (stm == NULL || stm->eof)
++	if (stm == NULL)
+ 		return 0;
+ 	len = stm->wp - stm->rp;
+ 	if (len)
+ 		return len;
++	if (stm->eof)
++		return 0;
+ 
+ 	fz_try(ctx)
+ 		c = stm->next(ctx, stm, max);

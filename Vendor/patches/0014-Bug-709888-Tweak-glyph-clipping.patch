@@ -1,0 +1,25 @@
+From 644dada08fd527e9c54f765ea2432efbe6c8b3a7 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Wed, 28 Oct 2026 19:41:40 +0000
+Subject: [PATCH] Bug 709888: Tweak glyph clipping.
+
+Glyphs should be considered to be outside of all empty bboxes.
+
+From a suggestion from Zachary Travis. Many thanks!
+---
+ source/fitz/glyphbox.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/source/fitz/glyphbox.c b/source/fitz/glyphbox.c
+index 3374d0c702..c5902e24dc 100644
+--- a/source/fitz/glyphbox.c
++++ b/source/fitz/glyphbox.c
+@@ -29,6 +29,8 @@ int fz_glyph_entirely_outside_box(fz_context *ctx, fz_matrix *ctm, fz_text_span
+ 	trm.e += item->x;
+ 	trm.f += item->y;
+ 	trm = fz_concat(trm, *ctm);
++	if (fz_is_empty_rect(*box))
++		return 1;
+ 	glyph_rect = fz_bound_glyph(ctx, span->font, item->gid, trm);
+ 	if (glyph_rect.x1 <= box->x0 ||
+ 			glyph_rect.y1 <= box->y0 ||

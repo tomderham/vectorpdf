@@ -1,0 +1,24 @@
+From 37d283e0752862999f6ff7947e69d86a4d1f698b Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Mon, 26 Oct 2026 19:26:19 +0000
+Subject: [PATCH] Bug 709904: Fix text scale adjustment in sanitize filter.
+
+Thanks to Zachary Travis for pointing out that the scale based
+adjustment was misapplied.
+---
+ source/pdf/pdf-op-filter.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/source/pdf/pdf-op-filter.c b/source/pdf/pdf-op-filter.c
+index 2c05b3fe2d..49ac54fbcf 100644
+--- a/source/pdf/pdf-op-filter.c
++++ b/source/pdf/pdf-op-filter.c
+@@ -1056,7 +1056,7 @@ segment_to_array(fz_context *ctx, pdf_sanitize_processor *p, unsigned char *seg,
+ 		float ty = scale * (X * -p->tos.tm.b + Y * p->tos.tm.a);
+ 		if (p->tos.fontdesc->wmode == 0)
+ 		{
+-			adjust = tx * p->gstate->pending.text.scale;
++			adjust = tx / p->gstate->pending.text.scale;
+ 			assert(fabs(ty) < 0.001);
+ 		}
+ 		else

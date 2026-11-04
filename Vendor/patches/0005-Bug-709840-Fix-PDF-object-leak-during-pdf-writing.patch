@@ -1,0 +1,43 @@
+From ce44d4cc6b93f9af6dde3a07245305be6e0207d2 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Wed, 21 Oct 2026 15:43:25 +0100
+Subject: [PATCH] Bug 709840: Fix PDF object leak during pdf writing.
+
+From a report and patch supplied by Ratnaker Gautam. Many thanks!
+---
+ source/pdf/pdf-write.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/source/pdf/pdf-write.c b/source/pdf/pdf-write.c
+index ecd93de219..f91db095d8 100644
+--- a/source/pdf/pdf-write.c
++++ b/source/pdf/pdf-write.c
+@@ -531,7 +531,10 @@ static void renumberobjs(fz_context *ctx, pdf_document *doc, pdf_write_state *op
+ 		pdf_obj *trailer = pdf_trailer(ctx, doc);
+ 		nval = renumberobj(ctx, doc, opts, trailer);
+ 		if (nval != trailer)
++		{
+ 			pdf_set_trailer(ctx, doc, nval);
++			pdf_drop_obj(ctx, nval);
++		}
+ 		nval = NULL;
+ 		for (num = 0; num < xref_len; num++)
+ 		{
+@@ -552,13 +555,17 @@ static void renumberobjs(fz_context *ctx, pdf_document *doc, pdf_write_state *op
+ 				else
+ 					nval = pdf_new_indirect(ctx, doc, opts->renumber_map[o], 0);
+ 				pdf_update_object(ctx, doc, num, nval);
++				pdf_drop_obj(ctx, nval);
+ 				nval = NULL;
+ 			}
+ 			else
+ 			{
+ 				nval = renumberobj(ctx, doc, opts, obj);
+ 				if (nval != obj)
++				{
+ 					pdf_update_object(ctx, doc, num, nval);
++					pdf_drop_obj(ctx, nval);
++				}
+ 				nval = NULL;
+ 			}
+ 		}

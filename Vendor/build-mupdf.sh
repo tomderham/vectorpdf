@@ -15,11 +15,11 @@
 # Vendor/README.md). When bumping to a release that includes them, delete them.
 set -euo pipefail
 
-MUPDF_VERSION="${1:-1.28.5}"
+MUPDF_VERSION="${1:-1.28.6}"
 # Expected sha256 of https://mupdf.com/downloads/archive/mupdf-${MUPDF_VERSION}-source.tar.gz
 # Update this whenever MUPDF_VERSION changes (the script prints the actual
 # hash of whatever it downloads, so you can copy it in after reviewing).
-MUPDF_SHA256="${MUPDF_SHA256:-98a5c10cda20c3992cdf76ff6b2a1149c32bd79cc796d3f703230b1185b7e934}"
+MUPDF_SHA256="${MUPDF_SHA256:-dc85000640a45d90ca9b77b061f6ca67cce0c4d4fbecf8819647baf573eef101}"
 
 # Architectures to build. Currently Apple Silicon only; add "x86_64" here (and
 # lipo the resulting static libs together before the libtool step) if Intel

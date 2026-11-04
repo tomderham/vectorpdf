@@ -1,0 +1,72 @@
+From 15c1438895e4c7a3605b677fe1435817572cec0f Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Wed, 28 Oct 2026 17:38:56 +0000
+Subject: [PATCH] Bug 709903: Fix undefined char output in stext.
+
+From a bug report and patch from Juvid Aryaman. Many thanks!
+
+If we are given a character in the "alphabetic and arabic
+presentation forms" range, and FZ_STEXT_PRESERVE_LIGATURES
+is not set, we replace these characters with decomposed
+versions.
+
+Unfortunately, some characters in this range (such as
+0xFDE2) do not decompose. In such cases, the existing
+code outputs an uninitialised variable, resulting in
+seemingly random output.
+
+The fix, implemented here, is to just leave these
+characters undecomposed.
+
+We also take the opportunity to fix a bug in the
+stext output where signed chars cause top bit set
+characters to appear strangely in the hex output.
+---
+ source/fitz/stext-device.c | 11 +++++++----
+ source/fitz/stext-output.c |  4 ++--
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/source/fitz/stext-device.c b/source/fitz/stext-device.c
+index 170c419dca..86c6c1844b 100644
+--- a/source/fitz/stext-device.c
++++ b/source/fitz/stext-device.c
+@@ -1116,10 +1116,13 @@ fz_add_stext_char(fz_context *ctx,
+ 		{
+ 			uint32_t lig[18];
+ 			int i, n = ucdn_compat_decompose(c, lig);
+-			fz_add_stext_char_imp(ctx, dev, font, lig[0], glyph, trm, adv, wmode, bidi, force_new_line, flags);
+-			for (i = 1; i < n; ++i)
+-				fz_add_stext_char_imp(ctx, dev, font, lig[i], -1, trm, 0, wmode, bidi, 0, flags);
+-			return;
++			if (n > 0)
++			{
++				fz_add_stext_char_imp(ctx, dev, font, lig[0], glyph, trm, adv, wmode, bidi, force_new_line, flags);
++				for (i = 1; i < n; ++i)
++					fz_add_stext_char_imp(ctx, dev, font, lig[i], -1, trm, 0, wmode, bidi, 0, flags);
++				return;
++			}
+ 		}
+ 	}
+ 
+diff --git a/source/fitz/stext-output.c b/source/fitz/stext-output.c
+index dbe421adfe..c5576fb0db 100644
+--- a/source/fitz/stext-output.c
++++ b/source/fitz/stext-output.c
+@@ -963,7 +963,7 @@ as_xml(fz_context *ctx, fz_stext_block *block, fz_output *out, fz_stext_xml_flag
+ 							char text[8];
+ 							int n = fz_runetochar(text, ch->c);
+ 							for (i = 0; i < n; i++)
+-								fz_write_printf(ctx, out, "%02x", text[i]);
++								fz_write_printf(ctx, out, "%02x", (unsigned char)text[i]);
+ 						}
+ 					}
+ 					fz_write_printf(ctx, out, "\"");
+@@ -1007,7 +1007,7 @@ as_xml(fz_context *ctx, fz_stext_block *block, fz_output *out, fz_stext_xml_flag
+ 							int n = fz_runetochar(text, ch->c);
+ 							fz_write_string(ctx, out, "\" hexc=\"");
+ 							for (i = 0; i < n; i++)
+-								fz_write_printf(ctx, out, "%02x", text[i]);
++								fz_write_printf(ctx, out, "%02x", (unsigned char)text[i]);
+ 						}
+ 						fz_write_printf(ctx, out, "\" quad=\"%g %g %g %g %g %g %g %g\" x=\"%g\" y=\"%g\" bidi=\"%d\" color=\"#%06x\" alpha=\"#%02x\" flags=\"%d\"/>\n",
+ 								ch->quad.ul.x, ch->quad.ul.y,

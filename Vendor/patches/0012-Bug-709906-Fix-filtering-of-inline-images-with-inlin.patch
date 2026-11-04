@@ -1,0 +1,311 @@
+From a9e17fa86c40eac0b1eec2e4445ffd4db9abb022 Mon Sep 17 00:00:00 2001
+From: Robin Watts <Robin.Watts@artifex.com>
+Date: Tue, 27 Oct 2026 18:35:36 +0000
+Subject: [PATCH] Bug 709906: Fix filtering of inline images with inline
+ colorspaces.
+
+From a report from Zachary Travis. Many thanks!
+
+The pdf_processor BI instruction gets both a parsed image (which
+contains an fz_colorspace), and a name for the supplied colorspace.
+
+Most consumers (such as the all important run consumer) ignore the
+name. The name is just of interest for consumers that have to
+re-output the stream.
+
+Unfortunately, there is 1 case where we can permissibly get a
+colorspace that is not a name. This would where the colorspace
+is defined inline using a PDF object.
+
+Such cases are only allowed to be device spaces, or Indexed
+spaces, based upon either device spaces, or a named colorspace
+from the current resources.
+
+We therefore need another flag to be passed to BI to say "the
+CS was specified as an inline dict". In such cases, the
+colorspace string passed will either be NULL, or will be the
+colorspace resource name to be used in as the base.
+
+Thus, we need to change the op_BI method by adding a flag.
+Most users of the API just need to pass this on, but the
+buffer implementation needs to reconstruct the inline
+colorspace definition from this.
+---
+ include/mupdf/pdf/interpret.h |  2 +-
+ platform/java/jni/helpers.c   |  2 +-
+ source/pdf/pdf-interpret.c    | 25 +++++++++++++++++++------
+ source/pdf/pdf-op-buffer.c    | 34 +++++++++++++++++++++++++++++-----
+ source/pdf/pdf-op-color.c     |  4 ++--
+ source/pdf/pdf-op-filter.c    |  6 +++---
+ source/pdf/pdf-op-run.c       |  2 +-
+ source/tools/murun.c          |  5 +++--
+ source/tools/pdfaudit.c       |  4 ++--
+ 9 files changed, 61 insertions(+), 23 deletions(-)
+
+diff --git a/include/mupdf/pdf/interpret.h b/include/mupdf/pdf/interpret.h
+index 7cc70c1149..a9dec70ca0 100644
+--- a/include/mupdf/pdf/interpret.h
++++ b/include/mupdf/pdf/interpret.h
+@@ -172,7 +172,7 @@ struct pdf_processor
+ 	void (*op_k)(fz_context *ctx, pdf_processor *proc, float c, float m, float y, float k);
+ 
+ 	/* shadings, images, xobjects */
+-	void (*op_BI)(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace_name);
++	void (*op_BI)(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace_name, int cs_is_inline);
+ 	void (*op_sh)(fz_context *ctx, pdf_processor *proc, const char *name, fz_shade *shade);
+ 	void (*op_Do_image)(fz_context *ctx, pdf_processor *proc, const char *name, fz_image *image);
+ 	void (*op_Do_form)(fz_context *ctx, pdf_processor *proc, const char *name, pdf_obj *form);
+diff --git a/platform/java/jni/helpers.c b/platform/java/jni/helpers.c
+index edca791809..5d08a21197 100644
+--- a/platform/java/jni/helpers.c
++++ b/platform/java/jni/helpers.c
+@@ -712,7 +712,7 @@ static void java_proc_k(fz_context *ctx, pdf_processor *proc, float c, float m,
+ 	PROC_END("k");
+ }
+ 
+-static void java_proc_BI(fz_context *ctx, pdf_processor *proc, fz_image *img, const char *colorspace)
++static void java_proc_BI(fz_context *ctx, pdf_processor *proc, fz_image *img, const char *colorspace, int cs_is_inline)
+ {
+ 	PROC_BEGIN("BI");
+ 	jobject jimg = to_Image_safe(ctx, env, img);
+diff --git a/source/pdf/pdf-interpret.c b/source/pdf/pdf-interpret.c
+index 4d3081bf45..919ed7cbf0 100644
+--- a/source/pdf/pdf-interpret.c
++++ b/source/pdf/pdf-interpret.c
+@@ -492,9 +492,9 @@ pdf_default_op_k(fz_context *ctx, pdf_processor *proc, float c, float m, float y
+ }
+ 
+ static void
+-pdf_default_op_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace_name)
++pdf_default_op_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace_name, int cs_is_inline)
+ {
+-	PASSON(op_BI)(ctx, proc->chain, image, colorspace_name);
++	PASSON(op_BI)(ctx, proc->chain, image, colorspace_name, cs_is_inline);
+ }
+ 
+ static void
+@@ -802,7 +802,7 @@ pdf_try_load_font(fz_context *ctx, pdf_document *doc, pdf_resource_stack *rdb, p
+ }
+ 
+ static fz_image *
+-parse_inline_image(fz_context *ctx, pdf_processor *proc, pdf_csi *csi, fz_stream *stm, char *csname, int cslen)
++parse_inline_image(fz_context *ctx, pdf_processor *proc, pdf_csi *csi, fz_stream *stm, char *csname, int cslen, int *cs_is_inline)
+ {
+ 	pdf_document *doc = csi->doc;
+ 	pdf_obj *obj = NULL;
+@@ -813,6 +813,7 @@ parse_inline_image(fz_context *ctx, pdf_processor *proc, pdf_csi *csi, fz_stream
+ 	fz_var(obj);
+ 	fz_var(img);
+ 
++	*cs_is_inline = 0;
+ 	fz_try(ctx)
+ 	{
+ 		obj = pdf_parse_dict(ctx, doc, stm, &doc->lexbuf.base);
+@@ -820,8 +821,19 @@ parse_inline_image(fz_context *ctx, pdf_processor *proc, pdf_csi *csi, fz_stream
+ 		if (csname)
+ 		{
+ 			cs = pdf_dict_get(ctx, obj, PDF_NAME(CS));
+-			if (!pdf_is_indirect(ctx, cs) && pdf_is_name(ctx, cs))
++			if (pdf_is_indirect(ctx, cs))
++			{
++				/* Indirect references are NOT allowed within a BI. */
++				csname[0] = 0;
++			}
++			else if (pdf_is_name(ctx, cs))
+ 				fz_strlcpy(csname, pdf_to_name(ctx, cs), cslen);
++			else if (pdf_is_array(ctx, cs))
++			{
++				/* We might have [ /Indexed base hival lookup ] */
++				fz_strlcpy(csname, pdf_to_name(ctx, pdf_array_get(ctx, cs, 1)), cslen);
++				*cs_is_inline = 1;
++			}
+ 			else
+ 				csname[0] = 0;
+ 		}
+@@ -1477,11 +1489,12 @@ pdf_process_keyword(fz_context *ctx, pdf_processor *proc, pdf_csi *csi, fz_strea
+ 	/* shadings, images, xobjects */
+ 	case B('B','I'):
+ 		{
+-			fz_image *img = parse_inline_image(ctx, proc, csi, stm, csname, sizeof csname);
++			int cs_is_inline;
++			fz_image *img = parse_inline_image(ctx, proc, csi, stm, csname, sizeof csname, &cs_is_inline);
+ 			fz_try(ctx)
+ 			{
+ 				if (proc->op_BI)
+-					proc->op_BI(ctx, proc, img, csname[0] ? csname : NULL);
++					proc->op_BI(ctx, proc, img, csname[0] ? csname : NULL, cs_is_inline);
+ 			}
+ 			fz_always(ctx)
+ 				fz_drop_image(ctx, img);
+diff --git a/source/pdf/pdf-op-buffer.c b/source/pdf/pdf-op-buffer.c
+index 1c00ad3498..ab20b25770 100644
+--- a/source/pdf/pdf-op-buffer.c
++++ b/source/pdf/pdf-op-buffer.c
+@@ -807,7 +807,7 @@ pdf_out_k(fz_context *ctx, pdf_processor *proc_, float c, float m, float y, floa
+ /* shadings, images, xobjects */
+ 
+ static void
+-pdf_out_BI(fz_context *ctx, pdf_processor *proc_, fz_image *img, const char *colorspace)
++pdf_out_BI(fz_context *ctx, pdf_processor *proc_, fz_image *img, const char *colorspace, int cs_is_inline)
+ {
+ 	pdf_output_processor *proc = (pdf_output_processor *)proc_;
+ 	fz_output *out = proc->out;
+@@ -852,16 +852,40 @@ pdf_out_BI(fz_context *ctx, pdf_processor *proc_, fz_image *img, const char *col
+ 		fz_write_printf(ctx, out, "/BPC %d", bpc);
+ 		if (img->imagemask)
+ 			fz_write_string(ctx, out, "/IM true");
+-		else if (cs == fz_device_gray(ctx))
++		else if (cs_is_inline)
++		{
++			int hi;
++			fz_write_printf(ctx, out, "/CS[/I");
++			if (colorspace)
++				fz_write_printf(ctx, out, "%n", colorspace);
++			else if (cs == NULL || cs == fz_device_gray(ctx))
++				fz_write_string(ctx, out, "/G");
++			else if (cs == fz_device_rgb(ctx))
++				fz_write_string(ctx, out, "/RGB");
++			else if (cs == fz_device_cmyk(ctx))
++				fz_write_string(ctx, out, "/CMYK");
++			else
++				fz_throw(ctx, FZ_ERROR_ARGUMENT, "BI operator can only show ImageMask, DeviceGray, DeviceRGB, DeviceCMYK, or Indexed images");
++			hi = cs->u.indexed.high;
++			fz_write_printf(ctx, out, " %d<", hi);
++			hi = (hi+1) * (cs->u.indexed.base ? cs->u.indexed.base->n : 1);
++			for (i = 0; i < hi; i++)
++			{
++				uint8_t c = cs->u.indexed.lookup[i];
++				fz_write_printf(ctx, out, "%c%c", "0123456789ABCDEF"[c>>4], "0123456789ABCDEF"[c&15]);
++			}
++			fz_write_string(ctx, out, ">]");
++		}
++		else if (cs == NULL || cs == fz_device_gray(ctx))
+ 			fz_write_string(ctx, out, "/CS/G");
+ 		else if (cs == fz_device_rgb(ctx))
+ 			fz_write_string(ctx, out, "/CS/RGB");
+ 		else if (cs == fz_device_cmyk(ctx))
+ 			fz_write_string(ctx, out, "/CS/CMYK");
+-		else if (cs)
++		else if (colorspace)
+ 			fz_write_printf(ctx, out, "/CS%n", colorspace);
+ 		else
+-			fz_throw(ctx, FZ_ERROR_ARGUMENT, "BI operator can only show ImageMask, Gray, RGB, or CMYK images");
++			fz_throw(ctx, FZ_ERROR_ARGUMENT, "BI operator can only show ImageMask, DeviceGray, DeviceRGB, DeviceCMYK, or Indexed images");
+ 		if (img->interpolate)
+ 			fz_write_string(ctx, out, "/I true");
+ 		fz_write_string(ctx, out, "/D[");
+@@ -1384,7 +1408,7 @@ static void pdf_balance_sc_pattern(fz_context *ctx, pdf_processor *p, const char
+ static void pdf_balance_sc_shade(fz_context *ctx, pdf_processor *p, const char *name, fz_shade *shade) BALANCE
+ static void pdf_balance_sc_color(fz_context *ctx, pdf_processor *p, int n, float *color) BALANCE
+ static void pdf_balance_BDC(fz_context *ctx, pdf_processor *p, const char *tag, pdf_obj *raw, pdf_obj *cooked) BALANCE
+-static void pdf_balance_BI(fz_context *ctx, pdf_processor *p, fz_image *img, const char *colorspace) BALANCE
++static void pdf_balance_BI(fz_context *ctx, pdf_processor *p, fz_image *img, const char *colorspace, int cs_is_inline) BALANCE
+ static void pdf_balance_sh(fz_context *ctx, pdf_processor *p, const char *name, fz_shade *shade) BALANCE
+ static void pdf_balance_Do_image(fz_context *ctx, pdf_processor *p, const char *name, fz_image *image) BALANCE
+ static void pdf_balance_Do_form(fz_context *ctx, pdf_processor *p, const char *name, pdf_obj *xobj) BALANCE
+diff --git a/source/pdf/pdf-op-color.c b/source/pdf/pdf-op-color.c
+index 00c9cbec01..8e0a2c419e 100644
+--- a/source/pdf/pdf-op-color.c
++++ b/source/pdf/pdf-op-color.c
+@@ -944,7 +944,7 @@ pdf_color_k(fz_context *ctx, pdf_processor *proc, float c, float m, float y, flo
+ /* shadings, images, xobjects */
+ 
+ static void
+-pdf_color_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace)
++pdf_color_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace, int cs_is_inline)
+ {
+ 	pdf_color_processor *p = (pdf_color_processor*)proc;
+ 
+@@ -962,7 +962,7 @@ pdf_color_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *
+ 			p->options->image_rewrite(ctx, p->options->opaque, &image, p->gstate->ctm, NULL);
+ 
+ 		if (p->super.chain->op_BI)
+-			p->super.chain->op_BI(ctx, p->super.chain, image, colorspace);
++			p->super.chain->op_BI(ctx, p->super.chain, image, colorspace, cs_is_inline);
+ 	}
+ 	fz_always(ctx)
+ 		fz_drop_image(ctx, image);
+diff --git a/source/pdf/pdf-op-filter.c b/source/pdf/pdf-op-filter.c
+index 74434356fd..09fcb78b6d 100644
+--- a/source/pdf/pdf-op-filter.c
++++ b/source/pdf/pdf-op-filter.c
+@@ -2532,7 +2532,7 @@ pdf_filter_k(fz_context *ctx, pdf_processor *proc, float c, float m, float y, fl
+ /* shadings, images, xobjects */
+ 
+ static void
+-pdf_filter_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace)
++pdf_filter_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace, int cs_is_inline)
+ {
+ 	pdf_sanitize_processor *p = (pdf_sanitize_processor*)proc;
+ 
+@@ -2562,7 +2562,7 @@ pdf_filter_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char
+ 				fz_try(ctx)
+ 				{
+ 					copy_resource(ctx, p, PDF_NAME(ColorSpace), colorspace);
+-					p->super.chain->op_BI(ctx, p->super.chain, image, colorspace);
++					p->super.chain->op_BI(ctx, p->super.chain, image, colorspace, cs_is_inline);
+ 				}
+ 				fz_always(ctx)
+ 					fz_drop_image(ctx, image);
+@@ -2573,7 +2573,7 @@ pdf_filter_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char
+ 		else
+ 		{
+ 			copy_resource(ctx, p, PDF_NAME(ColorSpace), colorspace);
+-			p->super.chain->op_BI(ctx, p->super.chain, image, colorspace);
++			p->super.chain->op_BI(ctx, p->super.chain, image, colorspace, cs_is_inline);
+ 		}
+ 	}
+ }
+diff --git a/source/pdf/pdf-op-run.c b/source/pdf/pdf-op-run.c
+index 31cf242e9d..7cfa7b9f16 100644
+--- a/source/pdf/pdf-op-run.c
++++ b/source/pdf/pdf-op-run.c
+@@ -3240,7 +3240,7 @@ static void pdf_run_rg(fz_context *ctx, pdf_processor *proc, float r, float g, f
+ 
+ /* shadings, images, xobjects */
+ 
+-static void pdf_run_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace)
++static void pdf_run_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace, int cs_is_inline)
+ {
+ 	pdf_run_processor *pr = (pdf_run_processor *)proc;
+ 	pdf_show_image(ctx, pr, image);
+diff --git a/source/tools/murun.c b/source/tools/murun.c
+index 45b9125313..00a4e83141 100644
+--- a/source/tools/murun.c
++++ b/source/tools/murun.c
+@@ -2889,12 +2889,13 @@ static void js_proc_k(fz_context *ctx, pdf_processor *proc, float c, float m, fl
+ 	PROC_END(4);
+ }
+ 
+-static void js_proc_BI(fz_context *ctx, pdf_processor *proc, fz_image *img, const char *colorspace)
++static void js_proc_BI(fz_context *ctx, pdf_processor *proc, fz_image *img, const char *colorspace, int cs_is_inline)
+ {
+ 	PROC_BEGIN("op_BI");
+ 	ffi_pushimage(J, img);
+ 	js_pushstring(J, colorspace);
+-	PROC_END(2);
++	js_pushboolean(J, cs_is_inline);
++	PROC_END(3);
+ }
+ 
+ static void js_proc_sh(fz_context *ctx, pdf_processor *proc, const char *name, fz_shade *shade)
+diff --git a/source/tools/pdfaudit.c b/source/tools/pdfaudit.c
+index cd191d95e0..a852024c42 100644
+--- a/source/tools/pdfaudit.c
++++ b/source/tools/pdfaudit.c
+@@ -1255,13 +1255,13 @@ pdf_opcount_k(fz_context *ctx, pdf_processor *proc, float c, float m, float y, f
+ /* shadings, images, xobjects */
+ 
+ static void
+-pdf_opcount_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace)
++pdf_opcount_BI(fz_context *ctx, pdf_processor *proc, fz_image *image, const char *colorspace, int cs_is_inline)
+ {
+ 	pdf_opcount_processor *p = (pdf_opcount_processor*)proc;
+ 	size_t z = p->buffer->len;
+ 
+ 	if (p->mine->op_BI)
+-		p->mine->op_BI(ctx, p->mine, image, colorspace);
++		p->mine->op_BI(ctx, p->mine, image, colorspace, cs_is_inline);
+ 
+ 	z = p->buffer->len - z;
+ 	p->op_usage->len[OP_BI] += z;
