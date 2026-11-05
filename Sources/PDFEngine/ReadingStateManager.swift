@@ -121,7 +121,38 @@ public final class ReadingStateManager: ObservableObject {
         }
     }
 
+    /// Set once everything has been removed and the app is quitting, so the reading positions
+    /// flushed on quit aren't written back.
+    private var isPersistenceSuspended = false
+
+    func suspendPersistence() {
+        isPersistenceSuspended = true
+    }
+
+    /// Number of documents with stored reading state (each is kept under its path and, for cloud
+    /// files, its canonical key too).
+    public var documentCount: Int {
+        Set(states.map { $0.value.canonicalKey ?? $0.key }).count
+    }
+
+    /// Every anchor in stored reading state, for finding thumbnails nothing uses any more.
+    var storedSnapshotIDs: Set<UUID> {
+        Set(states.values.flatMap { $0.snapshots.map(\.id) })
+    }
+
+    /// Forgets every document's reading position, anchors and recent searches, here and in iCloud.
+    public func removeAll() {
+        states.removeAll()
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        let store = NSUbiquitousKeyValueStore.default
+        for key in store.dictionaryRepresentation.keys where key.hasPrefix(kvsPrefix) {
+            store.removeObject(forKey: key)
+        }
+        store.synchronize()
+    }
+
     private func save() {
+        guard !isPersistenceSuspended else { return }
         if let data = try? JSONEncoder().encode(states) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         }
@@ -212,7 +243,7 @@ public final class ReadingStateManager: ObservableObject {
         save()
 
         // Sync to NSUbiquitousKeyValueStore
-        if isCloudSyncEnabled, let data = try? JSONEncoder().encode(newState) {
+        if isCloudSyncEnabled, !isPersistenceSuspended, let data = try? JSONEncoder().encode(newState) {
             NSUbiquitousKeyValueStore.default.set(data, forKey: kvsKey(for: canonical))
             NSUbiquitousKeyValueStore.default.synchronize()
         }

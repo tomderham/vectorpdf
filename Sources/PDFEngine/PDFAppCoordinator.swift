@@ -439,6 +439,11 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         trackedViewModels.append(WeakViewModelBox(viewModel))
     }
 
+    /// Every open document view model.
+    public var openViewModels: [PDFViewerViewModel] {
+        trackedViewModels.compactMap(\.viewModel)
+    }
+
     public func flushAllReadingStates() {
         for box in trackedViewModels {
             box.viewModel?.saveReadingStateIfNeeded()
@@ -748,10 +753,15 @@ public struct AppSettingsView: View {
                 get: { readingState.isCloudSyncEnabled },
                 set: { readingState.setCloudSyncEnabled($0) }
             ))
-            Text("Last page, zoom, and anchors, through your own iCloud account. Documents are not uploaded.")
+            Text("Last page, zoom, anchors, and recent searches, through your own iCloud account. Documents are not uploaded.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 8)
+
+            Divider()
+                .padding(.vertical, 8)
+
+            StorageSettingsView()
 
             Divider()
                 .padding(.vertical, 8)
@@ -787,6 +797,113 @@ public struct AppSettingsView: View {
         )
         .onDisappear {
             SettingsModalManager.shared.cleanup()
+        }
+    }
+}
+
+/// Settings > Storage: how much space VectorPDF's data takes, and ways to clear it.
+struct StorageSettingsView: View {
+    @State private var usage: StoredData.Usage?
+    @State private var confirming: Confirmation?
+    @State private var blockedMessage: String?
+
+    private enum Confirmation: Identifiable {
+        case readingHistory, removeAll
+        var id: Self { self }
+    }
+
+    private func size(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    private func refresh() async {
+        usage = await StoredData.usage()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Storage")
+                .font(.headline)
+
+            row("Agent indexes", detail: usage.map { size($0.agentIndexBytes) }) {
+                Button("Clear") {
+                    Task {
+                        await StoredData.clearAgentIndexes()
+                        await refresh()
+                    }
+                }
+                .disabled((usage?.agentIndexBytes ?? 0) == 0)
+            }
+            row("Reading history", detail: usage.map {
+                let docs = $0.documentCount == 1 ? "1 document" : "\($0.documentCount) documents"
+                return "\(docs), \(size($0.thumbnailBytes)) of anchor thumbnails"
+            }) {
+                Button("Clear…") { confirming = .readingHistory }
+                    .disabled(usage.map { $0.documentCount == 0 && $0.thumbnailBytes == 0 } ?? true)
+            }
+            row("Temporary files", detail: usage.map { size($0.temporaryBytes) }) {
+                EmptyView()
+            }
+            Text("Agent indexes let the Agent tab answer without reading a document again. Temporary files left by a crash are deleted the next time VectorPDF opens.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("Remove All VectorPDF Data…") {
+                if let blocker = StoredData.removeAllBlocker {
+                    blockedMessage = blocker
+                } else {
+                    confirming = .removeAll
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(.bottom, 8)
+        .task { await refresh() }
+        .alert(item: $confirming) { which in
+            switch which {
+            case .readingHistory:
+                return Alert(
+                    title: Text("Clear reading history?"),
+                    message: Text("Every document's last page, zoom, anchors and recent searches are forgotten, on this Mac and in iCloud. Open documents lose their anchors too."),
+                    primaryButton: .destructive(Text("Clear")) {
+                        StoredData.clearReadingHistory()
+                        Task { await refresh() }
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .removeAll:
+                return Alert(
+                    title: Text("Remove all VectorPDF data and quit?"),
+                    message: Text("Removes reading history (also from iCloud), Agent indexes, anchor thumbnails, temporary files, the tour's copy, saved API keys, favorites, tab groups, your stamp and all settings. Your documents aren't touched."),
+                    primaryButton: .destructive(Text("Remove and Quit")) {
+                        Task { await StoredData.removeAllAndQuit() }
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
+        }
+        .alert("Can't Remove Data Yet", isPresented: Binding(
+            get: { blockedMessage != nil },
+            set: { if !$0 { blockedMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(blockedMessage ?? "")
+        }
+    }
+
+    private func row<Action: View>(_ title: String, detail: String?, @ViewBuilder action: () -> Action) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                Text(detail ?? "Calculating…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            action()
+                .controlSize(.small)
         }
     }
 }

@@ -1,5 +1,5 @@
-<!-- keywords: impostazioni, preferenze, opzioni, aggiornamenti, aggiornamento, verifica aggiornamenti, browser, autore, autore annotazioni, settings, preferences, options, updates, update, check for updates, author, annotation author -->
-<!-- source: b346a18588b3 -->
+<!-- keywords: impostazioni, preferenze, opzioni, aggiornamenti, aggiornamento, verifica aggiornamenti, browser, autore, autore annotazioni, spazio, spazio su disco, cancellare, rimuovere dati, eliminare dati, disinstallare, settings, preferences, options, updates, update, check for updates, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
+<!-- source: 95e6c661738e -->
 
 # Impostazioni
 
@@ -14,8 +14,19 @@ Scegli VectorPDF > Settings oppure premi ⌘,.
 | Open Links In | Sceglie il browser per i link web. |
 | Ignored Search Patterns | Elenca il testo che [Smart Search ignora](search.md#ignore-clutter-in-the-text). |
 | Digital Stamp | Crea, modifica o elimina il tuo [timbro](stamps.md). |
-| Sync reading positions with iCloud | Mantiene [pagina, zoom e ancoraggi](reading-positions.md) sugli altri Mac. |
+| Sync reading positions with iCloud | Mantiene [pagina, zoom, ancore](reading-positions.md) e [ricerche recenti](search.md) sugli altri tuoi Mac. |
+| Storage | Mostra quanto spazio occupano i dati di VectorPDF e permette di [cancellarli](#free-up-space-or-remove-data). |
 | Automatically check for updates | Cerca una nuova versione su GitHub circa una volta al giorno. Fai clic su Check Now per controllare in qualsiasi momento. |
+
+## Liberare spazio o rimuovere i dati {#free-up-space-or-remove-data}
+
+In Storage, le impostazioni mostrano quanto spazio occupa ogni tipo di dati:
+
+- **Indici dell'Agent:** ciò che l'Agent crea per rispondere alle domande su un documento. Fai clic su Clear per eliminarli; il documento viene indicizzato di nuovo la prossima volta che usi l'Agent con esso. VectorPDF li mantiene sotto i 500 MB eliminando prima quelli usati meno di recente, ed elimina l'indice di un documento quando il documento non esiste più.
+- **Cronologia di lettura:** l'ultima pagina, lo zoom, le ancore e le ricerche recenti di ogni documento. Fai clic su Clear per dimenticarli, su questo Mac e in iCloud.
+- **File temporanei:** copie create durante la modifica, il salvataggio, la stampa o l'esportazione, e gli aggiornamenti scaricati. VectorPDF elimina quelli rimasti alla successiva apertura.
+
+Per rimuovere tutto ciò che VectorPDF ha memorizzato, fai clic su Remove All VectorPDF Data. Vengono rimossi anche impostazioni, preferiti, gruppi di pannelli, timbro e chiavi API, poi VectorPDF si chiude. I tuoi documenti non vengono toccati. Prima salva o chiudi i documenti con modifiche non salvate.
 
 ## Aggiornare VectorPDF
 

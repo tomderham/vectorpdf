@@ -69,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DocumentWindowing.closeStandaloneEmptyStartWindows()
             }
         }
+        StoredData.cleanUpAtLaunch()
         GitHubUpdater.shared.start(
             gitHubUser: "tomderham",
             gitHubRepo: "vectorpdf",

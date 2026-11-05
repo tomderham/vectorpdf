@@ -33,16 +33,19 @@ The document, its full text, and anchor thumbnails are not uploaded. The data go
 - **Preferences, favorites, and tab groups**: in the app's preferences (`UserDefaults`). Recent documents are kept by macOS, as for any document app.
 - **Reading positions, anchors, and recent searches**: per document, in the app's preferences, and synced through iCloud unless you turn that off (see above). To clear one document's searches, choose Clear Recent Searches from the magnifying glass in its search field.
 - **Saved signature image**: in the app's preferences.
-- **Agent search index**: `~/Library/Application Support/VectorPDF/SemanticIndex/`. Text embeddings of documents you've used the Agent tab with, so they don't need re-indexing. A document's index is deleted when you redact or save it.
+- **Agent search index**: `~/Library/Application Support/VectorPDF/SemanticIndex/`. Text embeddings of documents you've used the Agent tab with, and the text they were made from, so they don't need re-indexing. A document's index is deleted when you redact or save it, or once the document is gone. The folder is kept under 500 MB by deleting the least recently used indexes first.
+- **The tour's copy**: `~/Library/Application Support/VectorPDF/VectorPDF Tour.pdf`, made when you first open the tour so your markups on it can be saved.
 - **Anchor thumbnails**: `~/Library/Caches/VectorPDFSnapshotThumbnails/`.
 - **Temporary files**: in your user account's temporary folder. Open it with `open "$TMPDIR"` in Terminal; it's under `/var/folders/`, not `/tmp`. Every name starts with `VectorPDF`:
   - `VectorPDF-working-<id>.pdf`: a working copy of a document with unsaved page edits or redactions. It holds the whole document as edited so far.
   - `VectorPDF-save-<id>-<name>.pdf`, `VectorPDF-flatten-<id>.pdf`, `VectorPDF-print-<id>.pdf`, and `VectorPDF-docx-<id>` folders: short-lived copies made while saving, flattening, printing, or exporting to Word.
-  - `VectorPDF_Update.dmg`: the last downloaded update.
+  - `VectorPDF_Update.dmg` (and `VectorPDF-update-<id>.dmg` while it downloads): the last downloaded update.
 
-  VectorPDF deletes the working and short-lived copies when it's done with them (the update stays until the next one replaces it), but a crash or forced quit can leave some behind. With VectorPDF closed, they're safe to delete: `rm -rf "$TMPDIR"/VectorPDF*`.
+  VectorPDF deletes the working and short-lived copies when it's done with them, but a crash or forced quit can leave some behind. When it opens, it deletes any of these files more than a day old, including the update, and anchor thumbnails no saved anchor uses. With VectorPDF closed, they're also safe to delete yourself: `rm -rf "$TMPDIR"/VectorPDF*`.
 
-To remove everything, quit VectorPDF, delete the folders and temporary files above, and run `defaults delete com.thomasderham.vectorpdf` in Terminal. Turn off iCloud sync in Settings first if you also want VectorPDF's entries removed from iCloud.
+**Settings → Storage** shows how much space the Agent indexes, reading history and temporary files take, and can clear the indexes or the reading history (on this Mac and in iCloud). **Remove All VectorPDF Data** there removes everything listed on this page, including API keys and VectorPDF's entries in iCloud, then quits. Your documents aren't touched.
+
+To do the same by hand, quit VectorPDF, delete the folders and temporary files above, and run `defaults delete com.thomasderham.vectorpdf` in Terminal. Turn off iCloud sync in Settings first if you also want VectorPDF's entries removed from iCloud.
 
 ## Questions
 

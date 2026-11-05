@@ -29,12 +29,48 @@ public struct SemanticChunk: Sendable, Codable, Equatable {
 public struct EmbeddedChunk: Sendable, Codable, Equatable {
     public let chunk: SemanticChunk
     public let vector: [Float]
+
+    public init(chunk: SemanticChunk, vector: [Float]) {
+        self.chunk = chunk
+        self.vector = vector
+    }
+
+    private enum CodingKeys: String, CodingKey { case chunk, vector }
+
+    // The vector is stored as raw little-endian Float16 bytes. Written out as JSON numbers it made
+    // the cache several times larger (one 1,500-page document took 140 MB), and half precision
+    // doesn't change which passages rank highest. VectorPDF runs only on Apple silicon, which has
+    // Float16.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        chunk = try container.decode(SemanticChunk.self, forKey: .chunk)
+        let data = try container.decode(Data.self, forKey: .vector)
+        let width = MemoryLayout<UInt16>.size
+        guard data.count % width == 0 else {
+            throw DecodingError.dataCorruptedError(forKey: .vector, in: container, debugDescription: "Vector byte count isn't even")
+        }
+        vector = data.withUnsafeBytes { raw in
+            (0..<(raw.count / width)).map { i in
+                Float(Float16(bitPattern: UInt16(littleEndian: raw.loadUnaligned(fromByteOffset: i * width, as: UInt16.self))))
+            }
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(chunk, forKey: .chunk)
+        var data = Data(capacity: vector.count * MemoryLayout<UInt16>.size)
+        for value in vector {
+            withUnsafeBytes(of: Float16(value).bitPattern.littleEndian) { data.append(contentsOf: $0) }
+        }
+        try container.encode(data, forKey: .vector)
+    }
 }
 
 /// A document's full semantic index.
 public struct DocumentSemanticIndex: Sendable, Codable, Equatable {
     /// Current format version for cached semantic indices.
-    public static let currentFormatVersion = 6
+    public static let currentFormatVersion = 7
     public var formatVersion: Int = DocumentSemanticIndex.currentFormatVersion
     public let sourcePath: String
     public let sourceModifiedAt: Date
@@ -256,29 +292,41 @@ actor TextEmbedder {
     }
 }
 
-/// Disk-backed cache for semantic indexes stored as JSON files under Application Support.
+/// Disk-backed cache of semantic indexes, one binary property list per document under
+/// Application Support. Kept below `maxBytes` by dropping the least recently used, and indexes
+/// whose document is gone are dropped too (see prune).
 actor SemanticIndexStore {
     static let shared = SemanticIndexStore()
-
-    private let directory: URL
-
-    init() {
+    static let defaultDirectory: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        directory = base.appendingPathComponent("VectorPDF/SemanticIndex", isDirectory: true)
+        return base.appendingPathComponent("VectorPDF/SemanticIndex", isDirectory: true)
+    }()
+    static let defaultMaxBytes: Int64 = 500 * 1024 * 1024
+    static let fileExtension = "plist"
+    /// The document an index belongs to, kept as an extended attribute so pruning needn't read
+    /// whole indexes.
+    static let sourcePathAttribute = "com.thomasderham.vectorpdf.source-path"
+
+    let directory: URL
+    private let maxBytes: Int64
+
+    init(directory: URL = SemanticIndexStore.defaultDirectory, maxBytes: Int64 = SemanticIndexStore.defaultMaxBytes) {
+        self.directory = directory
+        self.maxBytes = maxBytes
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
-    private func fileURL(for path: String) -> URL {
+    func fileURL(for path: String) -> URL {
         let digest = SHA256.hash(data: Data(path.utf8)).map { String(format: "%02x", $0) }.joined()
-        return directory.appendingPathComponent("\(digest).json")
+        return directory.appendingPathComponent(digest).appendingPathExtension(Self.fileExtension)
     }
 
     /// Returns the cached index for `path`, or nil if missing or invalid.
     func load(for path: String) -> DocumentSemanticIndex? {
         let url = fileURL(for: path)
         guard let data = try? Data(contentsOf: url),
-              let index = try? JSONDecoder().decode(DocumentSemanticIndex.self, from: data),
+              let index = try? PropertyListDecoder().decode(DocumentSemanticIndex.self, from: data),
               index.sourcePath == path,
               index.formatVersion == DocumentSemanticIndex.currentFormatVersion else {
             return nil
@@ -288,6 +336,8 @@ actor SemanticIndexStore {
            abs(modDate.timeIntervalSince(index.sourceModifiedAt)) > 1 {
             return nil
         }
+        // The modification date records last use, for pruning.
+        try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: url.path)
         return index
     }
 
@@ -296,9 +346,70 @@ actor SemanticIndexStore {
         try? FileManager.default.removeItem(at: fileURL(for: path))
     }
 
+    /// Deletes every cached index.
+    func removeAll() {
+        try? FileManager.default.removeItem(at: directory)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
     func save(_ index: DocumentSemanticIndex) {
         let url = fileURL(for: index.sourcePath)
-        guard let data = try? JSONEncoder().encode(index) else { return }
-        try? data.write(to: url, options: .atomic)
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        guard let data = try? encoder.encode(index) else { return }
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            return
+        }
+        let value = Data(index.sourcePath.utf8)
+        _ = value.withUnsafeBytes { bytes in
+            setxattr(url.path, Self.sourcePathAttribute, bytes.baseAddress, bytes.count, 0, 0)
+        }
+        prune()
+    }
+
+    /// Total size of the cache in bytes.
+    func totalBytes() -> Int64 {
+        entries().reduce(0) { $0 + $1.bytes }
+    }
+
+    /// Deletes anything that isn't a current index (older formats, partial writes), indexes whose
+    /// document no longer exists, and then the least recently used until the rest fit `maxBytes`.
+    func prune() {
+        let fm = FileManager.default
+        var kept: [(url: URL, bytes: Int64, used: Date)] = []
+        for entry in entries() {
+            guard entry.url.pathExtension == Self.fileExtension,
+                  let source = Self.sourcePath(of: entry.url),
+                  fm.fileExists(atPath: source) else {
+                try? fm.removeItem(at: entry.url)
+                continue
+            }
+            kept.append(entry)
+        }
+        var total = kept.reduce(0) { $0 + $1.bytes }
+        for entry in kept.sorted(by: { $0.used < $1.used }) where total > maxBytes {
+            try? fm.removeItem(at: entry.url)
+            total -= entry.bytes
+        }
+    }
+
+    private func entries() -> [(url: URL, bytes: Int64, used: Date)] {
+        let keys: [URLResourceKey] = [.fileSizeKey, .contentModificationDateKey]
+        let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys)) ?? []
+        return urls.map { url in
+            let values = try? url.resourceValues(forKeys: Set(keys))
+            return (url, Int64(values?.fileSize ?? 0), values?.contentModificationDate ?? .distantPast)
+        }
+    }
+
+    static func sourcePath(of url: URL) -> String? {
+        let length = getxattr(url.path, sourcePathAttribute, nil, 0, 0, 0)
+        guard length > 0 else { return nil }
+        var data = Data(count: length)
+        let read = data.withUnsafeMutableBytes { getxattr(url.path, sourcePathAttribute, $0.baseAddress, length, 0, 0) }
+        guard read == length else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 }
