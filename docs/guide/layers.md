@@ -17,7 +17,7 @@ Layers you hide are also left out when you [print](print.md), [select text](sele
 
 Annotations can go on a layer too, so they're shown and hidden with it. Other apps that read layers, such as Acrobat and Bluebeam, show and hide them the same way.
 
-- **Choose where new annotations go:** in the [Markup toolbar](draw-and-notes.md) or the [Measurement toolbar](measure.md), click the layer menu (it says **No Layer** until you choose one) and choose a layer. Everything you make from then on goes on it, until you choose another layer or **No Layer**. You can also choose it under **New annotations** in the Layers tab, or right-click a layer there and choose **Put New Annotations Here**. The layer new annotations go on has a pencil next to it.
+- **Choose where new annotations go:** in the [Markup toolbar](draw-and-notes.md) or the [Measurement toolbar](measure.md), click the layer menu (it says **No Layer** until you choose one) and choose a layer. Everything you make from then on goes on it, until you choose another layer or **No Layer**. You can also right-click a layer in the Layers tab and choose **Put New Annotations Here**. The layer new annotations go on has a pencil next to it.
 - **Move an annotation to another layer:** right-click it and choose **Layer**, then a layer, or **None** to take it off any.
 - **Add a layer of your own:** see [Add, rename and delete layers](#add-rename-and-delete-layers).
 

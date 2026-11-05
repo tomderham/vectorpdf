@@ -48,18 +48,6 @@ struct LayersSidebarView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
 
-            if !viewModel.isReadOnlyDocument && !viewModel.annotationLayers.isEmpty {
-                HStack(spacing: 4) {
-                    Text("New annotations:")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    AnnotationLayerMenu(viewModel: viewModel, showsIcon: false)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 6)
-            }
-
             Divider()
 
             ScrollView {
@@ -166,7 +154,6 @@ private struct LayerRowView: View {
 /// Chooses the layer new annotations go on, or adds one. Shown only for documents with layers.
 struct AnnotationLayerMenu: View {
     @ObservedObject var viewModel: PDFViewerViewModel
-    var showsIcon = true
 
     private var title: String {
         viewModel.layerName(viewModel.annotationLayer) ?? "No Layer"
@@ -189,14 +176,9 @@ struct AnnotationLayerMenu: View {
                 viewModel.promptForNewLayer()
             }
         } label: {
-            if showsIcon {
-                Label(title, systemImage: "square.3.layers.3d")
-                    .labelStyle(.titleAndIcon)
-                    .font(.caption)
-            } else {
-                Text(title)
-                    .font(.caption)
-            }
+            Label(title, systemImage: "square.3.layers.3d")
+                .labelStyle(.titleAndIcon)
+                .font(.caption)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
