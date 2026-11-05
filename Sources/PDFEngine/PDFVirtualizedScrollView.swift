@@ -534,6 +534,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         }
         
         @objc func clipViewBoundsDidChange(_ notification: Notification) {
+            // Before the guard: a programmatic scroll shows new parts of a page too.
+            canvasView?.scheduleDetailRenders()
             guard !isProgrammaticScroll, viewModel.document != nil, let scrollView = self.scrollView else { return }
             
             let clipView = scrollView.contentView

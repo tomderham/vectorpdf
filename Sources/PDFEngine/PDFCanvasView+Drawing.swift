@@ -38,6 +38,7 @@ extension PDFCanvasView {
         dirtyRect.fill()
 
         pruneThemedPageCache()
+        defer { scheduleDetailRenders() }
 
         // Determine visible page range intersecting dirtyRect via binary search
         let unscaledMinY = max(0, (dirtyRect.minY - 16) / viewModel.effectiveZoom)
@@ -111,6 +112,7 @@ extension PDFCanvasView {
                 } else {
                     displayImg.draw(in: alignedFrame)
                 }
+                drawPageDetail(pageIdx, pageFrame: pFrame, pageBounds: pBounds)
             }
             if !viewModel.hasCurrentRender(of: pageIdx) && !viewModel.isLiveZooming {
                 // Render on demand, or again after a zoom; the old bitmap stays meanwhile.

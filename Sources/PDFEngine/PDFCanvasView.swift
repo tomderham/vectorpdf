@@ -40,6 +40,11 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     let linkPeek = LinkPeekController()
     let referencePeek = ReferencePeekController()
     var referenceSearchTask: Task<Void, Never>?
+
+    // Sharp renders of the visible part of pages too big to render whole (PDFCanvasView+Detail).
+    var pageDetails: [Int: PageDetail] = [:]
+    var detailRenderTask: Task<Void, Never>?
+    var pendingDetailRequest: DetailRequest?
     var linkPeekEventMonitor: Any?
     /// Set when a key, click or scroll cancels a peek, until the modifiers next change.
     var isLinkPeekSuppressed = false
@@ -258,7 +263,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         self.wantsLayer = true
         self.layer?.drawsAsynchronously = true
         
-        // Repaint when viewModel properties update
+        // Any @Published change on the view model redraws the whole canvas and re-syncs form
+        // controls, so keep state that changes often but isn't drawn (progress, in-flight
+        // bookkeeping such as isLiveZooming) out of @Published.
         viewModel.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

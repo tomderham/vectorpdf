@@ -40,9 +40,13 @@ public typealias FZLink = UnsafeMutablePointer<fz_link>
 ///    data races and memory corruption.
 ///
 /// Therefore, the application isolates responsibilities across distinct Swift actors:
-/// - `PDFRenderActor`: Dedicated background actor with its own cloned context & document for high-speed page tile rasterization.
-/// - `PDFSearchActor`: Dedicated background actor with its own cloned context & document for regex full-text searches.
-/// - `PDFDocumentCore`: Main thread lock-guarded wrapper for metadata, layout calculations, and AcroForm mutations.
+/// - `PDFRenderActor`: Dedicated background actor with its own cloned context & document for page rasterization.
+/// - `PDFSearchActor`: A pool of up to six workers, each with an independent context and its own document.
+/// - `PDFDocumentCore`: Main thread lock-guarded wrapper for metadata, layout calculations, and edits.
+///
+/// The actors' documents are opened from the file, so they see edits only once they're saved to the
+/// working copy and `reopenActors` runs. State set on a document rather than saved (layer states,
+/// hidden annotations) must be given to every copy again after a reopen, there included.
 ///
 /// Manages the root MuPDF context and creates thread-isolated cloned contexts for Swift 6 actors.
 public final class PDFContextManager: @unchecked Sendable {

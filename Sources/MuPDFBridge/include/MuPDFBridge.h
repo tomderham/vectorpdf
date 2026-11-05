@@ -32,7 +32,8 @@ fz_context *mupdf_context_create(size_t max_store_bytes);
 fz_context *mupdf_context_clone(fz_context *base);
 void mupdf_context_drop(fz_context *ctx);
 // A root context sharing nothing with the others but the FreeType lock, for a thread that does a
-// lot of work on its own; never clone it. Drop it with mupdf_context_drop_independent.
+// lot of work on its own; never clone it (mupdf_context_clone returns NULL): clones would share
+// locks that dropping it frees. Drop it with mupdf_context_drop_independent.
 fz_context *mupdf_context_create_independent(size_t max_store_bytes);
 void mupdf_context_drop_independent(fz_context *ctx);
 
@@ -72,6 +73,9 @@ void mupdf_display_list_drop(fz_context *ctx, fz_display_list *list);
 int mupdf_render_display_list(fz_context *ctx, fz_display_list *list, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
 int mupdf_render_page(fz_context *ctx, fz_page *page, float scale_x, float scale_y, fz_pixmap **out_pixmap, const char **out_error);
 int mupdf_render_page_rect(fz_context *ctx, fz_page *page, float scale_x, float scale_y, float x0, float y0, float x1, float y1, fz_pixmap **out_pixmap, const char **out_error);
+// Renders the part of a display list inside page rect (x0, y0)-(x1, y1) at `scale`. Pass a rect
+// already on the pixel grid (each edge * scale a whole number), or the bitmap won't line up with it.
+int mupdf_render_display_list_rect(fz_context *ctx, fz_display_list *list, float scale, float x0, float y0, float x1, float y1, fz_pixmap **out_pixmap, const char **out_error);
 void mupdf_pixmap_drop(fz_context *ctx, fz_pixmap *pixmap);
 int mupdf_pixmap_width(fz_pixmap *pixmap);
 int mupdf_pixmap_height(fz_pixmap *pixmap);

@@ -63,8 +63,12 @@ fz_context *mupdf_context_create(size_t max_store_bytes) {
     return ctx;
 }
 
+static void mupdf_independent_lock(void *user, int lock);
+
 fz_context *mupdf_context_clone(fz_context *base) {
     if (!base) return NULL;
+    // Independent contexts must not be cloned: see mupdf_context_drop_independent.
+    if (base->locks.lock == mupdf_independent_lock) return NULL;
     fz_context *ctx = fz_clone_context(base);
     if (ctx) {
         fz_set_warning_callback(ctx, mupdf_quiet_warning, NULL);
@@ -79,7 +83,8 @@ void mupdf_context_drop(fz_context *ctx) {
 // Independent contexts: their own store, fonts and ALLOC/GLYPHCACHE locks, so threads using them
 // don't wait on each other's allocations and reference counts as cloned contexts do. FREETYPE stays
 // shared with every other context, because MuPDF hands HarfBuzz and OpenJPEG their context through
-// globals guarded by it.
+// globals guarded by it. Mixing own and shared locks can't deadlock because MuPDF only takes them in
+// increasing lock-number order; never map two lock numbers onto one os_unfair_lock (not recursive).
 static void mupdf_independent_lock(void *user, int lock) {
     if (lock == FZ_LOCK_FREETYPE) {
         mupdf_lock(NULL, lock);
@@ -116,6 +121,8 @@ fz_context *mupdf_context_create_independent(size_t max_store_bytes) {
     return ctx;
 }
 
+// Frees the context's own locks with it, so a clone (which would share them) would be left using
+// freed memory, and its threads would contend on ALLOC again, which these contexts exist to avoid.
 void mupdf_context_drop_independent(fz_context *ctx) {
     if (!ctx) return;
     void *own = ctx->locks.user;
@@ -361,6 +368,41 @@ int mupdf_render_page_rect(fz_context *ctx, fz_page *page, float scale_x, float 
         fz_clear_pixmap_with_value(ctx, pix, 0xff);
         dev = fz_new_draw_device(ctx, ctm, pix);
         fz_run_page(ctx, page, dev, fz_identity, NULL);
+        fz_close_device(ctx, dev);
+        fz_drop_device(ctx, dev);
+        dev = NULL;
+        *out_pixmap = pix;
+        pix = NULL;
+    } fz_always(ctx) {
+        if (dev) {
+            fz_try(ctx) { fz_close_device(ctx, dev); } fz_catch(ctx) {}
+            fz_drop_device(ctx, dev);
+        }
+    } fz_catch(ctx) {
+        if (pix) fz_drop_pixmap(ctx, pix);
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_render_display_list_rect(fz_context *ctx, fz_display_list *list, float scale,
+                                   float x0, float y0, float x1, float y1,
+                                   fz_pixmap **out_pixmap, const char **out_error) {
+    if (!ctx || !list || !out_pixmap) return -1;
+    *out_pixmap = NULL;
+    fz_pixmap *pix = NULL;
+    fz_device *dev = NULL;
+    fz_var(pix);
+    fz_var(dev);
+    fz_try(ctx) {
+        fz_matrix ctm = fz_scale(scale, scale);
+        fz_rect trect = fz_transform_rect(fz_make_rect(fminf(x0, x1), fminf(y0, y1), fmaxf(x0, x1), fmaxf(y0, y1)), ctm);
+        pix = fz_new_pixmap_with_bbox(ctx, fz_device_rgb(ctx), fz_round_rect(trect), NULL, 0);
+        fz_clear_pixmap_with_value(ctx, pix, 0xff);
+        dev = fz_new_draw_device(ctx, fz_identity, pix);
+        // The scissor rect lets the display list skip everything outside the region.
+        fz_run_display_list(ctx, list, dev, ctm, trect, NULL);
         fz_close_device(ctx, dev);
         fz_drop_device(ctx, dev);
         dev = NULL;

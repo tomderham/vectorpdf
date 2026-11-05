@@ -873,9 +873,19 @@ struct AnnotationReviewTests {
             let pixel = data + 200 * image.width * 4 + 100 * 4
             return pixel[0] > 200 && pixel[1] < 120
         }
+        // The sharp render of part of a page, drawn over it at high zoom, leaves them out too.
+        func detailRedAt100() async throws -> Bool {
+            let image = try await actor.renderPageDetail(pageIndex: 0, rect: CGRect(x: 90, y: 190, width: 20, height: 20), scale: 1).image
+            let context = try #require(CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+            let pixel = try #require(context.data).assumingMemoryBound(to: UInt8.self) + 10 * image.width * 4 + 10 * 4
+            return pixel[0] > 200 && pixel[1] < 120
+        }
         #expect(try await redAt100())
+        #expect(try await detailRedAt100())
         await actor.setHiddenAnnotations([0: [number]])
         #expect(try await !redAt100())
+        #expect(try await !detailRedAt100())
         #expect(vm.hiddenAnnotationNumbers[0] == [number])
     }
 

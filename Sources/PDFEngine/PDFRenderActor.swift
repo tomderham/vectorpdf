@@ -108,7 +108,13 @@ public actor PDFRenderActor {
     }
 
     /// Maximum pixel dimension for a rendered page bitmap to bound memory usage at high zoom.
+    /// Beyond it the canvas adds a sharp render of just the visible area (see renderPageDetail).
     private static let maxRenderDimension: Float = 4096
+
+    /// Whether renderPage would lower `scale` for a page this size, leaving the page soft on screen.
+    public static func clampsRender(scale: CGFloat, pageBounds: CGRect) -> Bool {
+        clampedScale(Float(scale), pageBounds: pageBounds) < Float(scale)
+    }
 
     /// Result of rendering a page: the bitmap and the page's native bounds.
     // CGImage isn't marked Sendable by its own SDK overlay, though it's an immutable value once
@@ -219,6 +225,74 @@ public actor PDFRenderActor {
             _ = mupdf_context_shrink_store(ctx, 50)
         }
         return try makeCGImage(from: pix)
+    }
+
+    /// A sharp render of part of a page, for when the whole page at this scale would be too big.
+    public struct RenderedDetail: @unchecked Sendable {
+        public let image: CGImage
+        /// The page rect the image covers, in page points: `rect` snapped out to whole pixels.
+        public let rect: CGRect
+    }
+
+    /// Renders the part of a page inside `rect` (page points) at `scale`, uncapped, from the same
+    /// display list as renderPage, so the annotations the canvas draws itself stay out of it.
+    public func renderPageDetail(pageIndex: Int, rect: CGRect, scale: CGFloat) throws -> RenderedDetail {
+        guard resource.doc != nil else {
+            throw PDFError.openFailed("No document opened in render actor")
+        }
+        let ctx = resource.ctx
+        let list = try displayList(pageIndex: pageIndex)
+        // On the pixel grid, so the bitmap covers exactly the rect reported back.
+        let minX = floor(rect.minX * scale) / scale, minY = floor(rect.minY * scale) / scale
+        let maxX = ceil(rect.maxX * scale) / scale, maxY = ceil(rect.maxY * scale) / scale
+        let pixelRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+
+        var pixmapPtr: FZPixmap?
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = mupdf_render_display_list_rect(
+            ctx, list, Float(scale),
+            Float(pixelRect.minX), Float(pixelRect.minY), Float(pixelRect.maxX), Float(pixelRect.maxY),
+            &pixmapPtr, &errorMsg
+        )
+        guard ret == 0, let pix = pixmapPtr else {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Render detail failed"
+            throw PDFError.renderFailed(msg)
+        }
+        defer {
+            mupdf_pixmap_drop(ctx, pix)
+            _ = mupdf_context_shrink_store(ctx, 50)
+        }
+        return RenderedDetail(image: try makeCGImage(from: pix), rect: pixelRect)
+    }
+
+    /// The page's display list, from the cache or built (leaving out its hidden annotations) and
+    /// cached. Only valid until the next insert into the cache, which may evict it.
+    private func displayList(pageIndex: Int) throws -> FZDisplayList {
+        if let cached = resource.listCache.get(pageIndex: pageIndex) {
+            return cached
+        }
+        guard let doc = resource.doc else {
+            throw PDFError.openFailed("No document opened in render actor")
+        }
+        let ctx = resource.ctx
+        var errorMsg: UnsafePointer<CChar>?
+        var pagePtr: FZPage?
+        guard mupdf_page_load(ctx, doc, Int32(pageIndex), &pagePtr, &errorMsg) == 0, let page = pagePtr else {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to load page"
+            throw PDFError.pageLoadFailed(pageIndex, msg)
+        }
+        defer { mupdf_page_drop(ctx, page) }
+        var rect = fz_rect()
+        mupdf_page_bounds(ctx, page, &rect, nil)
+        resource.pageBoundsCache[pageIndex] = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: CGFloat(rect.x1 - rect.x0), height: CGFloat(rect.y1 - rect.y0))
+        var listPtr: FZDisplayList?
+        let hidden = resource.hiddenAnnotations[pageIndex] ?? []
+        guard mupdf_display_list_create_hiding(ctx, page, hidden, Int32(hidden.count), &listPtr, &errorMsg) == 0, let list = listPtr else {
+            let msg = errorMsg != nil ? String(cString: errorMsg!) : "Failed to build display list"
+            throw PDFError.renderFailed(msg)
+        }
+        resource.listCache.insert(pageIndex: pageIndex, list: list, ctx: ctx)
+        return list
     }
 
     /// Scales down `requestedScale` (never up) so the resulting bitmap's longest edge doesn't
