@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # Kontextmenüs
 
@@ -36,6 +36,7 @@ In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung au�
 | Ein Anker | Open in New Window oder Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Eine Anmerkung im Tab „Comments“ | „Show on Page“, „Comments…“, „Delete“ |
 | Eine Ebene im Tab „Layers“ | „Put New Annotations Here“ oder „Stop Putting New Annotations Here“. Siehe [Ebenen ein- und ausblenden](layers.md). |
+| Ein Anhang im Tab „Attachments“ | „Quick Look“, „Open“, „Save As…“ und bei einer an eine Seite angehängten Datei „Show on Page“. Siehe [An ein PDF angehängte Dateien](attachments.md). |
 
 ## Im Fenster
 

@@ -261,6 +261,30 @@ int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path
 // It changes `doc`, so pass a throwaway copy, never the open document.
 int mupdf_pdf_save_optimized(fz_context *ctx, fz_document *doc, const char *path, int subset_fonts, int image_dpi, int outline_text, const char **out_error);
 
+// Attachments (embedded files)
+typedef struct {
+    /* The page of its file attachment annotation, or -1 for one attached to the document. */
+    int page;
+    /* Bytes, or -1 if the file doesn't say. */
+    int size;
+    /* Seconds since 1970, or -1 if unknown. */
+    int64_t created, modified;
+    char name[512];
+    /* Empty if the file doesn't say. */
+    char mime_type[128];
+    char description[512];
+} mupdf_attachment;
+
+// Lists up to `capacity` of the PDF's embedded files into `out` and returns how many there are,
+// in a fixed order: the document's attachments (/EmbeddedFiles), its associated files (/AF), then
+// file attachment annotations page by page. Each file once; references to files outside the PDF
+// are left out. 0 for a document that isn't a PDF.
+int mupdf_pdf_list_attachments(fz_context *ctx, fz_document *doc, mupdf_attachment *out, int capacity);
+// Writes the contents of attachment `index`, in mupdf_pdf_list_attachments' order, to `path`.
+int mupdf_pdf_save_attachment(fz_context *ctx, fz_document *doc, int index, const char *path, const char **out_error);
+// Attaches a file to the document (in /EmbeddedFiles). `mime_type` may be NULL.
+int mupdf_pdf_add_attachment(fz_context *ctx, fz_document *doc, const char *name, const char *mime_type, const unsigned char *data, size_t length, const char *description, const char **out_error);
+
 // Page Manipulation
 int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error);
 int mupdf_pdf_delete_page(fz_context *ctx, fz_document *doc, int pageno, const char **out_error);

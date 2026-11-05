@@ -84,6 +84,14 @@ public final class PDFDocumentCore: @unchecked Sendable {
     private var holdingDocument: FZDocument?
     private let openedPassword: String?
     
+    /// Runs `body` with the document locked, for extensions in other files (which can't see
+    /// the lock, context or document themselves).
+    func withLockedDocument<T>(_ body: (FZContext, FZDocument) throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body(ctx, doc)
+    }
+
     public init(filePath: String, password: String? = nil) throws {
         self.filePath = filePath
         self.openedPassword = password

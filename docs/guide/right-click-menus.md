@@ -35,6 +35,7 @@ In a document with [layers](layers.md), the menu for an annotation also has **La
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | An annotation in the Comments tab | Show on Page, Comments…, Delete |
 | A layer in the Layers tab | Put New Annotations Here, or Stop Putting New Annotations Here. See [Show and hide layers](layers.md). |
+| An attachment in the Attachments tab | Quick Look, Open, Save As…, and Show on Page for a file attached to a page. See [Files attached to a PDF](attachments.md). |
 
 ## In the window
 

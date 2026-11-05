@@ -3324,6 +3324,173 @@ int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path
     return 0;
 }
 
+// Attachments
+
+typedef void (*attachment_visitor)(fz_context *ctx, pdf_obj *fs, int page, const char *fallback_name, void *arg);
+
+static int seen_object(fz_context *ctx, int **seen, int *count, int *cap, int num) {
+    if (num <= 0) return 0; // a direct object can't be listed twice by reference
+    for (int i = 0; i < *count; i++)
+        if ((*seen)[i] == num) return 1;
+    if (*count == *cap) {
+        *cap = *cap ? *cap * 2 : 16;
+        *seen = fz_realloc_array(ctx, *seen, *cap, int);
+    }
+    (*seen)[(*count)++] = num;
+    return 0;
+}
+
+// Calls `visit` for each embedded file, in the order mupdf_pdf_list_attachments documents.
+static void walk_attachments(fz_context *ctx, pdf_document *pdoc, attachment_visitor visit, void *arg) {
+    pdf_obj *tree = NULL;
+    int *seen = NULL, seen_count = 0, seen_cap = 0;
+    fz_var(tree);
+    fz_var(seen);
+    fz_try(ctx) {
+        tree = pdf_load_name_tree(ctx, pdoc, PDF_NAME(EmbeddedFiles));
+        int n = pdf_dict_len(ctx, tree);
+        for (int i = 0; i < n; i++) {
+            pdf_obj *fs = pdf_dict_get_val(ctx, tree, i);
+            if (!pdf_is_embedded_file(ctx, fs) || seen_object(ctx, &seen, &seen_count, &seen_cap, pdf_to_num(ctx, fs))) continue;
+            visit(ctx, fs, -1, pdf_to_name(ctx, pdf_dict_get_key(ctx, tree, i)), arg);
+        }
+        int associated = pdf_count_document_associated_files(ctx, pdoc);
+        for (int i = 0; i < associated; i++) {
+            pdf_obj *fs = pdf_document_associated_file(ctx, pdoc, i);
+            if (!pdf_is_embedded_file(ctx, fs) || seen_object(ctx, &seen, &seen_count, &seen_cap, pdf_to_num(ctx, fs))) continue;
+            visit(ctx, fs, -1, NULL, arg);
+        }
+        // From the page objects rather than loaded pages, so a long document is quick to read.
+        int pages = pdf_count_pages(ctx, pdoc);
+        for (int p = 0; p < pages; p++) {
+            pdf_obj *annots = pdf_dict_get(ctx, pdf_lookup_page_obj(ctx, pdoc, p), PDF_NAME(Annots));
+            int count = pdf_array_len(ctx, annots);
+            for (int a = 0; a < count; a++) {
+                pdf_obj *annot = pdf_array_get(ctx, annots, a);
+                if (!pdf_name_eq(ctx, pdf_dict_get(ctx, annot, PDF_NAME(Subtype)), PDF_NAME(FileAttachment))) continue;
+                pdf_obj *fs = pdf_dict_get(ctx, annot, PDF_NAME(FS));
+                if (!pdf_is_embedded_file(ctx, fs) || seen_object(ctx, &seen, &seen_count, &seen_cap, pdf_to_num(ctx, fs))) continue;
+                visit(ctx, fs, p, NULL, arg);
+            }
+        }
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, tree);
+        fz_free(ctx, seen);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+static void copy_text(char *dst, size_t size, const char *src) {
+    if (!src) src = "";
+    strncpy(dst, src, size - 1);
+    dst[size - 1] = '\0';
+}
+
+typedef struct { mupdf_attachment *out; int capacity; int count; } list_state;
+
+static void list_attachment(fz_context *ctx, pdf_obj *fs, int page, const char *fallback_name, void *arg) {
+    list_state *state = arg;
+    if (state->count < state->capacity) {
+        mupdf_attachment *entry = &state->out[state->count];
+        pdf_filespec_params params;
+        pdf_get_filespec_params(ctx, fs, &params);
+        entry->page = page;
+        entry->size = params.size > 0 ? params.size : -1;
+        entry->created = params.created;
+        entry->modified = params.modified;
+        copy_text(entry->name, sizeof entry->name, params.filename && *params.filename ? params.filename : fallback_name);
+        // MuPDF reports a missing /Subtype as application/octet-stream; that says nothing.
+        const char *mime = params.mimetype && strcmp(params.mimetype, "application/octet-stream") ? params.mimetype : "";
+        copy_text(entry->mime_type, sizeof entry->mime_type, mime);
+        copy_text(entry->description, sizeof entry->description, pdf_dict_get_text_string(ctx, fs, PDF_NAME(Desc)));
+    }
+    state->count++;
+}
+
+int mupdf_pdf_list_attachments(fz_context *ctx, fz_document *doc, mupdf_attachment *out, int capacity) {
+    if (!ctx || !doc) return 0;
+    list_state state = { out, out ? capacity : 0, 0 };
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc) walk_attachments(ctx, pdoc, list_attachment, &state);
+    } fz_catch(ctx) {
+        fz_report_error(ctx);
+        return 0;
+    }
+    return state.count;
+}
+
+typedef struct { int index; int position; pdf_obj *found; } find_state;
+
+static void find_attachment(fz_context *ctx, pdf_obj *fs, int page, const char *fallback_name, void *arg) {
+    find_state *state = arg;
+    if (state->position++ == state->index) state->found = pdf_keep_obj(ctx, fs);
+}
+
+int mupdf_pdf_save_attachment(fz_context *ctx, fz_document *doc, int index, const char *path, const char **out_error) {
+    if (!ctx || !doc || !path || index < 0) return -1;
+    find_state state = { index, 0, NULL };
+    fz_buffer *contents = NULL;
+    fz_var(contents);
+    fz_var(state.found);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        walk_attachments(ctx, pdoc, find_attachment, &state);
+        if (!state.found) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such attachment");
+        contents = pdf_load_embedded_file_contents(ctx, state.found);
+        if (!contents) fz_throw(ctx, FZ_ERROR_FORMAT, "The attachment has no contents");
+        fz_save_buffer(ctx, contents, path);
+    } fz_always(ctx) {
+        fz_drop_buffer(ctx, contents);
+        pdf_drop_obj(ctx, state.found);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_add_attachment(fz_context *ctx, fz_document *doc, const char *name, const char *mime_type, const unsigned char *data, size_t length, const char *description, const char **out_error) {
+    if (!ctx || !doc || !name) return -1;
+    fz_buffer *contents = NULL;
+    pdf_obj *fs = NULL;
+    fz_var(contents);
+    fz_var(fs);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        contents = fz_new_buffer_from_copied_data(ctx, data, length);
+        int64_t now = (int64_t)time(NULL);
+        fs = pdf_add_embedded_file(ctx, pdoc, name, mime_type, contents, now, now, 1);
+        if (description && *description)
+            pdf_dict_put_text_string(ctx, fs, PDF_NAME(Desc), description);
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        pdf_obj *names = pdf_dict_get(ctx, root, PDF_NAME(Names));
+        if (!names) names = pdf_dict_put_dict(ctx, root, PDF_NAME(Names), 1);
+        pdf_obj *tree = pdf_dict_get(ctx, names, PDF_NAME(EmbeddedFiles));
+        if (!tree) tree = pdf_dict_put_dict(ctx, names, PDF_NAME(EmbeddedFiles), 1);
+        if (pdf_dict_get(ctx, tree, PDF_NAME(Kids)))
+            fz_throw(ctx, FZ_ERROR_UNSUPPORTED, "Can't add to this document's attachments");
+        pdf_obj *list = pdf_dict_get(ctx, tree, PDF_NAME(Names));
+        if (!list) list = pdf_dict_put_array(ctx, tree, PDF_NAME(Names), 2);
+        // A name tree is kept in key order.
+        int len = pdf_array_len(ctx, list), at = len;
+        for (int i = 0; i + 1 < len; i += 2)
+            if (strcmp(pdf_array_get_text_string(ctx, list, i), name) > 0) { at = i; break; }
+        pdf_array_insert_drop(ctx, list, pdf_new_text_string(ctx, name), at);
+        pdf_array_insert(ctx, list, fs, at + 1);
+    } fz_always(ctx) {
+        fz_drop_buffer(ctx, contents);
+        pdf_drop_obj(ctx, fs);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 int mupdf_pdf_save_optimized(fz_context *ctx, fz_document *doc, const char *path, int subset_fonts, int image_dpi, int outline_text, const char **out_error) {
     if (!ctx || !doc || !path) return -1;
     fz_try(ctx) {

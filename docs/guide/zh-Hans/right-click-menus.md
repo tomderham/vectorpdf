@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # 右键菜单
 
@@ -36,6 +36,7 @@
 | 锚点 | Open in New Window 或 Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments 标签页中的注释 | Show on Page、Comments…、Delete |
 | Layers 标签页中的图层 | Put New Annotations Here 或 Stop Putting New Annotations Here。请参阅[显示和隐藏图层](layers.md)。 |
+| Attachments 标签页中的附件 | Quick Look、Open、Save As…，对于附加到页面的文件还有 Show on Page。请参阅[附加到 PDF 的文件](attachments.md)。 |
 
 ## 在窗口中
 

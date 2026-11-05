@@ -30,6 +30,8 @@ enum Fixture {
     static var form1040: URL { url("f1040.pdf") }
     /// Little CMS tutorial: 60 pages of real-world typesetting with embedded fonts and internal links.
     static var lcmsTutorial: URL { url("lcms2-tutorial.pdf") }
+    /// Two pages with five embedded files, one of them attached to page 2 (`make_attachment_sample.py`).
+    static var attachmentSample: URL { url("attachment-sample.pdf") }
 
     /// A file from the PDF Association's test suite, in `pdf-differences/`.
     static func pdfDifferences(_ name: String, sourceLocation: SourceLocation = #_sourceLocation) -> URL {

@@ -755,6 +755,12 @@ public struct PDFViewerMainView: View {
                                 .tag(5)
                                 .help("Layers")
                         }
+                        if !viewModel.attachments.isEmpty {
+                            Image(systemName: "paperclip")
+                                .imageScale(.medium)
+                                .tag(6)
+                                .help("Attachments")
+                        }
                         if viewModel.hasAnnotationThreads {
                             Image(systemName: "text.bubble")
                                 .imageScale(.medium)
@@ -776,6 +782,7 @@ public struct PDFViewerMainView: View {
                         "Search Document (Cmd+F)",
                         "Anchors"
                     ] + (viewModel.layers.isEmpty ? [] : ["Layers"])
+                      + (viewModel.attachments.isEmpty ? [] : ["Attachments"])
                       + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
                       + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
@@ -792,6 +799,12 @@ public struct PDFViewerMainView: View {
                     .onChange(of: viewModel.hasAnnotationThreads) { _, stillShown in
                         // The last annotation was deleted, or another document opened.
                         if !stillShown && selectedSidebarTab == 4 {
+                            selectedSidebarTab = 0
+                        }
+                    }
+                    .onChange(of: viewModel.attachments.isEmpty) { _, noAttachments in
+                        // Another document opened, without attachments.
+                        if noAttachments && selectedSidebarTab == 6 {
                             selectedSidebarTab = 0
                         }
                     }
@@ -1200,6 +1213,8 @@ public struct PDFViewerMainView: View {
                     .onAppear { groupAnchors.refresh() }
                 } else if selectedSidebarTab == 5 {
                     LayersSidebarView(viewModel: viewModel)
+                } else if selectedSidebarTab == 6 {
+                    AttachmentsSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 4 {
                     AnnotationsSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 3 {

@@ -1,4 +1,4 @@
-<!-- keywords: window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
+<!-- keywords: window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
 
 # The VectorPDF window
 
@@ -26,6 +26,7 @@ The tabs at the top of the sidebar switch between:
 - **Search:** [results for the current document](search.md).
 - **Anchors:** [the places you've saved](anchors.md).
 - **Layers:** [show or hide the document's layers](layers.md). This tab appears only when the document has layers.
+- **Attachments:** [files attached to the PDF](attachments.md). This tab appears only when the document has attachments.
 - **Comments:** [every annotation, with its replies and status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [the Agent](agent.md). This tab appears on macOS 26 or later, unless you've turned off [Use Agent](settings.md) in Settings.
 

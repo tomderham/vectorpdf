@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # राइट-क्लिक मेनू
 
@@ -36,6 +36,7 @@
 | ऐंकर | Open in New Window या Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments टैब में कोई ऐनोटेशन | Show on Page, Comments…, Delete |
 | Layers टैब में कोई लेयर | Put New Annotations Here, या Stop Putting New Annotations Here। देखें [लेयर दिखाएँ और छिपाएँ](layers.md)। |
+| Attachments टैब में कोई अटैचमेंट | Quick Look, Open, Save As…, और किसी पेज से जुड़ी फ़ाइल के लिए Show on Page। [PDF से जुड़ी फ़ाइलें](attachments.md) देखें। |
 
 ## विंडो में
 

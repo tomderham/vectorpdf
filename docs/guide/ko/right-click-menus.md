@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # 오른쪽 클릭 메뉴
 
@@ -36,6 +36,7 @@
 | 앵커 | Open in New Window 또는 Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments 탭의 주석 | Show on Page, Comments…, Delete |
 | Layers 탭의 레이어 | Put New Annotations Here 또는 Stop Putting New Annotations Here. [레이어 보기 및 가리기](layers.md)를 참고하십시오. |
+| Attachments 탭의 첨부 파일 | Quick Look, Open, Save As… 및 페이지에 첨부된 파일의 경우 Show on Page. [PDF에 첨부된 파일](attachments.md)을 참고합니다. |
 
 ## 윈도우에서
 

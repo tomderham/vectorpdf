@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # 右クリックメニュー
 
@@ -36,6 +36,7 @@
 | アンカー | Open in New Window または Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments タブの注釈 | Show on Page、Comments…、Delete |
 | Layers タブのレイヤー | Put New Annotations Here または Stop Putting New Annotations Here。[レイヤーの表示と非表示](layers.md)を参照してください。 |
+| Attachments タブの添付ファイル | Quick Look、Open、Save As…、およびページに添付されたファイルの場合は Show on Page。[PDF に添付されたファイル](attachments.md)を参照してください。 |
 
 ## ウインドウ内
 

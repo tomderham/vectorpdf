@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # Menús de clic derecho
 
@@ -36,6 +36,7 @@ En un documento con [capas](layers.md), el menú de una anotación también tien
 | Un ancla | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Una anotación en la pestaña Comments | Show on Page, Comments…, Delete |
 | Una capa en la pestaña Layers | Put New Annotations Here o Stop Putting New Annotations Here. Consulta [Mostrar y ocultar capas](layers.md). |
+| Un adjunto en la pestaña Attachments | Quick Look, Open, Save As… y, para un archivo adjunto a una página, Show on Page. Consulta [Archivos adjuntos a un PDF](attachments.md). |
 
 ## En la ventana
 

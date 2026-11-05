@@ -80,6 +80,9 @@ extension PDFViewerViewModel {
     /// Reads `page`'s annotations again for the Comments sidebar, or every page's for nil.
     func noteAnnotationsChanged(onPage page: Int?) {
         annotationChange = AnnotationChange(revision: annotationChange.revision &+ 1, page: page)
+        // Deleting a file attachment annotation takes its file with it. Read once the caller
+        // has finished writing the change, as below.
+        Task { @MainActor [weak self] in self?.refreshAttachments() }
         // While every page is being read, that read may already have passed this page.
         if let page, annotationThreadsTask == nil, annotationThreadsByPage != nil {
             // Callers note the change before they finish writing it (removeAnnotation deletes

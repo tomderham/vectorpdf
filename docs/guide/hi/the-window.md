@@ -1,5 +1,5 @@
-<!-- keywords: विंडो, टूलबार, साइडबार, टैब, स्टार्ट स्क्रीन, इंटरफ़ेस, पेज संकेतक, नियंत्रण, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 3312cb946cc7 -->
+<!-- keywords: विंडो, टूलबार, साइडबार, टैब, स्टार्ट स्क्रीन, इंटरफ़ेस, पेज संकेतक, नियंत्रण, अटैचमेंट, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
+<!-- source: fa6bf3010f13 -->
 
 # VectorPDF विंडो
 
@@ -27,6 +27,7 @@
 - **Search:** [मौजूदा दस्तावेज़ के परिणाम](search.md)।
 - **Anchors:** [आपकी सहेजी हुई जगहें](anchors.md)।
 - **Layers:** [दस्तावेज़ की लेयर दिखाएँ या छिपाएँ](layers.md)। यह टैब केवल तब दिखाई देता है जब दस्तावेज़ में लेयर हों।
+- **Attachments:** [PDF से जुड़ी फ़ाइलें](attachments.md)। यह टैब तभी दिखता है जब दस्तावेज़ में अटैचमेंट हों।
 - **Comments:** [हर ऐनोटेशन, उसके जवाबों और स्थिति के साथ](draw-and-notes.md#see-all-annotations)।
 - **Ask About This Document:** [Agent](agent.md)। यह टैब macOS 26 या उसके बाद के संस्करण पर दिखाई देता है, बशर्ते आपने Settings में [Use Agent](settings.md) बंद न किया हो।
 

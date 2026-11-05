@@ -311,6 +311,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public private(set) var hasAnnotationThreads = false
     /// The document's layers, for the Layers sidebar, which only shows its tab when there are some.
     @Published public internal(set) var layers: [PDFLayer] = []
+    /// The document's embedded files, for the Attachments tab, which shows only when there are some.
+    @Published public internal(set) var attachments: [PDFAttachment] = []
     /// Bumped when layers are shown or hidden, so pictures drawn before that are thrown away.
     var layerGeneration = 0
     /// Whether each layer is shown, by object number, for annotations on them.
@@ -370,7 +372,10 @@ public final class PDFViewerViewModel: ObservableObject {
 
     // Thumbnail Cache for Outline/Thumbnails View
     @Published public var thumbnailImages: [Int: NSImage] = [:]
-    @Published public var thumbnailVersion: UUID = UUID()
+    /// Changed whenever pages are edited, which can take attachments on them with them.
+    @Published public var thumbnailVersion: UUID = UUID() {
+        didSet { refreshAttachments() }
+    }
     @Published public var selectedThumbnailPageIndices: Set<Int> = [0]
     @Published public var draggedThumbnailPageIndex: Int? = nil
     @Published public var draggedThumbnailPageIndices: Set<Int> = []
@@ -717,6 +722,7 @@ public final class PDFViewerViewModel: ObservableObject {
             pagesCurrentlyRendering.removeAll()
             self.document = doc
             self.layers = doc.layers()
+            self.attachments = doc.attachments()
             self.layerVisibility = doc.layerVisibility()
             self.annotationLayer = nil
             self.layerGeneration += 1
@@ -783,7 +789,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.viewRotationDegrees = 0
             self.isTwoPageMode = false
             self.recomputeEffectiveLayout()
-            self.isSidebarVisible = (doc.pageCount > 1)
+            // A one-page PDF has nothing to navigate, unless it carries files (an e-invoice often does).
+            self.isSidebarVisible = doc.pageCount > 1 || !self.attachments.isEmpty
 
             // Reset Agent state for newly opened document.
             self.agentIndexingTask?.cancel()

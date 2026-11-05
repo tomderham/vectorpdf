@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # Menus du clic droit
 
@@ -36,6 +36,7 @@ Dans un document avec des [calques](layers.md), le menu d’une annotation propo
 | Une ancre | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Une annotation dans l’onglet Comments | Show on Page, Comments…, Delete |
 | Un calque dans l’onglet Layers | Put New Annotations Here, ou Stop Putting New Annotations Here. Voir [Afficher et masquer les calques](layers.md). |
+| Une pièce jointe dans l’onglet Attachments | Quick Look, Open, Save As…, et Show on Page pour un fichier joint à une page. Voir [Fichiers joints à un PDF](attachments.md). |
 
 ## Dans la fenêtre
 

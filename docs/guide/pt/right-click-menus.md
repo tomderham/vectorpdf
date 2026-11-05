@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 78808c2435ea -->
+<!-- source: 80ea412de254 -->
 
 # Menus do botão direito
 
@@ -36,6 +36,7 @@ Em um documento com [camadas](layers.md), o menu de uma anotação também tem *
 | Uma âncora | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Uma anotação na aba Comments | Show on Page, Comments…, Delete |
 | Uma camada na aba Layers | Put New Annotations Here ou Stop Putting New Annotations Here. Consulte [Mostrar e ocultar camadas](layers.md). |
+| Um anexo na aba Attachments | Quick Look, Open, Save As… e, para um arquivo anexado a uma página, Show on Page. Consulte [Arquivos anexados a um PDF](attachments.md). |
 
 ## Na janela
 

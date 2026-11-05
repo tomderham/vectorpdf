@@ -16,6 +16,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 - [Zoom, rotate and page layout](zoom-and-layout.md)
 - [Outline and thumbnails](outline-and-thumbnails.md)
 - [Show and hide layers](layers.md)
+- [Files attached to a PDF](attachments.md)
 - [Change PDF colors](pdf-colors.md)
 - [Select, copy and look up text](select-text.md)
 

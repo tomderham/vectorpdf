@@ -1,5 +1,5 @@
-<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls -->
-<!-- source: 3312cb946cc7 -->
+<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments -->
+<!-- source: fa6bf3010f13 -->
 
 # VectorPDF のウインドウ
 
@@ -27,6 +27,7 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 - **Search:** [現在の書類の検索結果](search.md)。
 - **Anchors:** [保存した場所](anchors.md)。
 - **Layers:** [書類のレイヤーを表示または非表示にする](layers.md)。このタブは、書類にレイヤーがある場合にのみ表示されます。
+- **Attachments:** [PDF に添付されたファイル](attachments.md)。このタブは、書類に添付ファイルがある場合にのみ表示されます。
 - **Comments:** [すべての注釈と、その返信およびステータス](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document:** [Agent](agent.md)。このタブは macOS 26 以降で表示されます。ただし、Settings で [Use Agent](settings.md) をオフにした場合は表示されません。
 
