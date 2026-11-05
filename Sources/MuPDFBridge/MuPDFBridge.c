@@ -3135,7 +3135,9 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
         ppage = pdf_load_page(ctx, pdoc, pageno);
         for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) {
             enum pdf_annot_type atype = pdf_annot_type(ctx, a);
-            enum pdf_intent intent = pdf_annot_intent(ctx, a);
+            /* Asking an annotation that can't have an /IT (ink, a highlight, a note) for one
+               throws, which would lose every measurement on the page. */
+            enum pdf_intent intent = pdf_annot_has_intent(ctx, a) ? pdf_annot_intent(ctx, a) : PDF_ANNOT_IT_DEFAULT;
             const char *contents = pdf_annot_contents(ctx, a);
             int kind = 0;
             if (atype == PDF_ANNOT_LINE && intent == PDF_ANNOT_IT_LINE_DIMENSION) {

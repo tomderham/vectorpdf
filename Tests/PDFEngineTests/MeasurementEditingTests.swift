@@ -238,4 +238,37 @@ struct MeasurementEditingTests {
         vm.toggleTool(.stamp)
         #expect(vm.canvasMode == .select && vm.pendingSignatureData == nil)
     }
+
+    @MainActor
+    @Test func measurementsDrawnOnTheCanvasAreInTheTakeoff() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        fixture.vm.isVertexSnapEnabled = false
+        fixture.vm.isOrthoSnapEnabled = false
+        let vm = fixture.vm
+        vm.canvasMode = .measureLength
+        fixture.drag(page: 0, from: CGPoint(x: 100, y: 200), to: CGPoint(x: 300, y: 200))
+        vm.canvasMode = .measureArea
+        for corner in [CGPoint(x: 100, y: 300), CGPoint(x: 300, y: 300), CGPoint(x: 300, y: 500), CGPoint(x: 100, y: 500)] {
+            fixture.click(page: 0, at: corner)
+        }
+        fixture.click(page: 0, at: CGPoint(x: 100, y: 300))
+        #expect(vm.takeoffEntries().map(\.annotation.type) == [.measureLength, .measureArea])
+    }
+
+    /// Other annotations on a measured page, such as a drawing or a note, mustn't hide its
+    /// measurements from the takeoff: MuPDF throws when asked for their intent.
+    @MainActor
+    @Test func measurementsBesideOtherAnnotationsAreInTheTakeoff() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        let vm = fixture.vm
+        vm.addInkAnnotation(pageIndex: 0, points: [CGPoint(x: 100, y: 550), CGPoint(x: 200, y: 600), CGPoint(x: 300, y: 560)], strokeWidth: 2.5, color: .yellow)
+        _ = try #require(addLength(to: vm))
+        _ = vm.addNoteAnnotation(pageIndex: 0, at: CGPoint(x: 400, y: 100))
+        let square = [CGPoint(x: 100, y: 300), CGPoint(x: 300, y: 300), CGPoint(x: 300, y: 500)]
+        let (value, text) = vm.measured(.measureArea, points: square, pageIndex: 0)
+        _ = try #require(vm.addMeasurementAnnotation(pageIndex: 0, type: .measureArea, points: square, value: value, formattedText: text))
+        #expect(vm.takeoffEntries().map(\.annotation.type) == [.measureLength, .measureArea])
+    }
 }
