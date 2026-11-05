@@ -27,6 +27,17 @@ import MuPDFBridge
 final class SearchResource: @unchecked Sendable {
     let ctx: FZContext
     let doc: FZDocument
+    /// The layer states last given to `doc`; empty for the document's own.
+    private var layerStates: [Int32] = []
+
+    /// Shows and hides layers to match the document on screen, so text in hidden layers isn't
+    /// found. Only while no search is using this worker.
+    func applyLayerStates(_ states: [Int32]) {
+        guard states != layerStates, !states.isEmpty else { return }
+        if mupdf_pdf_set_layer_states(ctx, doc, states, Int32(states.count)) == 0 {
+            layerStates = states
+        }
+    }
 
     init(filePath: String, password: String?) throws {
         guard let ctx = mupdf_context_create_independent(16 * 1024 * 1024) else {
@@ -80,6 +91,8 @@ final class SearchWorkerPool: Sendable {
     let password: String?
     let capacity: Int
     private let state: Mutex<(idle: [SearchResource], closed: Bool)>
+    /// The layer states workers are given as they're checked out; empty for the document's own.
+    private let layerStates = Mutex<[Int32]>([])
 
     init(first: SearchResource, filePath: String, password: String?, capacity: Int) {
         self.filePath = filePath
@@ -90,12 +103,17 @@ final class SearchWorkerPool: Sendable {
 
     var isClosed: Bool { state.withLock { $0.closed } }
 
+    /// Shows and hides layers in every worker from the next search on.
+    func setLayerStates(_ states: [Int32]) {
+        layerStates.withLock { $0 = states }
+    }
+
     /// An idle worker, or a new one; nil once closed or if the document can't be opened again.
     func checkOut() -> SearchResource? {
-        let (worker, closed) = state.withLock { state in (state.idle.popLast(), state.closed) }
-        if let worker { return worker }
-        guard !closed else { return nil }
-        return try? SearchResource(filePath: filePath, password: password)
+        let (idle, closed) = state.withLock { state in (state.idle.popLast(), state.closed) }
+        let worker = idle ?? (closed ? nil : try? SearchResource(filePath: filePath, password: password))
+        worker?.applyLayerStates(layerStates.withLock { $0 })
+        return worker
     }
 
     func checkIn(_ worker: SearchResource) {
@@ -154,6 +172,12 @@ public actor PDFSearchActor {
         self.workerCount = max(1, workerCount)
     }
     
+    /// Shows and hides layers as `states` says (from `PDFDocumentCore.layerStates`), so searches
+    /// from now on don't find text in hidden layers. A newly opened document starts with its own.
+    public func setLayerStates(_ states: [Int32]) {
+        pool?.setLayerStates(states)
+    }
+
     public func openDocument(filePath: String, password: String? = nil) throws {
         // Keep existing document open until replacement is opened and authenticated. The other
         // workers open their copies when a search first needs them.

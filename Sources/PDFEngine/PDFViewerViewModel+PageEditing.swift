@@ -42,6 +42,11 @@ extension PDFViewerViewModel {
         } catch {
             print("Failed to reopen search actor on \(path): \(error)")
         }
+        // The copies just opened show the file's own layers, not the ones chosen here.
+        if let states = document?.layerStates(), !states.isEmpty {
+            await renderActor.setLayerStates(states)
+            await searchActor.setLayerStates(states)
+        }
         // Refresh active search on updated content.
         if searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             isSearching = false

@@ -749,6 +749,12 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(2)
                             .help("Anchors")
+                        if !viewModel.layers.isEmpty {
+                            Image(systemName: "square.3.layers.3d")
+                                .imageScale(.medium)
+                                .tag(5)
+                                .help("Layers")
+                        }
                         if viewModel.hasAnnotationThreads {
                             Image(systemName: "text.bubble")
                                 .imageScale(.medium)
@@ -769,7 +775,8 @@ public struct PDFViewerMainView: View {
                         "Outline & Thumbnails",
                         "Search Document (Cmd+F)",
                         "Anchors"
-                    ] + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
+                    ] + (viewModel.layers.isEmpty ? [] : ["Layers"])
+                      + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
                       + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
                         if newValue == 3 {
@@ -785,6 +792,12 @@ public struct PDFViewerMainView: View {
                     .onChange(of: viewModel.hasAnnotationThreads) { _, stillShown in
                         // The last annotation was deleted, or another document opened.
                         if !stillShown && selectedSidebarTab == 4 {
+                            selectedSidebarTab = 0
+                        }
+                    }
+                    .onChange(of: viewModel.layers.isEmpty) { _, noLayers in
+                        // Another document opened, without layers.
+                        if noLayers && selectedSidebarTab == 5 {
                             selectedSidebarTab = 0
                         }
                     }
@@ -1175,6 +1188,8 @@ public struct PDFViewerMainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onAppear { groupAnchors.refresh() }
+                } else if selectedSidebarTab == 5 {
+                    LayersSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 4 {
                     AnnotationsSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 3 {

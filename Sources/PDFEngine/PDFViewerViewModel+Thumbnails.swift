@@ -27,6 +27,7 @@ extension PDFViewerViewModel {
     public func requestThumbnail(for pageIndex: Int) {
         guard thumbnailImages[pageIndex] == nil, !thumbnailsLoading.contains(pageIndex), let doc = document, pageIndex >= 0, pageIndex < doc.pageCount else { return }
         thumbnailsLoading.insert(pageIndex)
+        let startLayers = layerGeneration
         Task { [weak self] in
             guard let self = self else { return }
             do {
@@ -34,8 +35,14 @@ extension PDFViewerViewModel {
                 let cgImg = rendered.image
                 let nsImg = NSImage(cgImage: cgImg, size: NSSize(width: CGFloat(cgImg.width), height: CGFloat(cgImg.height)))
                 await MainActor.run {
-                    self.thumbnailImages[pageIndex] = nsImg
                     self.thumbnailsLoading.remove(pageIndex)
+                    if self.layerGeneration == startLayers {
+                        self.thumbnailImages[pageIndex] = nsImg
+                    } else {
+                        // Drawn before layers were shown or hidden; its placeholder has
+                        // already asked, so ask again.
+                        self.requestThumbnail(for: pageIndex)
+                    }
                 }
             } catch {
                 await MainActor.run {

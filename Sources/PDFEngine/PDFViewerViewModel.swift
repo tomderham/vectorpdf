@@ -309,6 +309,10 @@ public final class PDFViewerViewModel: ObservableObject {
     /// Whether the last read found any annotations; kept while the document is read again, so
     /// the Comments tab doesn't disappear meanwhile.
     @Published public private(set) var hasAnnotationThreads = false
+    /// The document's layers, for the Layers sidebar, which only shows its tab when there are some.
+    @Published public internal(set) var layers: [PDFLayer] = []
+    /// Bumped when layers are shown or hidden, so pictures drawn before that are thrown away.
+    var layerGeneration = 0
     var annotationThreadsTask: Task<Void, Never>?
     /// The annotation the Comments sidebar last asked to scroll to.
     @Published public internal(set) var annotationReveal: AnnotationReveal?
@@ -686,6 +690,8 @@ public final class PDFViewerViewModel: ObservableObject {
             pagesAwaitingRenderActor.removeAll()
             pagesCurrentlyRendering.removeAll()
             self.document = doc
+            self.layers = doc.layers()
+            self.layerGeneration += 1
             self.currentDocumentPassword = password
             let fileURL = URL(fileURLWithPath: actualPath)
             let fileName = fileURL.lastPathComponent
@@ -873,6 +879,7 @@ public final class PDFViewerViewModel: ObservableObject {
         // rendered for, not whatever is current by the time it comes back.
         let startDocument = document
         let startZoom = effectiveZoom
+        let startLayers = layerGeneration
         var isStale = false
         do {
             let window = currentWindow ?? NSApplication.shared.keyWindow
@@ -884,7 +891,7 @@ public final class PDFViewerViewModel: ObservableObject {
             // averaging preserves high-contrast, razor-sharp glyph outlines.
             let renderScale = max(targetScale, 1.5)
             let rendered = try await renderActor.renderPage(pageIndex: pageIndex, scale: renderScale)
-            if document === startDocument, effectiveZoom == startZoom {
+            if document === startDocument, effectiveZoom == startZoom, layerGeneration == startLayers {
                 // Sized from the page's native bounds, not from the bitmap: the actor may have
                 // clamped the render scale (see PDFRenderActor.maxRenderDimension), which would
                 // otherwise shrink the image's point size at high zoom.

@@ -968,6 +968,89 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
+    // MARK: - Layers
+
+    /// The layers to list, as the document lists them, or each layer in turn when it gives no
+    /// list. Empty when it has no layers.
+    public func layers() -> [PDFLayer] {
+        guard isPDF else { return [] }
+        lock.lock()
+        defer { lock.unlock() }
+        let layerCount = Int(mupdf_pdf_count_layers(ctx, doc))
+        guard layerCount > 0 else { return [] }
+        var text = [CChar](repeating: 0, count: 512)
+        func string() -> String {
+            let bytes = text.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            return String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let entryCount = Int(mupdf_pdf_count_layer_ui(ctx, doc))
+        if entryCount > 0 {
+            return (0..<entryCount).compactMap { index in
+                var entry = mupdf_layer_ui_entry()
+                guard mupdf_pdf_layer_ui_entry(ctx, doc, Int32(index), &entry, &text, Int32(text.count)) == 0 else { return nil }
+                let kind: PDFLayer.Kind = entry.type == 2 ? .radio : entry.type == 1 ? .checkbox : .heading
+                return PDFLayer(id: index, name: string(), depth: Int(entry.depth), kind: kind,
+                                isVisible: entry.selected != 0, isLocked: entry.locked != 0)
+            }
+        }
+        var states = [Int32](repeating: 1, count: layerCount)
+        _ = mupdf_pdf_get_layer_states(ctx, doc, &states, Int32(layerCount))
+        // In the document's order where it can be found, as other readers list them.
+        let positions = (0..<layerCount).map { Int(mupdf_pdf_layer_at_position(ctx, doc, Int32($0))) }
+        let order = Set(positions).count == layerCount && positions.allSatisfy { $0 >= 0 } ? positions : Array(0..<layerCount)
+        return order.map { index in
+            _ = mupdf_pdf_layer_name(ctx, doc, Int32(index), &text, Int32(text.count))
+            return PDFLayer(id: index, name: string(), depth: 0, kind: .checkbox,
+                            isVisible: states[index] != 0, isLocked: false)
+        }
+    }
+
+    /// Whether each layer is shown, in the document's order, to give the other copies of the file
+    /// that draw it or read its text (see `PDFRenderActor.setLayerStates`).
+    public func layerStates() -> [Int32] {
+        guard isPDF else { return [] }
+        lock.lock()
+        defer { lock.unlock() }
+        let count = Int(mupdf_pdf_count_layers(ctx, doc))
+        guard count > 0 else { return [] }
+        var states = [Int32](repeating: 1, count: count)
+        guard mupdf_pdf_get_layer_states(ctx, doc, &states, Int32(count)) == 0 else { return [] }
+        return states
+    }
+
+    /// Shows or hides the layer `layers()` listed with this id. Only this copy of the file changes,
+    /// and nothing is saved.
+    public func toggleLayer(id: Int) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        if mupdf_pdf_count_layer_ui(ctx, doc) > 0 {
+            var errorMsg: UnsafePointer<CChar>?
+            guard mupdf_pdf_toggle_layer_ui(ctx, doc, Int32(id), &errorMsg) == 0 else {
+                throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to change layer")
+            }
+            return
+        }
+        let count = Int(mupdf_pdf_count_layers(ctx, doc))
+        guard id >= 0, id < count else { throw PDFError.operationFailed("No such layer") }
+        var states = [Int32](repeating: 1, count: count)
+        guard mupdf_pdf_get_layer_states(ctx, doc, &states, Int32(count)) == 0 else {
+            throw PDFError.operationFailed("Failed to read layers")
+        }
+        states[id] = states[id] == 0 ? 1 : 0
+        guard mupdf_pdf_set_layer_states(ctx, doc, states, Int32(count)) == 0 else {
+            throw PDFError.operationFailed("Failed to change layer")
+        }
+    }
+
+    /// Shows and hides layers as `states` says (from another copy's `layerStates`).
+    public func setLayerStates(_ states: [Int32]) {
+        guard isPDF, !states.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        _ = mupdf_pdf_set_layer_states(ctx, doc, states, Int32(states.count))
+    }
+
     /// The drawing scale stored on pageIndex, if any.
     public func loadPageScale(pageIndex: Int) -> PDFScaleConfiguration? {
         guard isPDF, pageIndex >= 0, pageIndex < pageCount else { return nil }

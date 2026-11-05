@@ -4947,3 +4947,137 @@ int mupdf_apply_color_appearance(fz_context *ctx, unsigned char *samples, int wi
     }
     return 0;
 }
+
+// Layers (Optional Content Groups)
+
+int mupdf_pdf_count_layers(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    int count = 0;
+    fz_var(count);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc) count = pdf_count_layers(ctx, pdoc);
+    } fz_catch(ctx) {
+        count = 0;
+    }
+    return count;
+}
+
+int mupdf_pdf_get_layer_states(fz_context *ctx, fz_document *doc, int *out_states, int count) {
+    if (!ctx || !doc || (!out_states && count > 0)) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc || pdf_count_layers(ctx, pdoc) != count)
+            fz_throw(ctx, FZ_ERROR_ARGUMENT, "layer count mismatch");
+        for (int i = 0; i < count; i++)
+            out_states[i] = pdf_layer_is_enabled(ctx, pdoc, i) ? 1 : 0;
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_set_layer_states(fz_context *ctx, fz_document *doc, const int *states, int count) {
+    if (!ctx || !doc || (!states && count > 0)) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc || pdf_count_layers(ctx, pdoc) != count)
+            fz_throw(ctx, FZ_ERROR_ARGUMENT, "layer count mismatch");
+        for (int i = 0; i < count; i++)
+            pdf_enable_layer(ctx, pdoc, i, states[i] != 0);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_layer_name(fz_context *ctx, fz_document *doc, int layer, char *buf, int size) {
+    if (!ctx || !doc || !buf || size <= 0) return -1;
+    buf[0] = 0;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "not a PDF");
+        const char *name = pdf_layer_name(ctx, pdoc, layer);
+        if (name) fz_strlcpy(buf, name, size);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return 0;
+}
+
+/* MuPDF numbers layers in descending order of object number (ocgcmp in pdf-layer.c), so the
+ * layer at a position in /OCGs is numbered by how many layers have higher object numbers.
+ * LayerTests checks this still holds. */
+int mupdf_pdf_layer_at_position(fz_context *ctx, fz_document *doc, int position) {
+    if (!ctx || !doc || position < 0) return -1;
+    int layer = -1;
+    fz_var(layer);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc) {
+            pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+            pdf_obj *ocgs = pdf_dict_getp(ctx, root, "OCProperties/OCGs");
+            int len = pdf_array_len(ctx, ocgs);
+            if (position < len && len == pdf_count_layers(ctx, pdoc)) {
+                int num = pdf_to_num(ctx, pdf_array_get(ctx, ocgs, position));
+                int higher = 0, same = 0;
+                for (int i = 0; i < len; i++) {
+                    int other = pdf_to_num(ctx, pdf_array_get(ctx, ocgs, i));
+                    if (other > num) higher++;
+                    else if (other == num) same++;
+                }
+                /* A layer listed twice can't be told apart from its copy. */
+                if (num > 0 && same == 1) layer = higher;
+            }
+        }
+    } fz_catch(ctx) {
+        layer = -1;
+    }
+    return layer;
+}
+
+int mupdf_pdf_count_layer_ui(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    int count = 0;
+    fz_var(count);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc && pdf_count_layers(ctx, pdoc) > 0) count = pdf_count_layer_config_ui(ctx, pdoc);
+    } fz_catch(ctx) {
+        count = 0;
+    }
+    return count;
+}
+
+int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size) {
+    if (!ctx || !doc || !out) return -1;
+    memset(out, 0, sizeof *out);
+    if (text_buf && text_size > 0) text_buf[0] = 0;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "not a PDF");
+        pdf_layer_config_ui info;
+        pdf_layer_config_ui_info(ctx, pdoc, index, &info);
+        out->depth = info.depth;
+        out->type = (int)info.type;
+        out->selected = info.selected;
+        out->locked = info.locked;
+        if (text_buf && text_size > 0 && info.text) fz_strlcpy(text_buf, info.text, text_size);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_toggle_layer_ui(fz_context *ctx, fz_document *doc, int index, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "not a PDF");
+        pdf_toggle_layer_config_ui(ctx, pdoc, index);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}

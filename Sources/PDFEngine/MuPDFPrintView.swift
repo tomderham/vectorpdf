@@ -107,7 +107,9 @@ public final class MuPDFPrintView: NSView {
         didSet { needsDisplay = true }
     }
     
-    public init(filePath: String, password: String?, pageCount: Int, printInfo: NSPrintInfo? = nil) throws {
+    /// `layerStates` (from `PDFDocumentCore.layerStates`) prints the layers shown on screen rather
+    /// than the file's own choice.
+    public init(filePath: String, password: String?, pageCount: Int, printInfo: NSPrintInfo? = nil, layerStates: [Int32] = []) throws {
         let ctx = PDFContextManager.shared.makeClonedContext()
         var docPtr: FZDocument?
         var errorMsg: UnsafePointer<CChar>?
@@ -135,6 +137,9 @@ public final class MuPDFPrintView: NSView {
             }
         }
         
+        if !layerStates.isEmpty {
+            _ = mupdf_pdf_set_layer_states(ctx, d, layerStates, Int32(layerStates.count))
+        }
         self.resource = PrintResource(ctx: ctx, doc: d)
         self.pageCount = pageCount
         let resolvedInfo = printInfo ?? (NSPrintInfo.shared.copy() as? NSPrintInfo ?? NSPrintInfo())

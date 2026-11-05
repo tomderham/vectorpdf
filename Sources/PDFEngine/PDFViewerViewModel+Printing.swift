@@ -63,7 +63,7 @@ extension PDFViewerViewModel {
 
         let printView: MuPDFPrintView
         do {
-            printView = try MuPDFPrintView(filePath: printURL.path, password: currentDocumentPassword, pageCount: doc.pageCount, printInfo: printInfo)
+            printView = try MuPDFPrintView(filePath: printURL.path, password: currentDocumentPassword, pageCount: doc.pageCount, printInfo: printInfo, layerStates: doc.layerStates())
         } catch {
             if let temp = temporaryFileURL {
                 try? FileManager.default.removeItem(at: temp)

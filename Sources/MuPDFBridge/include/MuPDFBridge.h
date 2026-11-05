@@ -270,6 +270,33 @@ typedef struct mupdf_page_labels mupdf_page_labels;
 mupdf_page_labels *mupdf_pdf_take_page_labels(fz_context *ctx, fz_document *doc);
 int mupdf_pdf_restore_page_labels(fz_context *ctx, fz_document *doc, mupdf_page_labels *labels, const int *page_map, int count, const char **out_error);
 
+// Layers (Optional Content Groups)
+// Layer visibility belongs to each opened document, not the file, so every copy that draws or
+// reads text has to be told the same states. Nothing here changes what's saved.
+// The number of layers; 0 for a document without any, or one that isn't a PDF.
+int mupdf_pdf_count_layers(fz_context *ctx, fz_document *doc);
+// Each layer's state (1 shown, 0 hidden), `count` of them, as counted above.
+int mupdf_pdf_get_layer_states(fz_context *ctx, fz_document *doc, int *out_states, int count);
+int mupdf_pdf_set_layer_states(fz_context *ctx, fz_document *doc, const int *states, int count);
+// The layer's own name, copied into `buf`.
+int mupdf_pdf_layer_name(fz_context *ctx, fz_document *doc, int layer, char *buf, int size);
+// The layer (as numbered above) that's `position`th in the document's own list of them (its
+// /OCGs), which isn't the order above; -1 if there's none.
+int mupdf_pdf_layer_at_position(fz_context *ctx, fz_document *doc, int position);
+// The document's own list of layers to show people (its /Order), with headings, nesting and
+// groups of which only one can be shown. 0 entries when it has none: list the layers instead.
+int mupdf_pdf_count_layer_ui(fz_context *ctx, fz_document *doc);
+typedef struct {
+    int depth;
+    int type;       // 0 heading, 1 checkbox, 2 one of a group (radio)
+    int selected;
+    int locked;
+} mupdf_layer_ui_entry;
+int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size);
+// Shows or hides an entry, hiding the rest of its group when it's one of one, and doing nothing
+// to a locked entry or a heading.
+int mupdf_pdf_toggle_layer_ui(fz_context *ctx, fz_document *doc, int index, const char **out_error);
+
 // Store & Memory Management
 // No fz_empty_store wrapper: the store is shared by every cloned context, and emptying it frees
 // items other threads are still using. Shrinking evicts only unused items, so is safe.

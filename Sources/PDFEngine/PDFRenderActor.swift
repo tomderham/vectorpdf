@@ -89,6 +89,15 @@ public actor PDFRenderActor {
         self.currentPath = filePath
     }
     
+    /// Shows and hides the document's layers as `states` says (from
+    /// `PDFDocumentCore.layerStates`), redrawing every page from now on. A newly opened document
+    /// starts with its own default states.
+    public func setLayerStates(_ states: [Int32]) {
+        guard let doc = resource.doc, !states.isEmpty else { return }
+        guard mupdf_pdf_set_layer_states(resource.ctx, doc, states, Int32(states.count)) == 0 else { return }
+        resource.listCache.removeAll(ctx: resource.ctx)
+    }
+
     /// Leaves these annotations, by page and object number, out of pages drawn from now on.
     public func setHiddenAnnotations(_ hidden: [Int: Set<Int>]) {
         let new = hidden.filter { !$0.value.isEmpty }.mapValues { $0.sorted().map(Int32.init) }
