@@ -1,5 +1,5 @@
 <!-- keywords: pannello, pannelli, scheda, schede, finestra, finestre, nuovo pannello, nuova finestra, Dock, finestre figlie, finestre di ancoraggio, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: fbec18618570 -->
+<!-- source: 28be3e93df4e -->
 
 # Pannelli e finestre
 
@@ -10,6 +10,7 @@ VectorPDF usa i pannelli standard delle finestre di macOS.
 - **Nuovo pannello:** premi ⌘T oppure fai clic sul pulsante + nella barra dei pannelli.
 - **Aprire un PDF in un nuovo pannello:** premi ⌥⌘O oppure trascinalo su un documento aperto.
 - **Nuova finestra:** premi ⌘N per una finestra vuota oppure ⌘O per aprire un PDF in una nuova finestra.
+- **Passare da un pannello all'altro:** premi ⇧⌘] per il pannello successivo e ⇧⌘[ per quello precedente (Go > Next Tab e Go > Previous Tab). Funzionano anche ⌃Tab e ⇧⌃Tab.
 
 Per salvare i pannelli aperti come gruppo, fai clic con il tasto destro sul titolo del documento, quindi scegli Save All Open Tabs as a Group. Consulta [Preferiti e gruppi di pannelli](favorites-and-tab-groups.md).
 

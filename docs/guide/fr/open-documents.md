@@ -1,5 +1,5 @@
-<!-- keywords: ouvrir, ouvrir un PDF, ouvrir un fichier, récent, mot de passe, nuage, recharger, faire glisser, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: fc51842f2339 -->
+<!-- keywords: ouvrir, ouvrir un PDF, ouvrir un fichier, PDF, récents, mot de passe, nuage, recharger, glisser, livre numérique, bande dessinée, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
+<!-- source: 076e48886ae4 -->
 
 # Ouvrir des documents
 
@@ -10,6 +10,12 @@
 - **Depuis le Finder :** cliquez avec le bouton droit sur un PDF, puis choisissez Open With > VectorPDF (Ouvrir avec dans un Finder en français). Pour ouvrir tous les PDF dans VectorPDF, sélectionnez un PDF, choisissez File > Get Info dans le Finder (Fichier > Lire les informations en français), modifiez « Open with » (Ouvrir avec), puis cliquez sur Change All (Tout modifier).
 - **Par glissement :** faites glisser un PDF sur l’écran Start pour l’y ouvrir, ou sur un document ouvert pour l’ouvrir dans un nouvel onglet.
 - **Depuis une liste :** choisissez File > Open Recent, ou utilisez le menu [Favorites](favorites-and-tab-groups.md). Dans l’écran Start, cliquez avec le bouton droit sur un document pour l’ouvrir dans un nouvel onglet ou une nouvelle fenêtre.
+
+## Livres numériques, bandes dessinées et documents XPS
+
+VectorPDF ouvre aussi les livres numériques EPUB et FictionBook (FB2), les archives de bandes dessinées CBZ et les documents XPS, de la même manière qu’un PDF. Un livre numérique est mis en pages pour la lecture.
+
+Vous pouvez lire ces documents, suivre leur table des matières, y rechercher, sélectionner et copier leur texte, et ajouter des [ancres](anchors.md). Ils s’ouvrent en lecture seule : VectorPDF ne peut pas les enregistrer, donc l’annotation, la mesure, le caviardage et la modification des pages ne sont pas disponibles, et Save est grisé.
 
 ## PDF protégés par mot de passe
 

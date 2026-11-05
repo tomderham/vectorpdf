@@ -1,5 +1,5 @@
-<!-- keywords: 打开, 打开 PDF, 打开文件, 最近使用, 密码, 云, 云存储, 重新载入, 拖移, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: fc51842f2339 -->
+<!-- keywords: 打开, 打开 PDF, 打开文件, PDF, 最近使用, 密码, 云, 重新载入, 拖移, 电子书, 漫画, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
+<!-- source: 076e48886ae4 -->
 
 # 打开文稿
 
@@ -10,6 +10,12 @@
 - **从访达 (Finder) 打开：** 右键点按 PDF，然后选取 Open With > VectorPDF（“打开方式”）。若要用 VectorPDF 打开所有 PDF，请选择一个 PDF，在访达中选取 File > Get Info（“文件”>“显示简介”），更改“Open with”（“打开方式”），然后点按 Change All（“全部更改”）。
 - **通过拖移打开：** 将 PDF 拖移到 Start 屏幕可在该屏幕上打开，拖移到已打开的文稿上则会在新标签页中打开。
 - **从列表打开：** 选取 File > Open Recent，或者使用 [Favorites](favorites-and-tab-groups.md) 菜单。在 Start 屏幕上，右键点按文稿可在新标签页或新窗口中打开它。
+
+## 电子书、漫画和 XPS 文稿
+
+VectorPDF 还可以用与 PDF 相同的方式打开 EPUB 和 FictionBook (FB2) 电子书、CBZ 漫画归档和 XPS 文稿。电子书会排版成页面以便阅读。
+
+你可以阅读这些文稿、浏览其目录、在其中搜索、选择并拷贝其文本，以及添加[锚点](anchors.md)。它们以只读方式打开：VectorPDF 无法存储它们，因此标记、测量、涂黑和页面编辑均不可用，Save 也会变灰。
 
 ## 受密码保护的 PDF
 

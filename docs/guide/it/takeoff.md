@@ -1,5 +1,5 @@
 <!-- keywords: takeoff, computo, computo metrico, tabella, prospetto, quantità, totali, misurazioni, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: 22c10fad20cb -->
+<!-- source: f92dca5304b3 -->
 
 # Tabella Takeoff
 
@@ -9,5 +9,7 @@ Fai clic su **Takeoff Table** nella [barra degli strumenti Measurement](measure.
 
 - **Copy Table** copia la tabella, pronta per essere incollata in un foglio di calcolo.
 - **Export CSV** la salva come file.
+
+In un documento con [livelli](layers.md), la tabella mostra anche il livello di ogni misura e tralascia le misure sui livelli nascosti, così puoi totalizzare una categoria di lavori alla volta.
 
 I totali sommano le lunghezze (quote e perimetri) e le aree di tutte le pagine. Ogni misurazione usa la scala della sua pagina e i totali vengono mostrati nelle unità della prima misurazione.

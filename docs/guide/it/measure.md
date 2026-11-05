@@ -1,5 +1,5 @@
 <!-- keywords: misurare, misura, misurazione, misurazioni, lunghezza, distanza, quota, perimetro, area, angolo, orto, aggancio, measure, measurement, measurements, length, distance, dimension, perimeter, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # Misurare lunghezze, aree e angoli
 
@@ -23,7 +23,7 @@ Per misurare con precisione, ingrandisci prima la vista. Premendo Escape annulli
 
 ## Modificare l'aspetto delle misurazioni
 
-Prima di misurare, usa la tavolozza dei colori e lo spessore della linea nella barra degli strumenti Measurement.
+Usa il pulsante del colore e lo spessore della linea nella barra degli strumenti Measurement prima di misurare.
 
 ## Conservare o rimuovere le misurazioni
 

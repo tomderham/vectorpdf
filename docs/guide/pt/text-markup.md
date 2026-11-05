@@ -1,5 +1,5 @@
 <!-- keywords: realçar, realce, realces, sublinhar, sublinhado, tachar, tachado, marcação, marcar, anotar, anotação, anotações, cor, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: f17f6bdcda7d -->
+<!-- source: 7a7e383d477e -->
 
 # Realçar, sublinhar e tachar
 
@@ -17,13 +17,13 @@ Você também pode usar os botões da barra de ferramentas Markup, ou clicar na 
 
 ## Escolher uma cor
 
-A barra de ferramentas Markup (⇧⌘A) tem uma paleta de cores. Os atalhos e os botões da barra usam a cor selecionada ali. Para escolher uma cor para uma marcação específica, use a lista de cores no menu do botão direito ou abaixo do item no menu Edit.
+A barra de ferramentas Markup (⇧⌘A) tem um botão de cor. Clique nele e, depois, em uma cor. Os atalhos e os botões da barra usam a cor selecionada ali. Para escolher uma cor para uma única marcação, use a lista de cores do menu de contexto ou a que fica abaixo do item no menu Edit.
 
 ## Remover uma marcação
 
-Clique no texto marcado com o botão direito e escolha Remove Highlight, Remove Underline ou Remove Strikethrough. Ou escolha a Eraser na barra de ferramentas Markup e clique nas marcações que deseja remover ou arraste sobre elas.
+Para desfazer uma marcação que você acabou de fazer, escolha Edit > Undo ou pressione ⌘Z.
 
-> **Nota:** O VectorPDF não tem um comando Undo para marcações. Remova a marcação indesejada, ou feche o documento sem salvar para descartar todas as alterações desde a última vez que salvou.
+Clique com o botão direito no texto marcado e escolha Remove Highlight, Remove Underline ou Remove Strikethrough. Ou escolha a borracha na barra de ferramentas Markup e clique ou arraste sobre as marcações que deseja remover. ⌘Z traz de volta uma marcação removida por engano.
 
 ## Resumir suas marcações
 

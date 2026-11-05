@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 2b458fccb693 -->
+<!-- source: 78808c2435ea -->
 
 # 右键菜单
 
@@ -15,12 +15,16 @@
 | 高亮、下划线或删除线 | Comments…，以及相应的 Remove 命令 |
 | 文本框 | Comments…、Edit Text Box，以及删除命令 |
 | 标注框 | Comments…、Edit Callout Note、Line Ending，以及删除命令 |
-| 便笺或修订云线的轮廓 | Comments…，以及删除命令 |
+| 便笺，或矩形、椭圆或修订云的轮廓 | Comments… 和删除命令 |
+| 线条或箭头 | Comments…、Line Ending 和删除命令 |
 | 绘图、图章或测量结果 | Comments…，以及删除命令 |
-| 之前存储在文稿中或在其他应用中创建的注释 | Comments…，以及页面上其他位置的命令 |
+| 之前存储在文稿中或在其他 App 中创建的形状、云形、线条、便笺、图章或文本框 | Comments…、线条的 Line Ending，以及删除命令 |
+| 之前存储在文稿中或在其他 App 中创建的高亮、绘图或测量 | Comments…，以及页面上其他位置的命令 |
 | 页面上的其他任何位置 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 如果你右键点按纯文本引用，并且相关文稿已在其他标签页中打开，菜单还会提供[前往或查找该引用](cross-document-references.md)的命令。
+
+在带有[图层](layers.md)的文稿中，注释的菜单还包含 **Layer**，可将其移到另一个图层或不放在任何图层上。
 
 ## 在边栏中
 
@@ -30,6 +34,8 @@
 | 缩略图 | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。选择多个页面时，命令会显示页数，例如 Delete 3 Pages。请参阅[重新排列页面](pages.md)。 |
 | 搜索结果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 锚点 | Open in New Window 或 Close Window、Copy Text、Copy Screenshot、Delete Anchor |
+| Comments 标签页中的注释 | Show on Page、Comments…、Delete |
+| Layers 标签页中的图层 | Put New Annotations Here 或 Stop Putting New Annotations Here。请参阅[显示和隐藏图层](layers.md)。 |
 
 ## 在窗口中
 

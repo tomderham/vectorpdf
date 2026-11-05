@@ -1,5 +1,5 @@
 <!-- keywords: タブ, ウインドウ, 新規タブ, 新規ウインドウ, 子ウインドウ, アンカーウインドウ, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: fbec18618570 -->
+<!-- source: 28be3e93df4e -->
 
 # タブとウインドウ
 
@@ -10,6 +10,7 @@ VectorPDF は、macOS 標準のウインドウタブを使用します。
 - **新しいタブ:** ⌘T を押すか、タブバーの + ボタンをクリックします。
 - **PDF を新しいタブで開く:** ⌥⌘O を押すか、PDF を開いている書類にドラッグします。
 - **新しいウインドウ:** ⌘N を押すと空のウインドウが開き、⌘O を押すと PDF を新しいウインドウで開きます。
+- **タブを切り替える:** 次のタブに移るには ⇧⌘]、前のタブに移るには ⇧⌘[ を押します (Go > Next Tab と Go > Previous Tab)。⌃Tab と ⇧⌃Tab も使えます。
 
 開いているタブをグループとして保存するには、書類のタイトルを右クリックして、Save All Open Tabs as a Group を選択します。[お気に入りとタブグループ](favorites-and-tab-groups.md)を参照してください。
 

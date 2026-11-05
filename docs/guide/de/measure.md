@@ -1,5 +1,5 @@
 <!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # Längen, Flächen und Winkel messen
 
@@ -23,7 +23,7 @@ Zoome für mehr Genauigkeit in die Zeichnung, bevor du misst. Mit der Escape-Tas
 
 ## Das Aussehen von Messungen ändern
 
-Verwende vor dem Messen die Farbpalette und die Linienstärke in der Symbolleiste „Measurement“.
+Verwende vor dem Messen die Farbtaste und die Linienstärke in der Symbolleiste „Measurement“.
 
 ## Messungen behalten oder entfernen
 

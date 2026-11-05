@@ -1,5 +1,5 @@
 <!-- keywords: finestra, barra degli strumenti, barre degli strumenti, barra laterale, pannelli, schermata Start, interfaccia, indicatore di pagina, controlli, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 895982d2c19d -->
+<!-- source: 3312cb946cc7 -->
 
 # La finestra di VectorPDF
 
@@ -26,6 +26,8 @@ I pannelli nella parte superiore della barra laterale consentono di passare tra:
 - **Outline & Thumbnails:** l'[indice o una miniatura di ogni pagina](outline-and-thumbnails.md).
 - **Search:** i [risultati per il documento corrente](search.md).
 - **Anchors:** [i punti che hai salvato](anchors.md).
+- **Layers:** [mostrare o nascondere i livelli del documento](layers.md). Questo pannello compare solo quando il documento ha livelli.
+- **Comments:** [tutte le annotazioni, con le risposte e lo stato](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [l'Agent](agent.md). Questo pannello compare su macOS 26 o versioni successive, a meno che tu non abbia disattivato [Use Agent](settings.md) in Settings.
 
 Usa il pulsante della barra laterale nella barra degli strumenti per mostrare o nascondere la barra laterale.

@@ -1,5 +1,5 @@
 <!-- keywords: mesurer, mesure, mesures, longueur, cote, périmètre, surface, aire, orthogonal, magnétisme, accrochage, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # Mesurer des longueurs, des surfaces et des angles
 
@@ -23,7 +23,7 @@ Pour plus de précision, zoomez avant de mesurer. Appuyez sur Escape pour annule
 
 ## Modifier l’apparence des mesures
 
-Utilisez la palette de couleurs et l’épaisseur de trait de la barre d’outils Measurement avant de mesurer.
+Utilisez le bouton de couleur et l’épaisseur de trait de la barre d’outils Measurement avant de mesurer.
 
 ## Conserver ou supprimer des mesures
 

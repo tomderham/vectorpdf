@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # Tastaturkurzbefehle
 
@@ -37,6 +37,8 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | First Page | ⌘Up Arrow oder ⌘Home |
 | Last Page | ⌘Down Arrow oder ⌘End |
 | Durch die Seite vor- oder zurückblättern | Space oder ⇧Space |
+| Next Tab | ⇧⌘] oder ⌃Tab |
+| Previous Tab | ⇧⌘[ oder ⇧⌃Tab |
 
 ## Darstellung
 
@@ -75,15 +77,18 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Ein Wort auswählen | Doppelklicken |
 | Eine Zeile auswählen | Dreimal klicken |
 | Einen Bereich auswählen | Bei gedrückter ⌥-Taste ziehen |
+| Kommentare einer Anmerkung öffnen | Doppelklicken, außer bei einem Textfeld oder einer Legende |
 | Zoomen | Zwei Finger zusammen- oder auseinanderziehen |
 
 ## Anmerkungen und Messungen
 
 | Aktion | Kurzbefehl | Rechtsklick |
 | --- | --- | --- |
+| Änderung an einer Anmerkung widerrufen oder wiederholen | ⌘Z oder ⇧⌘Z | |
 | Ausgewähltes Textfeld oder ausgewählte Legende bearbeiten | Return | Die Anmerkung |
 | Ausgewählte Anmerkung löschen | Delete | Die Anmerkung |
 | Ausgewählte Anmerkung bewegen | Arrow keys oder ⇧Arrow keys für 10 Punkt | |
 | Umfang oder Fläche abschließen | Return | |
 | Messung auf 0°, 45° oder 90° beschränken | ⇧ gedrückt halten | |
+| Quadrat oder Kreis zeichnen oder eine Linie in einem Vielfachen von 45° | Beim Ziehen mit dem Werkzeug „Shapes“ ⇧ gedrückt halten | |
 | Abbrechen oder aktuelles Werkzeug verlassen | Escape | |

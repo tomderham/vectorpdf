@@ -1,5 +1,5 @@
 <!-- keywords: resaltar, resaltado, resaltados, subrayar, subrayado, tachar, tachado, marcar, anotar, anotación, anotaciones, color, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, PDF -->
-<!-- source: f17f6bdcda7d -->
+<!-- source: 7a7e383d477e -->
 
 # Resaltar, subrayar y tachar
 
@@ -17,13 +17,13 @@ También puedes usar los botones de la barra de herramientas Markup, o hacer cli
 
 ## Elegir un color
 
-La barra de herramientas Markup (⇧⌘A) tiene una paleta de colores. Los atajos y los botones de la barra de herramientas usan el color seleccionado allí. Para elegir un color para una sola marca, usa la lista de colores del menú de clic derecho, o la que hay bajo el elemento en el menú Edit.
+La barra de herramientas Markup (⇧⌘A) tiene un botón de color. Haz clic en él y luego en un color. Los atajos y los botones de la barra usan el color seleccionado allí. Para elegir un color para un solo marcado, usa la lista de colores del menú contextual o la que aparece bajo el elemento en el menú Edit.
 
 ## Quitar una marca
 
-Haz clic con el botón derecho en el texto marcado y elige Remove Highlight, Remove Underline o Remove Strikethrough. O bien elige Eraser en la barra de herramientas Markup, y haz clic o arrastra sobre las marcas que quieres quitar.
+Para deshacer un marcado que acabas de hacer, elige Edit > Undo o pulsa ⌘Z.
 
-> **Nota:** VectorPDF no tiene un comando Undo para las marcas. Quita la marca que no quieras, o cierra el documento sin guardar para descartar todos los cambios desde la última vez que guardaste.
+Haz clic con el botón derecho en el texto marcado y elige Remove Highlight, Remove Underline o Remove Strikethrough. O elige el borrador en la barra de herramientas Markup y haz clic o arrastra sobre los marcados que quieras quitar. ⌘Z recupera un marcado que quitaste por error.
 
 ## Resumir las marcas
 

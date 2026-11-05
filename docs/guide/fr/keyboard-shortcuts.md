@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # Raccourcis clavier
 
@@ -37,6 +37,8 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | First Page | ⌘Up Arrow ou ⌘Home |
 | Last Page | ⌘Down Arrow ou ⌘End |
 | Avancer ou reculer dans la page | Space ou ⇧Space |
+| Next Tab | ⇧⌘] ou ⌃Tab |
+| Previous Tab | ⇧⌘[ ou ⇧⌃Tab |
 
 ## Présentation
 
@@ -75,15 +77,18 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Sélectionner un mot | Double-clic |
 | Sélectionner une ligne | Triple-clic |
 | Sélectionner une zone | ⌥-glisser |
+| Ouvrir les commentaires d’une annotation | Double-cliquer dessus, sauf sur une zone de texte ou une bulle |
 | Zoomer | Pincer |
 
 ## Annotations et mesures
 
 | Action | Raccourci | Clic droit |
 | --- | --- | --- |
+| Annuler ou rétablir une modification d’annotation | ⌘Z ou ⇧⌘Z | |
 | Modifier la zone de texte ou la bulle sélectionnée | Return | L’annotation |
 | Supprimer l’annotation sélectionnée | Delete | L’annotation |
 | Déplacer l’annotation sélectionnée | Touches fléchées, ou ⇧Arrow keys pour 10 points | |
 | Terminer un périmètre ou une surface | Return | |
 | Limiter une mesure à 0°, 45° ou 90° | Maintenir la touche ⇧ enfoncée | |
+| Dessiner un carré ou un cercle, ou une ligne à un multiple de 45° | Maintenir ⇧ en faisant glisser avec l’outil Shapes | |
 | Annuler, ou quitter l’outil actif | Escape | |

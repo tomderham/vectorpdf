@@ -1,5 +1,5 @@
-<!-- keywords: 開く, PDF を開く, ファイルを開く, 最近使った書類, パスワード, クラウド, 再読み込み, ドラッグ, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: fc51842f2339 -->
+<!-- keywords: 開く, PDF を開く, ファイルを開く, PDF, 最近使った項目, パスワード, クラウド, 再読み込み, ドラッグ, 電子書籍, コミック, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
+<!-- source: 076e48886ae4 -->
 
 # 書類を開く
 
@@ -10,6 +10,12 @@
 - **Finder から開く:** PDF を右クリックして、Open With > VectorPDF (「このアプリケーションで開く」> VectorPDF) を選択します。すべての PDF を VectorPDF で開くようにするには、PDF を選択し、Finder で File > Get Info (「ファイル」>「情報を見る」) を選択して、“Open with” (「このアプリケーションで開く」) を変更し、Change All (「すべてを変更」) をクリックします。
 - **ドラッグして開く:** PDF を Start 画面にドラッグするとそこで開き、開いている書類にドラッグすると新しいタブで開きます。
 - **リストから開く:** File > Open Recent を選択するか、[Favorites](favorites-and-tab-groups.md) メニューを使用します。Start 画面では、書類を右クリックして新しいタブやウインドウで開くことができます。
+
+## 電子書籍、コミック、XPS 書類
+
+VectorPDF では、EPUB や FictionBook (FB2) の電子書籍、CBZ のコミックアーカイブ、XPS 書類も、PDF と同じ方法で開けます。電子書籍は読みやすいようにページに組まれます。
+
+これらの書類は、読む、目次をたどる、検索する、テキストを選択してコピーする、[アンカー](anchors.md)を追加する、といった操作ができます。読み取り専用で開くため、VectorPDF では保存できません。マークアップ、計測、墨消し、ページ編集は使用できず、Save は淡色表示になります。
 
 ## パスワードで保護された PDF
 

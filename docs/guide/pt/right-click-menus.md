@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 2b458fccb693 -->
+<!-- source: 78808c2435ea -->
 
 # Menus do botão direito
 
@@ -15,12 +15,16 @@ Clique com o botão direito, ou clique com a tecla Control pressionada, para ver
 | Um realce, sublinhado ou tachado | Comments… e o comando Remove correspondente |
 | Uma caixa de texto | Comments…, Edit Text Box e o comando de apagar |
 | Um texto explicativo | Comments…, Edit Callout Note, Line Ending e o comando de apagar |
-| Uma nota ou o contorno de uma nuvem de revisão | Comments… e o comando de apagar |
+| Uma nota, ou o contorno de um retângulo, oval ou nuvem de revisão | Comments… e o comando de apagar |
+| Uma linha ou seta | Comments…, Line Ending e o comando de apagar |
 | Um desenho, carimbo ou medição | Comments… e o comando de apagar |
-| Uma anotação salva antes no documento ou criada em outro app | Comments… e os comandos de qualquer outro lugar da página |
+| Uma forma, nuvem, linha, nota, carimbo ou caixa de texto salvo antes no documento, ou criado em outro app | Comments…, Line Ending para uma linha, e o comando de apagar |
+| Um realce, desenho ou medição salvo antes no documento, ou criado em outro app | Comments… e os comandos de qualquer outro lugar da página |
 | Qualquer outro lugar da página | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Se você clicar com o botão direito em uma referência em texto simples e houver documentos relacionados abertos em outras abas, o menu também terá comandos para [ir até ela ou encontrá-la](cross-document-references.md).
+
+Em um documento com [camadas](layers.md), o menu de uma anotação também tem **Layer**, para movê-la para outra camada ou para nenhuma.
 
 ## Na barra lateral
 
@@ -30,6 +34,8 @@ Se você clicar com o botão direito em uma referência em texto simples e houve
 | Uma miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Com várias páginas selecionadas, os comandos indicam quantas, como Delete 3 Pages. Consulte [Reorganizar páginas](pages.md). |
 | Um resultado de busca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Uma âncora | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
+| Uma anotação na aba Comments | Show on Page, Comments…, Delete |
+| Uma camada na aba Layers | Put New Annotations Here ou Stop Putting New Annotations Here. Consulte [Mostrar e ocultar camadas](layers.md). |
 
 ## Na janela
 

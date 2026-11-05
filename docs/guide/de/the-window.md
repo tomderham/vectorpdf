@@ -1,5 +1,5 @@
 <!-- keywords: Fenster, Symbolleiste, Symbolleisten, Seitenleiste, Tabs, Start-Bildschirm, Oberfläche, Seitenanzeige, Bedienelemente, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 895982d2c19d -->
+<!-- source: 3312cb946cc7 -->
 
 # Das VectorPDF-Fenster
 
@@ -26,6 +26,8 @@ Mit den Tabs oben in der Seitenleiste wechselst du zwischen:
 - **Outline & Thumbnails:** das [Inhaltsverzeichnis oder eine Miniatur jeder Seite](outline-and-thumbnails.md).
 - **Search:** [Ergebnisse für das aktuelle Dokument](search.md).
 - **Anchors:** [die Stellen, die du gespeichert hast](anchors.md).
+- **Layers:** [die Ebenen des Dokuments ein- oder ausblenden](layers.md). Dieser Tab erscheint nur, wenn das Dokument Ebenen hat.
+- **Comments:** [alle Anmerkungen mit ihren Antworten und ihrem Status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [der Agent](agent.md). Dieser Tab wird unter macOS 26 oder neuer angezeigt, sofern du [Use Agent](settings.md) in Settings nicht deaktiviert hast.
 
 Mit der Seitenleistentaste in der Symbolleiste kannst du die Seitenleiste ein- oder ausblenden.

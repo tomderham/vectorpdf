@@ -1,5 +1,5 @@
 <!-- keywords: 测量, 长度, 距离, 尺寸, 周长, 面积, 角度, 正交, 吸附, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # 测量长度、面积和角度
 
@@ -23,7 +23,7 @@
 
 ## 更改测量结果的外观
 
-在测量前，使用 Measurement 工具栏中的调色板和线宽设置。
+测量之前，请先在 Measurement 工具栏中使用颜色按钮并设置线条粗细。
 
 ## 保留或移除测量结果
 

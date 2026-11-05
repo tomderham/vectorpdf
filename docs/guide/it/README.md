@@ -1,4 +1,4 @@
-<!-- source: 189ab6c26864 -->
+<!-- source: 84875063e37a -->
 
 # Manuale utente di VectorPDF
 
@@ -19,6 +19,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 - [Spostarsi in un documento](move-around.md)
 - [Zoom, rotazione e layout di pagina](zoom-and-layout.md)
 - [Struttura e miniature](outline-and-thumbnails.md)
+- [Mostrare e nascondere i livelli](layers.md)
 - [Cambiare i colori del PDF](pdf-colors.md)
 - [Selezionare, copiare e consultare il testo](select-text.md)
 

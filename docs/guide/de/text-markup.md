@@ -1,5 +1,5 @@
 <!-- keywords: hervorheben, Hervorhebung, Hervorhebungen, unterstreichen, durchstreichen, Durchstreichung, Markierung, markieren, Anmerkung, Anmerkungen, Farbe, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: f17f6bdcda7d -->
+<!-- source: 7a7e383d477e -->
 
 # Hervorheben, unterstreichen und durchstreichen
 
@@ -17,13 +17,13 @@ Du kannst auch die Tasten in der Symbolleiste „Markup“ verwenden, oder du kl
 
 ## Eine Farbe auswählen
 
-Die Symbolleiste „Markup“ (⇧⌘A) enthält eine Farbpalette. Die Kurzbefehle und die Tasten der Symbolleiste verwenden die dort ausgewählte Farbe. Um eine Farbe für eine einzelne Markierung auszuwählen, verwende die Farbliste im Kontextmenü oder unter dem Eintrag im Menü „Edit“.
+Die Symbolleiste „Markup“ (⇧⌘A) hat eine Farbtaste. Klicke darauf und dann auf eine Farbe. Die Kurzbefehle und Tasten der Symbolleiste verwenden die dort ausgewählte Farbe. Um eine Farbe für eine einzelne Markierung zu wählen, verwende die Farbliste im Kontextmenü oder unter dem Eintrag im Menü „Edit“.
 
 ## Eine Markierung entfernen
 
-Klicke mit der rechten Maustaste auf den markierten Text und wähle dann „Remove Highlight“, „Remove Underline“ oder „Remove Strikethrough“. Oder wähle in der Symbolleiste „Markup“ das Werkzeug „Eraser“ und klicke auf die Markierungen, die du entfernen möchtest, oder ziehe darüber.
+Um eine gerade erstellte Markierung zurückzunehmen, wähle Edit > Undo oder drücke ⌘Z.
 
-> **Hinweis:** VectorPDF hat keinen Befehl „Undo“ für Markierungen. Entferne eine unerwünschte Markierung oder schließe das Dokument, ohne zu sichern, um alle Änderungen seit dem letzten Sichern zu verwerfen.
+Klicke mit der rechten Maustaste auf den markierten Text und wähle „Remove Highlight“, „Remove Underline“ oder „Remove Strikethrough“. Oder wähle den Radierer in der Symbolleiste „Markup“ und klicke auf die Markierungen, die du entfernen möchtest, oder ziehe darüber. ⌘Z holt eine versehentlich entfernte Markierung zurück.
 
 ## Deine Markierungen zusammenfassen
 

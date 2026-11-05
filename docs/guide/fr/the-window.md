@@ -1,5 +1,5 @@
 <!-- keywords: fenêtre, barre d’outils, barres d’outils, barre latérale, onglets, écran de démarrage, indicateur de page, commandes, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 895982d2c19d -->
+<!-- source: 3312cb946cc7 -->
 
 # La fenêtre de VectorPDF
 
@@ -26,6 +26,8 @@ Les onglets en haut de la barre latérale permettent de basculer entre :
 - **Outline & Thumbnails :** la [table des matières ou une vignette de chaque page](outline-and-thumbnails.md).
 - **Search :** les [résultats pour le document actif](search.md).
 - **Anchors :** [les endroits que vous avez enregistrés](anchors.md).
+- **Layers :** [afficher ou masquer les calques du document](layers.md). Cet onglet n’apparaît que si le document contient des calques.
+- **Comments :** [toutes les annotations, avec leurs réponses et leur statut](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document :** [l’Agent](agent.md). Cet onglet apparaît sous macOS 26 ou version ultérieure, sauf si vous avez désactivé [Use Agent](settings.md) dans Settings.
 
 Utilisez le bouton de barre latérale dans la barre d’outils pour afficher ou masquer la barre latérale.

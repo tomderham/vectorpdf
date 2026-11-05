@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # Atajos de teclado
 
@@ -37,6 +37,8 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | First Page | ⌘Up Arrow o ⌘Home |
 | Last Page | ⌘Down Arrow o ⌘End |
 | Avanzar o retroceder por la página | Space o ⇧Space |
+| Next Tab | ⇧⌘] o ⌃Tab |
+| Previous Tab | ⇧⌘[ o ⇧⌃Tab |
 
 ## Vista
 
@@ -75,15 +77,18 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | Seleccionar una palabra | Doble clic |
 | Seleccionar una línea | Triple clic |
 | Seleccionar un área | Arrastrar con ⌥ pulsada |
+| Abrir los comentarios de una anotación | Hacer doble clic en ella, salvo en un cuadro de texto o una llamada |
 | Zoom | Pellizcar |
 
 ## Anotaciones y mediciones
 
 | Acción | Atajo | Clic derecho |
 | --- | --- | --- |
+| Deshacer o rehacer un cambio en una anotación | ⌘Z o ⇧⌘Z | |
 | Editar el cuadro de texto o la llamada seleccionados | Return | La anotación |
 | Eliminar la anotación seleccionada | Delete | La anotación |
 | Mover la anotación seleccionada | Teclas de flecha, o ⇧Arrow keys para moverla 10 puntos | |
 | Terminar un perímetro o un área | Return | |
 | Limitar una medición a 0°, 45° o 90° | Mantener pulsada la tecla ⇧ | |
+| Dibujar un cuadrado o círculo, o una línea en un múltiplo de 45° | Mantener pulsada ⇧ al arrastrar con la herramienta Shapes | |
 | Cancelar o salir de la herramienta actual | Escape | |

@@ -8,8 +8,8 @@ The Layers tab appears at the top of the sidebar only when the document has laye
 
 - **Show or hide a layer:** click its checkbox. The page redraws straight away.
 - **Choose one of a group:** some documents group layers so only one shows at a time, such as a sheet's languages or scales. These have round buttons; choosing one hides the others.
-- **Headings** group the layers listed under them. They can't be hidden themselves.
-- **Locked layers** have a lock next to them. The document doesn't let them be shown or hidden.
+- **Headings:** these group the layers listed under them, and can't be hidden themselves.
+- **Locked layers:** these have a lock next to them. The document doesn't let them be shown or hidden.
 
 Layers you hide are also left out when you [print](print.md), [select text](select-text.md) or [search](search.md), so you only work with what you can see.
 

@@ -1,5 +1,5 @@
-<!-- keywords: abrir, abrir PDF, abrir archivo, reciente, contraseña, nube, recargar, arrastrar, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag -->
-<!-- source: fc51842f2339 -->
+<!-- keywords: abrir, abrir PDF, abrir archivo, PDF, recientes, contraseña, nube, recargar, arrastrar, libro electrónico, cómic, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
+<!-- source: 076e48886ae4 -->
 
 # Abrir documentos
 
@@ -10,6 +10,12 @@
 - **Desde el Finder:** haz clic con el botón derecho en un PDF y elige Open With > VectorPDF. Para abrir todos los PDF en VectorPDF, selecciona un PDF, elige File > Get Info en el Finder, cambia “Open with” y haz clic en Change All.
 - **Arrastrando:** arrastra un PDF a la pantalla de inicio para abrirlo ahí, o sobre un documento abierto para abrirlo en una pestaña nueva.
 - **Desde una lista:** elige File > Open Recent o usa el menú [Favorites](favorites-and-tab-groups.md). En la pantalla de inicio, haz clic con el botón derecho en un documento para abrirlo en una pestaña o ventana nueva.
+
+## Libros electrónicos, cómics y documentos XPS
+
+VectorPDF también abre libros electrónicos EPUB y FictionBook (FB2), archivos de cómic CBZ y documentos XPS, de las mismas formas que un PDF. Un libro electrónico se compone en páginas para leerlo.
+
+Puedes leer estos documentos, seguir su índice, buscar en ellos, seleccionar y copiar su texto, y añadir [anclas](anchors.md). Se abren solo para lectura: VectorPDF no puede guardarlos, así que el marcado, la medición, la censura y la edición de páginas no están disponibles, y Save aparece atenuado.
 
 ## PDF protegidos con contraseña
 

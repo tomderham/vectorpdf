@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # 键盘快捷键
 
@@ -37,6 +37,8 @@
 | First Page | ⌘Up Arrow 或 ⌘Home |
 | Last Page | ⌘Down Arrow 或 ⌘End |
 | 在页面中向前或向后移动 | Space 或 ⇧Space |
+| Next Tab | ⇧⌘] 或 ⌃Tab |
+| Previous Tab | ⇧⌘[ 或 ⇧⌃Tab |
 
 ## 视图
 
@@ -75,15 +77,18 @@
 | 选择一个单词 | 连按两下 |
 | 选择一行 | 连按三下 |
 | 选择一个区域 | 按住 ⌥ 拖移 |
+| 打开注释的评论 | 连按两下（文本框和标注框除外） |
 | 缩放 | 双指张开或捏合 |
 
 ## 注释和测量
 
 | 操作 | 快捷键 | 右键点按 |
 | --- | --- | --- |
+| 撤销或重做对注释的更改 | ⌘Z 或 ⇧⌘Z | |
 | 编辑所选文本框或标注框 | Return | 该注释 |
 | 删除所选注释 | Delete | 该注释 |
 | 移动所选注释 | Arrow keys，或使用 ⇧Arrow keys 每次移动 10 点 | |
 | 完成周长或面积测量 | Return | |
 | 将测量限制为 0°、45° 或 90° | 按住 ⇧ | |
+| 绘制正方形或圆形，或角度为 45° 倍数的线条 | 使用 Shapes 工具拖移时按住 ⇧ | |
 | 取消或退出当前工具 | Escape | |

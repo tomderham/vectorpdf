@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 2b458fccb693 -->
+<!-- source: 78808c2435ea -->
 
 # राइट-क्लिक मेनू
 
@@ -15,12 +15,16 @@
 | हाइलाइट, अंडरलाइन या स्ट्राइकथ्रू | Comments…, और उससे मेल खाता Remove कमांड |
 | टेक्स्ट बॉक्स | Comments…, Edit Text Box, और हटाने का कमांड |
 | कॉलआउट | Comments…, Edit Callout Note, Line Ending, और हटाने का कमांड |
-| नोट, या रिविज़न क्लाउड की बाहरी रेखा | Comments…, और हटाने का कमांड |
+| कोई नोट, या किसी आयत, अंडाकार या रिविज़न क्लाउड की रूपरेखा | Comments…, और हटाने का कमांड |
+| कोई रेखा या तीर | Comments…, Line Ending, और हटाने का कमांड |
 | ड्रॉइंग, स्टैम्प या माप | Comments…, और हटाने का कमांड |
-| दस्तावेज़ में पहले सहेजा गया या किसी अन्य ऐप में बनाया गया ऐनोटेशन | Comments…, और पेज पर किसी अन्य जगह के कमांड |
+| पहले दस्तावेज़ में सेव की गई, या किसी दूसरी ऐप में बनाई गई आकृति, क्लाउड, रेखा, नोट, स्टैम्प या टेक्स्ट बॉक्स | Comments…, रेखा के लिए Line Ending, और हटाने का कमांड |
+| पहले दस्तावेज़ में सेव किया गया, या किसी दूसरी ऐप में बनाया गया हाइलाइट, ड्रॉइंग या माप | Comments…, और पेज पर किसी दूसरी जगह के कमांड |
 | पेज पर कहीं और | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 अगर आप सादे टेक्स्ट वाले किसी संदर्भ पर राइट-क्लिक करते हैं और संबंधित दस्तावेज़ दूसरे टैब में खुले हैं, तो मेनू में [उस पर जाने या उसे ढूँढने](cross-document-references.md) के कमांड भी होते हैं।
+
+[लेयर](layers.md) वाले दस्तावेज़ में, किसी ऐनोटेशन के मेनू में **Layer** भी होता है, जिससे उसे किसी दूसरी लेयर पर या किसी भी लेयर से बाहर ले जाया जा सकता है।
 
 ## साइडबार में
 
@@ -30,6 +34,8 @@
 | थंबनेल | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page। कई पेज चुने होने पर कमांड में उनकी संख्या दिखती है, जैसे Delete 3 Pages। [पेजों को फिर से व्यवस्थित करें](pages.md) देखें। |
 | खोज परिणाम | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | ऐंकर | Open in New Window या Close Window, Copy Text, Copy Screenshot, Delete Anchor |
+| Comments टैब में कोई ऐनोटेशन | Show on Page, Comments…, Delete |
+| Layers टैब में कोई लेयर | Put New Annotations Here, या Stop Putting New Annotations Here। देखें [लेयर दिखाएँ और छिपाएँ](layers.md)। |
 
 ## विंडो में
 

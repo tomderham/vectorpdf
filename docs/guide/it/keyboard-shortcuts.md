@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # Abbreviazioni da tastiera
 
@@ -37,6 +37,8 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | First Page | ⌘Up Arrow o ⌘Home |
 | Last Page | ⌘Down Arrow o ⌘End |
 | Avanti o indietro nella pagina | Space o ⇧Space |
+| Next Tab | ⇧⌘] o ⌃Tab |
+| Previous Tab | ⇧⌘[ o ⇧⌃Tab |
 
 ## Vista
 
@@ -75,15 +77,18 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Selezionare una parola | Doppio clic |
 | Selezionare una riga | Triplo clic |
 | Selezionare un'area | Trascina tenendo premuto ⌥ |
+| Aprire i commenti di un'annotazione | Fare doppio clic su di essa, tranne che su una casella di testo o un richiamo |
 | Zoom | Pizzica |
 
 ## Annotazioni e misurazioni
 
 | Azione | Abbreviazione | Clic con il tasto destro |
 | --- | --- | --- |
+| Annullare o ripetere una modifica a un'annotazione | ⌘Z o ⇧⌘Z | |
 | Modificare la casella di testo o il richiamo selezionato | Return | L'annotazione |
 | Eliminare l'annotazione selezionata | Delete | L'annotazione |
 | Spostare l'annotazione selezionata | Tasti freccia, oppure ⇧Arrow keys per 10 punti | |
 | Terminare un perimetro o un'area | Return | |
 | Vincolare una misurazione a 0°, 45° o 90° | Tieni premuto ⇧ | |
+| Disegnare un quadrato o un cerchio, o una linea a un multiplo di 45° | Tenere premuto ⇧ trascinando con lo strumento Shapes | |
 | Annullare o uscire dallo strumento corrente | Escape | |

@@ -1,5 +1,5 @@
 <!-- keywords: विंडो, टूलबार, साइडबार, टैब, स्टार्ट स्क्रीन, इंटरफ़ेस, पेज संकेतक, नियंत्रण, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 895982d2c19d -->
+<!-- source: 3312cb946cc7 -->
 
 # VectorPDF विंडो
 
@@ -26,6 +26,8 @@
 - **Outline & Thumbnails:** [विषय-सूची, या हर पेज का थंबनेल](outline-and-thumbnails.md)।
 - **Search:** [मौजूदा दस्तावेज़ के परिणाम](search.md)।
 - **Anchors:** [आपकी सहेजी हुई जगहें](anchors.md)।
+- **Layers:** [दस्तावेज़ की लेयर दिखाएँ या छिपाएँ](layers.md)। यह टैब केवल तब दिखाई देता है जब दस्तावेज़ में लेयर हों।
+- **Comments:** [हर ऐनोटेशन, उसके जवाबों और स्थिति के साथ](draw-and-notes.md#see-all-annotations)।
 - **Ask About This Document:** [Agent](agent.md)। यह टैब macOS 26 या उसके बाद के संस्करण पर दिखाई देता है, बशर्ते आपने Settings में [Use Agent](settings.md) बंद न किया हो।
 
 साइडबार दिखाने या छिपाने के लिए टूलबार में साइडबार बटन का उपयोग करें।

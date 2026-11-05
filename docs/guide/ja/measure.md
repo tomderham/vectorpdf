@@ -1,5 +1,5 @@
 <!-- keywords: 測定, 計測, 長さ, 距離, 寸法, 周長, 面積, 角度, 直交, スナップ, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # 長さ、面積、角度を測定する
 
@@ -23,7 +23,7 @@
 
 ## 測定値の見た目を変更する
 
-測定の前に、Measurement ツールバーのカラーパレットと線の太さを使用します。
+計測する前に、Measurement ツールバーのカラーボタンと線の太さを設定してください。
 
 ## 測定値を残す、または削除する
 

@@ -1,5 +1,5 @@
 <!-- keywords: 측정, 길이, 거리, 치수, 둘레, 면적, 각도, 직교, 스냅, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # 길이, 면적 및 각도 측정하기
 
@@ -23,7 +23,7 @@
 
 ## 측정 표시 모양 변경하기
 
-측정하기 전에 Measurement 도구 막대의 색상 팔레트와 선 두께를 사용합니다.
+측정하기 전에 Measurement 도구 막대의 색상 버튼과 선 굵기를 사용합니다.
 
 ## 측정 유지 또는 제거하기
 

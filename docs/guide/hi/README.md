@@ -1,4 +1,4 @@
-<!-- source: 189ab6c26864 -->
+<!-- source: 84875063e37a -->
 
 # VectorPDF उपयोगकर्ता गाइड
 
@@ -19,6 +19,7 @@ VectorPDF तकनीकी शोध-पत्रों, विनिर्द
 - [दस्तावेज़ में इधर-उधर जाएँ](move-around.md)
 - [ज़ूम, रोटेट और पेज लेआउट](zoom-and-layout.md)
 - [आउटलाइन और थंबनेल](outline-and-thumbnails.md)
+- [लेयर दिखाएँ और छिपाएँ](layers.md)
 - [PDF के रंग बदलें](pdf-colors.md)
 - [टेक्स्ट चुनें, कॉपी करें और उसका अर्थ देखें](select-text.md)
 

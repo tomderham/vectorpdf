@@ -1,5 +1,5 @@
 <!-- keywords: 탭, 윈도우, 창, 새로운 탭, 새로운 윈도우, Dock, 하위 윈도우, 앵커 윈도우, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: fbec18618570 -->
+<!-- source: 28be3e93df4e -->
 
 # 탭과 윈도우
 
@@ -10,6 +10,7 @@ VectorPDF는 macOS의 표준 윈도우 탭을 사용합니다.
 - **새로운 탭:** ⌘T 키를 누르거나 탭 막대의 + 버튼을 클릭합니다.
 - **새로운 탭에서 PDF 열기:** ⌥⌘O 키를 누르거나 PDF를 열려 있는 문서 위로 드래그합니다.
 - **새로운 윈도우:** ⌘N 키를 누르면 빈 윈도우가 열리고, ⌘O 키를 누르면 새로운 윈도우에서 PDF가 열립니다.
+- **탭 전환하기:** 다음 탭으로 가려면 ⇧⌘], 이전 탭으로 가려면 ⇧⌘[ 키를 누릅니다(Go > Next Tab 및 Go > Previous Tab). ⌃Tab 및 ⇧⌃Tab 키도 사용할 수 있습니다.
 
 열려 있는 탭을 그룹으로 저장하려면 문서 제목을 오른쪽 클릭한 다음 Save All Open Tabs as a Group을 선택합니다. [즐겨찾기와 탭 그룹](favorites-and-tab-groups.md)을 참조하십시오.
 

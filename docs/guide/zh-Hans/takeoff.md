@@ -1,5 +1,5 @@
 <!-- keywords: 工程量, 算量, 表, 明细表, 数量, 合计, 测量结果, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: 22c10fad20cb -->
+<!-- source: f92dca5304b3 -->
 
 # 工程量表
 
@@ -9,5 +9,7 @@
 
 - **Copy Table** 拷贝该表，可直接粘贴到电子表格中。
 - **Export CSV** 将其存储为文件。
+
+在带有[图层](layers.md)的文稿中，表格还会显示每项测量所在的图层，并省略隐藏图层上的测量，因此你可以一次只汇总一个专业。
 
 合计会将所有页面的长度（尺寸和周长）和面积相加。每项测量使用其所在页面的比例，合计以第一项测量的单位显示。

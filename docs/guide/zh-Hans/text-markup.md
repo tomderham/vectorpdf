@@ -1,5 +1,5 @@
 <!-- keywords: 高亮, 高亮显示, 下划线, 删除线, 标记, 注释, 颜色, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: f17f6bdcda7d -->
+<!-- source: 7a7e383d477e -->
 
 # 高亮、下划线和删除线
 
@@ -17,13 +17,13 @@
 
 ## 选取颜色
 
-Markup 工具栏 (⇧⌘A) 中有一个调色板。快捷键和工具栏按钮会使用在其中选定的颜色。若要为单个标记选取颜色，请使用右键菜单中的颜色列表，或者 Edit 菜单中相应项目下的颜色列表。
+Markup 工具栏 (⇧⌘A) 中有一个颜色按钮。点按它，然后点按一种颜色。快捷键和工具栏按钮会使用在其中选定的颜色。若要为单个标记选取颜色，请使用右键菜单中的颜色列表，或者 Edit 菜单中相应项目下的颜色列表。
 
 ## 移除标记
 
-右键点按已标记的文本，然后选取 Remove Highlight、Remove Underline 或 Remove Strikethrough。你也可以选取 Markup 工具栏中的 Eraser，然后点按或拖移划过要移除的标记。
+若要撤销刚刚创建的标记，请选取 Edit > Undo 或按下 ⌘Z。
 
-> **注：** VectorPDF 没有用于标记的 Undo 命令。请移除你不需要的标记，或者关闭文稿且不存储，以放弃上次存储以来的所有更改。
+右键点按标记的文本，然后选取 Remove Highlight、Remove Underline 或 Remove Strikethrough。或者在 Markup 工具栏中选取橡皮擦，然后点按或拖过要移除的标记。⌘Z 可恢复误移除的标记。
 
 ## 汇总标记
 

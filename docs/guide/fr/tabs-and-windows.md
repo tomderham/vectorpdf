@@ -1,5 +1,5 @@
 <!-- keywords: onglet, onglets, fenêtre, fenêtres, nouvel onglet, nouvelle fenêtre, fenêtres enfants, fenêtres d’ancre, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: fbec18618570 -->
+<!-- source: 28be3e93df4e -->
 
 # Onglets et fenêtres
 
@@ -10,6 +10,7 @@ VectorPDF utilise les onglets de fenêtre standard de macOS.
 - **Nouvel onglet :** appuyez sur ⌘T, ou cliquez sur le bouton + de la barre d’onglets.
 - **Ouvrir un PDF dans un nouvel onglet :** appuyez sur ⌥⌘O, ou faites-le glisser sur un document ouvert.
 - **Nouvelle fenêtre :** appuyez sur ⌘N pour ouvrir une fenêtre vide, ou sur ⌘O pour ouvrir un PDF dans une nouvelle fenêtre.
+- **Changer d’onglet :** appuyez sur ⇧⌘] pour l’onglet suivant et sur ⇧⌘[ pour le précédent (Go > Next Tab et Go > Previous Tab). ⌃Tab et ⇧⌃Tab fonctionnent aussi.
 
 Pour enregistrer les onglets ouverts sous forme de groupe, cliquez avec le bouton droit sur le titre du document, puis choisissez Save All Open Tabs as a Group. Consultez [Favorites et Tab Groups](favorites-and-tab-groups.md).
 

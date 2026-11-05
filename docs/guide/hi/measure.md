@@ -1,5 +1,5 @@
 <!-- keywords: मापें, माप, लंबाई, दूरी, आयाम, परिमाप, क्षेत्रफल, कोण, ऑर्थो, स्नैप, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # लंबाई, क्षेत्रफल और कोण मापें
 
@@ -23,7 +23,7 @@ Measurement टूलबार दिखाने के लिए ⇧⌘M द�
 
 ## माप का रूप बदलें
 
-मापने से पहले Measurement टूलबार में रंग पैलेट और लाइन की चौड़ाई का उपयोग करें।
+मापने से पहले Measurement टूलबार में रंग बटन और रेखा की मोटाई का उपयोग करें।
 
 ## माप रखें या हटाएँ
 

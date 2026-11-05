@@ -1,13 +1,27 @@
-<!-- keywords: 绘图, 手绘, 墨迹, 钢笔, 文本框, 标注框, 备注, 批注, 注释, 橡皮擦, 便笺, 回复, 状态, 作者, 修订云线, 云线, 线条端点, 箭头, draw, drawing, ink, pen, freehand, text box, callout, callouts, note, notes, comment, comments, sticky note, reply, replies, status, author, revision cloud, cloud, line ending, arrow, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 6536089d28a3 -->
+<!-- keywords: 绘图, 绘制, 墨迹, 笔, 手绘, 形状, 矩形, 正方形, 椭圆, 圆形, 线条, 箭头, 文本框, 标注框, 便笺, 备注, 评论, 回复, 状态, 作者, 修订云, 云形, 线条末端, 颜色, 撤销, 重做, 注释, 橡皮擦, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
+<!-- source: 31bb1c264a1e -->
 
 # 绘图、添加便笺、文本和标注框
 
-按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要结束使用工具，请按下 Escape 键，或者选取工具栏中的第一个工具 Text Selection Mode。
+按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要选取颜色，请点按工具栏右侧附近的颜色按钮，然后点按一种颜色。若要结束使用工具，请按下 Escape 键，或者选取工具栏中的第一个工具 Text Selection Mode。
 
 ## 手绘
 
 选取钢笔工具，将线宽设为 Thin、Medium 或 Thick，然后在页面上拖移。
+
+## 绘制形状
+
+1. 选取 Shapes 工具，然后选取 Rectangle、Oval、Line or Arrow 或 Revision Cloud。
+2. 将线条粗细设为 Thin、Medium 或 Thick。对于线条，可使用 Line Ending 菜单选取箭头样式，例如 Open Arrow、Closed Arrow 或 Diamond；选取 None 则为普通线条。
+3. 在页面上拖移。矩形或椭圆会填满你拖过的区域。线条从你开始拖移的位置画到停止的位置，末端带有所选的线条末端。
+
+拖移时按住 ⇧ 可绘制正方形或圆形，或者让线条保持在 45° 的倍数角度。
+
+修订云用于标记已更改或需要审阅的区域。沿着区域周围拖移，云形会跟随你画出的轮廓。快速直线拖过则会生成椭圆形的云。
+
+若要选择、移动或右键点按矩形、椭圆或云形，请使用其轮廓，这样你仍然可以选择其中的文本。
+
+若要在绘制线条后更改它，请拖移任一端以只移动该端，或者选择线条并在工具栏中选取其他线条粗细或线条末端。你也可以右键点按线条并选取 Line Ending。选择矩形或椭圆并选取线条粗细，即可更改其粗细。
 
 ## 添加文本框
 
@@ -37,30 +51,23 @@
 
 连按两下便笺可阅读或更改它。
 
-## 添加修订云线
-
-修订云线用于标记已更改或需要审阅的区域。
-
-1. 选取修订云线工具，然后选取 Small、Medium 或 Large 来设定弧线的大小。
-2. 拖移划过该区域。
-
-若要选择云线或右键点按它，请使用其轮廓，这样你仍可以选择其中的文本。
-
 ## 回复注释
 
-右键点按注释并选取 Comments…，可查看创建者和创建时间。其他人或其他应用创建的注释也可以这样操作。你可以在其中：
+任何注释都可以有回复：便笺、高亮、绘图、形状、云形或测量。连按两下注释，或右键点按注释并选取 Comments…，即可查看是谁在何时创建的。对于其他人和其他 App 的注释也是如此。在那里你可以：
 
 - 在 Reply 栏中键入内容并按下 Return 键以添加回复。
 - 使用 Status 菜单将其标记为 Accepted、Rejected、Cancelled 或 Completed。
 - 点按废纸篓按钮以删除它及其回复。
 
-连按两下便笺也会打开这些批注。
+连按两下文本框或标注框会改为编辑其文本；右键点按它即可查看其评论。对于文件中原有的线条或绘图，也请右键点按。
 
 注释上显示的名字来自[设置](settings.md)中的 Annotation Author。
 
-## 查看所有注释
+## 查看所有注释 {#see-all-annotations}
 
-点按 Markup 工具栏右侧的 Annotations 按钮，可列出文稿中的所有注释。使用顶部的菜单可按类型、作者、日期或状态过滤。选择一条注释并点按 Show on Page，或者连按两下它，即可前往其所在页面。
+点按边栏中的 Comments 标签页，可按页面列出文稿中的所有注释，以及它们的评论、状态和回复。文稿中有注释后，这个标签页就会出现。点按一条注释即可前往页面上的该注释。连按两下可在那里打开其评论，以便回复或更改状态。使用顶部的过滤按钮，可只显示一种类型、作者、状态或日期。
+
+若要在更大的窗口中查看可排序和过滤的表格，请点按 Markup 工具栏右侧的 Annotations 按钮。选择一条注释并点按 Show on Page，或者连按两下它，即可前往其所在页面。
 
 ## 更改注释
 
@@ -68,9 +75,23 @@
 | --- | --- |
 | 编辑文本 | 连按两下文本框或标注框，或者选择它并按下 Return 键，或者右键点按它并选取 Edit Text Box 或 Edit Callout Note |
 | 移动 | 拖移它，或者选择它并按下箭头键。按住 ⇧ 可每次移动 10 点。 |
-| 调整大小 | 选择它，然后拖移角上的控制柄 |
+| 调整大小 | 选择它，然后拖移角上的控制柄。对于线条或箭头，请拖移任一端。 |
 | 删除 | 选择它并按下 Delete 键，或者右键点按它并选取相应的删除命令，例如 Delete Drawing 或 Delete Text Box |
 
 使用 Markup 工具栏中的 Eraser，可通过点按或拖移划过注释来删除它们。删除注释时也会删除其回复。
+
+### 其他人和其他 App 的注释
+
+文稿中原有的注释，例如其他审阅者的形状、便笺和云形，也可以用同样的方式更改：
+
+- 拖移矩形、椭圆、云形、线条、便笺、图章或文本框即可移动它，或者选择它并按下箭头键。它会保留原有的外观、作者、日期和回复。
+- 拖移矩形、椭圆或云形的角控制柄可调整其大小，拖移线条的任一端可移动该端。
+- 选择一条注释，然后在 Markup 工具栏中选取颜色、线条粗细或线条末端即可更改它。之后 VectorPDF 会以自己的样式重新绘制它。
+
+文件中的高亮、下划线、删除线、手绘图和测量会像你自己创建的一样保持在原位，但你可以删除它们或回复它们。你无法编辑其他 App 创建的文本框中的文本。
+
+## 撤销更改
+
+选取 Edit > Undo 或按下 ⌘Z，即可撤销对注释的添加、移动、样式更改或删除。按下 ⇧⌘Z 可重做。这适用于任何注释，包括文稿中原有、被你删除或用橡皮擦误擦除的注释。注释会连同其回复、作者和日期一起恢复。
 
 [存储](save.md)时，你的注释会以标准注释的形式保存在 PDF 中，因此也会连同作者、回复和状态一起显示在其他 PDF 应用中。若要将它们固定到页面上，请[导出拼合的 PDF](export.md#flattened-pdf)。

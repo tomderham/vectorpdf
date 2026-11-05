@@ -1,5 +1,5 @@
 <!-- keywords: evidenziare, evidenziazione, evidenziazioni, sottolineare, sottolineatura, barrare, barrato, annotare, annotazione, annotazioni, colore, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: f17f6bdcda7d -->
+<!-- source: 7a7e383d477e -->
 
 # Evidenziare, sottolineare e barrare
 
@@ -17,13 +17,13 @@ Puoi anche usare i pulsanti nella barra degli strumenti Markup, oppure fare clic
 
 ## Scegliere un colore
 
-La barra degli strumenti Markup (⇧⌘A) include una tavolozza di colori. Le abbreviazioni e i pulsanti della barra usano il colore selezionato lì. Per scegliere un colore per una singola annotazione, usa l'elenco dei colori nel menu di scelta rapida oppure sotto la voce nel menu Edit.
+La barra degli strumenti Markup (⇧⌘A) ha un pulsante del colore. Fai clic su di esso, poi su un colore. Le abbreviazioni e i pulsanti della barra usano il colore lì selezionato. Per scegliere un colore per una singola annotazione, usa l'elenco dei colori nel menu contestuale o sotto la voce nel menu Edit.
 
 ## Rimuovere un'annotazione
 
-Fai clic con il tasto destro sul testo annotato, quindi scegli Remove Highlight, Remove Underline o Remove Strikethrough. Oppure scegli Eraser nella barra degli strumenti Markup, quindi fai clic sulle annotazioni che vuoi rimuovere o trascinaci sopra.
+Per annullare un'annotazione appena creata, scegli Edit > Undo o premi ⌘Z.
 
-> **Nota:** VectorPDF non dispone di un comando Undo per le annotazioni. Rimuovi l'annotazione che non vuoi, oppure chiudi il documento senza salvare per scartare tutte le modifiche apportate dall'ultimo salvataggio.
+Fai clic con il pulsante destro sul testo contrassegnato, poi scegli Remove Highlight, Remove Underline o Remove Strikethrough. Oppure scegli la gomma nella barra degli strumenti Markup, poi fai clic o trascina sulle annotazioni da rimuovere. ⌘Z ripristina un'annotazione rimossa per errore.
 
 ## Ottenere un riepilogo delle annotazioni
 

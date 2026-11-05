@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: a53b17584c10 -->
+<!-- source: 8b1613bc477d -->
 
 # Atalhos de teclado
 
@@ -37,6 +37,8 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | First Page | ⌘Up Arrow ou ⌘Home |
 | Last Page | ⌘Down Arrow ou ⌘End |
 | Avançar ou voltar pela página | Space ou ⇧Space |
+| Next Tab | ⇧⌘] ou ⌃Tab |
+| Previous Tab | ⇧⌘[ ou ⇧⌃Tab |
 
 ## Visualização
 
@@ -75,15 +77,18 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Selecionar uma palavra | Clique duas vezes |
 | Selecionar uma linha | Clique três vezes |
 | Selecionar uma área | Arraste com ⌥ pressionada |
+| Abrir os comentários de uma anotação | Clicar duas vezes nela, exceto em uma caixa de texto ou texto explicativo |
 | Zoom | Faça o gesto de pinça |
 
 ## Anotações e medições
 
 | Ação | Atalho | Botão direito |
 | --- | --- | --- |
+| Desfazer ou refazer uma alteração em uma anotação | ⌘Z ou ⇧⌘Z | |
 | Editar a caixa de texto ou o texto explicativo selecionado | Return | A anotação |
 | Apagar a anotação selecionada | Delete | A anotação |
 | Mover a anotação selecionada | Arrow keys, ou ⇧Arrow keys para mover 10 pontos | |
 | Terminar o perímetro ou a área | Return | |
 | Restringir uma medição a 0°, 45° ou 90° | Mantenha ⇧ pressionada | |
+| Desenhar um quadrado ou círculo, ou uma linha em um múltiplo de 45° | Manter ⇧ pressionada ao arrastar com a ferramenta Shapes | |
 | Cancelar ou sair da ferramenta atual | Escape | |

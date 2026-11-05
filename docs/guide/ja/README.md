@@ -1,4 +1,4 @@
-<!-- source: 189ab6c26864 -->
+<!-- source: 84875063e37a -->
 
 # VectorPDF ユーザガイド
 
@@ -19,6 +19,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 - [書類内を移動する](move-around.md)
 - [拡大/縮小、回転、ページレイアウト](zoom-and-layout.md)
 - [アウトラインとサムネール](outline-and-thumbnails.md)
+- [レイヤーの表示と非表示](layers.md)
 - [PDF の色を変更する](pdf-colors.md)
 - [テキストの選択、コピー、調べる](select-text.md)
 

@@ -1,5 +1,5 @@
 <!-- keywords: medir, medición, mediciones, medida, medidas, longitud, distancia, cota, dimensión, perímetro, área, ángulo, orto, ajuste, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
-<!-- source: a1a5e9c0df41 -->
+<!-- source: 672b95f83f05 -->
 
 # Medir longitudes, áreas y ángulos
 
@@ -23,7 +23,7 @@ Amplía la vista antes de medir para ganar precisión. Al pulsar Escape se cance
 
 ## Cambiar el aspecto de las mediciones
 
-Usa la paleta de colores y el grosor de línea de la barra de herramientas Measurement antes de medir.
+Usa el botón de color y el grosor de línea de la barra de herramientas Measurement antes de medir.
 
 ## Conservar o eliminar mediciones
 

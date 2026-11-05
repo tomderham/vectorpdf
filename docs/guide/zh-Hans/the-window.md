@@ -1,5 +1,5 @@
 <!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls -->
-<!-- source: 895982d2c19d -->
+<!-- source: 3312cb946cc7 -->
 
 # VectorPDF 窗口
 
@@ -26,6 +26,8 @@
 - **Outline & Thumbnails：** [目录，或每一页的缩略图](outline-and-thumbnails.md)。
 - **Search：** [当前文稿的结果](search.md)。
 - **Anchors：** [你保存的位置](anchors.md)。
+- **Layers：** [显示或隐藏文稿的图层](layers.md)。只有当文稿带有图层时，才会出现这个标签页。
+- **Comments：** [所有注释及其回复和状态](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document：** [Agent](agent.md)。此标签页在 macOS 26 或更高版本上显示，除非你在 Settings 中关闭了 [Use Agent](settings.md)。
 
 使用工具栏中的边栏按钮可显示或隐藏边栏。

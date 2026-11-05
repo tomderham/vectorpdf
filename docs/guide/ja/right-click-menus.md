@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 2b458fccb693 -->
+<!-- source: 78808c2435ea -->
 
 # 右クリックメニュー
 
@@ -15,12 +15,16 @@
 | ハイライト、下線、取り消し線 | Comments…、および対応する Remove コマンド |
 | テキストボックス | Comments…、Edit Text Box、および削除コマンド |
 | 吹き出し | Comments…、Edit Callout Note、Line Ending、および削除コマンド |
-| 付箋、またはリビジョンクラウドの輪郭 | Comments…、および削除コマンド |
+| メモ、または長方形、楕円、リビジョンクラウドの輪郭 | Comments… と削除コマンド |
+| 線または矢印 | Comments…、Line Ending、削除コマンド |
 | 描画、スタンプ、測定値 | Comments…、および削除コマンド |
-| 以前に書類に保存された注釈、またはほかのアプリで作成された注釈 | Comments…、およびページ上のその他の場所のコマンド |
+| 以前に書類に保存された、またはほかのアプリで作成された図形、クラウド、線、メモ、スタンプ、テキストボックス | Comments…、線の場合は Line Ending、削除コマンド |
+| 以前に書類に保存された、またはほかのアプリで作成されたハイライト、描画、計測 | Comments… と、ページ上のほかの場所と同じコマンド |
 | ページ上のその他の場所 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 プレーンテキストの参照を右クリックしたときに、関連する書類が別のタブで開いている場合は、メニューに[その参照に移動または検索する](cross-document-references.md)コマンドも表示されます。
+
+[レイヤー](layers.md)のある書類では、注釈のメニューに **Layer** もあり、別のレイヤーに移動したり、どのレイヤーからも外したりできます。
 
 ## サイドバー内
 
@@ -30,6 +34,8 @@
 | サムネール | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。複数のページを選択している場合は、Delete 3 Pages のようにコマンドにページ数が示されます。[ページを並べ替える](pages.md)を参照してください。 |
 | 検索結果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | アンカー | Open in New Window または Close Window、Copy Text、Copy Screenshot、Delete Anchor |
+| Comments タブの注釈 | Show on Page、Comments…、Delete |
+| Layers タブのレイヤー | Put New Annotations Here または Stop Putting New Annotations Here。[レイヤーの表示と非表示](layers.md)を参照してください。 |
 
 ## ウインドウ内
 

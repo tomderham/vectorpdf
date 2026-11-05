@@ -1,4 +1,4 @@
-<!-- source: 189ab6c26864 -->
+<!-- source: 84875063e37a -->
 
 # VectorPDF 使用手册
 
@@ -19,6 +19,7 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 - [在文稿中移动](move-around.md)
 - [缩放、旋转和页面布局](zoom-and-layout.md)
 - [大纲和缩略图](outline-and-thumbnails.md)
+- [显示和隐藏图层](layers.md)
 - [更改 PDF 颜色](pdf-colors.md)
 - [选择、拷贝和查询文本](select-text.md)
 

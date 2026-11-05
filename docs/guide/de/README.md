@@ -1,4 +1,4 @@
-<!-- source: 189ab6c26864 -->
+<!-- source: 84875063e37a -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -19,6 +19,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 - [In einem Dokument navigieren](move-around.md)
 - [Zoomen, Drehen und Seitenlayout](zoom-and-layout.md)
 - [Gliederung und Miniaturen](outline-and-thumbnails.md)
+- [Ebenen ein- und ausblenden](layers.md)
 - [PDF-Farben ändern](pdf-colors.md)
 - [Text auswählen, kopieren und nachschlagen](select-text.md)
 
