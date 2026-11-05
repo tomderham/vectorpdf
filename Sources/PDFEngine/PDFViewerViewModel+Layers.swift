@@ -161,15 +161,16 @@ extension PDFViewerViewModel {
         }
     }
 
-    // MARK: - New layers
+    // MARK: - Adding, renaming and deleting layers
 
-    /// Adds a layer to the document, shown, and makes it the one new annotations go on.
-    /// Unlike showing and hiding layers, this changes the file.
+    /// Adds a layer to the document, shown, and makes it the one new annotations go on. In a
+    /// document without layers, this is its first. Unlike showing and hiding layers, this changes
+    /// the file. Undo takes it out again.
     @discardableResult
     public func addLayer(named name: String) -> Int? {
         guard let doc = document, doc.isPDF, !isReadOnlyDocument else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+        guard !trimmed.isEmpty, let before = doc.copyLayerConfiguration() else { return nil }
         let number: Int
         do {
             number = try doc.addLayer(named: trimmed)
@@ -177,24 +178,118 @@ extension PDFViewerViewModel {
             print("Failed to add layer \(trimmed): \(error)")
             return nil
         }
-        layers = doc.layers()
-        layerVisibility = doc.layerVisibility()
+        registerLayerListUndo("New Layer", restoring: before, annotations: [], layer: nil, otherwise: nil)
+        layersChanged(annotationPages: [])
         annotationLayer = number
-        isDocumentEdited = true
-        currentWindow?.isDocumentEdited = true
-        // The renderer and search only follow layers their copy of the file has.
-        refreshRendererCopy(pages: [])
         return number
     }
 
+    /// Renames a layer, with Undo. This changes the file.
+    public func renameLayer(objectNumber: Int, to name: String) {
+        guard let doc = document, !isReadOnlyDocument,
+              let old = layers.first(where: { $0.objectNumber == objectNumber })?.name else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != old else { return }
+        do {
+            try doc.renameLayer(objectNumber: objectNumber, to: trimmed)
+        } catch {
+            print("Failed to rename layer \(old): \(error)")
+            return
+        }
+        undoManager.registerUndo(withTarget: self) { $0.renameLayer(objectNumber: objectNumber, to: old) }
+        if !undoManager.isUndoing, !undoManager.isRedoing { undoManager.setActionName("Rename Layer") }
+        layersChanged(annotationPages: [])
+    }
+
+    /// The layers that can be deleted: ones holding only annotations, or nothing. Deleting one
+    /// the drawing itself is on would leave that content always shown, so those can't be.
+    public func deletableLayers() -> [PDFLayer] {
+        guard let doc = document, !isReadOnlyDocument else { return [] }
+        return annotationLayers.filter { layer in
+            layer.objectNumber.map { !doc.layerHoldsPageContent(objectNumber: $0) } ?? false
+        }
+    }
+
+    /// Deletes a layer holding only annotations, with Undo. The annotations on it stay on the
+    /// page, on no layer.
+    @discardableResult
+    public func deleteLayer(objectNumber: Int) -> Bool {
+        guard let doc = document, !isReadOnlyDocument, layerVisibility[objectNumber] != nil,
+              !doc.layerHoldsPageContent(objectNumber: objectNumber),
+              let before = doc.copyLayerConfiguration() else { return false }
+        let onIt = doc.annotationsOnLayer(objectNumber: objectNumber)
+        do {
+            try putAnnotations(onIt, onLayer: nil)
+            try doc.removeLayer(objectNumber: objectNumber)
+        } catch {
+            print("Failed to delete layer \(objectNumber): \(error)")
+            try? putAnnotations(onIt, onLayer: objectNumber)
+            return false
+        }
+        registerLayerListUndo("Delete Layer", restoring: before, annotations: onIt, layer: objectNumber, otherwise: nil)
+        layersChanged(annotationPages: Set(onIt.map(\.pageIndex)))
+        return true
+    }
+
+    /// Undo for a change to the list of layers: puts back `configuration`, and the annotations on
+    /// `layer` (nil for none), registering the opposite for Redo.
+    private func registerLayerListUndo(_ name: String, restoring configuration: PDFDocumentCore.LayerConfiguration,
+                                       annotations: [(pageIndex: Int, objectNumber: Int)], layer: Int?, otherwise: Int?) {
+        undoManager.registerUndo(withTarget: self) { vm in
+            guard let doc = vm.document, let now = doc.copyLayerConfiguration() else { return }
+            do {
+                // A layer the annotations go back on has to be there first; one they leave, after.
+                if layer != nil { try doc.restoreLayerConfiguration(configuration) }
+                try vm.putAnnotations(annotations, onLayer: layer)
+                if layer == nil { try doc.restoreLayerConfiguration(configuration) }
+            } catch {
+                print("Failed to undo the change to layers: \(error)")
+                return
+            }
+            vm.registerLayerListUndo(name, restoring: now, annotations: annotations, layer: otherwise, otherwise: layer)
+            vm.layersChanged(annotationPages: Set(annotations.map(\.pageIndex)))
+        }
+        if !undoManager.isUndoing, !undoManager.isRedoing { undoManager.setActionName(name) }
+    }
+
+    /// Puts annotations on a layer, or none, without Undo of their own.
+    private func putAnnotations(_ annotations: [(pageIndex: Int, objectNumber: Int)], onLayer layer: Int?) throws {
+        guard let doc = document else { return }
+        for annot in annotations {
+            try doc.setAnnotationLayer(pageIndex: annot.pageIndex, objectNumber: annot.objectNumber, layer: layer)
+            if let index = pageAnnotations[annot.pageIndex]?.firstIndex(where: { $0.documentObjectNumber == annot.objectNumber }) {
+                pageAnnotations[annot.pageIndex]?[index].layerObjectNumber = layer
+            }
+        }
+    }
+
+    /// After layers were added, renamed or deleted: reads them again, and brings the renderer and
+    /// search, which only follow the layers their copy of the file has, up to date.
+    private func layersChanged(annotationPages: Set<Int>) {
+        guard let doc = document else { return }
+        layers = doc.layers()
+        layerVisibility = doc.layerVisibility()
+        if let layer = annotationLayer, layerVisibility[layer] == nil {
+            annotationLayer = nil
+        }
+        isDocumentEdited = true
+        currentWindow?.isDocumentEdited = true
+        if !annotationPages.isEmpty {
+            noteAnnotationsChanged(onPage: nil)
+        }
+        refreshRendererCopy(pages: annotationPages)
+    }
+
+    // MARK: - Asking
+
     /// Asks for a name and adds a layer with it (see `addLayer`).
     public func promptForNewLayer() {
-        guard !Self.isRunningTests else { return }
+        guard !Self.isRunningTests, document?.isPDF == true, !isReadOnlyDocument else { return }
         let alert = NSAlert()
         alert.messageText = "New Layer"
         alert.informativeText = "Annotations you make go on the new layer, so you can show and hide them together. The layer is saved with the document."
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
-        field.stringValue = annotationLayers.contains { $0.name == "Markups" } ? "" : "Markups"
+        field.stringValue = layers.contains { $0.name == "Markups" } ? "" : "Markups"
         field.placeholderString = "Layer Name"
         alert.accessoryView = field
         alert.addButton(withTitle: "Add Layer")
@@ -202,6 +297,49 @@ extension PDFViewerViewModel {
         alert.window.initialFirstResponder = field
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         addLayer(named: field.stringValue)
+    }
+
+    /// Asks which layer to rename, and what to.
+    public func promptToRenameLayer() {
+        guard !Self.isRunningTests, !isReadOnlyDocument else { return }
+        let candidates = annotationLayers
+        guard !candidates.isEmpty else { return }
+        let alert = NSAlert()
+        alert.messageText = "Rename Layer"
+        alert.informativeText = "The new name is saved with the document."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        field.placeholderString = "Layer Name"
+        let chooser = LayerChooser(candidates, selecting: annotationLayer) { field.stringValue = $0.name }
+        field.stringValue = chooser.selected.name
+        alert.accessoryView = chooser.stack(with: field)
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn, let number = chooser.selected.objectNumber else { return }
+        renameLayer(objectNumber: number, to: field.stringValue)
+    }
+
+    /// Asks which layer to delete, of the ones that can be.
+    public func promptToDeleteLayer() {
+        guard !Self.isRunningTests, !isReadOnlyDocument else { return }
+        let candidates = deletableLayers()
+        guard !candidates.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = "No Layers Can Be Deleted"
+            alert.informativeText = "The drawing itself is on this document's layers. Deleting one would leave what's on it always shown, so only layers that hold just annotations can be deleted."
+            alert.runModal()
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = "Delete Layer"
+        alert.informativeText = "Annotations on the layer stay on the page, on no layer. Layers the drawing itself is on can't be deleted, so they aren't listed."
+        let chooser = LayerChooser(candidates, selecting: annotationLayer) { _ in }
+        alert.accessoryView = chooser.stack(with: nil)
+        let delete = alert.addButton(withTitle: "Delete")
+        delete.hasDestructiveAction = true
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn, let number = chooser.selected.objectNumber else { return }
+        deleteLayer(objectNumber: number)
     }
 
     /// Saves the document to its working copy and opens the renderer and search on it again, for
@@ -229,3 +367,42 @@ extension PDFViewerViewModel {
         }
     }
 }
+
+/// A pop-up of layers for the Rename and Delete Layer alerts.
+@MainActor
+private final class LayerChooser: NSObject {
+    private let layers: [PDFLayer]
+    private let popUp = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 260, height: 26), pullsDown: false)
+    private let onChange: (PDFLayer) -> Void
+
+    init(_ layers: [PDFLayer], selecting objectNumber: Int?, onChange: @escaping (PDFLayer) -> Void) {
+        self.layers = layers
+        self.onChange = onChange
+        super.init()
+        popUp.addItems(withTitles: layers.map(\.displayName))
+        if let index = layers.firstIndex(where: { $0.objectNumber == objectNumber }) {
+            popUp.selectItem(at: index)
+        }
+        popUp.target = self
+        popUp.action = #selector(changed)
+    }
+
+    var selected: PDFLayer { layers[max(0, popUp.indexOfSelectedItem)] }
+
+    @objc private func changed() {
+        onChange(selected)
+    }
+
+    /// The pop-up, and `field` below it if there's one. Holds on to this chooser while shown.
+    func stack(with field: NSTextField?) -> NSView {
+        let stack = NSStackView(views: [popUp] + (field.map { [$0] } ?? []))
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        stack.frame = NSRect(x: 0, y: 0, width: 260, height: field == nil ? 26 : 60)
+        objc_setAssociatedObject(stack, &layerChooserKey, self, .OBJC_ASSOCIATION_RETAIN)
+        return stack
+    }
+}
+
+@MainActor private var layerChooserKey: UInt8 = 0

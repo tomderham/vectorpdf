@@ -433,7 +433,9 @@ struct AnnotationLayerTests {
         vm.toggleLayer(try layer(vm, "Walls"))
         #expect(vm.layers.map(\.isVisible) == [false, true, false])
 
-        let number = try #require(vm.addLayer(named: "My Markups"))
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "My Markups") }
+        let number = try #require(added)
         #expect(vm.layers.map(\.name) == threeLayers + ["My Markups"])
         #expect(vm.layers.map(\.isVisible) == [false, true, false, true])
         #expect(vm.annotationLayer == number)
@@ -453,7 +455,7 @@ struct AnnotationLayerTests {
         let dir = try makeScratchDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         let (vm, _) = try await open(in: dir)
-        vm.addLayer(named: "Markups")
+        step(vm) { vm.addLayer(named: "Markups") }
         #expect(vm.layers.map(\.name) == threeLayers + ["Markups"])
         // The renderer opens the changed file again and follows its layers.
         #expect(await vm.reopenActors(at: try #require(vm.workingCopyPath)))
@@ -485,5 +487,158 @@ struct AnnotationLayerTests {
         let entries = vm.takeoffEntries()
         #expect(entries.count == 1)
         #expect(entries.first?.annotation.layerObjectNumber == nil)
+    }
+}
+
+/// Edit > New Layer, Rename Layer and Delete Layer.
+@MainActor
+@Suite(.serialized)
+struct LayerEditingTests {
+    private func open(layers: [String], in dir: URL) async throws -> (PDFViewerViewModel, URL) {
+        let url = dir.appendingPathComponent("\(UUID().uuidString).pdf")
+        try makeLayeredPDF(at: url, layers: layers)
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        vm.undoManager.groupsByEvent = false
+        return (vm, url)
+    }
+
+    private func step(_ vm: PDFViewerViewModel, _ body: () -> Void) {
+        vm.undoManager.beginUndoGrouping()
+        body()
+        vm.undoManager.endUndoGrouping()
+    }
+
+    private func rectangle(_ vm: PDFViewerViewModel, at y: CGFloat = 300) -> PDFEngine.PDFAnnotation? {
+        var made: PDFEngine.PDFAnnotation?
+        step(vm) { made = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 300, y: y), to: CGPoint(x: 400, y: y + 50)) }
+        return made
+    }
+
+    @Test func aPlainPDFGetsItsFirstLayer() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(layers: [], in: dir)
+        #expect(vm.layers.isEmpty)
+
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "Markups") }
+        let number = try #require(added)
+        #expect(vm.layers.map(\.name) == ["Markups"])
+        #expect(vm.layers.first?.isVisible == true)
+        #expect(vm.annotationLayer == number)
+        let made = try #require(rectangle(vm))
+        #expect(made.layerObjectNumber == number)
+
+        vm.saveDocument()
+        let reopened = try PDFDocumentCore(filePath: url.path)
+        #expect(reopened.layers().map(\.name) == ["Markups"])
+        #expect(reopened.annotationThreads(pageIndex: 0).first?.root.layerObjectNumber == number)
+    }
+
+    @Test func undoTakesANewLayerOutAgain() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(layers: [], in: dir)
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "Markups") }
+        vm.undoManager.undo()
+        #expect(vm.layers.isEmpty)
+        #expect(vm.annotationLayer == nil)
+        #expect(vm.document?.layers().isEmpty == true)
+        vm.undoManager.redo()
+        #expect(vm.layers.map(\.name) == ["Markups"])
+        #expect(vm.layers.first?.objectNumber == added)
+    }
+
+    @Test func layersCanBeRenamedWithUndo() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(layers: threeLayers, in: dir)
+        let pipes = try #require(vm.layers.first { $0.name == "Pipes" })
+        vm.toggleLayer(pipes)
+        let number = try #require(pipes.objectNumber)
+
+        step(vm) { vm.renameLayer(objectNumber: number, to: "Plumbing") }
+        #expect(vm.layers.map(\.name) == ["Walls", "Plumbing", "Wiring"])
+        // Renaming doesn't show it again.
+        #expect(vm.layers.map(\.isVisible) == [true, false, true])
+        #expect(vm.isDocumentEdited)
+        vm.undoManager.undo()
+        #expect(vm.layers.map(\.name) == threeLayers)
+        vm.undoManager.redo()
+        vm.saveDocument()
+        #expect(try PDFDocumentCore(filePath: url.path).layers().map(\.name) == ["Walls", "Plumbing", "Wiring"])
+    }
+
+    @Test func onlyLayersHoldingJustAnnotationsCanBeDeleted() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(layers: threeLayers, in: dir)
+        #expect(vm.deletableLayers().isEmpty)
+        let walls = try #require(vm.layers.first?.objectNumber)
+        var deleted = true
+        step(vm) { deleted = vm.deleteLayer(objectNumber: walls) }
+        #expect(!deleted)
+        #expect(vm.layers.count == 3)
+
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "Markups") }
+        let mine = try #require(added)
+        // An annotation on a drawing's layer doesn't make it deletable.
+        vm.setAnnotationLayer(walls)
+        _ = rectangle(vm)
+        vm.setAnnotationLayer(mine)
+        _ = rectangle(vm, at: 400)
+        #expect(vm.deletableLayers().compactMap(\.objectNumber) == [mine])
+    }
+
+    @Test func deletingALayerKeepsItsAnnotationsOnNone() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(layers: threeLayers, in: dir)
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "Markups") }
+        let mine = try #require(added)
+        let made = try #require(rectangle(vm))
+        let objectNumber = try #require(made.documentObjectNumber)
+        // Hidden, so its annotations show again once it's gone.
+        vm.toggleLayer(try #require(vm.layers.first { $0.objectNumber == mine }))
+        #expect(vm.shownAnnotations(onPage: 0).isEmpty)
+
+        var deleted = false
+        step(vm) { deleted = vm.deleteLayer(objectNumber: mine) }
+        #expect(deleted)
+        #expect(vm.layers.map(\.name) == threeLayers)
+        #expect(vm.annotationLayer == nil)
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: objectNumber) == nil)
+        #expect(vm.shownAnnotations(onPage: 0).count == 1)
+
+        // Saving drops nothing Undo needs.
+        vm.saveDocument()
+        #expect(try PDFDocumentCore(filePath: url.path).layers().map(\.name) == threeLayers)
+        vm.undoManager.undo()
+        #expect(vm.layers.map(\.name) == threeLayers + ["Markups"])
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: objectNumber) == mine)
+        #expect(vm.pageAnnotations[0]?.first?.layerObjectNumber == mine)
+        vm.undoManager.redo()
+        #expect(vm.layers.map(\.name) == threeLayers)
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: objectNumber) == nil)
+    }
+
+    @Test func deletingTheLastLayerLeavesADocumentWithout() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(layers: [], in: dir)
+        var added: Int?
+        step(vm) { added = vm.addLayer(named: "Markups") }
+        let mine = try #require(added)
+        var deleted = false
+        step(vm) { deleted = vm.deleteLayer(objectNumber: mine) }
+        #expect(deleted)
+        #expect(vm.layers.isEmpty)
+        vm.saveDocument()
+        #expect(try PDFDocumentCore(filePath: url.path).layers().isEmpty)
+        #expect(try PDFDocumentCore(filePath: url.path).layerStates().isEmpty)
     }
 }

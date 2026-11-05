@@ -1081,6 +1081,85 @@ public final class PDFDocumentCore: @unchecked Sendable {
         return Int(number)
     }
 
+    /// Renames the layer with this object number. This changes the file.
+    public func renameLayer(objectNumber: Int, to name: String) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_rename_layer(ctx, doc, Int32(objectNumber), name, &errorMsg) == 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to rename layer")
+        }
+    }
+
+    /// Whether the drawing itself is on the layer, not just annotations: then deleting it would
+    /// leave that content always shown. True if it can't be told.
+    public func layerHoldsPageContent(objectNumber: Int) -> Bool {
+        guard isPDF else { return true }
+        lock.lock()
+        defer { lock.unlock() }
+        return mupdf_pdf_layer_holds_content(ctx, doc, Int32(objectNumber)) != 0
+    }
+
+    /// The annotations on a layer, by page and object number.
+    public func annotationsOnLayer(objectNumber: Int) -> [(pageIndex: Int, objectNumber: Int)] {
+        guard isPDF else { return [] }
+        lock.lock()
+        defer { lock.unlock() }
+        let count = Int(mupdf_pdf_annots_on_layer(ctx, doc, Int32(objectNumber), nil, 0))
+        guard count > 0 else { return [] }
+        var pairs = [Int32](repeating: 0, count: 2 * count)
+        let found = Int(mupdf_pdf_annots_on_layer(ctx, doc, Int32(objectNumber), &pairs, Int32(count)))
+        return (0..<min(found, count)).map { (Int(pairs[2 * $0]), Int(pairs[2 * $0 + 1])) }
+    }
+
+    /// Takes a layer out of the document. Take the annotations off it first.
+    public func removeLayer(objectNumber: Int) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_remove_layer(ctx, doc, Int32(objectNumber), &errorMsg) == 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to delete layer")
+        }
+    }
+
+    /// The document's list of layers as it is now, to put back for Undo.
+    public final class LayerConfiguration: @unchecked Sendable {
+        fileprivate let pointer: OpaquePointer
+        fileprivate weak var owner: PDFDocumentCore?
+        fileprivate init(pointer: OpaquePointer, owner: PDFDocumentCore) {
+            self.pointer = pointer
+            self.owner = owner
+        }
+        deinit {
+            owner?.dropLayerConfiguration(pointer)
+        }
+    }
+
+    public func copyLayerConfiguration() -> LayerConfiguration? {
+        guard isPDF else { return nil }
+        lock.lock()
+        defer { lock.unlock() }
+        return mupdf_pdf_copy_layer_config(ctx, doc).map { LayerConfiguration(pointer: $0, owner: self) }
+    }
+
+    public func restoreLayerConfiguration(_ configuration: LayerConfiguration) throws {
+        guard configuration.owner === self else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_restore_layer_config(ctx, doc, configuration.pointer, &errorMsg) == 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to put the layers back")
+        }
+    }
+
+    fileprivate func dropLayerConfiguration(_ pointer: OpaquePointer) {
+        lock.lock()
+        defer { lock.unlock() }
+        mupdf_pdf_drop_layer_config(ctx, pointer)
+    }
+
     /// The object number of the layer an annotation is on, or nil.
     public func annotationLayer(pageIndex: Int, objectNumber: Int) -> Int? {
         guard isPDF else { return nil }

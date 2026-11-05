@@ -5135,6 +5135,38 @@ int mupdf_pdf_layer_object_number(fz_context *ctx, fz_document *doc, int layer) 
     return num;
 }
 
+/* MuPDF reads the layers once; after the list changes, read them again, then show the ones that
+ * were there before as they were (`nums` and `states`, `n` of each), and new ones as the document's
+ * default configuration says. */
+static void vp_reload_layers(fz_context *ctx, pdf_document *pdoc, const int *nums, const int *states, int n) {
+    int *new_nums = NULL;
+    fz_var(new_nums);
+    pdf_drop_ocg(ctx, pdoc);
+    pdoc->ocg = NULL;
+    fz_try(ctx) {
+        int m = vp_layer_numbers(ctx, pdoc, &new_nums);
+        for (int j = 0; j < m; j++) {
+            for (int i = 0; i < n; i++) {
+                if (nums[i] == new_nums[j]) { pdf_enable_layer(ctx, pdoc, j, states[i]); break; }
+            }
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, new_nums);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+/* How the layers are shown now: their numbers and states, `*out_n` of each, both to free. */
+static void vp_layer_states(fz_context *ctx, pdf_document *pdoc, int **out_nums, int **out_states, int *out_n) {
+    *out_states = NULL;
+    *out_n = vp_layer_numbers(ctx, pdoc, out_nums);
+    if (*out_n > 0) {
+        *out_states = fz_malloc(ctx, *out_n * sizeof **out_states);
+        for (int i = 0; i < *out_n; i++) (*out_states)[i] = pdf_layer_is_enabled(ctx, pdoc, i);
+    }
+}
+
 int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int *out_object_number, const char **out_error) {
     if (!ctx || !doc || !name || !out_object_number) return -1;
     *out_object_number = 0;
@@ -5148,11 +5180,8 @@ int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
         /* How the layers are shown now, by object number, to show them the same way after. */
-        int n = vp_layer_numbers(ctx, pdoc, &old_nums);
-        if (n > 0) {
-            states = fz_malloc(ctx, n * sizeof *states);
-            for (int i = 0; i < n; i++) states[i] = pdf_layer_is_enabled(ctx, pdoc, i);
-        }
+        int n = 0;
+        vp_layer_states(ctx, pdoc, &old_nums, &states, &n);
         pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
         pdf_obj *ocprops = pdf_dict_get(ctx, root, PDF_NAME(OCProperties));
         if (!pdf_is_dict(ctx, ocprops)) ocprops = pdf_dict_put_dict(ctx, root, PDF_NAME(OCProperties), 2);
@@ -5171,17 +5200,7 @@ int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int
         if (pdf_is_array(ctx, order)) pdf_array_push(ctx, order, ocg);
         else if (n == 0) pdf_array_push(ctx, pdf_dict_put_array(ctx, config, PDF_NAME(Order), 1), ocg);
 
-        /* MuPDF reads the layers once, so read them again, then show them as they were. */
-        pdf_drop_ocg(ctx, pdoc);
-        pdoc->ocg = NULL;
-        int m = vp_layer_numbers(ctx, pdoc, &new_nums);
-        for (int j = 0; j < m; j++) {
-            int state = 1;
-            for (int i = 0; i < n; i++) {
-                if (old_nums[i] == new_nums[j]) { state = states[i]; break; }
-            }
-            pdf_enable_layer(ctx, pdoc, j, state);
-        }
+        vp_reload_layers(ctx, pdoc, old_nums, states, n);
         *out_object_number = pdf_to_num(ctx, ocg);
     } fz_always(ctx) {
         pdf_drop_obj(ctx, ocg);
@@ -5326,4 +5345,282 @@ int mupdf_pdf_toggle_layer_ui(fz_context *ctx, fz_document *doc, int index, cons
         return -1;
     }
     return 0;
+}
+
+int mupdf_pdf_rename_layer(fz_context *ctx, fz_document *doc, int layer, const char *name, const char **out_error) {
+    if (!ctx || !doc || !name) return -1;
+    int *nums = NULL, *states = NULL;
+    fz_var(nums);
+    fz_var(states);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc || !vp_is_layer(ctx, pdoc, layer)) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such layer");
+        int n = 0;
+        vp_layer_states(ctx, pdoc, &nums, &states, &n);
+        pdf_obj *ocg = pdf_new_indirect(ctx, pdoc, layer, 0);
+        pdf_dict_put_text_string(ctx, ocg, PDF_NAME(Name), name);
+        pdf_drop_obj(ctx, ocg);
+        /* MuPDF's list of layers holds on to the old name. */
+        vp_reload_layers(ctx, pdoc, nums, states, n);
+    } fz_always(ctx) {
+        fz_free(ctx, nums);
+        fz_free(ctx, states);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+/* Whether `obj`, or anything directly inside it (not following references), refers to object
+ * `num`. `skip` is a key left out at the top, or NULL. */
+static int vp_refers_to(fz_context *ctx, pdf_obj *obj, int num, pdf_obj *skip, int depth) {
+    if (depth > 32) return 0;
+    if (pdf_is_indirect(ctx, obj)) return pdf_to_num(ctx, obj) == num;
+    if (pdf_is_array(ctx, obj)) {
+        int n = pdf_array_len(ctx, obj);
+        for (int i = 0; i < n; i++) if (vp_refers_to(ctx, pdf_array_get(ctx, obj, i), num, NULL, depth + 1)) return 1;
+    } else if (pdf_is_dict(ctx, obj)) {
+        int n = pdf_dict_len(ctx, obj);
+        for (int i = 0; i < n; i++) {
+            if (skip && pdf_name_eq(ctx, pdf_dict_get_key(ctx, obj, i), skip)) continue;
+            if (vp_refers_to(ctx, pdf_dict_get_val(ctx, obj, i), num, NULL, depth + 1)) return 1;
+        }
+    }
+    return 0;
+}
+
+/* The objects that make up the list of layers itself, which refer to every layer. */
+static int vp_is_layer_list_object(fz_context *ctx, pdf_document *pdoc, int num) {
+    pdf_obj *ocprops = pdf_dict_getp(ctx, pdf_trailer(ctx, pdoc), "Root/OCProperties");
+    if (pdf_is_indirect(ctx, ocprops) && pdf_to_num(ctx, ocprops) == num) return 1;
+    /* Its arrays and configurations, where they're objects of their own. */
+    pdf_obj *stack[64];
+    int top = 0;
+    if (pdf_is_dict(ctx, ocprops)) stack[top++] = ocprops;
+    while (top > 0) {
+        pdf_obj *o = stack[--top];
+        int n = pdf_is_dict(ctx, o) ? pdf_dict_len(ctx, o) : pdf_array_len(ctx, o);
+        for (int i = 0; i < n; i++) {
+            pdf_obj *v = pdf_is_dict(ctx, o) ? pdf_dict_get_val(ctx, o, i) : pdf_array_get(ctx, o, i);
+            if (!pdf_is_array(ctx, v) && !pdf_is_dict(ctx, v)) continue;
+            /* A layer, or a group of them used by content, isn't part of the list. */
+            pdf_obj *type = pdf_dict_get(ctx, v, PDF_NAME(Type));
+            if (pdf_name_eq(ctx, type, PDF_NAME(OCG)) || pdf_name_eq(ctx, type, PDF_NAME(OCMD))) continue;
+            if (pdf_is_indirect(ctx, v) && pdf_to_num(ctx, v) == num) return 1;
+            if (top < 64) stack[top++] = v;
+        }
+    }
+    return 0;
+}
+
+static int vp_is_annotation(fz_context *ctx, pdf_obj *obj) {
+    return pdf_is_dict(ctx, obj) &&
+        (pdf_name_eq(ctx, pdf_dict_get(ctx, obj, PDF_NAME(Type)), PDF_NAME(Annot)) ||
+         (pdf_dict_get(ctx, obj, PDF_NAME(Subtype)) && pdf_dict_get(ctx, obj, PDF_NAME(Rect)) && !pdf_dict_get(ctx, obj, PDF_NAME(Resources))));
+}
+
+int mupdf_pdf_layer_holds_content(fz_context *ctx, fz_document *doc, int layer) {
+    if (!ctx || !doc || layer <= 0) return 1;
+    int holds = 0;
+    fz_var(holds);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        int root_num = pdf_to_num(ctx, root);
+        int len = pdf_xref_len(ctx, pdoc);
+        for (int i = 1; i < len && !holds; i++) {
+            if (i == layer) continue;
+            pdf_obj *obj = NULL;
+            fz_try(ctx) {
+                obj = pdf_load_object(ctx, pdoc, i);
+            } fz_catch(ctx) {
+                obj = NULL;
+            }
+            if (!obj) continue;
+            /* The catalog holds the list of layers, which refers to every layer. */
+            pdf_obj *skip = i == root_num ? PDF_NAME(OCProperties) : NULL;
+            if (vp_refers_to(ctx, obj, layer, skip, 0) && !vp_is_annotation(ctx, obj) && !vp_is_layer_list_object(ctx, pdoc, i))
+                holds = 1;
+            pdf_drop_obj(ctx, obj);
+        }
+    } fz_catch(ctx) {
+        holds = 1;
+    }
+    return holds;
+}
+
+int mupdf_pdf_annots_on_layer(fz_context *ctx, fz_document *doc, int layer, int *out, int capacity) {
+    if (!ctx || !doc || layer <= 0) return -1;
+    int count = 0;
+    pdf_page *ppage = NULL;
+    fz_var(count);
+    fz_var(ppage);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        int pages = pdf_count_pages(ctx, pdoc);
+        for (int p = 0; p < pages; p++) {
+            ppage = pdf_load_page(ctx, pdoc, p);
+            for (pdf_annot *a = pdf_first_annot(ctx, ppage); a; a = pdf_next_annot(ctx, a)) {
+                if (vp_oc_layer(ctx, pdf_annot_obj(ctx, a)) != layer) continue;
+                if (out && count < capacity) {
+                    out[2 * count] = p;
+                    out[2 * count + 1] = pdf_to_num(ctx, pdf_annot_obj(ctx, a));
+                }
+                count++;
+            }
+            pdf_drop_page(ctx, ppage);
+            ppage = NULL;
+        }
+    } fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return count;
+}
+
+/* Takes every reference to object `num` out of `array` and the arrays inside it. */
+static void vp_remove_from_array(fz_context *ctx, pdf_obj *array, int num, int depth) {
+    if (depth > 32 || !pdf_is_array(ctx, array)) return;
+    for (int i = pdf_array_len(ctx, array) - 1; i >= 0; i--) {
+        pdf_obj *o = pdf_array_get(ctx, array, i);
+        if (pdf_is_indirect(ctx, o) && pdf_to_num(ctx, o) == num) pdf_array_delete(ctx, array, i);
+        else if (pdf_is_array(ctx, o)) vp_remove_from_array(ctx, o, num, depth + 1);
+    }
+}
+
+static void vp_remove_from_config(fz_context *ctx, pdf_obj *config, int num) {
+    if (!pdf_is_dict(ctx, config)) return;
+    vp_remove_from_array(ctx, pdf_dict_get(ctx, config, PDF_NAME(Order)), num, 0);
+    vp_remove_from_array(ctx, pdf_dict_get(ctx, config, PDF_NAME(ON)), num, 0);
+    vp_remove_from_array(ctx, pdf_dict_get(ctx, config, PDF_NAME(OFF)), num, 0);
+    vp_remove_from_array(ctx, pdf_dict_get(ctx, config, PDF_NAME(Locked)), num, 0);
+    vp_remove_from_array(ctx, pdf_dict_get(ctx, config, PDF_NAME(RBGroups)), num, 0);
+    pdf_obj *as = pdf_dict_get(ctx, config, PDF_NAME(AS));
+    for (int i = 0; i < pdf_array_len(ctx, as); i++)
+        vp_remove_from_array(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, as, i), PDF_NAME(OCGs)), num, 0);
+}
+
+int mupdf_pdf_remove_layer(fz_context *ctx, fz_document *doc, int layer, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    int *nums = NULL, *states = NULL;
+    fz_var(nums);
+    fz_var(states);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc || !vp_is_layer(ctx, pdoc, layer)) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such layer");
+        int n = 0;
+        vp_layer_states(ctx, pdoc, &nums, &states, &n);
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        pdf_obj *ocprops = pdf_dict_get(ctx, root, PDF_NAME(OCProperties));
+        pdf_obj *ocgs = pdf_dict_get(ctx, ocprops, PDF_NAME(OCGs));
+        vp_remove_from_array(ctx, ocgs, layer, 31);
+        vp_remove_from_config(ctx, pdf_dict_get(ctx, ocprops, PDF_NAME(D)), layer);
+        pdf_obj *configs = pdf_dict_get(ctx, ocprops, PDF_NAME(Configs));
+        for (int i = 0; i < pdf_array_len(ctx, configs); i++) vp_remove_from_config(ctx, pdf_array_get(ctx, configs, i), layer);
+        /* Without layers, the document is as it would be had it never had any. */
+        if (pdf_array_len(ctx, ocgs) == 0) pdf_dict_del(ctx, root, PDF_NAME(OCProperties));
+        vp_reload_layers(ctx, pdoc, nums, states, n);
+    } fz_always(ctx) {
+        fz_free(ctx, nums);
+        fz_free(ctx, states);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+struct mupdf_layer_config {
+    pdf_obj *ocprops; /* a copy, or NULL for a document without layers */
+};
+
+/* A copy of `obj` with the arrays and dictionaries in it copied too, even where they're objects of
+ * their own, so later changes to them don't reach the copy. Layers, and groups of them, are
+ * referred to, not copied. */
+static pdf_obj *vp_copy_config(fz_context *ctx, pdf_document *pdoc, pdf_obj *obj, int depth) {
+    if (pdf_is_indirect(ctx, obj)) {
+        pdf_obj *type = pdf_dict_get(ctx, obj, PDF_NAME(Type));
+        if (depth > 16 || pdf_name_eq(ctx, type, PDF_NAME(OCG)) || pdf_name_eq(ctx, type, PDF_NAME(OCMD)) ||
+            (!pdf_is_array(ctx, obj) && !pdf_is_dict(ctx, obj)))
+            return pdf_keep_obj(ctx, obj);
+    }
+    if (pdf_is_array(ctx, obj)) {
+        int n = pdf_array_len(ctx, obj);
+        pdf_obj *copy = pdf_new_array(ctx, pdoc, n);
+        fz_try(ctx) {
+            for (int i = 0; i < n; i++) pdf_array_push_drop(ctx, copy, vp_copy_config(ctx, pdoc, pdf_array_get(ctx, obj, i), depth + 1));
+        } fz_catch(ctx) {
+            pdf_drop_obj(ctx, copy);
+            fz_rethrow(ctx);
+        }
+        return copy;
+    }
+    if (pdf_is_dict(ctx, obj)) {
+        int n = pdf_dict_len(ctx, obj);
+        pdf_obj *copy = pdf_new_dict(ctx, pdoc, n);
+        fz_try(ctx) {
+            for (int i = 0; i < n; i++)
+                pdf_dict_put_drop(ctx, copy, pdf_dict_get_key(ctx, obj, i), vp_copy_config(ctx, pdoc, pdf_dict_get_val(ctx, obj, i), depth + 1));
+        } fz_catch(ctx) {
+            pdf_drop_obj(ctx, copy);
+            fz_rethrow(ctx);
+        }
+        return copy;
+    }
+    return pdf_keep_obj(ctx, obj);
+}
+
+mupdf_layer_config *mupdf_pdf_copy_layer_config(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return NULL;
+    mupdf_layer_config *config = NULL;
+    fz_var(config);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        config = fz_malloc_struct(ctx, mupdf_layer_config);
+        pdf_obj *ocprops = pdf_dict_getp(ctx, pdf_trailer(ctx, pdoc), "Root/OCProperties");
+        if (pdf_is_dict(ctx, ocprops)) config->ocprops = vp_copy_config(ctx, pdoc, ocprops, 0);
+    } fz_catch(ctx) {
+        fz_free(ctx, config);
+        return NULL;
+    }
+    return config;
+}
+
+int mupdf_pdf_restore_layer_config(fz_context *ctx, fz_document *doc, mupdf_layer_config *config, const char **out_error) {
+    if (!ctx || !doc || !config) return -1;
+    int *nums = NULL, *states = NULL;
+    fz_var(nums);
+    fz_var(states);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        int n = 0;
+        vp_layer_states(ctx, pdoc, &nums, &states, &n);
+        pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+        if (config->ocprops) {
+            /* Put back a copy, so the one kept for Redo stays as it is. */
+            pdf_dict_put_drop(ctx, root, PDF_NAME(OCProperties), vp_copy_config(ctx, pdoc, config->ocprops, 0));
+        } else {
+            pdf_dict_del(ctx, root, PDF_NAME(OCProperties));
+        }
+        vp_reload_layers(ctx, pdoc, nums, states, n);
+    } fz_always(ctx) {
+        fz_free(ctx, nums);
+        fz_free(ctx, states);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+void mupdf_pdf_drop_layer_config(fz_context *ctx, mupdf_layer_config *config) {
+    if (!ctx || !config) return;
+    pdf_drop_obj(ctx, config->ocprops);
+    fz_free(ctx, config);
 }

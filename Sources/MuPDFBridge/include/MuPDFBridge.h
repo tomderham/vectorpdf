@@ -296,6 +296,24 @@ int mupdf_pdf_layer_object_number(fz_context *ctx, fz_document *doc, int layer);
 // now. Sets *out_object_number to the new layer's object number. Unlike showing and hiding
 // layers, this changes the file.
 int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int *out_object_number, const char **out_error);
+// Renames the layer with this object number.
+int mupdf_pdf_rename_layer(fz_context *ctx, fz_document *doc, int layer, const char *name, const char **out_error);
+// Whether anything but annotations and the layer list refers to the layer: page content, a form
+// or an image drawn on it. Such a layer can't be deleted without leaving that content always shown.
+// 1 if so, or if it can't be told; 0 if it holds only annotations, or nothing.
+int mupdf_pdf_layer_holds_content(fz_context *ctx, fz_document *doc, int layer);
+// The annotations on a layer, as (page, object number) pairs in `out`, up to `capacity` pairs.
+// Returns how many there are, or -1.
+int mupdf_pdf_annots_on_layer(fz_context *ctx, fz_document *doc, int layer, int *out, int capacity);
+// Takes a layer out of the document's lists of layers, removing them when it was the last. The
+// annotations on it should be taken off it first. The layers left are shown as they were.
+int mupdf_pdf_remove_layer(fz_context *ctx, fz_document *doc, int layer, const char **out_error);
+// A copy of the document's list of layers and how they're arranged (its /OCProperties), for Undo,
+// and putting one back. The layers left are shown as they were; any others, as the copy says.
+typedef struct mupdf_layer_config mupdf_layer_config;
+mupdf_layer_config *mupdf_pdf_copy_layer_config(fz_context *ctx, fz_document *doc);
+int mupdf_pdf_restore_layer_config(fz_context *ctx, fz_document *doc, mupdf_layer_config *config, const char **out_error);
+void mupdf_pdf_drop_layer_config(fz_context *ctx, mupdf_layer_config *config);
 // The layer an annotation is on (its /OC's object number), or 0.
 int mupdf_pdf_annot_layer(fz_context *ctx, fz_document *doc, int pageno, int objnum, int *out_layer, const char **out_error);
 // Puts an annotation on the layer with this object number, or on none for 0, so it's shown and

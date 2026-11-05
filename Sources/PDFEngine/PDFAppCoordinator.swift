@@ -103,6 +103,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     @Published public var canZoomIn: Bool = false
     @Published public var canZoomOut: Bool = false
     @Published public var hasActiveSelection: Bool = false
+    /// Whether the active document has layers annotations can go on, for Edit > Rename and
+    /// Delete Layer.
+    @Published public var hasActiveLayers: Bool = false
     @Published public var isSpeaking: Bool = false
     /// Published live anchors list of the active document, updating SwiftUI Commands immediately.
     @Published public var activeAnchors: [SnapshotTarget] = []
@@ -361,6 +364,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
             activeViewModel = nil
             hasActiveDocument = false
             hasActiveSelection = false
+            hasActiveLayers = false
             PDFViewerViewModel.active = nil
             docCancellable = nil
             selCancellable = nil
@@ -397,6 +401,10 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                 if self.hasActiveSelection != hasSel {
                     self.hasActiveSelection = hasSel
                 }
+                let hasLayers = !vm.annotationLayers.isEmpty
+                if self.hasActiveLayers != hasLayers {
+                    self.hasActiveLayers = hasLayers
+                }
             }
     }
 
@@ -413,6 +421,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.canZoomOut = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) > Self.minZoomScale)
         self.activeAnchors = activeViewModel?.activeSnapshots ?? []
         self.hasActiveSelection = (activeViewModel?.activeSelection != nil)
+        self.hasActiveLayers = !(activeViewModel?.annotationLayers.isEmpty ?? true)
     }
 
     // MARK: - Document View Model Registry

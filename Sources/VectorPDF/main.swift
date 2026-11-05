@@ -622,7 +622,23 @@ struct VectorPDF: App {
             }
             .disabled(!coordinator.hasActiveSelection || !canEditDocument)
 
+            Divider()
 
+            // Here rather than in a toolbar, so documents without layers show nothing new.
+            Button("New Layer…") {
+                resolvedViewModel?.promptForNewLayer()
+            }
+            .disabled(!canEditDocument)
+
+            Button("Rename Layer…") {
+                resolvedViewModel?.promptToRenameLayer()
+            }
+            .disabled(!canEditDocument || !coordinator.hasActiveLayers)
+
+            Button("Delete Layer…") {
+                resolvedViewModel?.promptToDeleteLayer()
+            }
+            .disabled(!canEditDocument || !coordinator.hasActiveLayers)
 
             Divider()
 
