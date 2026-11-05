@@ -1,9 +1,9 @@
 <!-- keywords: pièces jointes, pièce jointe, fichiers joints, fichiers incorporés, trombone, portfolio, facture électronique, enregistrer la pièce jointe, extraire, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # Fichiers joints à un PDF
 
-Un PDF peut contenir d’autres fichiers : une feuille de calcul accompagnant un rapport, une maquette CAO accompagnant un jeu de plans, ou les données d’une facture électronique. Lorsqu’un document contient des pièces jointes, l’onglet Attachments (un trombone) apparaît en haut de la barre latérale. Un document d’une seule page contenant des pièces jointes s’ouvre avec la barre latérale affichée.
+Un PDF peut contenir d’autres fichiers : une feuille de calcul accompagnant un rapport, une maquette CAO accompagnant un jeu de plans, ou les données d’une facture électronique. Lorsqu’un document contient des pièces jointes, l’onglet Attachments (un trombone) apparaît en haut de la barre latérale. Un document d’une ou deux pages contenant des pièces jointes s’ouvre sur l’onglet Attachments.
 
 Chaque pièce jointe affiche son nom et, lorsque le PDF les fournit, sa description, sa taille et la page à laquelle elle est jointe. Maintenez le pointeur sur l’une d’elles pour voir son type de fichier et sa date.
 

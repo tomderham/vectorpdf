@@ -1,5 +1,5 @@
 <!-- keywords: capas, capa, contenido opcional, CAD, planos, dibujos, mostrar, ocultar, visibilidad, marcados, anotaciones, nueva capa, cambiar nombre de capa, eliminar capa, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # Mostrar y ocultar capas
 
@@ -42,4 +42,4 @@ Las capas que añades, renombras o eliminas se guardan con el documento, igual q
 
 Qué capas se muestran no se guarda con el documento. La próxima vez que lo abras, sus capas se mostrarán como lo indique el propio documento, y cualquier persona a la que se lo envíes verá lo mismo.
 
-> **Nota:** Un documento de una sola página se abre con la barra lateral oculta. Usa el botón de la barra lateral en la barra de herramientas para mostrarla.
+> **Nota:** Un documento de una o dos páginas con capas se abre en la pestaña Layers, salvo que hayas ocultado la barra lateral para él. Usa el botón de la barra lateral en la barra de herramientas para mostrarla.

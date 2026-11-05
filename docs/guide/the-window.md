@@ -30,7 +30,7 @@ The tabs at the top of the sidebar switch between:
 - **Comments:** [every annotation, with its replies and status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [the Agent](agent.md). This tab appears on macOS 26 or later, unless you've turned off [Use Agent](settings.md) in Settings.
 
-Use the sidebar button in the toolbar to show or hide the sidebar.
+Use the sidebar button in the toolbar to show or hide the sidebar. VectorPDF remembers whether you showed or hid it for each document. The first time you open a document, the sidebar shows unless the document has only one or two pages and nothing for the sidebar: no outline, layers, annotations or attachments. A short document with attachments, annotations or layers opens on that tab.
 
 ## Extra toolbars
 

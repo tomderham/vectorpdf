@@ -1,9 +1,9 @@
 <!-- keywords: 附件, 附加文件, 嵌入文件, 回形针, 文件包, 电子发票, 存储附件, 提取, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # 附加到 PDF 的文件
 
-PDF 可以在内部携带其他文件：报告附带的电子表格、图纸集附带的 CAD 模型，或者电子发票的数据。当文稿带有附件时，边栏顶部会出现 Attachments 标签页（一个回形针）。带有附件的单页文稿打开时会显示边栏。
+PDF 可以在内部携带其他文件：报告附带的电子表格、图纸集附带的 CAD 模型，或者电子发票的数据。当文稿带有附件时，边栏顶部会出现 Attachments 标签页（一个回形针）。带有附件的一两页文稿打开时会显示 Attachments 标签页。
 
 每个附件都会显示其名称，如果 PDF 中包含这些信息，还会显示其描述、大小以及附加到的页面。将指针悬停在附件上，可以查看文件类型和日期。
 

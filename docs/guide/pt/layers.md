@@ -1,5 +1,5 @@
 <!-- keywords: camadas, camada, conteúdo opcional, CAD, plantas, desenhos, mostrar, ocultar, visibilidade, marcações, anotações, nova camada, renomear camada, apagar camada, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # Mostrar e ocultar camadas
 
@@ -42,4 +42,4 @@ As camadas que você adiciona, renomeia ou apaga são salvas com o documento, as
 
 Quais camadas estão sendo mostradas não é salvo com o documento. Na próxima vez que você abri-lo, as camadas serão mostradas como o próprio documento define, e quem receber o documento verá o mesmo.
 
-> **Nota:** Um documento de uma página abre com a barra lateral oculta. Use o botão da barra lateral na barra de ferramentas para mostrá-la.
+> **Nota:** Um documento de uma ou duas páginas com camadas abre na aba Layers, a menos que você tenha ocultado a barra lateral para ele. Use o botão da barra lateral na barra de ferramentas para mostrá-la.

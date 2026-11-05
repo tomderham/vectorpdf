@@ -1,9 +1,9 @@
 <!-- keywords: 첨부 파일, 첨부, 내장된 파일, 클립, 포트폴리오, 전자 인보이스, 전자 송장, 첨부 파일 저장, 추출, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # PDF에 첨부된 파일
 
-PDF는 다른 파일을 안에 담을 수 있습니다. 예를 들어 보고서에 딸린 스프레드시트, 도면 세트에 딸린 CAD 모델, 전자 인보이스의 데이터 등입니다. 문서에 첨부 파일이 있으면 사이드바 상단에 Attachments 탭(클립)이 나타납니다. 첨부 파일이 있는 한 페이지짜리 문서는 사이드바가 표시된 상태로 열립니다.
+PDF는 다른 파일을 안에 담을 수 있습니다. 예를 들어 보고서에 딸린 스프레드시트, 도면 세트에 딸린 CAD 모델, 전자 인보이스의 데이터 등입니다. 문서에 첨부 파일이 있으면 사이드바 상단에 Attachments 탭(클립)이 나타납니다. 첨부 파일이 있는 한두 페이지짜리 문서는 Attachments 탭이 열린 상태로 열립니다.
 
 각 첨부 파일에는 이름과, PDF에 포함된 경우 설명, 크기 및 첨부된 페이지가 표시됩니다. 첨부 파일 위에 포인터를 올려 놓으면 파일 종류와 날짜를 볼 수 있습니다.
 

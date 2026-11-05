@@ -1,5 +1,5 @@
 <!-- keywords: Ebenen, Ebene, optionaler Inhalt, CAD, Zeichnungen, einblenden, ausblenden, Sichtbarkeit, Markierungen, Anmerkungen, neue Ebene, Ebene umbenennen, Ebene löschen, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # Ebenen ein- und ausblenden
 
@@ -42,4 +42,4 @@ Ebenen, die du hinzufügst, umbenennst oder löschst, werden mit dem Dokument ge
 
 Welche Ebenen angezeigt werden, wird nicht mit dem Dokument gesichert. Beim nächsten Öffnen werden seine Ebenen so angezeigt, wie das Dokument selbst es festlegt, und alle, denen du es sendest, sehen dasselbe.
 
-> **Hinweis:** Ein einseitiges Dokument wird mit ausgeblendeter Seitenleiste geöffnet. Verwende die Seitenleistentaste in der Symbolleiste, um sie einzublenden.
+> **Hinweis:** Ein Dokument mit einer oder zwei Seiten und Ebenen wird mit dem Tab „Layers“ geöffnet, außer du hast die Seitenleiste dafür ausgeblendet. Verwende die Seitenleistentaste in der Symbolleiste, um sie einzublenden.

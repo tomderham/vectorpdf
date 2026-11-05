@@ -1,5 +1,5 @@
 <!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, 附件, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: fa6bf3010f13 -->
+<!-- source: eaf69c8e8bdb -->
 
 # VectorPDF 窗口
 
@@ -31,7 +31,7 @@
 - **Comments：** [所有注释及其回复和状态](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document：** [Agent](agent.md)。此标签页在 macOS 26 或更高版本上显示，除非你在 Settings 中关闭了 [Use Agent](settings.md)。
 
-使用工具栏中的边栏按钮可显示或隐藏边栏。
+使用工具栏中的边栏按钮可显示或隐藏边栏。VectorPDF 会为每个文稿记住你是显示还是隐藏了边栏。首次打开文稿时会显示边栏，除非文稿只有一两页，且没有边栏可显示的内容：没有目录、图层、注释或附件。带有附件、注释或图层的短文稿会在相应标签页中打开。
 
 ## 附加工具栏
 

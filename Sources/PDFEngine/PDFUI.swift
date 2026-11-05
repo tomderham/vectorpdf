@@ -626,7 +626,7 @@ public struct PDFViewerMainView: View {
                     await viewModel.loadDocument(from: path)
                     if let doc = viewModel.document {
                         overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
-                        sidebarVisibility = doc.pageCount <= 1 ? .detailOnly : .all
+                        showSidebarForOpenedDocument()
                     }
                     DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
                 }
@@ -654,18 +654,11 @@ public struct PDFViewerMainView: View {
         .onChange(of: viewModel.document?.filePath) { oldPath, newPath in
             guard let newPath = newPath, newPath != oldPath, let doc = viewModel.document else { return }
             overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
-            selectedSidebarTab = 0
             tocSearchQuery = ""
-            sidebarVisibility = doc.pageCount <= 1 ? .detailOnly : .all
+            showSidebarForOpenedDocument()
         }
         .onChange(of: viewModel.isTwoPageMode) { _, isTwoPage in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                if isTwoPage {
-                    sidebarVisibility = .detailOnly
-                } else {
-                    sidebarVisibility = (viewModel.document?.pageCount ?? 0) <= 1 ? .detailOnly : .all
-                }
-            }
+            // The view model hides the sidebar for spreads, and brings it back after.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                 if isTwoPage {
                     viewModel.zoomToFitWidth()
@@ -676,6 +669,9 @@ public struct PDFViewerMainView: View {
             let isVisible = (newVisibility != .detailOnly)
             if viewModel.isSidebarVisible != isVisible {
                 viewModel.isSidebarVisible = isVisible
+                // Changed here rather than by the app, which changes the view model first: the
+                // sidebar button, the View menu or the divider. Kept for this document.
+                viewModel.rememberSidebarChoice(isVisible)
             }
         }
         .onChange(of: viewModel.isSidebarVisible) { _, isVisible in
@@ -696,7 +692,7 @@ public struct PDFViewerMainView: View {
                 }
                 if let doc = viewModel.document {
                     overviewMode = doc.outline.isEmpty ? .thumbnails : .outline
-                    sidebarVisibility = doc.pageCount <= 1 ? .detailOnly : .all
+                    showSidebarForOpenedDocument()
                 }
                 DocumentWindowing.closeStandaloneEmptyStartWindows(except: viewModel.currentWindow)
             }
@@ -1450,6 +1446,18 @@ public struct PDFViewerMainView: View {
         .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
         .navigationTitle("")
+    }
+
+    /// Shows or hides the sidebar as the view model decided when the document opened, on the tab
+    /// it chose (see PDFViewerViewModel.sidebarOpening).
+    private func showSidebarForOpenedDocument() {
+        sidebarVisibility = viewModel.isSidebarVisible ? .all : .detailOnly
+        switch viewModel.sidebarOpeningTab {
+        case .contents: selectedSidebarTab = 0
+        case .layers: selectedSidebarTab = 5
+        case .comments: selectedSidebarTab = 4
+        case .attachments: selectedSidebarTab = 6
+        }
     }
 
     @ToolbarContentBuilder

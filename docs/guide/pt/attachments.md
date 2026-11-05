@@ -1,9 +1,9 @@
 <!-- keywords: anexos, anexo, arquivos anexados, arquivos incorporados, clipe, portfólio, nota fiscal eletrônica, fatura eletrônica, salvar anexo, extrair, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # Arquivos anexados a um PDF
 
-Um PDF pode levar outros arquivos dentro dele: uma planilha junto com um relatório, um modelo CAD junto com um conjunto de desenhos ou os dados de uma fatura eletrônica. Quando um documento tem anexos, a aba Attachments (um clipe) aparece na parte superior da barra lateral. Um documento de uma página com anexos abre com a barra lateral visível.
+Um PDF pode levar outros arquivos dentro dele: uma planilha junto com um relatório, um modelo CAD junto com um conjunto de desenhos ou os dados de uma fatura eletrônica. Quando um documento tem anexos, a aba Attachments (um clipe) aparece na parte superior da barra lateral. Um documento de uma ou duas páginas com anexos abre na aba Attachments.
 
 Cada anexo mostra o nome e, quando o PDF os inclui, a descrição, o tamanho e a página à qual está anexado. Mantenha o ponteiro sobre um anexo para ver o tipo de arquivo e a data.
 

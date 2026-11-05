@@ -41,4 +41,4 @@ Layers you add, rename or delete are saved with the document, as are the layers 
 
 Which layers are shown isn't saved with the document. The next time you open it, its layers are shown as the document itself sets them, and anyone you send it to sees the same.
 
-> **Note:** A single-page document opens with the sidebar hidden. Use the sidebar button in the toolbar to show it.
+> **Note:** A document of one or two pages with layers opens on the Layers tab, unless you've hidden the sidebar for it. Use the sidebar button in the toolbar to show it.

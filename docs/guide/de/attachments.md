@@ -1,9 +1,9 @@
 <!-- keywords: Anhänge, Anhang, angehängte Dateien, eingebettete Dateien, Büroklammer, Portfolio, E-Rechnung, elektronische Rechnung, Anhang sichern, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # An ein PDF angehängte Dateien
 
-Ein PDF kann andere Dateien in sich tragen: eine Tabelle zu einem Bericht, ein CAD-Modell zu einem Plansatz oder die Daten einer elektronischen Rechnung. Wenn ein Dokument Anhänge hat, erscheint oben in der Seitenleiste der Tab „Attachments“ (eine Büroklammer). Ein einseitiges Dokument mit Anhängen wird mit eingeblendeter Seitenleiste geöffnet.
+Ein PDF kann andere Dateien in sich tragen: eine Tabelle zu einem Bericht, ein CAD-Modell zu einem Plansatz oder die Daten einer elektronischen Rechnung. Wenn ein Dokument Anhänge hat, erscheint oben in der Seitenleiste der Tab „Attachments“ (eine Büroklammer). Ein Dokument mit einer oder zwei Seiten und Anhängen wird mit dem Tab „Attachments“ geöffnet.
 
 Jeder Anhang zeigt seinen Namen und, sofern das PDF sie enthält, seine Beschreibung, Größe und die Seite, an die er angehängt ist. Halte den Zeiger über einen Anhang, um zu sehen, um welche Art von Datei es sich handelt und welches Datum sie hat.
 

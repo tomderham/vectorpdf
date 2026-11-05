@@ -1,5 +1,5 @@
 <!-- keywords: calques, calque, contenu facultatif, CAO, plans, dessins, afficher, masquer, visibilité, annotations, nouveau calque, renommer un calque, supprimer un calque, layers, layer, optional content, OCG, CAD, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # Afficher et masquer les calques
 
@@ -42,4 +42,4 @@ Les calques que vous ajoutez, renommez ou supprimez sont enregistrés avec le do
 
 Les calques affichés ne sont pas enregistrés avec le document. La prochaine fois que vous l’ouvrirez, ses calques seront affichés comme le document lui-même l’indique, et toute personne à qui vous l’envoyez verra la même chose.
 
-> **Remarque :** Un document d’une seule page s’ouvre avec la barre latérale masquée. Utilisez le bouton de barre latérale dans la barre d’outils pour l’afficher.
+> **Remarque :** Un document d’une ou deux pages contenant des calques s’ouvre sur l’onglet Layers, sauf si vous avez masqué la barre latérale pour ce document. Utilisez le bouton de barre latérale dans la barre d’outils pour l’afficher.

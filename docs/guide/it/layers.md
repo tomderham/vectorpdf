@@ -1,5 +1,5 @@
 <!-- keywords: livelli, livello, contenuto facoltativo, CAD, disegni tecnici, mostrare, nascondere, visibilità, annotazioni, nuovo livello, rinominare livello, eliminare livello, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # Mostrare e nascondere i livelli
 
@@ -42,4 +42,4 @@ I livelli che aggiungi, rinomini o elimini vengono salvati con il documento, cos
 
 Quali livelli sono mostrati non viene salvato con il documento. La prossima volta che lo apri, i suoi livelli vengono mostrati come stabilisce il documento stesso, e chiunque lo riceva da te vede lo stesso.
 
-> **Nota:** Un documento di una sola pagina si apre con la barra laterale nascosta. Usa il pulsante della barra laterale nella barra degli strumenti per mostrarla.
+> **Nota:** Un documento di una o due pagine con livelli si apre sul pannello Layers, a meno che tu non abbia nascosto la barra laterale per quel documento. Usa il pulsante della barra laterale nella barra degli strumenti per mostrarla.

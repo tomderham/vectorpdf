@@ -1,5 +1,5 @@
 <!-- keywords: ventana, barra de herramientas, barras de herramientas, barra lateral, pestañas, pantalla de inicio, interfaz, indicador de página, controles, adjuntos, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: fa6bf3010f13 -->
+<!-- source: eaf69c8e8bdb -->
 
 # La ventana de VectorPDF
 
@@ -31,7 +31,7 @@ Las pestañas de la parte superior de la barra lateral permiten pasar de una vis
 - **Comments:** [todas las anotaciones, con sus respuestas y su estado](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** el [Agent](agent.md). Esta pestaña aparece en macOS 26 o posterior, a menos que hayas desactivado [Use Agent](settings.md) en Settings.
 
-Usa el botón de la barra lateral de la barra de herramientas para mostrar u ocultar la barra lateral.
+Usa el botón de la barra lateral de la barra de herramientas para mostrar u ocultar la barra lateral. VectorPDF recuerda si la mostraste u ocultaste en cada documento. La primera vez que abres un documento, la barra lateral se muestra salvo que el documento tenga solo una o dos páginas y nada para la barra lateral: ni índice, ni capas, ni anotaciones, ni archivos adjuntos. Un documento corto con archivos adjuntos, anotaciones o capas se abre en esa pestaña.
 
 ## Barras de herramientas adicionales
 

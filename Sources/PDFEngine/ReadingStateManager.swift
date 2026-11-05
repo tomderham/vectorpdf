@@ -33,6 +33,9 @@ public struct DocumentReadingState: Codable, Equatable, Sendable {
     /// Queries the user went to a match for in the Search sidebar, most recent first (see
     /// ReadingStateManager.addingRecentSearch). Optional so state saved before it existed decodes.
     public var recentSearches: [String]?
+    /// Whether the sidebar was last shown, when the user showed or hid it themselves; nil until
+    /// they do, when it's decided by the document (see PDFViewerViewModel.sidebarOpening).
+    public var sidebarVisible: Bool?
 
     public init(lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], canonicalKey: String? = nil, updatedAt: Date? = nil, recentSearches: [String]? = nil) {
         self.lastPageIndex = lastPageIndex
@@ -229,9 +232,26 @@ public final class ReadingStateManager: ObservableObject {
     /// to iCloud Key-Value Storage when available. `recentSearches` nil keeps the stored ones.
     public func updateState(for path: String, lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], recentSearches: [String]? = nil) {
         let canonical = CloudStorageHelper.canonicalKey(for: path)
-        let searches = recentSearches ?? (states[canonical] ?? states[path])?.recentSearches
-        let newState = DocumentReadingState(lastPageIndex: lastPageIndex, zoomScale: zoomScale, snapshots: snapshots, canonicalKey: canonical, updatedAt: Date(), recentSearches: searches?.isEmpty == true ? nil : searches)
+        let stored = states[canonical] ?? states[path]
+        let searches = recentSearches ?? stored?.recentSearches
+        var newState = DocumentReadingState(lastPageIndex: lastPageIndex, zoomScale: zoomScale, snapshots: snapshots, canonicalKey: canonical, updatedAt: Date(), recentSearches: searches?.isEmpty == true ? nil : searches)
+        newState.sidebarVisible = stored?.sidebarVisible
+        store(newState, path: path, canonical: canonical)
+    }
 
+    /// Remembers that the user showed or hid the sidebar for a document, keeping the rest of its
+    /// state (a document not read before starts at its first page).
+    public func setSidebarVisible(_ visible: Bool, for path: String) {
+        let canonical = CloudStorageHelper.canonicalKey(for: path)
+        var newState = states[canonical] ?? states[path] ?? DocumentReadingState(lastPageIndex: 0, zoomScale: 1, snapshots: [])
+        guard newState.sidebarVisible != visible else { return }
+        newState.sidebarVisible = visible
+        newState.canonicalKey = canonical
+        newState.updatedAt = Date()
+        store(newState, path: path, canonical: canonical)
+    }
+
+    private func store(_ newState: DocumentReadingState, path: String, canonical: String) {
         // Store local path
         states[path] = newState
 

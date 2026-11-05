@@ -2,7 +2,7 @@
 
 # Files attached to a PDF
 
-A PDF can carry other files inside it: a spreadsheet with a report, a CAD model with a drawing set, or the data of an electronic invoice. When a document has attachments, the Attachments tab (a paperclip) appears at the top of the sidebar. A one-page document with attachments opens with the sidebar showing.
+A PDF can carry other files inside it: a spreadsheet with a report, a CAD model with a drawing set, or the data of an electronic invoice. When a document has attachments, the Attachments tab (a paperclip) appears at the top of the sidebar. A document of one or two pages with attachments opens on the Attachments tab.
 
 Each attachment shows its name and, when the PDF includes them, its description, size and the page it's attached to. Hold the pointer over one to see what kind of file it is and its date.
 

@@ -94,6 +94,10 @@ public final class PDFViewerViewModel: ObservableObject {
     /// Displays pages in side-by-side spreads when true.
     @Published public private(set) var isTwoPageMode: Bool = false
 
+    /// The sidebar tab a document opens on (see `sidebarOpening`), read by the window when a
+    /// document has opened.
+    public internal(set) var sidebarOpeningTab: SidebarOpeningTab = .contents
+
     /// The active viewport size of the PDF scroll view, tracked for accurate zoom-to-fit calculations.
     public var currentViewportSize: CGSize?
 
@@ -108,13 +112,13 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public func rotateClockwise() {
         viewRotationDegrees = (viewRotationDegrees + 90) % 360
-        isTwoPageMode = false
+        leaveTwoPageMode()
         recomputeEffectiveLayout()
     }
 
     public func rotateCounterclockwise() {
         viewRotationDegrees = (viewRotationDegrees + 270) % 360
-        isTwoPageMode = false
+        leaveTwoPageMode()
         recomputeEffectiveLayout()
     }
 
@@ -129,10 +133,28 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    /// Whether the sidebar showed before Two-Page Mode hid it, to bring it back after.
+    private(set) var sidebarVisibleBeforeTwoPage: Bool?
+
+    /// Ends Two-Page Mode, if it's on, bringing the sidebar back as it was.
+    private func leaveTwoPageMode() {
+        guard isTwoPageMode else { return }
+        isTwoPageMode = false
+        if let wasVisible = sidebarVisibleBeforeTwoPage {
+            isSidebarVisible = wasVisible
+        }
+        sidebarVisibleBeforeTwoPage = nil
+    }
+
     public func toggleTwoPageMode() {
         let savedPage = currentPageIndex
-        isTwoPageMode.toggle()
         if isTwoPageMode {
+            leaveTwoPageMode()
+        } else {
+            // A spread needs the window's width; the sidebar comes back after.
+            isTwoPageMode = true
+            sidebarVisibleBeforeTwoPage = isSidebarVisible
+            isSidebarVisible = false
             viewRotationDegrees = 0
         }
         recomputeEffectiveLayout()
@@ -792,9 +814,21 @@ public final class PDFViewerViewModel: ObservableObject {
             // Reset rotation and spread layout for newly opened document.
             self.viewRotationDegrees = 0
             self.isTwoPageMode = false
+            self.sidebarVisibleBeforeTwoPage = nil
             self.recomputeEffectiveLayout()
-            // A one-page PDF has nothing to navigate, unless it carries files (an e-invoice often does).
-            self.isSidebarVisible = doc.pageCount > 1 || !self.attachments.isEmpty
+            // The sidebar as the user last left it for this document, or as suits the document.
+            let isShort = doc.pageCount <= Self.shortDocumentPageCount
+            let opening = Self.sidebarOpening(
+                pageCount: doc.pageCount,
+                hasOutline: !doc.outline.isEmpty,
+                hasLayers: !self.layers.isEmpty,
+                // Only a short document is asked: a long one opens with the sidebar anyway.
+                hasAnnotations: isShort && (0..<doc.pageCount).contains { !doc.annotationThreads(pageIndex: $0).isEmpty },
+                hasAttachments: !self.attachments.isEmpty,
+                savedChoice: isTransientWindow ? nil : ReadingStateManager.shared.state(for: actualPath)?.sidebarVisible
+            )
+            self.sidebarOpeningTab = opening.tab
+            self.isSidebarVisible = opening.isVisible
 
             // Reset Agent state for newly opened document.
             self.agentIndexingTask?.cancel()

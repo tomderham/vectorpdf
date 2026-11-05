@@ -1,5 +1,5 @@
 <!-- keywords: 图层, 可选内容, CAD, 图纸, 显示, 隐藏, 可见性, 标记, 注释, 新建图层, 重命名图层, 删除图层, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: c89946c858cf -->
+<!-- source: 0a0a671f9044 -->
 
 # 显示和隐藏图层
 
@@ -42,4 +42,4 @@
 
 显示哪些图层不会随文稿存储。下次打开文稿时，其图层会按照文稿本身的设置显示，你发送文稿的对象看到的也一样。
 
-> **注：** 单页文稿打开时边栏处于隐藏状态。使用工具栏中的边栏按钮可显示边栏。
+> **注：** 带有图层的一两页文稿打开时会显示 Layers 标签页，除非你已为该文稿隐藏边栏。使用工具栏中的边栏按钮可显示边栏。

@@ -1,9 +1,9 @@
 <!-- keywords: allegati, allegato, file allegati, file incorporati, graffetta, portfolio, fattura elettronica, salvare allegato, estrarre, attachments, attachment, attached files, embedded files, paperclip, portfolio, e-invoice, electronic invoice, ZUGFeRD, Factur-X, XML, Quick Look, save attachment, extract -->
-<!-- source: 72d1207c7468 -->
+<!-- source: e084e93b9409 -->
 
 # File allegati a un PDF
 
-Un PDF può contenere altri file: un foglio di calcolo insieme a un report, un modello CAD insieme a una serie di disegni o i dati di una fattura elettronica. Quando un documento contiene allegati, nella parte superiore della barra laterale appare il pannello Attachments (una graffetta). Un documento di una sola pagina con allegati si apre con la barra laterale visibile.
+Un PDF può contenere altri file: un foglio di calcolo insieme a un report, un modello CAD insieme a una serie di disegni o i dati di una fattura elettronica. Quando un documento contiene allegati, nella parte superiore della barra laterale appare il pannello Attachments (una graffetta). Un documento di una o due pagine con allegati si apre sul pannello Attachments.
 
 Ogni allegato mostra il suo nome e, quando il PDF li include, la descrizione, le dimensioni e la pagina a cui è allegato. Tieni il puntatore su un allegato per vedere che tipo di file è e la sua data.
 

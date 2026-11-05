@@ -1,5 +1,5 @@
 <!-- keywords: janela, barra de ferramentas, barras de ferramentas, barra lateral, abas, tela inicial, interface, indicador de página, controles, anexos, window, toolbar, toolbars, sidebar, tabs, start screen, page indicator, controls, attachments -->
-<!-- source: fa6bf3010f13 -->
+<!-- source: eaf69c8e8bdb -->
 
 # A janela do VectorPDF
 
@@ -31,7 +31,7 @@ As abas na parte superior da barra lateral alternam entre:
 - **Comments:** [todas as anotações, com as respostas e o status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [o Agent](agent.md). Esta aba aparece no macOS 26 ou posterior, a menos que você tenha desativado [Use Agent](settings.md) em Settings.
 
-Use o botão da barra lateral na barra de ferramentas para mostrá-la ou ocultá-la.
+Use o botão da barra lateral na barra de ferramentas para mostrá-la ou ocultá-la. O VectorPDF lembra, para cada documento, se você a mostrou ou ocultou. Na primeira vez que você abre um documento, a barra lateral aparece, a menos que o documento tenha só uma ou duas páginas e nada para a barra lateral: nem sumário, nem camadas, nem anotações, nem anexos. Um documento curto com anexos, anotações ou camadas abre nessa aba.
 
 ## Barras de ferramentas adicionais
 

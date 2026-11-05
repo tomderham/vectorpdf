@@ -1,5 +1,5 @@
 <!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments -->
-<!-- source: fa6bf3010f13 -->
+<!-- source: eaf69c8e8bdb -->
 
 # VectorPDF のウインドウ
 
@@ -31,7 +31,7 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 - **Comments:** [すべての注釈と、その返信およびステータス](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document:** [Agent](agent.md)。このタブは macOS 26 以降で表示されます。ただし、Settings で [Use Agent](settings.md) をオフにした場合は表示されません。
 
-サイドバーを表示または非表示にするには、ツールバーのサイドバーボタンを使用します。
+サイドバーを表示または非表示にするには、ツールバーのサイドバーボタンを使用します。VectorPDF は、書類ごとにサイドバーを表示したか非表示にしたかを記憶します。書類を初めて開くとサイドバーが表示されます。ただし、1 ページまたは 2 ページだけの書類で、アウトライン、レイヤー、注釈、添付ファイルなどサイドバーに表示するものがない場合は表示されません。添付ファイル、注釈、またはレイヤーのある短い書類は、そのタブが開いた状態で表示されます。
 
 ## 追加のツールバー
 

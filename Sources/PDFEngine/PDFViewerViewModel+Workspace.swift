@@ -133,3 +133,33 @@ extension PDFViewerViewModel {
         panel.begin(completionHandler: completion)
     }
 }
+
+// MARK: - The sidebar when a document opens
+
+/// The sidebar tab a document opens on.
+public enum SidebarOpeningTab: Equatable, Sendable {
+    case contents, layers, comments, attachments
+}
+
+extension PDFViewerViewModel {
+    /// Documents this long or shorter open without the sidebar, unless something in them is
+    /// found there: an outline, layers, annotations or attachments.
+    static let shortDocumentPageCount = 2
+
+    /// Whether the sidebar shows when a document opens, and on which tab. The user's own last
+    /// choice for the document wins; otherwise it shows unless the document is short and has
+    /// nothing for the sidebar. A short document opens on the tab that has what it holds.
+    static func sidebarOpening(pageCount: Int, hasOutline: Bool, hasLayers: Bool = false, hasAnnotations: Bool, hasAttachments: Bool, savedChoice: Bool?) -> (isVisible: Bool, tab: SidebarOpeningTab) {
+        let isShort = pageCount <= shortDocumentPageCount
+        let tab: SidebarOpeningTab = !isShort ? .contents
+            : hasAttachments ? .attachments : hasAnnotations ? .comments : hasLayers && !hasOutline ? .layers : .contents
+        let isVisible = savedChoice ?? (!isShort || hasOutline || hasLayers || hasAnnotations || hasAttachments)
+        return (isVisible, tab)
+    }
+
+    /// Remembers that the user showed or hid the sidebar, for the next time this document opens.
+    func rememberSidebarChoice(_ isVisible: Bool) {
+        guard !isTransientWindow, let doc = document else { return }
+        ReadingStateManager.shared.setSidebarVisible(isVisible, for: doc.filePath)
+    }
+}
