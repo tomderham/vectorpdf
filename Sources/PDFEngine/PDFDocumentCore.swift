@@ -1348,7 +1348,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 text: text,
                 measurementPoints: points,
                 measurementValue: value,
-                measurementText: text
+                measurementText: text,
+                leaderOffset: CGFloat(raw.leader)
             )
             annot.documentObjectNumber = Int(raw.objnum)
             annot.layerObjectNumber = raw.layer > 0 ? Int(raw.layer) : nil

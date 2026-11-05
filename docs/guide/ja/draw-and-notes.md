@@ -1,9 +1,9 @@
 <!-- keywords: 描画, 描く, インク, ペン, フリーハンド, 図形, 長方形, 正方形, 楕円, 円, 線, 矢印, テキストボックス, 吹き出し, メモ, 付箋, コメント, 返信, ステータス, 作成者, リビジョンクラウド, クラウド, 線の端, 色, 取り消し, やり直し, 注釈, 消しゴム, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # 描画、メモ、テキスト、吹き出し
 
-⇧⌘A を押すか、Markup Toolbar ボタンをクリックして、Markup ツールバーを表示します。ツールを選択してから、色とサイズを選択します。色を選ぶには、ツールバーの右寄りにあるカラーボタンをクリックしてから、色をクリックします。ツールの使用を終了するには、Escape キーを押すか、ツールバーの最初のツールである Text Selection Mode を選択します。
+⇧⌘A を押すか、Markup Toolbar ボタンをクリックして、Markup ツールバーを表示します。ツールを選択してから、色とサイズを選択します。色を選ぶには、ツールバーの右寄りにあるカラーボタンをクリックしてから、色をクリックします。ツールの使用を終了するには、Escape キーを押すか、ツールをもう一度クリックするか、ツールバーの最初のツールである Text Selection Mode を選択します。
 
 ## フリーハンドで描画する
 

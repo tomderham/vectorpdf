@@ -27,13 +27,11 @@ extension PDFCanvasView {
         PDFViewerViewModel.active = viewModel
         PDFViewerAppCoordinator.shared.registerActive(viewModel)
         window?.makeFirstResponder(self)
-        // Interaction is only supported in interactive single-column, unrotated mode.
-        guard viewModel.isInteractiveViewingMode else { return }
         let point = convert(event.locationInWindow, from: nil)
 
         // Handle clicks on or outside the active inline text field
         if let tf = activeInlineTextField {
-            if tf.frame.contains(point) {
+            if inlineTextFieldContains(tf, canvasPoint: point) {
                 return
             } else {
                 commitActiveInlineTextField()
@@ -139,11 +137,15 @@ extension PDFCanvasView {
                 // with the file is found as precisely as the document allows, and picked up.
                 let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIdx, at: pagePoint)
                 let shownHit = list.reversed().first(where: { annot in
-                    annot.isFromFile
-                        ? annot.documentObjectNumber == fileHit
-                        : (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
+                    if annot.isFromFile { return annot.documentObjectNumber == fileHit }
+                    if annot.isMeasurement { return viewModel.canvasMode == .select && measurementHit(annot, at: pagePoint) }
+                    return (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
                 })
-                if let hit = shownHit ?? fileHit.flatMap({ viewModel.pickUpFileAnnotation(pageIndex: pageIdx, objectNumber: $0) }) {
+                // A measurement that was in the file when it was opened is picked up to change it.
+                let fileMeasurementHit = viewModel.canvasMode == .select
+                    ? fileHit.flatMap { viewModel.fileMeasurement(pageIndex: pageIdx, objectNumber: $0) }.flatMap { measurementHit($0, at: pagePoint) ? viewModel.pickUpMeasurement($0) : nil }
+                    : nil
+                if let hit = shownHit ?? fileMeasurementHit ?? fileHit.flatMap({ viewModel.pickUpFileAnnotation(pageIndex: pageIdx, objectNumber: $0) }) {
                     if event.clickCount == 2, hit.isFromFile || (hit.type != .freeText && hit.type != .callout), let number = hit.documentObjectNumber {
                         showComments(pageIndex: pageIdx, objectNumber: number)
                         return
@@ -168,6 +170,7 @@ extension PDFCanvasView {
                         switch hit.type {
                         case .callout where !hit.isFromFile: part = calloutDragPart(for: hit, at: pagePoint)
                         case .line: part = lineDragPart(for: hit, at: pagePoint)
+                        case _ where hit.isMeasurement: part = measurementDragPart(for: hit, at: pagePoint)
                         default: part = .entireAnnotation
                         }
                         activeAnnotationDrag = (
@@ -371,16 +374,20 @@ extension PDFCanvasView {
         }
 
         if let drag = activeAnnotationDrag {
-            guard let pFrame = pageFrame(for: drag.pageIndex),
-                  let doc = viewModel.document else { return }
+            guard let geometry = pageGeometry(for: drag.pageIndex) else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
-            let pBounds = doc.pageBounds[drag.pageIndex]
-            let currentPagePoint = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-            )
-            let dx = currentPagePoint.x - drag.startPagePoint.x
-            let dy = currentPagePoint.y - drag.startPagePoint.y
+            let currentPagePoint = geometry.pagePoint(forCanvasPoint: currentCanvas)
+            var dx = currentPagePoint.x - drag.startPagePoint.x
+            var dy = currentPagePoint.y - drag.startPagePoint.y
+            // A measurement's point snaps, and keeps to Ortho Lock, as when it was drawn.
+            let points = drag.initialAnnotation.measurementPoints
+            if case .measurementPoint(let index) = drag.part, points.indices.contains(index) {
+                let moved = CGPoint(x: points[index].x + dx, y: points[index].y + dy)
+                let neighbour = points.count > 1 ? points[index == 0 ? 1 : index - 1] : nil
+                let snapped = applySnapping(to: moved, fromPoint: neighbour, inPage: drag.pageIndex, modifierFlags: event.modifierFlags, excluding: drag.id)
+                dx = snapped.x - points[index].x
+                dy = snapped.y - points[index].y
+            }
             activeAnnotationDrag?.currentDelta = CGSize(width: dx, height: dy)
             needsDisplay = true
             return
@@ -388,14 +395,9 @@ extension PDFCanvasView {
 
         if viewModel.canvasMode == .redact {
             guard let dragPageIdx = currentRedactionPage,
-                  let pFrame = pageFrame(for: dragPageIdx),
-                  let doc = viewModel.document else { return }
+                  let geometry = pageGeometry(for: dragPageIdx) else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
-            let pBounds = doc.pageBounds[dragPageIdx]
-            currentRedactionEnd = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-            )
+            currentRedactionEnd = geometry.pagePoint(forCanvasPoint: currentCanvas)
             needsDisplay = true
             return
         }
@@ -403,14 +405,9 @@ extension PDFCanvasView {
         if viewModel.canvasMode == .shape {
             guard let dragPageIdx = currentShapePage,
                   let start = currentShapeStart,
-                  let pFrame = pageFrame(for: dragPageIdx),
-                  let doc = viewModel.document else { return }
+                  let geometry = pageGeometry(for: dragPageIdx) else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
-            let pBounds = doc.pageBounds[dragPageIdx]
-            var end = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-            )
+            var end = geometry.pagePoint(forCanvasPoint: currentCanvas)
             // A cloud follows the path dragged.
             if viewModel.selectedShape == .cloud {
                 currentShapePath.append(end)
@@ -435,28 +432,18 @@ extension PDFCanvasView {
 
         if viewModel.canvasMode == .callout {
             guard let dragPageIdx = currentCalloutPage,
-                  let pFrame = pageFrame(for: dragPageIdx),
-                  let doc = viewModel.document else { return }
+                  let geometry = pageGeometry(for: dragPageIdx) else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
-            let pBounds = doc.pageBounds[dragPageIdx]
-            currentCalloutEnd = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-            )
+            currentCalloutEnd = geometry.pagePoint(forCanvasPoint: currentCanvas)
             needsDisplay = true
             return
         }
 
         if viewModel.canvasMode == .draw {
             guard let dragPageIdx = currentDrawingPageIndex,
-                  let pFrame = pageFrame(for: dragPageIdx),
-                  let doc = viewModel.document else { return }
+                  let geometry = pageGeometry(for: dragPageIdx) else { return }
             let currentCanvas = convert(event.locationInWindow, from: nil)
-            let pBounds = doc.pageBounds[dragPageIdx]
-            let currentPagePoint = CGPoint(
-                x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-                y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-            )
+            let currentPagePoint = geometry.pagePoint(forCanvasPoint: currentCanvas)
             currentDrawingPoints.append(currentPagePoint)
             needsDisplay = true
             return
@@ -474,8 +461,7 @@ extension PDFCanvasView {
         guard isDraggingSelection,
               let startCanvas = dragStartCanvasPoint,
               let dragPageIdx = activeDragPage,
-              let pFrame = pageFrame(for: dragPageIdx),
-              let doc = viewModel.document else { return }
+              let geometry = pageGeometry(for: dragPageIdx) else { return }
 
         let currentCanvas = convert(event.locationInWindow, from: nil)
         let dragDistance = hypot(currentCanvas.x - startCanvas.x, currentCanvas.y - startCanvas.y)
@@ -500,12 +486,7 @@ extension PDFCanvasView {
             }
         }
 
-        let pBounds = doc.pageBounds[dragPageIdx]
-
-        let startPagePoint = CGPoint(
-            x: pBounds.minX + ((startCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-            y: pBounds.minY + ((startCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-        )
+        let startPagePoint = geometry.pagePoint(forCanvasPoint: startCanvas)
 
         let isOptionPressed = event.modifierFlags.contains(.option)
         let mode: SelectionMode = isOptionPressed ? .rectangularArea : viewModel.selectionMode
@@ -519,10 +500,7 @@ extension PDFCanvasView {
             return
         }
 
-        let currentPagePoint = CGPoint(
-            x: pBounds.minX + ((currentCanvas.x - pFrame.minX) / viewModel.effectiveZoom),
-            y: pBounds.minY + ((currentCanvas.y - pFrame.minY) / viewModel.effectiveZoom)
-        )
+        let currentPagePoint = geometry.pagePoint(forCanvasPoint: currentCanvas)
 
         viewModel.handleDragSelect(
             pageIndex: dragPageIdx,
@@ -539,7 +517,12 @@ extension PDFCanvasView {
             let dx = drag.currentDelta.width
             let dy = drag.currentDelta.height
             let dist = hypot(dx, dy)
-            if dist > 2.0, drag.initialAnnotation.isFromFile {
+            if dist > 0.5, drag.initialAnnotation.isMeasurement {
+                let edited = editedMeasurement(drag.initialAnnotation, part: drag.part, delta: drag.currentDelta)
+                if let updated = viewModel.replaceMeasurement(drag.initialAnnotation, with: edited) {
+                    selectedAnnotation = (id: updated.id, pageIndex: drag.pageIndex)
+                }
+            } else if dist > 2.0, drag.initialAnnotation.isFromFile {
                 commitFileAnnotationDrag(drag.initialAnnotation, part: drag.part, delta: drag.currentDelta)
             } else if dist > 2.0 {
                 let orig = drag.initialAnnotation
@@ -566,7 +549,7 @@ extension PDFCanvasView {
                         targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
                         kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
                         rect = rect.offsetBy(dx: dx, dy: dy)
-                        case .lineStart, .lineEnd:
+                    case .lineStart, .lineEnd, .measurementPoint, .measurementLeader:
                         break
                     }
 
@@ -806,17 +789,6 @@ extension PDFCanvasView {
     
     public override func mouseMoved(with event: NSEvent) {
         updateLinkPeek(modifierFlags: event.modifierFlags)
-        // Same rationale as mouseDown: link targets aren't meaningful outside the plain
-        // single-column, unrotated layout, so don't hint at a clickable link (cursor/highlight)
-        // that clicking wouldn't actually do anything about.
-        guard viewModel.isInteractiveViewingMode else {
-            if hoveredLink != nil {
-                hoveredLink = nil
-                needsDisplay = true
-            }
-            NSCursor.arrow.set()
-            return
-        }
         if viewModel.canvasMode == .draw || viewModel.canvasMode == .eraser {
             if hoveredLink != nil {
                 hoveredLink = nil
@@ -863,6 +835,19 @@ extension PDFCanvasView {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
                case let list = viewModel.shownAnnotations(onPage: pageIdx), !list.isEmpty {
                 // If an annotation is selected on this page, check if hovering over its corner handles
+                if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
+                   let selAnnot = list.first(where: { $0.id == sel.id }), selAnnot.isMeasurement,
+                   case .measurementPoint = measurementDragPart(for: selAnnot, at: pagePoint) {
+                    if hoveredLink != nil { hoveredLink = nil; needsDisplay = true }
+                    NSCursor.crosshair.set()
+                    return
+                }
+                if viewModel.canvasMode == .select, list.contains(where: { $0.isMeasurement && measurementHit($0, at: pagePoint) }) {
+                    if hoveredLink != nil { hoveredLink = nil; needsDisplay = true }
+                    NSCursor.openHand.set()
+                    return
+                }
+
                 if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
                    let selAnnot = list.first(where: { $0.id == sel.id }),
                    let r = selAnnot.rect,

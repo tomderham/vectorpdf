@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # 键盘快捷键
 
@@ -89,6 +89,6 @@
 | 删除所选注释 | Delete | 该注释 |
 | 移动所选注释 | Arrow keys，或使用 ⇧Arrow keys 每次移动 10 点 | |
 | 完成周长或面积测量 | Return | |
-| 将测量限制为 0°、45° 或 90° | 按住 ⇧ | |
+| 针对单条线切换 Ortho Lock（0°、45° 或 90°） | 按住 ⇧ | |
 | 绘制正方形或圆形，或角度为 45° 倍数的线条 | 使用 Shapes 工具拖移时按住 ⇧ | |
 | 取消或退出当前工具 | Escape | |

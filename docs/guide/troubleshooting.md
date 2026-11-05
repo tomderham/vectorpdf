@@ -4,9 +4,7 @@
 
 ## I can't select text, follow links or use markup tools
 
-Check that the view isn't rotated or in Two-Page Mode. These work only in Single Page view with no rotation. See [Zoom, rotate and page layout](zoom-and-layout.md).
-
-Also check that a Markup or Measurement tool isn't active. Press Escape to return to selecting text.
+Check that a Markup or Measurement tool isn't active. Press Escape, or click the selected tool again, to return to selecting text.
 
 ## A search finds nothing
 

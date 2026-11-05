@@ -1,9 +1,9 @@
 <!-- keywords: desenhar, desenho, tinta, caneta, mão livre, forma, formas, retângulo, quadrado, oval, círculo, elipse, linha, seta, caixa de texto, texto explicativo, nota, notas, nota adesiva, comentário, comentários, resposta, respostas, status, autor, nuvem de revisão, nuvem, terminação de linha, cor, desfazer, refazer, anotar, anotação, anotações, borracha, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # Desenhar, adicionar notas, texto e textos explicativos
 
-Pressione ⇧⌘A ou clique no botão Markup Toolbar para mostrar a barra de ferramentas Markup. Escolha uma ferramenta e, depois, uma cor e um tamanho. Para escolher uma cor, clique no botão de cor perto da direita da barra e, depois, em uma cor. Para terminar de usar uma ferramenta, pressione Escape ou escolha Text Selection Mode, a primeira ferramenta da barra.
+Pressione ⇧⌘A ou clique no botão Markup Toolbar para mostrar a barra de ferramentas Markup. Escolha uma ferramenta e, depois, uma cor e um tamanho. Para escolher uma cor, clique no botão de cor perto da direita da barra e, depois, em uma cor. Para terminar de usar uma ferramenta, pressione Escape, clique na ferramenta de novo ou escolha Text Selection Mode, a primeira ferramenta da barra.
 
 ## Desenhar à mão livre
 

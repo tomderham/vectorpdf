@@ -100,7 +100,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var isCommittingInlineText: Bool = false
     
     // Annotation selection and drag-to-move state
-    internal enum DraggingAnnotationPart {
+    internal enum DraggingAnnotationPart: Equatable {
         case entireAnnotation
         case resizeTopLeft
         case resizeTopRight
@@ -111,6 +111,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         case calloutKneePoint
         case lineStart
         case lineEnd
+        /// One of a measurement's points, by index.
+        case measurementPoint(Int)
+        /// A length's dimension line, moved sideways nearer to or further from what it measures.
+        case measurementLeader
     }
     var selectedAnnotation: (id: UUID, pageIndex: Int)?
     var activeAnnotationDrag: (
@@ -127,6 +131,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
     // Visible AcroForm controls cache (keyed by widget.id, e.g. "p0_w1")
     var activeFormControls: [String: NSView] = [:]
+    /// The layout rect and rotation each subview on a page (form control, inline text field) was
+    /// last placed at, by `place(_:layoutRect:geometry:)`.
+    var subviewPlacements: [ObjectIdentifier: (layoutRect: NSRect, frame: NSRect, rotation: Int)] = [:]
 
     // Inverted dark-mode page bitmap cache, keyed by page index.
     private struct CachedThemedPage {
@@ -451,21 +458,29 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         return NSRect(x: x, y: y, width: w, height: h)
     }
 
+    /// Where page `pageIndex` sits on the canvas and how its page points map there, in every view
+    /// (single page, two-page spreads, rotated). Every conversion between page points and canvas
+    /// points goes through this.
+    public func pageGeometry(for pageIndex: Int) -> PageGeometry? {
+        guard let doc = viewModel.document, let frame = pageFrame(for: pageIndex) else { return nil }
+        return PageGeometry(frame: frame, pageBounds: doc.pageBounds[pageIndex], zoom: viewModel.effectiveZoom, rotation: viewModel.viewRotationDegrees)
+    }
+
+    /// The page point under `canvasPoint` on page `pageIndex`, whether or not it's on the page —
+    /// for drags that leave the page they started on.
+    func pagePoint(forCanvasPoint canvasPoint: CGPoint, onPage pageIndex: Int) -> CGPoint? {
+        pageGeometry(for: pageIndex)?.pagePoint(forCanvasPoint: canvasPoint)
+    }
+
     public func pageInfo(at canvasPoint: CGPoint) -> (pageIndex: Int, frame: NSRect, pagePoint: CGPoint)? {
-        guard viewModel.document != nil else { return nil }
+        guard let doc = viewModel.document else { return nil }
         let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.effectiveZoom)
         let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
-        guard let pFrame = pageFrame(for: pageIdx) else { return nil }
-
-        if pFrame.contains(canvasPoint) {
-            // Note: while rotated, this pagePoint is not corrected for rotation — deliberately,
-            // since text selection/link/form hit-testing (the only consumers of pagePoint) are all
-            // inert while rotated (see PDFViewerViewModel.viewRotationDegrees's doc comment), so an
-            // uncorrected value here is simply never acted on rather than needing to be right.
-            let pBounds = viewModel.document!.pageBounds[pageIdx]
-            let pageX = pBounds.minX + ((canvasPoint.x - pFrame.minX) / viewModel.effectiveZoom)
-            let pageY = pBounds.minY + ((canvasPoint.y - pFrame.minY) / viewModel.effectiveZoom)
-            return (pageIdx, pFrame, CGPoint(x: pageX, y: pageY))
+        // In two-page mode that's one page of the spread; the point may be on the other.
+        let candidates = viewModel.isTwoPageMode ? [pageIdx, pageIdx - 1, pageIdx + 1] : [pageIdx]
+        for idx in candidates where idx >= 0 && idx < doc.pageCount {
+            guard let geometry = pageGeometry(for: idx), geometry.frame.contains(canvasPoint) else { continue }
+            return (idx, geometry.frame, geometry.pagePoint(forCanvasPoint: canvasPoint))
         }
         return nil
     }
@@ -483,7 +498,60 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         return link
     }
 
-    /// Computes where an AcroForm widget sits on screen, in canvas coordinates.
+    /// Places a subview over `layoutRect` (in the layout space of the page `geometry` describes),
+    /// turned with the page in a rotated view. Does nothing when it's already there, so that an
+    /// edit in progress isn't disturbed.
+    func place(_ view: NSView, layoutRect: NSRect, geometry: PageGeometry) {
+        let frame = geometry.subviewFrame(forLayoutRect: layoutRect)
+        let key = ObjectIdentifier(view)
+        if let placed = subviewPlacements[key], placed.frame == frame, placed.rotation == geometry.rotation,
+           view.frameCenterRotation == geometry.subviewRotation {
+            return
+        }
+        if geometry.isRotated || view.frameCenterRotation != 0 {
+            // frameCenterRotation moves the frame's origin, so set the frame unturned first.
+            view.frameCenterRotation = 0
+            view.frame = frame
+            view.frameCenterRotation = geometry.subviewRotation
+        } else if view.frame != frame {
+            view.frame = frame
+        }
+        subviewPlacements[key] = (layoutRect, frame, geometry.rotation)
+    }
+
+    /// AppKit hit-tests a subview by its `frame`, which for a view turned by frameCenterRotation
+    /// isn't where it's shown, so clicks on a form field or text box in a rotated view would miss
+    /// it. Turned subviews are found here by their bounds instead.
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        let local = superview.map { convert(point, from: $0) } ?? point
+        for sub in subviews.reversed() where sub.frameCenterRotation != 0 && !sub.isHidden {
+            let inSub = sub.convert(local, from: self)
+            guard sub.bounds.contains(inSub) else { continue }
+            for child in sub.subviews.reversed() where !child.isHidden {
+                if let hit = child.hitTest(inSub) { return hit }
+            }
+            return sub
+        }
+        // Nor may a turned subview take a click by its frame where it isn't shown.
+        let hit = super.hitTest(point)
+        if let hit, hit !== self, subviews.contains(where: { $0.frameCenterRotation != 0 && hit.isDescendant(of: $0) }) {
+            return self
+        }
+        return hit
+    }
+
+    /// Forgets a subview's placement once it's removed.
+    func forgetPlacement(of view: NSView) {
+        subviewPlacements.removeValue(forKey: ObjectIdentifier(view))
+    }
+
+    /// The layout rect a subview was placed at, or its frame if it wasn't placed.
+    func layoutRect(of view: NSView) -> NSRect {
+        subviewPlacements[ObjectIdentifier(view)]?.layoutRect ?? view.frame
+    }
+
+    /// Computes where an AcroForm widget sits on its page, in the page's layout space (see
+    /// PageGeometry) when given `layoutFrame`.
     /// Kept identical to syncFormControls() positioning to mask static appearance without clipping.
     func widgetScreenFrame(for widget: PDFFormWidget, pageFrame: NSRect, pageBounds: CGRect) -> NSRect {
         let isChoice = (widget.type == .combobox || widget.type == .listbox)
@@ -510,7 +578,51 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         return NSRect(x: vx, y: vy, width: vw, height: vh)
     }
 
-    /// Maps a page's native rect onto its rotated on-screen footprint.
+}
+
+/// How one page maps onto the canvas.
+///
+/// There are three spaces:
+/// - **page** points, as MuPDF gives them (y down, from `pageBounds.origin`);
+/// - the page's **layout** space: canvas points as if the view weren't rotated, the page drawn
+///   unrotated at `layoutFrame` (same origin as `frame`, the page's native size times zoom). The
+///   canvas draws annotations and overlays here, inside `viewRotation`, so their arithmetic
+///   (`layoutFrame.minX + (x - pageBounds.minX) * zoom`) is the same in every view;
+/// - **canvas** points, where the page really is: `frame`, which is `layoutFrame` turned by the
+///   view rotation. Mouse events arrive in this space.
+public struct PageGeometry: Equatable, Sendable {
+    /// The page's on-screen footprint (width and height swapped at 90° and 270°).
+    public let frame: NSRect
+    public let pageBounds: CGRect
+    public let zoom: CGFloat
+    /// The view rotation: 0, 90, 180 or 270 degrees clockwise.
+    public let rotation: Int
+
+    public init(frame: NSRect, pageBounds: CGRect, zoom: CGFloat, rotation: Int) {
+        self.frame = frame
+        self.pageBounds = pageBounds
+        self.zoom = zoom
+        self.rotation = rotation
+    }
+
+    public var isRotated: Bool { rotation != 0 }
+
+    /// Where the page would be if the view weren't rotated.
+    public var layoutFrame: NSRect {
+        NSRect(x: frame.minX, y: frame.minY, width: pageBounds.width * zoom, height: pageBounds.height * zoom)
+    }
+
+    /// Layout space → canvas space: turns `layoutFrame` onto `frame`. Identity when unrotated.
+    public var viewRotation: CGAffineTransform {
+        guard isRotated else { return .identity }
+        let size = layoutFrame.size
+        return CGAffineTransform(translationX: -frame.minX, y: -frame.minY)
+            .concatenating(Self.rotationTransform(degrees: rotation, nativeWidth: size.width, nativeHeight: size.height))
+            .concatenating(CGAffineTransform(translationX: frame.minX, y: frame.minY))
+    }
+
+    /// Maps a native rect of `nativeWidth` x `nativeHeight` at the origin onto its footprint
+    /// turned clockwise by `degrees` (in the flipped canvas), also at the origin.
     static func rotationTransform(degrees: Int, nativeWidth: CGFloat, nativeHeight: CGFloat) -> CGAffineTransform {
         switch degrees {
         case 90:
@@ -524,4 +636,44 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         }
     }
 
+    /// Page space → layout space.
+    public var pageToLayout: CGAffineTransform {
+        CGAffineTransform(translationX: -pageBounds.minX, y: -pageBounds.minY)
+            .concatenating(CGAffineTransform(scaleX: zoom, y: zoom))
+            .concatenating(CGAffineTransform(translationX: frame.minX, y: frame.minY))
+    }
+
+    /// Page space → canvas space.
+    public var pageToCanvas: CGAffineTransform { pageToLayout.concatenating(viewRotation) }
+
+    public func canvasPoint(forPagePoint p: CGPoint) -> CGPoint { p.applying(pageToCanvas) }
+    public func pagePoint(forCanvasPoint p: CGPoint) -> CGPoint { p.applying(pageToCanvas.inverted()) }
+    public func layoutPoint(forCanvasPoint p: CGPoint) -> CGPoint { p.applying(viewRotation.inverted()) }
+    public func canvasPoint(forLayoutPoint p: CGPoint) -> CGPoint { p.applying(viewRotation) }
+
+    /// The canvas rect covering a page rect (exact, since the rotation is a multiple of 90°).
+    public func canvasRect(forPageRect r: CGRect) -> CGRect { r.applying(pageToCanvas) }
+    /// The page rect covering a canvas rect.
+    public func pageRect(forCanvasRect r: CGRect) -> CGRect { r.applying(pageToCanvas.inverted()) }
+
+    /// A canvas-space vector (a drag or an arrow key) in page space.
+    public func pageVector(forCanvasVector v: CGSize) -> CGSize {
+        let t = pageToCanvas.inverted()
+        return CGSize(width: t.a * v.width + t.c * v.height, height: t.b * v.width + t.d * v.height)
+    }
+
+    /// The view rotation as an AppKit `frameCenterRotation` for a subview of the flipped canvas.
+    public var subviewRotation: CGFloat {
+        // frameCenterRotation is counterclockwise in the superview's coordinates; the canvas is
+        // flipped, so that's clockwise on screen, as `rotation` is.
+        CGFloat(rotation)
+    }
+
+    /// The frame to give a subview so that, turned by `subviewRotation` about its centre, it
+    /// covers `layoutRect` as rotated onto the canvas.
+    public func subviewFrame(forLayoutRect layoutRect: NSRect) -> NSRect {
+        guard isRotated else { return layoutRect }
+        let center = canvasPoint(forLayoutPoint: CGPoint(x: layoutRect.midX, y: layoutRect.midY))
+        return NSRect(x: center.x - layoutRect.width / 2, y: center.y - layoutRect.height / 2, width: layoutRect.width, height: layoutRect.height)
+    }
 }

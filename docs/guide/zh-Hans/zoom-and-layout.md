@@ -1,5 +1,5 @@
 <!-- keywords: 缩放, 放大, 适合宽度, 适合窗口, 实际大小, 旋转, 双页, 跨页, 书籍, 布局, 视图, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 3a774d3429c6 -->
+<!-- source: 6687d8396f24 -->
 
 # 缩放、旋转和页面布局
 
@@ -32,4 +32,4 @@ VectorPDF 会在任何缩放比例下保持页面清晰，因为它会重新绘�
 
 点按工具栏中的 Two-Page Mode，或者选取 View > Two Pages (⌥⌘2)。页面会像翻开的书一样成对显示，封面单独显示，并且跨页会缩放以适合窗口。若要返回，请再次点按该按钮，或者选取 View > Single Page。
 
-> **注：** 当视图处于旋转状态或 Two-Page Mode 时，你无法选择文本、跟随链接、使用标记和测量工具或填写表单。返回未旋转的 Single Page 视图后即可使用这些功能。
+> **注：** 视图处于旋转状态或 Two-Page Mode 时，也可以选择文本、跟随链接、搜索、使用标记和测量工具以及填写表单。你添加的内容位于页面本身，因此将视图转回后仍会留在原处。

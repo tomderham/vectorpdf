@@ -1,5 +1,5 @@
 <!-- keywords: zoom, ingrandire, adatta alla larghezza, adatta alla finestra, dimensioni reali, ruotare, rotazione, due pagine, doppia pagina, libro, layout, vista, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, view -->
-<!-- source: 3a774d3429c6 -->
+<!-- source: 6687d8396f24 -->
 
 # Zoom, rotazione e layout di pagina
 
@@ -32,4 +32,4 @@ Fai clic su Rotate Left o Rotate Right nella barra degli strumenti. Questa opera
 
 Fai clic su Two-Page Mode nella barra degli strumenti, oppure scegli View > Two Pages (⌥⌘2). Le pagine appaiono a coppie, con la copertina da sola, come in un libro aperto, e la doppia pagina viene adattata alla finestra. Per tornare indietro, fai di nuovo clic sul pulsante oppure scegli View > Single Page.
 
-> **Nota:** mentre la vista è ruotata o in Two-Page Mode, non puoi selezionare il testo, seguire i link, usare gli strumenti di annotazione e misurazione né compilare moduli. Torna a Single Page senza rotazione per usarli.
+> **Nota:** la selezione del testo, i link, la ricerca, gli strumenti di annotazione e misurazione e i moduli funzionano anche quando la vista è ruotata o in Two-Page Mode. Ciò che aggiungi viene posto sulla pagina stessa, quindi resta al suo posto quando riporti la vista com’era.

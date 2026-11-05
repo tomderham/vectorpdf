@@ -334,14 +334,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         /// margin when it fits, or its top-left corner when it doesn't.
         private func scroll(toPageRect pageRect: CGRect, pageIndex pageIdx: Int, minimumSize: CGSize, doc: PDFDocumentCore, clipView: NSClipView, scrollView: NSScrollView) {
             guard let canvasView = self.canvasView,
-                  let pFrame = canvasView.pageFrame(for: pageIdx) else { return }
-            let pageBounds = doc.pageBounds[pageIdx]
-            let targetCanvasRect = NSRect(
-                x: pFrame.minX + (pageRect.minX - pageBounds.minX) * viewModel.effectiveZoom,
-                y: pFrame.minY + (pageRect.minY - pageBounds.minY) * viewModel.effectiveZoom,
-                width: max(pageRect.width * viewModel.effectiveZoom, minimumSize.width),
-                height: max(pageRect.height * viewModel.effectiveZoom, minimumSize.height)
-            )
+                  let geometry = canvasView.pageGeometry(for: pageIdx) else { return }
+            var targetCanvasRect = geometry.canvasRect(forPageRect: pageRect)
+            targetCanvasRect.size.width = max(targetCanvasRect.width, minimumSize.width)
+            targetCanvasRect.size.height = max(targetCanvasRect.height, minimumSize.height)
 
             // 1. Vertical Scrolling — center the rect while keeping its entirety visible
             let maxScrollY = max(0, canvasView.bounds.height - clipView.bounds.height)

@@ -255,7 +255,8 @@ extension PDFCanvasView {
         to candidate: CGPoint,
         fromPoint: CGPoint?,
         inPage pageIndex: Int,
-        modifierFlags: NSEvent.ModifierFlags
+        modifierFlags: NSEvent.ModifierFlags,
+        excluding excludedID: UUID? = nil
     ) -> CGPoint {
         var snapped = candidate
         isSnappedOrtho = false
@@ -268,7 +269,7 @@ extension PDFCanvasView {
             var closestVertex: CGPoint? = nil
 
             if case let annots = viewModel.shownAnnotations(onPage: pageIndex), !annots.isEmpty {
-                for annot in annots {
+                for annot in annots where annot.id != excludedID {
                     for pt in annot.measurementPoints {
                         let d = hypot(candidate.x - pt.x, candidate.y - pt.y)
                         if d < closestDist {
@@ -315,9 +316,10 @@ extension PDFCanvasView {
             }
         }
 
-        // 2. Ortho / 45° snapping constraint (Shift key or isOrthoSnapEnabled)
+        // 2. Ortho / 45° snapping constraint: Ortho Lock, which holding Shift switches for as long
+        // as it's held (as in CAD apps), to free one line while it's on or keep one straight.
         let isShiftHeld = modifierFlags.contains(.shift)
-        if (viewModel.isOrthoSnapEnabled || isShiftHeld), let origin = fromPoint {
+        if viewModel.isOrthoSnapEnabled != isShiftHeld, let origin = fromPoint {
             let dx = candidate.x - origin.x
             let dy = candidate.y - origin.y
             let dist = hypot(dx, dy)
@@ -401,6 +403,99 @@ extension PDFCanvasView {
         currentMeasurePoints = []
         currentMeasureCandidatePoint = nil
         needsDisplay = true
+    }
+
+    // MARK: - Editing Measurements
+
+    /// Whether `pagePoint` is on a measurement, for selecting it: on its lines or points, or on
+    /// a length's label; not inside an area, so text there can still be selected.
+    func measurementHit(_ annot: PDFAnnotation, at pagePoint: CGPoint) -> Bool {
+        let reach = 6.0 / max(viewModel.effectiveZoom, 0.01)
+        let points = annot.measurementPoints
+        switch annot.type {
+        case .measureArea where points.count >= 3:
+            return points.indices.contains { distance(from: pagePoint, toSegment: points[$0], points[($0 + 1) % points.count]) <= reach }
+        case .measureLength:
+            return annot.contains(pagePoint: pagePoint, tolerance: reach) || isOnLengthLabel(annot, pagePoint)
+        case .measurePerimeter, .measureAngle:
+            return points.indices.dropFirst().contains { distance(from: pagePoint, toSegment: points[$0 - 1], points[$0]) <= reach }
+                || (annot.type == .measureAngle && points.count >= 3 && distance(from: pagePoint, toSegment: points[1], points[2]) <= reach)
+        default:
+            return false
+        }
+    }
+
+    /// What dragging a selected measurement from `pagePoint` moves: one of its points, a
+    /// length's dimension line (sideways), or all of it.
+    func measurementDragPart(for annot: PDFAnnotation, at pagePoint: CGPoint) -> DraggingAnnotationPart {
+        let reach = 8.0 / max(viewModel.effectiveZoom, 0.01)
+        if let index = annot.measurementPoints.indices.min(by: {
+            hypot(annot.measurementPoints[$0].x - pagePoint.x, annot.measurementPoints[$0].y - pagePoint.y)
+                < hypot(annot.measurementPoints[$1].x - pagePoint.x, annot.measurementPoints[$1].y - pagePoint.y)
+        }), hypot(annot.measurementPoints[index].x - pagePoint.x, annot.measurementPoints[index].y - pagePoint.y) <= reach {
+            return .measurementPoint(index)
+        }
+        if annot.type == .measureLength, let (off0, off1) = dimensionLine(of: annot) {
+            // Its label, or the dimension line once it's been moved off the measured points.
+            if isOnLengthLabel(annot, pagePoint)
+                || (abs(annot.leaderOffset) > 1 && distance(from: pagePoint, toSegment: off0, off1) <= reach) {
+                return .measurementLeader
+            }
+        }
+        return .entireAnnotation
+    }
+
+    /// `annot` as dragging `part` by `delta` (page points) leaves it.
+    func editedMeasurement(_ annot: PDFAnnotation, part: DraggingAnnotationPart, delta: CGSize) -> PDFAnnotation {
+        let points = annot.measurementPoints
+        switch part {
+        case .measurementPoint(let index) where points.indices.contains(index):
+            var moved = points
+            moved[index] = CGPoint(x: points[index].x + delta.width, y: points[index].y + delta.height)
+            return viewModel.editedMeasurement(annot, points: moved)
+        case .measurementLeader where points.count >= 2:
+            let dx = points[1].x - points[0].x, dy = points[1].y - points[0].y
+            let length = max(hypot(dx, dy), 0.001)
+            // Only the part of the drag across the line counts.
+            let across = delta.width * (-dy / length) + delta.height * (dx / length)
+            return viewModel.editedMeasurement(annot, leaderOffset: annot.leaderOffset + across)
+        default:
+            return viewModel.editedMeasurement(annot, points: points.map { CGPoint(x: $0.x + delta.width, y: $0.y + delta.height) })
+        }
+    }
+
+    /// A measurement as drawn: as the drag in progress leaves it, if it's being dragged.
+    func draggedMeasurement(_ annot: PDFAnnotation) -> PDFAnnotation {
+        guard let drag = activeAnnotationDrag, drag.id == annot.id, drag.currentDelta != .zero else { return annot }
+        return editedMeasurement(annot, part: drag.part, delta: drag.currentDelta)
+    }
+
+    /// A length's dimension line: its measured points moved out by its leader offset.
+    private func dimensionLine(of annot: PDFAnnotation) -> (CGPoint, CGPoint)? {
+        guard annot.measurementPoints.count >= 2 else { return nil }
+        let p0 = annot.measurementPoints[0], p1 = annot.measurementPoints[1]
+        let dx = p1.x - p0.x, dy = p1.y - p0.y
+        let length = hypot(dx, dy)
+        guard length > 0.001 else { return nil }
+        let n = CGPoint(x: -dy / length * annot.leaderOffset, y: dx / length * annot.leaderOffset)
+        return (CGPoint(x: p0.x + n.x, y: p0.y + n.y), CGPoint(x: p1.x + n.x, y: p1.y + n.y))
+    }
+
+    /// Whether `pagePoint` is on a length's label, in the middle of its dimension line.
+    private func isOnLengthLabel(_ annot: PDFAnnotation, _ pagePoint: CGPoint) -> Bool {
+        guard let (off0, off1) = dimensionLine(of: annot) else { return false }
+        let zoom = max(viewModel.effectiveZoom, 0.01)
+        let mid = CGPoint(x: (off0.x + off1.x) / 2, y: (off0.y + off1.y) / 2)
+        // The label pill is about 10 pt type, centred there, drawn at screen size.
+        return abs(pagePoint.x - mid.x) <= 30 / zoom && abs(pagePoint.y - mid.y) <= 10 / zoom
+    }
+
+    private func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let l2 = dx * dx + dy * dy
+        guard l2 > 0 else { return hypot(p.x - a.x, p.y - a.y) }
+        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2))
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
     }
 
     func calculateShoelaceArea(points: [CGPoint]) -> Double {

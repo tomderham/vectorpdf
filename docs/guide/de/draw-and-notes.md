@@ -1,9 +1,9 @@
 <!-- keywords: zeichnen, Zeichnung, Tinte, Stift, Freihand, Form, Formen, Rechteck, Quadrat, Oval, Kreis, Ellipse, Linie, Pfeil, Textfeld, Legende, Legenden, Notiz, Notizen, Haftnotiz, Kommentar, Kommentare, Antwort, Antworten, Status, Autor, Revisionswolke, Wolke, Linienende, Farbe, rückgängig, wiederholen, Anmerkung, Anmerkungen, Radierer, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # Zeichnen, Notizen, Text und Legenden hinzufügen
 
-Drücke ⇧⌘A oder klicke auf die Taste „Markup Toolbar“, um die Symbolleiste „Markup“ einzublenden. Wähle ein Werkzeug aus und dann eine Farbe und Größe. Um eine Farbe zu wählen, klicke auf die Farbtaste rechts in der Symbolleiste und dann auf eine Farbe. Um ein Werkzeug zu beenden, drücke die Escape-Taste oder wähle „Text Selection Mode“, das erste Werkzeug in der Symbolleiste.
+Drücke ⇧⌘A oder klicke auf die Taste „Markup Toolbar“, um die Symbolleiste „Markup“ einzublenden. Wähle ein Werkzeug aus und dann eine Farbe und Größe. Um eine Farbe zu wählen, klicke auf die Farbtaste rechts in der Symbolleiste und dann auf eine Farbe. Um ein Werkzeug zu beenden, drücke die Escape-Taste, klicke erneut auf das Werkzeug oder wähle „Text Selection Mode“, das erste Werkzeug in der Symbolleiste.
 
 ## Freihand zeichnen
 

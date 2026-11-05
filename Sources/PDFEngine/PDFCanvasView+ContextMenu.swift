@@ -24,8 +24,6 @@ extension PDFCanvasView {
     // MARK: - Native Context Menu
 
     public override func menu(for event: NSEvent) -> NSMenu? {
-        // Context menu is only active in standard interactive viewing mode.
-        guard viewModel.isInteractiveViewingMode else { return nil }
         let point = convert(event.locationInWindow, from: nil)
         self.lastContextMenuLocation = point
 
@@ -468,10 +466,9 @@ extension PDFCanvasView {
     }
 
     private func currentSelectionAnchorPoint() -> CGPoint {
-        if let sel = viewModel.activeSelection, let firstQuad = sel.result.highlightQuads.first {
-            let pIdx = sel.pageIndex
-            let pageY = (viewModel.document?.pageYOffsets.indices.contains(pIdx) == true) ? viewModel.document!.pageYOffsets[pIdx] : 0
-            return CGPoint(x: firstQuad.ul.x, y: pageY + firstQuad.ul.y)
+        if let sel = viewModel.activeSelection, let firstQuad = sel.result.highlightQuads.first,
+           let geometry = pageGeometry(for: sel.pageIndex) {
+            return geometry.canvasPoint(forPagePoint: firstQuad.ul)
         }
         return CGPoint(x: bounds.midX, y: bounds.midY)
     }

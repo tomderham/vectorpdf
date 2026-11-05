@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, 문제 해결, 문제, 작동하지 않음, 도움말, 해결, 지원, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # 문제 해결
 
 ## 텍스트를 선택하거나, 링크를 따라가거나, 마크업 도구를 사용할 수 없는 경우
 
-보기가 회전되어 있거나 Two-Page Mode가 아닌지 확인합니다. 이러한 기능은 회전 없는 Single Page 보기에서만 작동합니다. [확대/축소, 회전 및 페이지 레이아웃](zoom-and-layout.md)을 참조하십시오.
-
-Markup 또는 Measurement 도구가 활성화되어 있지 않은지도 확인합니다. 텍스트 선택으로 돌아가려면 Escape 키를 누릅니다.
+Markup 또는 Measurement 도구가 활성화되어 있지 않은지 확인합니다. 텍스트 선택으로 돌아가려면 Escape 키를 누르거나 선택된 도구를 다시 클릭합니다.
 
 ## 검색 결과가 없는 경우
 

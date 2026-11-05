@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, 故障排除, 问题, 不起作用, 帮助, 修复, 支持, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # 故障排除
 
 ## 我无法选择文本、跟随链接或使用标记工具
 
-检查视图是否未旋转，以及是否未处于 Two-Page Mode。这些功能仅在未旋转的 Single Page 视图中可用。请参阅[缩放、旋转和页面布局](zoom-and-layout.md)。
-
-另请检查是否有 Markup 或 Measurement 工具处于活跃状态。按下 Escape 键可返回文本选择状态。
+请检查是否有 Markup 或 Measurement 工具处于活跃状态。按下 Escape 键或再次点按所选工具，可返回文本选择状态。
 
 ## 搜索未找到任何内容
 

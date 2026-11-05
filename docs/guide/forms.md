@@ -14,5 +14,3 @@ Press ⌘S to [save](save.md) the completed form.
 If a form has a reset button, clicking it asks you to confirm, then clears every field.
 
 To stop anyone changing the answers, save a copy with the form fields flattened. See [Export to other formats](export.md#flattened-pdf).
-
-> **Note:** Fields are available only in Single Page view with no rotation. See [Zoom, rotate and page layout](zoom-and-layout.md).

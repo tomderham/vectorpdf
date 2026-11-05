@@ -1,5 +1,5 @@
 <!-- keywords: Formular, Formulare, ausfüllen, Feld, Felder, Markierungsfeld, Optionsfeld, unterschreiben, zurücksetzen, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: 141f7576c305 -->
+<!-- source: fdae91a03269 -->
 
 # Formulare ausfüllen
 
@@ -15,5 +15,3 @@ Drücke ⌘S, um das ausgefüllte Formular zu [sichern](save.md).
 Wenn ein Formular eine Taste zum Zurücksetzen hat, wirst du beim Klicken darauf um eine Bestätigung gebeten. Anschließend werden alle Felder geleert.
 
 Damit niemand die Antworten ändern kann, sichere eine Kopie, in der die Formularfelder reduziert sind. Weitere Informationen findest du unter [In andere Formate exportieren](export.md#flattened-pdf).
-
-> **Hinweis:** Felder sind nur in der Darstellung „Single Page“ ohne Drehung verfügbar. Weitere Informationen findest du unter [Zoomen, Drehen und Seitenlayout](zoom-and-layout.md).

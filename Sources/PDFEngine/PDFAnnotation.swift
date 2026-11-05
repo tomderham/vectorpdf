@@ -382,6 +382,11 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     public var isFromFile: Bool { fileSubtype != nil }
 
+    /// For a measurement that was in the file when it was opened, picked up to be changed: the
+    /// renderer's copy of the document still has it, so it has to keep being left out once it's
+    /// replaced or deleted.
+    public var cameWithFile = false
+
     /// Whether an annotation from the file can be resized by its corners: one MuPDF can draw
     /// again from its entries at the new size.
     public var isResizableFromFile: Bool {

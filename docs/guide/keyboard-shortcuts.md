@@ -88,6 +88,6 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Delete selected annotation | Delete | The annotation |
 | Move selected annotation | Arrow keys, or ⇧Arrow keys for 10 points | |
 | Finish perimeter or area | Return | |
-| Constrain a measurement to 0°, 45° or 90° | Hold ⇧ | |
+| Switch Ortho Lock (0°, 45° or 90°) for one line | Hold ⇧ | |
 | Draw a square or circle, or a line at a multiple of 45° | Hold ⇧ while dragging with the Shapes tool | |
 | Cancel, or leave the current tool | Escape | |

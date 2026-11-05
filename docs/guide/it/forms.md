@@ -1,5 +1,5 @@
 <!-- keywords: modulo, moduli, compilare, campo, campi, casella di controllo, pulsante di opzione, firmare, reimpostare, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: 141f7576c305 -->
+<!-- source: fdae91a03269 -->
 
 # Compilare moduli
 
@@ -15,5 +15,3 @@ Premi ⌘S per [salvare](save.md) il modulo compilato.
 Se un modulo ha un pulsante di reimpostazione, facendo clic su di esso ti viene chiesto di confermare, quindi tutti i campi vengono cancellati.
 
 Per impedire a chiunque di modificare le risposte, salva una copia con i campi del modulo appiattiti. Consulta [Esportare in altri formati](export.md#flattened-pdf).
-
-> **Nota:** i campi sono disponibili solo nella vista Single Page, senza rotazione. Consulta [Zoom, rotazione e layout di pagina](zoom-and-layout.md).

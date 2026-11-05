@@ -97,15 +97,8 @@ public final class PDFViewerViewModel: ObservableObject {
     /// The active viewport size of the PDF scroll view, tracked for accurate zoom-to-fit calculations.
     public var currentViewportSize: CGSize?
 
-    /// False whenever rotation or two-page mode is active — the single flag PDFCanvasView checks
-    /// before drawing/acting on search highlights, text selection, form widgets, and link clicks,
-    /// all of which assume the plain single-column, unrotated layout to compute their screen
-    /// position correctly.
-    public var isInteractiveViewingMode: Bool { viewRotationDegrees == 0 && !isTwoPageMode }
-
-    /// True for an EPUB, XPS, CBZ or FB2 document, which MuPDF reads but can't save. Like
-    /// two-page mode it's for reading only, but it keeps text selection, links and search: only
-    /// the tools that write to the file are unavailable (markup, measurement, redaction, page
+    /// True for an EPUB, XPS, CBZ or FB2 document, which MuPDF reads but can't save. It keeps
+    /// text selection, links and search: only the tools that write to the file are unavailable (markup, measurement, redaction, page
     /// edits, saving).
     public var isReadOnlyDocument: Bool { document?.isPDF == false }
 
@@ -123,6 +116,17 @@ public final class PDFViewerViewModel: ObservableObject {
         viewRotationDegrees = (viewRotationDegrees + 270) % 360
         isTwoPageMode = false
         recomputeEffectiveLayout()
+    }
+
+    /// Chooses a markup or measurement tool, or puts it down again, back to Select, when it's
+    /// already chosen: clicking the active tool's button works as Escape does.
+    public func toggleTool(_ mode: CanvasMode) {
+        if canvasMode == mode {
+            canvasMode = .select
+            pendingSignatureData = nil
+        } else {
+            canvasMode = mode
+        }
     }
 
     public func toggleTwoPageMode() {

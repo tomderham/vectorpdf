@@ -206,7 +206,7 @@ extension PDFViewerViewModel {
         // instead deletes whichever annotation happens to come first near that point — often one
         // that was already in the file underneath it.
         if let objectNumber = annotation.documentObjectNumber {
-            if annotation.isFromFile {
+            if annotation.isFromFile || annotation.cameWithFile {
                 removedAnnotationNumbers[pIdx, default: []].insert(objectNumber)
                 syncHiddenAnnotations(pageAnnotations)
             }
@@ -567,8 +567,8 @@ extension PDFViewerViewModel {
 
 extension PDFViewerViewModel {
     /// The kinds of annotation from the file that can be picked up and moved on the canvas. Text
-    /// markup and freehand drawings stay put, as ones made here do, and measurements belong to
-    /// the takeoff.
+    /// markup and freehand drawings stay put, as ones made here do. Measurements are picked up
+    /// differently, to be drawn and changed as ones made here are (see `pickUpMeasurement`).
     static let movableFileSubtypes: Set<String> = ["Square", "Circle", "Line", "Polygon", "PolyLine", "Text", "FreeText", "Stamp", "FileAttachment", "Caret", "Sound"]
 
     /// Picks up an annotation that came with the file so it can be moved and restyled. From now

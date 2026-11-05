@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, solución de problemas, problema, problemas, no funciona, ayuda, solucionar, soporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # Solución de problemas
 
 ## No puedo seleccionar texto, seguir enlaces ni usar las herramientas de anotación
 
-Comprueba que la vista no esté girada ni en Two-Page Mode. Estas funciones solo están disponibles en la vista Single Page sin rotación. Consulta [Zoom, rotación y disposición de página](zoom-and-layout.md).
-
-Comprueba también que no haya ninguna herramienta de Markup o Measurement activa. Pulsa Escape para volver a seleccionar texto.
+Comprueba que no haya ninguna herramienta de Markup o Measurement activa. Pulsa Escape, o vuelve a hacer clic en la herramienta seleccionada, para volver a seleccionar texto.
 
 ## Una búsqueda no encuentra nada
 

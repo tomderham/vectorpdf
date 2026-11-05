@@ -1,9 +1,9 @@
 <!-- keywords: dibujar, dibujo, tinta, lápiz, a mano alzada, forma, formas, rectángulo, cuadrado, óvalo, círculo, elipse, línea, flecha, cuadro de texto, llamada, llamadas, nota, notas, nota adhesiva, comentario, comentarios, respuesta, respuestas, estado, autor, nube de revisión, nube, extremo de línea, color, deshacer, rehacer, anotar, anotación, anotaciones, borrador, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # Dibujar y añadir notas, texto y llamadas
 
-Pulsa ⇧⌘A o haz clic en el botón Markup Toolbar para mostrar la barra de herramientas Markup. Elige una herramienta y, a continuación, un color y un tamaño. Para elegir un color, haz clic en el botón de color, cerca del extremo derecho de la barra, y luego en un color. Para dejar de usar una herramienta, pulsa Escape o elige Text Selection Mode, la primera herramienta de la barra.
+Pulsa ⇧⌘A o haz clic en el botón Markup Toolbar para mostrar la barra de herramientas Markup. Elige una herramienta y, a continuación, un color y un tamaño. Para elegir un color, haz clic en el botón de color, cerca del extremo derecho de la barra, y luego en un color. Para dejar de usar una herramienta, pulsa Escape, vuelve a hacer clic en la herramienta o elige Text Selection Mode, la primera herramienta de la barra.
 
 ## Dibujar a mano alzada
 

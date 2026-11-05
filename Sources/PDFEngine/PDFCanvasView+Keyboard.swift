@@ -194,11 +194,18 @@ extension PDFCanvasView {
             switch event.keyCode {
             case 123: dx = -step
             case 124: dx = step
-            case 125: dy = -step
-            case 126: dy = step
+            // Page space runs down the page, as the canvas does.
+            case 125: dy = step
+            case 126: dy = -step
             default: break
             }
             if dx != 0 || dy != 0 {
+                // In a rotated view, an arrow moves the annotation that way on screen.
+                if let page = selectedAnnotation?.pageIndex, let geometry = pageGeometry(for: page), geometry.isRotated {
+                    let zoom = geometry.zoom
+                    let v = geometry.pageVector(forCanvasVector: CGSize(width: dx * zoom, height: dy * zoom))
+                    (dx, dy) = (v.width.rounded(), v.height.rounded())
+                }
                 nudgeSelectedAnnotation(dx: dx, dy: dy)
                 return
             }

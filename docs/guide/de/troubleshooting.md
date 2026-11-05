@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, Fehlerbehebung, Problem, Probleme, funktioniert nicht, Hilfe, beheben, Support, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # Fehlerbehebung
 
 ## Ich kann keinen Text auswählen, keinen Links folgen und keine Markierungswerkzeuge verwenden
 
-Prüfe, ob die Ansicht gedreht ist oder sich im Two-Page Mode befindet. Diese Funktionen sind nur in der Darstellung „Single Page“ ohne Drehung verfügbar. Weitere Informationen findest du unter [Zoomen, Drehen und Seitenlayout](zoom-and-layout.md).
-
-Prüfe außerdem, ob ein Werkzeug aus „Markup“ oder „Measurement“ aktiv ist. Drücke die Escape-Taste, um zur Textauswahl zurückzukehren.
+Prüfe, ob ein Werkzeug aus „Markup“ oder „Measurement“ aktiv ist. Drücke die Escape-Taste oder klicke erneut auf das ausgewählte Werkzeug, um zur Textauswahl zurückzukehren.
 
 ## Eine Suche findet nichts
 

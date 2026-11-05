@@ -1,9 +1,9 @@
 <!-- keywords: 绘图, 绘制, 墨迹, 笔, 手绘, 形状, 矩形, 正方形, 椭圆, 圆形, 线条, 箭头, 文本框, 标注框, 便笺, 备注, 评论, 回复, 状态, 作者, 修订云, 云形, 线条末端, 颜色, 撤销, 重做, 注释, 橡皮擦, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # 绘图、添加便笺、文本和标注框
 
-按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要选取颜色，请点按工具栏右侧附近的颜色按钮，然后点按一种颜色。若要结束使用工具，请按下 Escape 键，或者选取工具栏中的第一个工具 Text Selection Mode。
+按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要选取颜色，请点按工具栏右侧附近的颜色按钮，然后点按一种颜色。若要结束使用工具，请按下 Escape 键、再次点按该工具，或者选取工具栏中的第一个工具 Text Selection Mode。
 
 ## 手绘
 

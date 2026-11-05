@@ -81,7 +81,6 @@ extension PDFCanvasView {
 
     /// Wherever links are clickable: not while drawing or measuring.
     private var allowsLinkPeek: Bool {
-        guard viewModel.isInteractiveViewingMode else { return false }
         switch viewModel.canvasMode {
         case .select, .text, .callout, .redact, .note, .shape: return true
         default: return false
@@ -138,17 +137,8 @@ extension PDFCanvasView {
 
     /// Screen rect of a page-space rect on `pageIndex`, or nil when that page isn't laid out.
     private func screenRect(forPageRect rect: CGRect, pageIndex: Int) -> NSRect? {
-        guard let window, let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount,
-              let pFrame = pageFrame(for: pageIndex) else { return nil }
-        let pBounds = doc.pageBounds[pageIndex]
-        let zoom = viewModel.effectiveZoom
-        let canvasRect = NSRect(
-            x: pFrame.minX + (rect.minX - pBounds.minX) * zoom,
-            y: pFrame.minY + (rect.minY - pBounds.minY) * zoom,
-            width: rect.width * zoom,
-            height: rect.height * zoom
-        )
-        return window.convertToScreen(convert(canvasRect, to: nil))
+        guard let window, let geometry = pageGeometry(for: pageIndex) else { return nil }
+        return window.convertToScreen(convert(geometry.canvasRect(forPageRect: rect), to: nil))
     }
 
     /// Builds a target for a canvas point with no link or selection under

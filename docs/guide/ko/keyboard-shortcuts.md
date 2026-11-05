@@ -1,5 +1,5 @@
 <!-- keywords: 키보드, 단축키, 키, 핫키, 제스처, 트랙패드, 마우스, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # 키보드 단축키
 
@@ -89,6 +89,6 @@
 | 선택한 주석 삭제하기 | Delete | 해당 주석 |
 | 선택한 주석 이동하기 | Arrow keys, 또는 10포인트씩 이동하려면 ⇧Arrow keys | |
 | 둘레 또는 면적 측정 완료하기 | Return | |
-| 측정을 0°, 45° 또는 90°로 제한하기 | ⇧ 키를 길게 누르기 | |
+| 선 하나에 대해 Ortho Lock(0°, 45° 또는 90°) 전환하기 | ⇧ 키를 길게 누르기 | |
 | 정사각형이나 원, 또는 45° 배수 각도의 선 그리기 | Shapes 도구로 드래그하는 동안 ⇧ 키 누르기 | |
 | 취소 또는 현재 도구 종료하기 | Escape | |

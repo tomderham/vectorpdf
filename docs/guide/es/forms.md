@@ -1,5 +1,5 @@
 <!-- keywords: formulario, formularios, completar, rellenar, llenar, campo, campos, casilla, botón de opción, firmar, restablecer, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: 141f7576c305 -->
+<!-- source: fdae91a03269 -->
 
 # Completar formularios
 
@@ -15,5 +15,3 @@ Pulsa ⌘S para [guardar](save.md) el formulario completado.
 Si un formulario tiene un botón de restablecer, al hacer clic en él se te pide confirmación y luego se borran todos los campos.
 
 Para que nadie pueda cambiar las respuestas, guarda una copia con los campos de formulario acoplados. Consulta [Exportar a otros formatos](export.md#flattened-pdf).
-
-> **Nota:** Los campos solo están disponibles en la vista Single Page sin rotación. Consulta [Zoom, rotación y disposición de página](zoom-and-layout.md).

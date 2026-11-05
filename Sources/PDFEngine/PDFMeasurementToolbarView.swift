@@ -39,7 +39,7 @@ public struct PDFMeasurementToolbarView: View {
                     isSelected: viewModel.canvasMode == .measureLength,
                     helpText: "Linear Dimension Tool (Measure distance between two points)"
                 ) {
-                    viewModel.canvasMode = .measureLength
+                    viewModel.toggleTool(.measureLength)
                 } label: {
                     Image(systemName: "ruler")
                 }
@@ -48,7 +48,7 @@ public struct PDFMeasurementToolbarView: View {
                     isSelected: viewModel.canvasMode == .measurePerimeter,
                     helpText: "Perimeter Tool (Multi-segment polyline tracing)"
                 ) {
-                    viewModel.canvasMode = .measurePerimeter
+                    viewModel.toggleTool(.measurePerimeter)
                 } label: {
                     Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
                 }
@@ -57,7 +57,7 @@ public struct PDFMeasurementToolbarView: View {
                     isSelected: viewModel.canvasMode == .measureArea,
                     helpText: "Polygon Area Tool (Surface area & room takeoff)"
                 ) {
-                    viewModel.canvasMode = .measureArea
+                    viewModel.toggleTool(.measureArea)
                 } label: {
                     Image(systemName: "trapezoid.and.line.vertical")
                 }
@@ -66,7 +66,7 @@ public struct PDFMeasurementToolbarView: View {
                     isSelected: viewModel.canvasMode == .measureAngle,
                     helpText: "Vertex Angle Inspector (Angle between intersecting lines)"
                 ) {
-                    viewModel.canvasMode = .measureAngle
+                    viewModel.toggleTool(.measureAngle)
                 } label: {
                     Image(systemName: "angle")
                 }
@@ -104,7 +104,7 @@ public struct PDFMeasurementToolbarView: View {
             HStack(spacing: 2) {
                 PreviewToolbarButton(
                     isSelected: viewModel.isOrthoSnapEnabled,
-                    helpText: "Ortho Lock (0°, 45°, 90° snapping; hold Shift while dragging)"
+                    helpText: "Ortho Lock (keeps lines at 0°, 45° or 90°; hold Shift to switch it for one line)"
                 ) {
                     viewModel.isOrthoSnapEnabled.toggle()
                 } label: {

@@ -2,7 +2,7 @@
 
 # Draw, add notes, text and callouts
 
-Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To choose a color, click the color button near the right of the toolbar, then click a color. To finish with a tool, press Escape or choose Text Selection Mode, the first tool in the toolbar.
+Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To choose a color, click the color button near the right of the toolbar, then click a color. To finish with a tool, press Escape, click the tool again, or choose Text Selection Mode, the first tool in the toolbar.
 
 ## Draw freehand
 

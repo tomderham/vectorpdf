@@ -1,10 +1,10 @@
-<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping -->
+<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, edit, change, move, reshape, handle, offset -->
 
 # Measure lengths, areas and angles
 
 Press ⇧⌘M to show the Measurement toolbar. If your drawing is to scale, [set the scale](drawing-scale.md) first.
 
-Zoom in for accuracy before you measure. Pressing Escape cancels a measurement in progress.
+Zoom in for accuracy before you measure. Pressing Escape cancels a measurement in progress. Press Escape again, or click the selected tool, to put the tool down.
 
 ## Measurement tools
 
@@ -17,12 +17,27 @@ Zoom in for accuracy before you measure. Pressing Escape cancels a measurement i
 
 ## Draw accurately
 
-- **Ortho Lock** keeps lines at 0°, 45° and 90°. You can also hold ⇧ to do this for one line.
+- **Ortho Lock** keeps lines at 0°, 45° and 90°. Hold ⇧ to switch it for one line: to measure at any angle while it's on, or to keep a line straight while it's off.
 - **Vertex Magnetic Snapping** snaps the pointer to corners and endpoints in the drawing.
+
+## Change a measurement
+
+Press Escape, or click the selected tool, to put the measurement tool down, then click a measurement to select it. Handles appear on its points.
+
+| To | Do this |
+| --- | --- |
+| Move one point | Drag its handle. Ortho Lock and snapping work as they do when you measure. |
+| Move the whole measurement | Drag its line, or press the arrow keys (⇧ moves it 10 points). |
+| Move a dimension line nearer or further from what it measures | Drag its label, or drag the dimension line once it's away from the points. |
+| Change its color | Choose a color with the color button in the Measurement toolbar. |
+
+The value is worked out again as you drag. Choose Edit > Undo to put a measurement back as it was. Measurements already saved in the PDF can be changed too.
+
+To select an area, click its edge: clicking inside it selects the text there.
 
 ## Change how measurements look
 
-Use the color button and line width in the Measurement toolbar before you measure.
+Use the color button and line width in the Measurement toolbar before you measure. To change the color of a measurement you've already made, select it, then choose a color.
 
 ## Keep or remove measurements
 

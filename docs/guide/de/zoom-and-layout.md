@@ -1,5 +1,5 @@
 <!-- keywords: zoomen, vergrößern, Breite anpassen, Fenster anpassen, tatsächliche Größe, drehen, Drehung, zwei Seiten, Doppelseite, Buch, Layout, Ansicht, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 3a774d3429c6 -->
+<!-- source: 6687d8396f24 -->
 
 # Zoomen, Drehen und Seitenlayout
 
@@ -32,4 +32,4 @@ Klicke in der Symbolleiste auf „Rotate Left“ oder „Rotate Right“. Das ä
 
 Klicke in der Symbolleiste auf „Two-Page Mode“ oder wähle View > Two Pages (⌥⌘2). Die Seiten werden paarweise angezeigt, mit dem Deckblatt allein, wie in einem aufgeschlagenen Buch, und die Doppelseite wird an das Fenster angepasst. Um zurückzukehren, klicke erneut auf die Taste oder wähle View > Single Page.
 
-> **Hinweis:** Solange die Ansicht gedreht ist oder sich im Two-Page Mode befindet, kannst du keinen Text auswählen, keinen Links folgen, keine Markierungs- und Messwerkzeuge verwenden und keine Formulare ausfüllen. Kehre zu „Single Page“ ohne Drehung zurück, um sie zu verwenden.
+> **Hinweis:** Textauswahl, Links, Suche, die Markierungs- und Messwerkzeuge sowie Formulare funktionieren auch, wenn die Ansicht gedreht ist oder sich im Two-Page Mode befindet. Was du hinzufügst, wird auf der Seite selbst platziert und bleibt daher an seiner Stelle, wenn du die Ansicht zurückdrehst.

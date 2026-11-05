@@ -1,9 +1,9 @@
 <!-- keywords: ड्रॉ, ड्रॉइंग, इंक, पेन, फ़्रीहैंड, आकृति, आकृतियाँ, आयत, वर्ग, अंडाकार, वृत्त, रेखा, तीर, टेक्स्ट बॉक्स, कॉलआउट, नोट, स्टिकी नोट, टिप्पणी, टिप्पणियाँ, जवाब, स्थिति, लेखक, रिविज़न क्लाउड, क्लाउड, रेखा का सिरा, रंग, पहले जैसा करें, फिर से करें, ऐनोटेशन, इरेज़र, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # ड्रॉ करें, नोट, टेक्स्ट और कॉलआउट जोड़ें
 
-Markup टूलबार दिखाने के लिए ⇧⌘A दबाएँ, या Markup Toolbar बटन पर क्लिक करें। कोई टूल चुनें, फिर रंग और आकार चुनें। रंग चुनने के लिए टूलबार के दाईं ओर के पास रंग बटन पर क्लिक करें, फिर किसी रंग पर क्लिक करें। टूल का उपयोग समाप्त करने के लिए Escape दबाएँ या Text Selection Mode चुनें, जो टूलबार का पहला टूल है।
+Markup टूलबार दिखाने के लिए ⇧⌘A दबाएँ, या Markup Toolbar बटन पर क्लिक करें। कोई टूल चुनें, फिर रंग और आकार चुनें। रंग चुनने के लिए टूलबार के दाईं ओर के पास रंग बटन पर क्लिक करें, फिर किसी रंग पर क्लिक करें। टूल का उपयोग समाप्त करने के लिए Escape दबाएँ, टूल पर फिर से क्लिक करें, या Text Selection Mode चुनें, जो टूलबार का पहला टूल है।
 
 ## फ़्रीहैंड ड्रॉ करें
 

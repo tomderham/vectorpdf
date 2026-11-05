@@ -1,5 +1,5 @@
 <!-- keywords: 확대, 축소, 확대/축소, 너비에 맞춤, 윈도우에 맞춤, 실제 크기, 회전, 두 페이지, 펼침면, 책, 레이아웃, 보기, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 3a774d3429c6 -->
+<!-- source: 6687d8396f24 -->
 
 # 확대/축소, 회전 및 페이지 레이아웃
 
@@ -32,4 +32,4 @@ View > Define 100% Scale As를 선택한 다음 하나를 선택합니다.
 
 도구 막대에서 Two-Page Mode를 클릭하거나 View > Two Pages(⌥⌘2)를 선택합니다. 펼친 책처럼 표지는 한 페이지로, 나머지 페이지는 두 페이지씩 나타나며, 펼침면이 윈도우에 맞게 확대/축소됩니다. 되돌리려면 버튼을 다시 클릭하거나 View > Single Page를 선택합니다.
 
-> **참고:** 보기가 회전되어 있거나 Two-Page Mode일 때는 텍스트를 선택하거나, 링크를 따라가거나, 마크업 및 측정 도구를 사용하거나, 양식을 작성할 수 없습니다. 이러한 기능을 사용하려면 회전을 해제하고 Single Page로 돌아갑니다.
+> **참고:** 보기가 회전되어 있거나 Two-Page Mode일 때도 텍스트 선택, 링크, 검색, 마크업 및 측정 도구, 양식 작성을 사용할 수 있습니다. 추가한 항목은 페이지 자체에 배치되므로 보기 회전을 되돌려도 제자리에 유지됩니다.

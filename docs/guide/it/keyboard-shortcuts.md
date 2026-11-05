@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # Abbreviazioni da tastiera
 
@@ -89,6 +89,6 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Eliminare l'annotazione selezionata | Delete | L'annotazione |
 | Spostare l'annotazione selezionata | Tasti freccia, oppure ⇧Arrow keys per 10 punti | |
 | Terminare un perimetro o un'area | Return | |
-| Vincolare una misurazione a 0°, 45° o 90° | Tieni premuto ⇧ | |
+| Invertire Ortho Lock (0°, 45° o 90°) per una linea | Tieni premuto ⇧ | |
 | Disegnare un quadrato o un cerchio, o una linea a un multiplo di 45° | Tenere premuto ⇧ trascinando con lo strumento Shapes | |
 | Annullare o uscire dallo strumento corrente | Escape | |

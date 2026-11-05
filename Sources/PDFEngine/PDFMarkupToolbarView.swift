@@ -51,7 +51,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .draw,
                     helpText: "Draw Freehand Pen (Ink)"
                 ) {
-                    viewModel.canvasMode = .draw
+                    viewModel.toggleTool(.draw)
                 } label: {
                     Image(systemName: "pencil.tip")
                 }
@@ -60,7 +60,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .text,
                     helpText: "Add Text Box"
                 ) {
-                    viewModel.canvasMode = .text
+                    viewModel.toggleTool(.text)
                 } label: {
                     Image(systemName: "character.textbox")
                 }
@@ -69,7 +69,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .callout,
                     helpText: "Callout Annotation (Leader arrow pointer to text note)"
                 ) {
-                    viewModel.canvasMode = .callout
+                    viewModel.toggleTool(.callout)
                 } label: {
                     Image(systemName: "bubble.left.and.exclamationmark.bubble.right")
                 }
@@ -78,7 +78,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .note,
                     helpText: "Sticky Note"
                 ) {
-                    viewModel.canvasMode = .note
+                    viewModel.toggleTool(.note)
                 } label: {
                     Image(systemName: "note.text")
                 }
@@ -87,7 +87,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .shape,
                     helpText: "Shapes (Drag to draw a rectangle, oval, line, arrow or revision cloud)"
                 ) {
-                    viewModel.canvasMode = .shape
+                    viewModel.toggleTool(.shape)
                 } label: {
                     Image(systemName: "square.on.circle")
                 }
@@ -96,7 +96,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .eraser,
                     helpText: "Eraser (Click or Drag to remove annotations)"
                 ) {
-                    viewModel.canvasMode = .eraser
+                    viewModel.toggleTool(.eraser)
                 } label: {
                     Image(systemName: "eraser")
                 }
@@ -105,7 +105,7 @@ public struct PDFMarkupToolbarView: View {
                     isSelected: viewModel.canvasMode == .stamp,
                     helpText: "Stamp"
                 ) {
-                    viewModel.canvasMode = .stamp
+                    viewModel.toggleTool(.stamp)
                 } label: {
                     Image(systemName: "signature")
                 }

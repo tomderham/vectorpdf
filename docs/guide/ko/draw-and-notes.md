@@ -1,9 +1,9 @@
 <!-- keywords: 그리기, 드로잉, 잉크, 펜, 자유형, 도형, 사각형, 정사각형, 타원, 원, 선, 화살표, 텍스트 상자, 설명선, 메모, 스티커 메모, 코멘트, 답글, 상태, 작성자, 수정 구름, 구름, 선 끝, 색상, 실행 취소, 실행 복귀, 주석, 지우개, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # 그리기, 메모, 텍스트 및 설명선 추가하기
 
-⇧⌘A 키를 누르거나 Markup Toolbar 버튼을 클릭하여 Markup 도구 막대를 표시합니다. 도구를 선택한 다음 색상과 크기를 선택합니다. 색상을 고르려면 도구 막대 오른쪽 근처의 색상 버튼을 클릭한 다음 색상을 클릭합니다. 도구 사용을 마치려면 Escape 키를 누르거나 도구 막대의 첫 번째 도구인 Text Selection Mode를 선택합니다.
+⇧⌘A 키를 누르거나 Markup Toolbar 버튼을 클릭하여 Markup 도구 막대를 표시합니다. 도구를 선택한 다음 색상과 크기를 선택합니다. 색상을 고르려면 도구 막대 오른쪽 근처의 색상 버튼을 클릭한 다음 색상을 클릭합니다. 도구 사용을 마치려면 Escape 키를 누르거나, 도구를 다시 클릭하거나, 도구 막대의 첫 번째 도구인 Text Selection Mode를 선택합니다.
 
 ## 자유롭게 그리기
 

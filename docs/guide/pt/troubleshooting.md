@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, solução de problemas, problema, problemas, não funciona, ajuda, corrigir, suporte, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # Solução de problemas
 
 ## Não consigo selecionar texto, seguir links ou usar as ferramentas de marcação
 
-Verifique se a visualização não está girada nem em Two-Page Mode. Esses recursos só funcionam na visualização Single Page, sem rotação. Consulte [Zoom, rotação e layout de página](zoom-and-layout.md).
-
-Verifique também se não há uma ferramenta de Markup ou Measurement ativa. Pressione Escape para voltar a selecionar texto.
+Verifique se não há uma ferramenta de Markup ou Measurement ativa. Pressione Escape, ou clique de novo na ferramenta selecionada, para voltar a selecionar texto.
 
 ## Uma busca não encontra nada
 

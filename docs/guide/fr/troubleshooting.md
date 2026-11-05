@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, dépannage, problème, problèmes, ne fonctionne pas, aide, résoudre, assistance, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # Dépannage
 
 ## Je ne peux pas sélectionner du texte, suivre des liens ni utiliser les outils d’annotation
 
-Vérifiez que la présentation n’est pas pivotée ni en Two-Page Mode. Ces fonctions ne sont disponibles qu’en présentation Single Page, sans rotation. Consultez [Zoom, rotation et disposition des pages](zoom-and-layout.md).
-
-Vérifiez aussi qu’aucun outil Markup ou Measurement n’est actif. Appuyez sur Escape pour revenir à la sélection de texte.
+Vérifiez qu’aucun outil Markup ou Measurement n’est actif. Appuyez sur Escape, ou cliquez à nouveau sur l’outil sélectionné, pour revenir à la sélection de texte.
 
 ## Une recherche ne trouve rien
 

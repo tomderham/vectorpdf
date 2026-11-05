@@ -1,5 +1,5 @@
 <!-- keywords: 양식, 서식, 작성, 입력, 필드, 체크상자, 라디오 버튼, 서명, 재설정, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: 141f7576c305 -->
+<!-- source: fdae91a03269 -->
 
 # 양식 작성하기
 
@@ -15,5 +15,3 @@ VectorPDF는 대화형 PDF 양식(AcroForms)을 지원합니다. 필드가 페�
 양식에 재설정 버튼이 있으면 버튼을 클릭할 때 확인을 요청한 다음 모든 필드를 지웁니다.
 
 다른 사람이 답변을 변경하지 못하게 하려면 양식 필드를 평면화한 사본을 저장합니다. [다른 포맷으로 내보내기](export.md#flattened-pdf)를 참조하십시오.
-
-> **참고:** 필드는 회전 없는 Single Page 보기에서만 사용할 수 있습니다. [확대/축소, 회전 및 페이지 레이아웃](zoom-and-layout.md)을 참조하십시오.

@@ -48,31 +48,21 @@ extension PDFCanvasView {
 
     /// The page rect (page points) to render in detail for this view of a page, or nil if none of
     /// the page is visible.
-    static func detailRect(visible: NSRect, pageFrame: NSRect, pageBounds: CGRect, zoom: CGFloat, backingScale: CGFloat) -> CGRect? {
-        guard visible.intersects(pageFrame), zoom > 0 else { return nil }
+    static func detailRect(visible: NSRect, geometry: PageGeometry, backingScale: CGFloat) -> CGRect? {
+        let pageFrame = geometry.frame
+        guard visible.intersects(pageFrame), geometry.zoom > 0 else { return nil }
         let pixels = visible.width * visible.height * backingScale * backingScale
         let fit = pixels > 0 ? (sqrt(maxDetailPixels / pixels) - 1) / 2 : 0
         let margin = min(detailOverscan, max(0, fit))
         let region = visible.insetBy(dx: -visible.width * margin, dy: -visible.height * margin).intersection(pageFrame)
         guard !region.isNull, region.width > 0, region.height > 0 else { return nil }
-        return pageRect(of: region, pageFrame: pageFrame, pageBounds: pageBounds, zoom: zoom)
+        return geometry.pageRect(forCanvasRect: region)
     }
 
-    static func pageRect(of viewRect: NSRect, pageFrame: NSRect, pageBounds: CGRect, zoom: CGFloat) -> CGRect {
-        CGRect(
-            x: pageBounds.minX + (viewRect.minX - pageFrame.minX) / zoom,
-            y: pageBounds.minY + (viewRect.minY - pageFrame.minY) / zoom,
-            width: viewRect.width / zoom,
-            height: viewRect.height / zoom
-        )
-    }
-
-    /// Draws the page's detail, if it has a current one, over its bitmap.
-    func drawPageDetail(_ pageIdx: Int, pageFrame pFrame: NSRect, pageBounds pBounds: CGRect) {
-        // A rotated view draws its bitmap through a transform; the detail isn't drawn there yet.
-        guard viewModel.viewRotationDegrees == 0, var detail = pageDetails[pageIdx],
-              isCurrent(detail, page: pageIdx) else { return }
-        let zoom = viewModel.effectiveZoom
+    /// Draws the page's detail, if it has a current one, over its bitmap. Called with the graphics
+    /// context in the page's layout space (see PageGeometry), so a rotated view turns it with the page.
+    func drawPageDetail(_ pageIdx: Int, geometry: PageGeometry) {
+        guard var detail = pageDetails[pageIdx], isCurrent(detail, page: pageIdx) else { return }
         let appearance = activeColorAppearance
         var image = detail.image
         if appearance != .light {
@@ -84,15 +74,12 @@ extension PDFCanvasView {
                 image = themed
             }
         }
-        let frame = NSRect(
-            x: pFrame.minX + (detail.rect.minX - pBounds.minX) * zoom,
-            y: pFrame.minY + (detail.rect.minY - pBounds.minY) * zoom,
-            width: detail.rect.width * zoom,
-            height: detail.rect.height * zoom
-        )
+        let frame = detail.rect.applying(geometry.pageToLayout)
+        // backingAlignedRect aligns canvas rects; a rotated view's layout space is turned.
+        let align: (NSRect) -> NSRect = { geometry.isRotated ? $0 : self.backingAlignedRect($0, options: .alignAllEdgesNearest) }
         NSGraphicsContext.saveGraphicsState()
-        NSBezierPath(rect: backingAlignedRect(pFrame, options: .alignAllEdgesNearest)).addClip()
-        image.draw(in: backingAlignedRect(frame, options: .alignAllEdgesNearest))
+        NSBezierPath(rect: align(geometry.layoutFrame)).addClip()
+        image.draw(in: align(frame))
         NSGraphicsContext.restoreGraphicsState()
     }
 
@@ -103,7 +90,7 @@ extension PDFCanvasView {
     /// Renders details for the visible pages that need them, once the view has been still for
     /// detailRenderDelay. Called on every draw and scroll, so it returns quickly when nothing changed.
     func scheduleDetailRenders() {
-        guard let doc = viewModel.document, let window, viewModel.viewRotationDegrees == 0, !viewModel.isLiveZooming else {
+        guard let doc = viewModel.document, let window, !viewModel.isLiveZooming else {
             cancelDetailRenders()
             return
         }
@@ -121,15 +108,15 @@ extension PDFCanvasView {
         var showing = Set<Int>()
         var wanted: [(page: Int, rect: CGRect)] = []
         for page in start...end {
-            guard let pFrame = pageFrame(for: page), pFrame.intersects(visible), viewModel.hasCurrentRender(of: page) else { continue }
+            guard let geometry = pageGeometry(for: page), geometry.frame.intersects(visible), viewModel.hasCurrentRender(of: page) else { continue }
             let pBounds = doc.pageBounds[page]
             guard PDFRenderActor.clampsRender(scale: scale, pageBounds: pBounds) else { continue }
             showing.insert(page)
             if let detail = pageDetails[page], isCurrent(detail, page: page) {
-                let shown = Self.pageRect(of: visible.intersection(pFrame), pageFrame: pFrame, pageBounds: pBounds, zoom: zoom)
+                let shown = geometry.pageRect(forCanvasRect: visible.intersection(geometry.frame))
                 if detail.rect.insetBy(dx: -1 / scale, dy: -1 / scale).contains(shown) { continue }
             }
-            if let rect = Self.detailRect(visible: visible, pageFrame: pFrame, pageBounds: pBounds, zoom: zoom, backingScale: backingScale) {
+            if let rect = Self.detailRect(visible: visible, geometry: geometry, backingScale: backingScale) {
                 wanted.append((page, rect))
             }
         }

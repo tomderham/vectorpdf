@@ -1,9 +1,9 @@
 <!-- keywords: disegnare, disegno, inchiostro, penna, mano libera, forma, forme, rettangolo, quadrato, ovale, cerchio, ellisse, linea, freccia, casella di testo, richiamo, richiami, nota, note, nota adesiva, commento, commenti, risposta, risposte, stato, autore, nuvola di revisione, nuvola, terminazione linea, colore, annulla, ripeti, annotare, annotazione, annotazioni, gomma, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # Disegnare, aggiungere note, testo e richiami
 
-Premi ⇧⌘A oppure fai clic sul pulsante Markup Toolbar per mostrare la barra degli strumenti Markup. Scegli uno strumento, quindi un colore e una dimensione. Per scegliere un colore, fai clic sul pulsante del colore vicino al lato destro della barra, poi su un colore. Per terminare l'uso di uno strumento, premi Escape oppure scegli Text Selection Mode, il primo strumento della barra.
+Premi ⇧⌘A oppure fai clic sul pulsante Markup Toolbar per mostrare la barra degli strumenti Markup. Scegli uno strumento, quindi un colore e una dimensione. Per scegliere un colore, fai clic sul pulsante del colore vicino al lato destro della barra, poi su un colore. Per terminare l'uso di uno strumento, premi Escape, fai di nuovo clic sullo strumento oppure scegli Text Selection Mode, il primo strumento della barra.
 
 ## Disegnare a mano libera
 

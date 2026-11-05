@@ -1,5 +1,5 @@
 <!-- keywords: フォーム, 入力, フィールド, チェックボックス, ラジオボタン, 署名, リセット, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: 141f7576c305 -->
+<!-- source: fdae91a03269 -->
 
 # フォームに入力する
 
@@ -15,5 +15,3 @@ VectorPDF は、インタラクティブな PDF フォーム (AcroForm) に対�
 フォームにリセットボタンがある場合、クリックすると確認を求められたあと、すべてのフィールドが消去されます。
 
 回答を変更できないようにするには、フォームフィールドをフラット化したコピーを保存します。[他のフォーマットに書き出す](export.md#flattened-pdf)を参照してください。
-
-> **注記:** フィールドを使用できるのは、Single Page 表示で回転していない場合のみです。[拡大/縮小、回転、ページレイアウト](zoom-and-layout.md)を参照してください。

@@ -1,5 +1,5 @@
 <!-- keywords: agrandir, ajuster à la largeur, ajuster à la fenêtre, taille réelle, faire pivoter, deux pages, double page, livre, disposition, présentation, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 3a774d3429c6 -->
+<!-- source: 6687d8396f24 -->
 
 # Zoom, rotation et disposition des pages
 
@@ -32,4 +32,4 @@ Cliquez sur Rotate Left ou Rotate Right dans la barre d’outils. Cela ne change
 
 Cliquez sur Two-Page Mode dans la barre d’outils, ou choisissez View > Two Pages (⌥⌘2). Les pages s’affichent par paires, avec la couverture seule, comme dans un livre ouvert, et la double page est ajustée à la fenêtre. Pour revenir en arrière, cliquez à nouveau sur le bouton ou choisissez View > Single Page.
 
-> **Remarque :** Lorsque la présentation est pivotée ou en Two-Page Mode, vous ne pouvez pas sélectionner du texte, suivre des liens, utiliser les outils d’annotation et de mesure, ni remplir des formulaires. Revenez à Single Page, sans rotation, pour les utiliser.
+> **Remarque :** La sélection de texte, les liens, la recherche, les outils d’annotation et de mesure et les formulaires fonctionnent aussi lorsque la présentation est pivotée ou en Two-Page Mode. Ce que vous ajoutez est placé sur la page elle-même et reste donc en place lorsque vous rétablissez l’orientation.

@@ -26,8 +26,7 @@ extension PDFCanvasView {
     func showComments(pageIndex: Int, objectNumber: Int, isNewNote: Bool = false) {
         guard window != nil,
               let thread = viewModel.annotationThread(pageIndex: pageIndex, objectNumber: objectNumber),
-              let doc = viewModel.document,
-              let pFrame = pageFrame(for: pageIndex) else { return }
+              let geometry = pageGeometry(for: pageIndex) else { return }
         commentsPopover?.close()
 
         let popover = NSPopover()
@@ -50,11 +49,7 @@ extension PDFCanvasView {
             focusNote: isNewNote,
             close: { [weak popover] in popover?.close() }
         ))
-        let origin = canvasPoint(for: thread.root.rect.origin, pFrame: pFrame, pBounds: doc.pageBounds[pageIndex])
-        let anchor = NSRect(
-            origin: origin,
-            size: CGSize(width: thread.root.rect.width * viewModel.effectiveZoom, height: thread.root.rect.height * viewModel.effectiveZoom)
-        )
+        let anchor = geometry.canvasRect(forPageRect: thread.root.rect)
         commentsPopover = popover
         popover.show(relativeTo: anchor.intersection(visibleRect).isEmpty ? visibleRect : anchor, of: self, preferredEdge: .maxX)
     }

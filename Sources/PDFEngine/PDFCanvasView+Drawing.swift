@@ -51,8 +51,8 @@ extension PDFCanvasView {
         guard start <= end else { return }
         
         for pageIdx in start...end {
-            guard let pFrame = pageFrame(for: pageIdx) else { continue }
-            guard pFrame.intersects(dirtyRect) else { continue }
+            guard let canvasFrame = pageFrame(for: pageIdx) else { continue }
+            guard canvasFrame.intersects(dirtyRect) else { continue }
             
             let pBounds = doc.pageBounds[pageIdx]
             
@@ -82,7 +82,7 @@ extension PDFCanvasView {
             shadow.set()
 
             pageFillColor.setFill()
-            let pagePath = NSBezierPath(rect: pFrame)
+            let pagePath = NSBezierPath(rect: canvasFrame)
             pagePath.fill()
             NSGraphicsContext.restoreGraphicsState()
 
@@ -91,35 +91,34 @@ extension PDFCanvasView {
             pagePath.lineWidth = 0.5
             pagePath.stroke()
 
+            // From here on the page is drawn in its layout space (see PageGeometry): unrotated, and
+            // turned onto the canvas by `viewRotation` in a rotated view, so the same page-to-view
+            // arithmetic below serves every view. A rotated page starts on a whole pixel, as an
+            // unrotated bitmap does through backingAlignedRect, so it isn't drawn blurred.
+            let rotation = viewModel.viewRotationDegrees
+            let alignedFrame = backingAlignedRect(canvasFrame, options: .alignAllEdgesNearest)
+            let geometry = PageGeometry(frame: rotation == 0 ? canvasFrame : alignedFrame, pageBounds: pBounds, zoom: viewModel.effectiveZoom, rotation: rotation)
+            let cgContext = NSGraphicsContext.current?.cgContext
+            cgContext?.saveGState()
+            defer { cgContext?.restoreGState() }
+            if geometry.isRotated {
+                cgContext?.concatenate(geometry.viewRotation)
+            }
+            let pFrame = geometry.layoutFrame
+
             // 2. Rendered Page Bitmap — inverted in dark mode (see displayImage) so pages read as
             // light-on-dark rather than a bright rectangle breaking up an otherwise dark app.
             if let image = viewModel.renderedPages[pageIdx] {
                 let displayImg = displayImage(for: pageIdx, source: image)
-                let alignedFrame = backingAlignedRect(pFrame, options: .alignAllEdgesNearest)
-                if viewModel.viewRotationDegrees == 0 {
-                    displayImg.draw(in: alignedFrame)
-                } else if let cgContext = NSGraphicsContext.current?.cgContext {
-                    // Draws the page's native (unrotated) bitmap through the same rotation
-                    // transform pageFrame used to compute pFrame's swapped width/height, so the
-                    // rotated image always exactly fills pFrame with no gap or overflow.
-                    let scaledW = pBounds.width * viewModel.effectiveZoom
-                    let scaledH = pBounds.height * viewModel.effectiveZoom
-                    cgContext.saveGState()
-                    cgContext.translateBy(x: alignedFrame.minX, y: alignedFrame.minY)
-                    cgContext.concatenate(Self.rotationTransform(degrees: viewModel.viewRotationDegrees, nativeWidth: scaledW, nativeHeight: scaledH))
-                    displayImg.draw(in: CGRect(x: 0, y: 0, width: scaledW, height: scaledH))
-                    cgContext.restoreGState()
-                } else {
-                    displayImg.draw(in: alignedFrame)
-                }
-                drawPageDetail(pageIdx, pageFrame: pFrame, pageBounds: pBounds)
+                displayImg.draw(in: geometry.isRotated ? pFrame : alignedFrame)
+                drawPageDetail(pageIdx, geometry: geometry)
             }
             if !viewModel.hasCurrentRender(of: pageIdx) && !viewModel.isLiveZooming {
                 // Render on demand, or again after a zoom; the old bitmap stays meanwhile.
                 Task { @MainActor [weak self] in
                     await self?.viewModel.renderPage(pageIdx)
                     self?.viewModel.loadPageMetadata(pageIdx)
-                    self?.setNeedsDisplay(pFrame)
+                    self?.setNeedsDisplay(canvasFrame)
                     self?.syncFormControls()
                 }
             }
@@ -129,11 +128,10 @@ extension PDFCanvasView {
                 // Defer loading metadata to avoid mutating published state during draw(_:).
                 Task { @MainActor [weak self] in
                     self?.viewModel.loadPageMetadata(pageIdx)
-                    self?.setNeedsDisplay(pFrame)
+                    self?.setNeedsDisplay(canvasFrame)
                 }
             }
-            // Skip masking when rotated or in two-page mode.
-            if viewModel.isInteractiveViewingMode, let widgets = viewModel.pageFormWidgets[pageIdx] {
+            if let widgets = viewModel.pageFormWidgets[pageIdx] {
                 for widget in widgets {
                     // Signature fields are not masked so stamped signature remains visible.
                     guard widget.type != .signature else { continue }
@@ -147,21 +145,7 @@ extension PDFCanvasView {
             }
 
             // Annotations added in the current session are drawn over the rendered bitmap.
-            let rotatesAnnotations = viewModel.viewRotationDegrees != 0 && NSGraphicsContext.current?.cgContext != nil
-            let annotationFrame: NSRect
-            if rotatesAnnotations, let cgContext = NSGraphicsContext.current?.cgContext {
-                let scaledW = pBounds.width * viewModel.effectiveZoom
-                let scaledH = pBounds.height * viewModel.effectiveZoom
-                let alignedFrame = backingAlignedRect(pFrame, options: .alignAllEdgesNearest)
-                cgContext.saveGState()
-                cgContext.translateBy(x: alignedFrame.minX, y: alignedFrame.minY)
-                cgContext.concatenate(Self.rotationTransform(degrees: viewModel.viewRotationDegrees, nativeWidth: scaledW, nativeHeight: scaledH))
-                annotationFrame = NSRect(x: 0, y: 0, width: scaledW, height: scaledH)
-            } else {
-                annotationFrame = pFrame
-            }
             do {
-                let pFrame = annotationFrame
 
                 // 2.5 Page Annotations (Highlights, Underlines, Strikeouts, Freehand Ink, FreeText)
                 if case let annots = viewModel.shownAnnotations(onPage: pageIdx), !annots.isEmpty {
@@ -258,7 +242,7 @@ extension PDFCanvasView {
                             let rh = max(rect.height * viewModel.effectiveZoom, 16)
                             var boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
                             if activeEditingAnnotation?.id == annot.id, let tf = activeInlineTextField {
-                                boxRect = tf.frame
+                                boxRect = layoutRect(of: tf)
                             }
 
                             let effectiveColor = (activeEditingAnnotation?.id == annot.id ? viewModel.selectedAnnotationColor : annot.color)
@@ -373,7 +357,7 @@ extension PDFCanvasView {
                                     targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
                                     kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
                                     rect = rect.offsetBy(dx: dx, dy: dy)
-                                case .lineStart, .lineEnd:
+                                case .lineStart, .lineEnd, .measurementPoint, .measurementLeader:
                                     break
                                 }
                             }
@@ -384,7 +368,7 @@ extension PDFCanvasView {
                             let rh = max(rect.height * viewModel.effectiveZoom, 16)
                             var boxRect = NSRect(x: rx, y: ry, width: rw, height: rh)
                             if activeEditingAnnotation?.id == annot.id, let tf = activeInlineTextField {
-                                boxRect = tf.frame
+                                boxRect = layoutRect(of: tf)
                             }
 
                             let tx = pFrame.minX + (targetPt.x - pBounds.minX) * viewModel.effectiveZoom
@@ -518,14 +502,19 @@ extension PDFCanvasView {
                                 }
                             }
 
-                        case .measureLength:
-                            drawMeasureLength(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
-                        case .measurePerimeter:
-                            drawMeasurePerimeter(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
-                        case .measureArea:
-                            drawMeasureArea(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
-                        case .measureAngle:
-                            drawMeasureAngle(annot: annot, pFrame: pFrame, pBounds: pBounds, isSelected: selectedAnnotation?.id == annot.id)
+                        case .measureLength, .measurePerimeter, .measureArea, .measureAngle:
+                            // As a drag in progress leaves it, with its value worked out again.
+                            let shown = draggedMeasurement(annot)
+                            let isSelected = selectedAnnotation?.id == annot.id
+                            switch annot.type {
+                            case .measureLength: drawMeasureLength(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
+                            case .measurePerimeter: drawMeasurePerimeter(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
+                            case .measureArea: drawMeasureArea(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
+                            default: drawMeasureAngle(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
+                            }
+                            if isSelected {
+                                drawEndHandles(shown.measurementPoints.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) })
+                            }
                         case .other:
                             break
                         }
@@ -543,12 +532,6 @@ extension PDFCanvasView {
                     ring.stroke()
                 }
             }
-            if rotatesAnnotations {
-                NSGraphicsContext.current?.cgContext.restoreGState()
-            }
-
-            // Overlays are only rendered in interactive single-column, unrotated mode.
-            guard viewModel.isInteractiveViewingMode else { continue }
 
             // 2.6 Live Drawing Stroke in Progress
             if currentDrawingPageIndex == pageIdx && !currentDrawingPoints.isEmpty {
@@ -684,7 +667,8 @@ extension PDFCanvasView {
             if viewModel.canvasMode == .stamp,
                let data = viewModel.pendingSignatureData,
                let img = NSImage(data: data),
-               let hoverPt = currentHoverCanvasPoint,
+               let hoverCanvasPt = currentHoverCanvasPoint,
+               case let hoverPt = geometry.layoutPoint(forCanvasPoint: hoverCanvasPt),
                pFrame.contains(hoverPt) {
                 let imgSize = img.size
                 let stampW: CGFloat = 140 * viewModel.effectiveZoom

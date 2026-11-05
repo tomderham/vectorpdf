@@ -1,13 +1,11 @@
 <!-- keywords: damaged, corrupt, unreadable, トラブルシューティング, 問題, 動作しない, ヘルプ, 修正, サポート, troubleshooting, problem, problems, not working, help, fix, support -->
-<!-- source: 96d44ec3359c -->
+<!-- source: 0ca329d057c7 -->
 
 # トラブルシューティング
 
 ## テキストを選択できない、リンクをたどれない、マークアップツールを使用できない
 
-表示が回転していないこと、Two-Page Mode になっていないことを確認してください。これらの機能は、Single Page 表示で回転していない場合にのみ使用できます。[拡大/縮小、回転、ページレイアウト](zoom-and-layout.md)を参照してください。
-
-また、Markup ツールや Measurement ツールが有効になっていないことも確認してください。Escape キーを押すと、テキスト選択に戻ります。
+Markup ツールや Measurement ツールが有効になっていないことを確認してください。Escape キーを押すか、選択中のツールをもう一度クリックすると、テキスト選択に戻ります。
 
 ## 検索しても何も見つからない
 

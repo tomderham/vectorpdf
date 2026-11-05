@@ -1487,7 +1487,7 @@ public struct PDFViewerMainView: View {
                         withAnimation(.easeInOut(duration: 0.15)) {
                             viewModel.toggleTwoPageMode()
                         }
-                    }, isSelected: viewModel.isTwoPageMode, helpText: "Two-Page Mode — shows pages side by side in book spread format with cover page on the right. Search, text selection, and form fields are unavailable while active.") {
+                    }, isSelected: viewModel.isTwoPageMode, helpText: "Two-Page Mode — shows pages side by side in book spread format with cover page on the right.") {
                         Image(systemName: "rectangle.split.2x1")
                     }
                 }

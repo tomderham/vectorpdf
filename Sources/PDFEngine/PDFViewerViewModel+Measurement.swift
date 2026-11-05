@@ -153,6 +153,85 @@ extension PDFViewerViewModel {
         return stored
     }
 
+    // MARK: - Editing Measurements
+
+    /// The value and label of a measurement of `type` through `points` on page `pageIndex`, as
+    /// the Measurement tools work them out.
+    func measured(_ type: PDFAnnotationType, points: [CGPoint], pageIndex: Int) -> (value: Double, text: String) {
+        let scale = scaleConfig(for: pageIndex)
+        switch type {
+        case .measureArea:
+            let area = PDFMeasurementGeometry.shoelaceArea(points: points)
+            return (area, scale.formatArea(pointsSquared: area))
+        case .measureAngle:
+            guard points.count >= 3 else { return (0, "") }
+            let degrees = PDFMeasurementGeometry.angleDegrees(r1: points[0], apex: points[1], r2: points[2])
+            return (degrees, String(format: "%.1f°", degrees))
+        default:
+            let length = zip(points, points.dropFirst()).reduce(0.0) { $0 + Double(hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y)) }
+            return (length, scale.formatLength(points: length))
+        }
+    }
+
+    /// `annot` with new points, dimension-line offset or color, its value and label worked out
+    /// again. A label of its own, rather than its value, is kept.
+    func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil) -> PDFAnnotation {
+        let points = points ?? annot.measurementPoints
+        let (value, text) = measured(annot.type, points: points, pageIndex: annot.pageIndex)
+        let hasOwnLabel = !annot.text.isEmpty && annot.text != annot.measurementText
+        var edited = PDFAnnotation(
+            id: annot.id,
+            pageIndex: annot.pageIndex,
+            type: annot.type,
+            strokeWidth: annot.strokeWidth,
+            color: color ?? annot.color,
+            text: hasOwnLabel ? annot.text : text,
+            measurementPoints: points,
+            measurementValue: value,
+            measurementText: text,
+            leaderOffset: leaderOffset ?? annot.leaderOffset,
+            dateCreated: annot.dateCreated
+        )
+        edited.documentObjectNumber = annot.documentObjectNumber
+        edited.layerObjectNumber = annot.layerObjectNumber
+        edited.cameWithFile = annot.cameWithFile
+        return edited
+    }
+
+    /// Changes a measurement on the page to `edited` (from `editedMeasurement`): it's written
+    /// again, keeping its comments and layer, as one step to undo.
+    @discardableResult
+    func replaceMeasurement(_ annot: PDFAnnotation, with edited: PDFAnnotation) -> PDFAnnotation? {
+        guard annot.isMeasurement else { return nil }
+        beginReplacingAnnotation(annot)
+        defer { finishReplacingAnnotation() }
+        return addMeasurementAnnotation(
+            pageIndex: annot.pageIndex, type: annot.type, points: edited.measurementPoints,
+            value: edited.measurementValue, formattedText: edited.measurementText,
+            leaderOffset: edited.leaderOffset, color: edited.color, strokeWidth: edited.strokeWidth,
+            label: edited.text
+        )
+    }
+
+    /// A measurement in the file, as PDF object `objectNumber` on `pageIndex`, that isn't on the
+    /// canvas yet: one that was in the file when it was opened.
+    func fileMeasurement(pageIndex: Int, objectNumber: Int) -> PDFAnnotation? {
+        guard pageAnnotations[pageIndex]?.contains(where: { $0.documentObjectNumber == objectNumber }) != true,
+              var annot = document?.measurementAnnotations(pageIndex: pageIndex).first(where: { $0.documentObjectNumber == objectNumber }) else { return nil }
+        annot.cameWithFile = true
+        return annot
+    }
+
+    /// Picks up a measurement from `fileMeasurement` so it can be selected and changed. From now
+    /// on the canvas draws it, and the renderer leaves it out.
+    func pickUpMeasurement(_ annot: PDFAnnotation) -> PDFAnnotation {
+        if let existing = pageAnnotations[annot.pageIndex]?.first(where: { $0.documentObjectNumber == annot.documentObjectNumber }) {
+            return existing
+        }
+        pageAnnotations[annot.pageIndex, default: []].append(annot)
+        return annot
+    }
+
     // MARK: - Takeoff Summary Generation & Export
 
     /// One measurement in the takeoff, valued with the scale of the page it's on.

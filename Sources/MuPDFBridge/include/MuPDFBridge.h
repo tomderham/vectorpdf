@@ -139,6 +139,9 @@ typedef struct {
     char text[256]; /* /Contents, UTF-8, truncated */
     /* The layer it's on (its /OC's object number), or 0; and whether that's hidden. */
     int layer, hidden;
+    /* For a length: how far the dimension line is drawn from the measured points, in page
+       (top-down) space, as mupdf_pdf_add_line_dimension's leader_offset. */
+    float leader;
 } mupdf_measurement_annot;
 int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int pageno,
                                      mupdf_measurement_annot *out, int capacity, int *out_count,

@@ -24,8 +24,11 @@ extension PDFCanvasView {
     // MARK: - Inline Text Box Editing & Resizing Helpers
 
     internal func hitTestResizeHandle(for rect: CGRect, on pageIndex: Int, canvasPoint: CGPoint) -> DraggingAnnotationPart? {
-        guard let pFrame = pageFrame(for: pageIndex), let doc = viewModel.document else { return nil }
-        let pBounds = doc.pageBounds[pageIndex]
+        // The handles are drawn in the page's layout space (see PageGeometry); find them there.
+        guard let geometry = pageGeometry(for: pageIndex) else { return nil }
+        let pFrame = geometry.layoutFrame
+        let pBounds = geometry.pageBounds
+        let canvasPoint = geometry.layoutPoint(forCanvasPoint: canvasPoint)
         let rx = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
         let ry = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
         let rw = max(rect.width * viewModel.effectiveZoom, 24)
@@ -184,6 +187,7 @@ extension PDFCanvasView {
             if let tf = activeInlineTextField {
                 tf.delegate = nil
                 tf.removeFromSuperview()
+                forgetPlacement(of: tf)
             }
             activeInlineTextField = nil
             activeEditingAnnotation = nil
@@ -251,6 +255,7 @@ extension PDFCanvasView {
 
         tf.delegate = nil
         tf.removeFromSuperview()
+        forgetPlacement(of: tf)
         activeInlineTextField = nil
         activeEditingAnnotation = nil
         activeEditingPageIndex = nil
@@ -271,6 +276,7 @@ extension PDFCanvasView {
         if let tf = activeInlineTextField {
             tf.delegate = nil
             tf.removeFromSuperview()
+            forgetPlacement(of: tf)
         }
         activeInlineTextField = nil
         activeEditingAnnotation = nil
@@ -280,6 +286,23 @@ extension PDFCanvasView {
             viewModel.canvasMode = .select
         }
         needsDisplay = true
+    }
+
+    /// Gives the inline text field a new size, keeping its top-left corner on the page.
+    private func resizeInlineTextField(_ tf: NSTextField, pageIndex: Int, to size: CGSize) {
+        guard let geometry = pageGeometry(for: pageIndex) else {
+            tf.frame = NSRect(origin: tf.frame.origin, size: size)
+            return
+        }
+        place(tf, layoutRect: NSRect(origin: layoutRect(of: tf).origin, size: size), geometry: geometry)
+    }
+
+    /// True when `canvasPoint` is on the inline text field, which is turned in a rotated view.
+    func inlineTextFieldContains(_ tf: NSTextField, canvasPoint: CGPoint) -> Bool {
+        guard let pIdx = activeEditingPageIndex, let geometry = pageGeometry(for: pIdx) else {
+            return tf.frame.contains(canvasPoint)
+        }
+        return layoutRect(of: tf).contains(geometry.layoutPoint(forCanvasPoint: canvasPoint))
     }
 
     func calloutDragPart(for annotation: PDFAnnotation, at pagePoint: CGPoint) -> DraggingAnnotationPart {
@@ -312,8 +335,16 @@ extension PDFCanvasView {
         guard let sel = selectedAnnotation,
               let list = viewModel.pageAnnotations[sel.pageIndex],
               let orig = list.first(where: { $0.id == sel.id }) else { return }
-        // Only kinds that can be re-created below may be removed — anything else (a measurement,
-        // ink, a text markup) would simply be deleted by an arrow key.
+        if orig.isMeasurement {
+            let moved = orig.measurementPoints.map { CGPoint(x: $0.x + dx, y: $0.y + dy) }
+            if let updated = viewModel.replaceMeasurement(orig, with: viewModel.editedMeasurement(orig, points: moved)) {
+                selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
+            }
+            needsDisplay = true
+            return
+        }
+        // Only kinds that can be re-created below may be removed — anything else (ink, a text
+        // markup) would simply be deleted by an arrow key.
         if orig.isFromFile {
             viewModel.editFileAnnotation(orig) { try $0.moveAnnotation(pageIndex: sel.pageIndex, objectNumber: $1, by: CGSize(width: dx, height: dy)) }
             needsDisplay = true
@@ -365,8 +396,7 @@ extension PDFCanvasView {
 
     func startInlineEditing(annotation: PDFAnnotation, pageIndex: Int) {
         commitActiveInlineTextField()
-        guard let pFrame = pageFrame(for: pageIndex),
-              let doc = viewModel.document,
+        guard let geometry = pageGeometry(for: pageIndex),
               let rect = annotation.rect else { return }
 
         selectedAnnotation = (id: annotation.id, pageIndex: pageIndex)
@@ -377,13 +407,12 @@ extension PDFCanvasView {
             viewModel.selectedAnnotationColor = annotation.color
         }
 
-        let pBounds = doc.pageBounds[pageIndex]
-        let canvasX = pFrame.minX + (rect.minX - pBounds.minX) * viewModel.effectiveZoom
-        let canvasY = pFrame.minY + (rect.minY - pBounds.minY) * viewModel.effectiveZoom
+        let origin = rect.origin.applying(geometry.pageToLayout)
         let canvasW = max(rect.width * viewModel.effectiveZoom, 60)
         let canvasH = max(rect.height * viewModel.effectiveZoom, 22)
 
-        let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
+        let tf = NSTextField(frame: .zero)
+        place(tf, layoutRect: NSRect(x: origin.x, y: origin.y, width: canvasW, height: canvasH), geometry: geometry)
         tf.stringValue = annotation.text
         let fSize = max((annotation.fontSize ?? viewModel.selectedFontSize) * viewModel.effectiveZoom, 10.0)
         tf.font = NSFont.systemFont(ofSize: fSize)
@@ -411,16 +440,14 @@ extension PDFCanvasView {
 
     func startInlineEditing(newAt pagePoint: CGPoint, pageIndex: Int) {
         commitActiveInlineTextField()
-        guard let pFrame = pageFrame(for: pageIndex),
-              let doc = viewModel.document else { return }
+        guard let geometry = pageGeometry(for: pageIndex) else { return }
 
-        let pBounds = doc.pageBounds[pageIndex]
-        let canvasX = pFrame.minX + (pagePoint.x - pBounds.minX) * viewModel.effectiveZoom
-        let canvasY = pFrame.minY + (pagePoint.y - pBounds.minY) * viewModel.effectiveZoom
+        let origin = pagePoint.applying(geometry.pageToLayout)
         let canvasW: CGFloat = 120
         let canvasH = max(viewModel.selectedFontSize * viewModel.effectiveZoom * 1.3 + 8, 24)
 
-        let tf = NSTextField(frame: NSRect(x: canvasX, y: canvasY, width: canvasW, height: canvasH))
+        let tf = NSTextField(frame: .zero)
+        place(tf, layoutRect: NSRect(x: origin.x, y: origin.y, width: canvasW, height: canvasH), geometry: geometry)
         tf.placeholderString = "Type text..."
         tf.font = NSFont.systemFont(ofSize: max(viewModel.selectedFontSize * viewModel.effectiveZoom, 10.0))
         tf.textColor = viewModel.selectedAnnotationColor.nsColor
@@ -464,7 +491,7 @@ extension PDFCanvasView {
             )
             let approxW = max(ceil(bounding.width) + 16, 60)
             let approxH = max(ceil(bounding.height) + 10, 24)
-            tf.frame = NSRect(x: tf.frame.minX, y: tf.frame.minY, width: approxW, height: approxH)
+            resizeInlineTextField(tf, pageIndex: pIdx, to: CGSize(width: approxW, height: approxH))
 
             needsDisplay = true
         }
@@ -531,9 +558,16 @@ extension PDFCanvasView {
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile) {
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile || annot.isMeasurement) {
 
             guard annot.color != newColor else { return }
+            if annot.isMeasurement {
+                if let updated = viewModel.replaceMeasurement(annot, with: viewModel.editedMeasurement(annot, color: newColor)) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+                needsDisplay = true
+                return
+            }
             if annot.isFromFile {
                 // Text boxes and stamps keep the colors their app drew them in.
                 if annot.type != .freeText && annot.type != .stamp {
@@ -601,7 +635,7 @@ extension PDFCanvasView {
         )
         let approxW = max(ceil(bounding.width) + 16, 60)
         let approxH = max(ceil(bounding.height) + 10, 24)
-        tf.frame = NSRect(x: tf.frame.minX, y: tf.frame.minY, width: approxW, height: approxH)
+        resizeInlineTextField(tf, pageIndex: pIdx, to: CGSize(width: approxW, height: approxH))
         needsDisplay = true
     }
 

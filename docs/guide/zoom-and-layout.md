@@ -31,4 +31,4 @@ Click Rotate Left or Rotate Right in the toolbar. This only changes how you see 
 
 Click Two-Page Mode in the toolbar, or choose View > Two Pages (⌥⌘2). Pages appear in pairs with the cover page on its own, like an open book, and the spread is zoomed to fit the window. To go back, click the button again or choose View > Single Page.
 
-> **Note:** While the view is rotated or in Two-Page Mode, you can't select text, follow links, use the markup and measurement tools, or fill in forms. Return to Single Page with no rotation to use them.
+> **Note:** Selecting text, links, search, the markup and measurement tools and forms all work while the view is rotated or in Two-Page Mode. What you add goes on the page itself, so it stays in place when you turn the view back.

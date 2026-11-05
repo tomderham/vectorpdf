@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # Raccourcis clavier
 
@@ -89,6 +89,6 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Supprimer l’annotation sélectionnée | Delete | L’annotation |
 | Déplacer l’annotation sélectionnée | Touches fléchées, ou ⇧Arrow keys pour 10 points | |
 | Terminer un périmètre ou une surface | Return | |
-| Limiter une mesure à 0°, 45° ou 90° | Maintenir la touche ⇧ enfoncée | |
+| Inverser Ortho Lock (0°, 45° ou 90°) pour une ligne | Maintenir la touche ⇧ enfoncée | |
 | Dessiner un carré ou un cercle, ou une ligne à un multiple de 45° | Maintenir ⇧ en faisant glisser avec l’outil Shapes | |
 | Annuler, ou quitter l’outil actif | Escape | |

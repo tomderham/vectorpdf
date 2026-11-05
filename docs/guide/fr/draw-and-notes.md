@@ -1,9 +1,9 @@
 <!-- keywords: dessiner, dessin, encre, stylo, main levée, forme, formes, rectangle, carré, ovale, cercle, ellipse, ligne, flèche, zone de texte, bulle, bulles, note, notes, pense-bête, commentaire, commentaires, réponse, réponses, statut, auteur, nuage de révision, nuage, extrémité de ligne, couleur, annuler, rétablir, annoter, annotation, annotations, gomme, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: 31bb1c264a1e -->
+<!-- source: d9645d5143e8 -->
 
 # Dessiner, ajouter des notes, du texte et des bulles
 
-Appuyez sur ⇧⌘A ou cliquez sur le bouton Markup Toolbar pour afficher la barre d’outils Markup. Choisissez un outil, puis une couleur et une taille. Pour choisir une couleur, cliquez sur le bouton de couleur près de la droite de la barre, puis sur une couleur. Pour quitter un outil, appuyez sur Escape ou choisissez Text Selection Mode, le premier outil de la barre.
+Appuyez sur ⇧⌘A ou cliquez sur le bouton Markup Toolbar pour afficher la barre d’outils Markup. Choisissez un outil, puis une couleur et une taille. Pour choisir une couleur, cliquez sur le bouton de couleur près de la droite de la barre, puis sur une couleur. Pour quitter un outil, appuyez sur Escape, cliquez à nouveau sur l’outil ou choisissez Text Selection Mode, le premier outil de la barre.
 
 ## Dessiner à main levée
 

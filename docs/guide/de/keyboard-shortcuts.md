@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # Tastaturkurzbefehle
 
@@ -89,6 +89,6 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Ausgewählte Anmerkung löschen | Delete | Die Anmerkung |
 | Ausgewählte Anmerkung bewegen | Arrow keys oder ⇧Arrow keys für 10 Punkt | |
 | Umfang oder Fläche abschließen | Return | |
-| Messung auf 0°, 45° oder 90° beschränken | ⇧ gedrückt halten | |
+| „Ortho Lock“ (0°, 45° oder 90°) für eine Linie umschalten | ⇧ gedrückt halten | |
 | Quadrat oder Kreis zeichnen oder eine Linie in einem Vielfachen von 45° | Beim Ziehen mit dem Werkzeug „Shapes“ ⇧ gedrückt halten | |
 | Abbrechen oder aktuelles Werkzeug verlassen | Escape | |

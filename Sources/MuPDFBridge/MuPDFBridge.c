@@ -3175,6 +3175,8 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                     m->n_points = 2;
                     m->xy[0] = p0.x; m->xy[1] = p0.y;
                     m->xy[2] = p1.x; m->xy[3] = p1.y;
+                    /* Written negated (see mupdf_pdf_add_line_dimension). */
+                    m->leader = -pdf_annot_line_leader(ctx, a);
                 } else {
                     int n = pdf_annot_vertex_count(ctx, a);
                     if (n > MUPDF_MEASUREMENT_MAX_POINTS) n = MUPDF_MEASUREMENT_MAX_POINTS;

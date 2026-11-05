@@ -57,26 +57,38 @@ private func rgba(_ image: CGImage, crop: CGRect? = nil) -> [UInt8] {
         // A 1000 x 1000 pt page at zoom 4, framed at (100, 50), with part of it on screen.
         let pageFrame = NSRect(x: 100, y: 50, width: 4000, height: 4000)
         let pageBounds = CGRect(x: 0, y: 0, width: 1000, height: 1000)
+        let geometry = PageGeometry(frame: pageFrame, pageBounds: pageBounds, zoom: 4, rotation: 0)
         let visible = NSRect(x: 1100, y: 1050, width: 800, height: 400)
-        let rect = try #require(PDFCanvasView.detailRect(visible: visible, pageFrame: pageFrame, pageBounds: pageBounds, zoom: 4, backingScale: 2))
+        let rect = try #require(PDFCanvasView.detailRect(visible: visible, geometry: geometry, backingScale: 2))
         // 25% margin each side: 1100 - 200 = 900 → page x 200; 1050 - 100 = 950 → page y 225.
         #expect(rect == CGRect(x: 200, y: 225, width: 300, height: 150))
 
         // Near the page's corner the margin is cut off at its edge.
         let corner = NSRect(x: 0, y: 0, width: 800, height: 400)
-        let clipped = try #require(PDFCanvasView.detailRect(visible: corner, pageFrame: pageFrame, pageBounds: pageBounds, zoom: 4, backingScale: 2))
+        let clipped = try #require(PDFCanvasView.detailRect(visible: corner, geometry: geometry, backingScale: 2))
         #expect(clipped.minX == 0 && clipped.minY == 0)
 
         // Off the page: nothing.
-        #expect(PDFCanvasView.detailRect(visible: NSRect(x: 0, y: 0, width: 50, height: 40), pageFrame: pageFrame, pageBounds: pageBounds, zoom: 4, backingScale: 2) == nil)
+        #expect(PDFCanvasView.detailRect(visible: NSRect(x: 0, y: 0, width: 50, height: 40), geometry: geometry, backingScale: 2) == nil)
     }
 
     @Test func detailMarginShrinksOnAHugeViewButTheVisibleAreaIsKept() throws {
-        let pageFrame = NSRect(x: 0, y: 0, width: 40000, height: 40000)
-        let pageBounds = CGRect(x: 0, y: 0, width: 10000, height: 10000)
+        let geometry = PageGeometry(frame: NSRect(x: 0, y: 0, width: 40000, height: 40000), pageBounds: CGRect(x: 0, y: 0, width: 10000, height: 10000), zoom: 4, rotation: 0)
         // 3000 x 2000 pt at 2x is 24 Mpx, already over the cap: no margin at all.
         let visible = NSRect(x: 10000, y: 10000, width: 3000, height: 2000)
-        let rect = try #require(PDFCanvasView.detailRect(visible: visible, pageFrame: pageFrame, pageBounds: pageBounds, zoom: 4, backingScale: 2))
+        let rect = try #require(PDFCanvasView.detailRect(visible: visible, geometry: geometry, backingScale: 2))
         #expect(rect == CGRect(x: 2500, y: 2500, width: 750, height: 500))
+    }
+
+    @Test func detailRectInARotatedViewIsThePartOfThePageOnScreen() throws {
+        // A 1000 x 500 pt page at zoom 2, turned 90° clockwise: 1000 x 2000 on screen at (100, 50).
+        let geometry = PageGeometry(frame: NSRect(x: 100, y: 50, width: 1000, height: 2000), pageBounds: CGRect(x: 0, y: 0, width: 1000, height: 500), zoom: 2, rotation: 90)
+        // The top-left 200 x 100 of the page as it's shown; the margin around it is cut off at the page's edges.
+        let visible = NSRect(x: 100, y: 50, width: 200, height: 100)
+        let rect = try #require(PDFCanvasView.detailRect(visible: visible, geometry: geometry, backingScale: 2))
+        // Turned clockwise, the screen's top-left is the page's bottom-left: page x 0…50, y 400…500.
+        let core = CGRect(x: 0, y: 400, width: 50, height: 100)
+        #expect(rect.insetBy(dx: -0.001, dy: -0.001).contains(core))
+        #expect(rect.maxY <= 500.001 && rect.minX >= -0.001)
     }
 }

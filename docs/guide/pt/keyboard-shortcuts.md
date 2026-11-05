@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 8b1613bc477d -->
+<!-- source: bc2b0891b2b4 -->
 
 # Atalhos de teclado
 
@@ -89,6 +89,6 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Apagar a anotação selecionada | Delete | A anotação |
 | Mover a anotação selecionada | Arrow keys, ou ⇧Arrow keys para mover 10 pontos | |
 | Terminar o perímetro ou a área | Return | |
-| Restringir uma medição a 0°, 45° ou 90° | Mantenha ⇧ pressionada | |
+| Inverter Ortho Lock (0°, 45° ou 90°) em uma linha | Mantenha ⇧ pressionada | |
 | Desenhar um quadrado ou círculo, ou uma linha em um múltiplo de 45° | Manter ⇧ pressionada ao arrastar com a ferramenta Shapes | |
 | Cancelar ou sair da ferramenta atual | Escape | |
