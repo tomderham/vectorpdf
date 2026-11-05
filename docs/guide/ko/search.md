@@ -1,5 +1,5 @@
-<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # 문서 검색하기
 
@@ -20,6 +20,15 @@
 | 목록을 차례로 이동하기 | 결과를 클릭한 다음 화살표 키를 누릅니다. |
 
 결과를 오른쪽 클릭하면 해당 결과로 [앵커를 생성](anchors.md)하거나 새로운 윈도우에서 열 수 있습니다.
+
+## 이전에 검색한 내용 다시 검색하기
+
+각 문서는 결과로 이동했던 최근 검색 10개를 기억합니다. 다시 검색하려면:
+
+- 검색 필드의 돋보기를 클릭하고 선택하거나,
+- 검색 필드가 비어 있을 때 필드 아래 Recent Searches 목록에서 클릭합니다.
+
+VectorPDF는 가장 가까운 결과로 이동합니다. 문서의 검색 기록을 지우려면 돋보기에서 Clear Recent Searches를 선택하거나 목록 위의 Clear를 클릭합니다. 문서에 가리기를 적용해도 최근 검색이 지워집니다.
 
 ## 검색 옵션 {#search-options}
 

@@ -1,5 +1,5 @@
-<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # 書類を検索する
 
@@ -20,6 +20,15 @@
 | リストを順に移動する | 検索結果をクリックしてから、矢印キーを押します |
 
 検索結果を右クリックすると、そこから[アンカーを作成](anchors.md)したり、新しいウインドウで開いたりできます。
+
+## 以前に検索した語句をもう一度検索する
+
+各書類は、結果に移動した直近10件の検索を記憶します。もう一度検索するには:
+
+- 検索フィールドの虫眼鏡をクリックして選ぶ、または
+- 検索フィールドが空のときに、フィールドの下の Recent Searches リストでクリックする。
+
+VectorPDF は最も近い結果に移動します。書類の検索履歴を消去するには、虫眼鏡から Clear Recent Searches を選ぶか、リストの上の Clear をクリックします。書類に墨消しを適用した場合も、最近の検索は消去されます。
 
 ## 検索オプション {#search-options}
 

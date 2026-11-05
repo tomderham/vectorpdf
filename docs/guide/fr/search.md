@@ -1,5 +1,5 @@
-<!-- keywords: rechercher, recherche, trouver, résultat suivant, casse, mot entier, recherche intelligente, motifs ignorés, expression régulière, balises, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: rechercher, recherche, trouver, résultat suivant, casse, mot entier, recherche intelligente, motifs ignorés, expression régulière, balises, recherches récentes, historique de recherche, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # Rechercher dans un document
 
@@ -20,6 +20,15 @@ Chaque résultat indique sa page et le texte qui l’entoure, et chaque occurren
 | Parcourir la liste | Cliquez sur un résultat, puis appuyez sur les touches fléchées |
 
 Cliquez avec le bouton droit sur un résultat pour [créer une ancre](anchors.md) à partir de celui-ci ou l’ouvrir dans une nouvelle fenêtre.
+
+## Relancer une recherche déjà faite
+
+Chaque document mémorise les 10 dernières recherches pour lesquelles vous êtes allé à un résultat. Pour en relancer une :
+
+- Cliquez sur la loupe du champ de recherche et choisissez-la, ou
+- Le champ de recherche étant vide, cliquez dessus dans la liste Recent Searches, sous le champ.
+
+VectorPDF va au résultat le plus proche. Pour oublier les recherches d'un document, choisissez Clear Recent Searches dans la loupe, ou cliquez sur Clear au-dessus de la liste. Appliquer des caviardages à un document efface aussi ses recherches récentes.
 
 ## Options de recherche {#search-options}
 

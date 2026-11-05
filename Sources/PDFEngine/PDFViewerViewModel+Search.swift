@@ -98,6 +98,7 @@ extension PDFViewerViewModel {
         self.currentPageIndex = match.pageIndex
         self.activeScrollTargetId = match.id.uuidString
         self.searchJumpToken &+= 1
+        recordRecentSearch()
         pruneCaches(around: match.pageIndex)
         Task {
             await renderPage(match.pageIndex)
@@ -110,6 +111,45 @@ extension PDFViewerViewModel {
         }
     }
     
+    // MARK: - Recent Searches
+
+    /// Puts the current query at the top of this document's recent searches. Called when the user
+    /// goes to a match, so the partial words typed on the way to a query aren't kept.
+    func recordRecentSearch() {
+        setRecentSearches(ReadingStateManager.addingRecentSearch(searchQuery, to: recentSearches))
+    }
+
+    /// Searches for a recent query and goes to its nearest match.
+    public func selectRecentSearch(_ query: String) {
+        searchQuery = query
+        performSearch(autoNavigate: true)
+    }
+
+    public func clearRecentSearches() {
+        setRecentSearches([])
+    }
+
+    /// Stores the list with the document's reading state (and so in iCloud when that's on), and
+    /// tells other tabs on the same document. A document with no saved state, or one shown in a
+    /// transient window, keeps the list in memory only.
+    private func setRecentSearches(_ list: [String]) {
+        guard list != recentSearches else { return }
+        recentSearches = list
+        guard !isTransientWindow, let doc = document else { return }
+        ReadingStateManager.shared.updateState(
+            for: doc.filePath,
+            lastPageIndex: currentPageIndex,
+            zoomScale: zoomScale,
+            snapshots: activeSnapshots,
+            recentSearches: list
+        )
+        NotificationCenter.default.post(
+            name: ReadingStateManager.recentSearchesDidChangeNotification,
+            object: self,
+            userInfo: ["canonicalKey": CloudStorageHelper.canonicalKey(for: doc.filePath)]
+        )
+    }
+
     /// One-off whole-document search that leaves the Search sidebar's query and results alone.
     /// Empty until the document has finished opening.
     public func searchWholeDocument(_ query: String, options: SearchOptions = SearchOptions()) async -> [SearchResult] {

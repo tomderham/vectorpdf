@@ -20,6 +20,7 @@ Choose the engine in **Settings → AI Synthesis Engine**, or turn the Agent tab
 - where the file is: its path inside iCloud Drive or a cloud-storage folder (Dropbox, Google Drive, OneDrive, Box), or its full path for other files
 - the last page and zoom
 - your anchors: their names, the short text excerpt each one shows, and the page they point to
+- your last 10 searches in it that you went to a result for (cleared when you apply redactions to the document)
 
 The document, its full text, and anchor thumbnails are not uploaded. The data goes only to your own iCloud account, under Apple's [iCloud terms](https://www.apple.com/legal/internet-services/icloud/), and is not accessible to the developer. To keep it on your Mac, turn off **Settings → Sync reading positions with iCloud**. That also deletes VectorPDF's entries from your iCloud.
 
@@ -30,7 +31,7 @@ The document, its full text, and anchor thumbnails are not uploaded. The data go
 ## Data stored on your Mac
 
 - **Preferences, favorites, and tab groups**: in the app's preferences (`UserDefaults`). Recent documents are kept by macOS, as for any document app.
-- **Reading positions and anchors**: per document, in the app's preferences, and synced through iCloud unless you turn that off (see above).
+- **Reading positions, anchors, and recent searches**: per document, in the app's preferences, and synced through iCloud unless you turn that off (see above). To clear one document's searches, choose Clear Recent Searches from the magnifying glass in its search field.
 - **Saved signature image**: in the app's preferences.
 - **Agent search index**: `~/Library/Application Support/VectorPDF/SemanticIndex/`. Text embeddings of documents you've used the Agent tab with, so they don't need re-indexing. A document's index is deleted when you redact or save it.
 - **Anchor thumbnails**: `~/Library/Caches/VectorPDFSnapshotThumbnails/`.

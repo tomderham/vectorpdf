@@ -181,12 +181,13 @@ extension PDFViewerViewModel {
             return false
         }
         // The copy starts without anchors (also clearing any left by a file it just replaced),
-        // but opens at the same page and zoom.
+        // but opens at the same page and zoom, with the same recent searches.
         ReadingStateManager.shared.updateState(
             for: url.path,
             lastPageIndex: currentPageIndex,
             zoomScale: zoomScale,
-            snapshots: []
+            snapshots: [],
+            recentSearches: recentSearches
         )
         // The unsaved edits went into the copy; the original on disk is left as it was.
         isDocumentEdited = false

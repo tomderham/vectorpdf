@@ -1,5 +1,5 @@
-<!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, Suchverlauf, letzte Suchen, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # Ein Dokument durchsuchen
 
@@ -20,6 +20,15 @@ Jedes Ergebnis zeigt seine Seite und den umgebenden Text, und jeder Treffer wird
 | Die Liste durchgehen | Klicke auf ein Ergebnis und drücke dann die Pfeiltasten |
 
 Klicke mit der rechten Maustaste auf ein Ergebnis, um daraus [einen Anker zu erstellen](anchors.md) oder es in einem neuen Fenster zu öffnen.
+
+## Erneut nach etwas suchen, das du schon gesucht hast
+
+Jedes Dokument merkt sich die letzten 10 Suchen, bei denen du zu einem Treffer gegangen bist. So suchst du erneut danach:
+
+- Klicke auf die Lupe im Suchfeld und wähle die Suche aus, oder
+- klicke bei leerem Suchfeld auf die Suche in der Liste Recent Searches unter dem Feld.
+
+VectorPDF springt zum nächstgelegenen Treffer. Um die Suchen eines Dokuments zu vergessen, wähle Clear Recent Searches in der Lupe oder klicke über der Liste auf Clear. Auch das Anwenden von Schwärzungen auf ein Dokument löscht seine letzten Suchen.
 
 ## Suchoptionen {#search-options}
 

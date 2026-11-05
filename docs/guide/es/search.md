@@ -1,5 +1,5 @@
-<!-- keywords: buscar, búsqueda, buscar siguiente, mayúsculas y minúsculas, palabra completa, búsqueda inteligente, patrones ignorados, expresión regular, etiquetas, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: buscar, búsqueda, buscar siguiente, mayúsculas y minúsculas, palabra completa, búsqueda inteligente, patrones ignorados, expresión regular, etiquetas, búsquedas recientes, historial de búsqueda, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # Buscar en un documento
 
@@ -20,6 +20,15 @@ Cada resultado muestra su página y el texto que lo rodea, y todas las coinciden
 | Recorrer la lista | Haz clic en un resultado y pulsa las teclas de flecha |
 
 Haz clic con el botón derecho en un resultado para [crear un ancla](anchors.md) a partir de él o abrirlo en una ventana nueva.
+
+## Volver a buscar algo que ya buscaste
+
+Cada documento recuerda las últimas 10 búsquedas en las que fuiste a un resultado. Para volver a buscar una:
+
+- Haz clic en la lupa del campo de búsqueda y elígela, o
+- Con el campo de búsqueda vacío, haz clic en ella en la lista Recent Searches, debajo del campo.
+
+VectorPDF va al resultado más cercano. Para olvidar las búsquedas de un documento, elige Clear Recent Searches en la lupa o haz clic en Clear encima de la lista. Aplicar censuras a un documento también borra sus búsquedas recientes.
 
 ## Opciones de búsqueda {#search-options}
 

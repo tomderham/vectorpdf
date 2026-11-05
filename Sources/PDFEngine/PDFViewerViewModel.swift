@@ -393,6 +393,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var searchJumpToken: Int = 0
     @Published public var hasNavigatedToActiveSearchMatch: Bool = false
     public var autoNavigateOnSearchResults: Bool = false
+    /// This document's recent searches, most recent first (see recordRecentSearch).
+    @Published public internal(set) var recentSearches: [String] = []
     
     // Cross References & Snapshots
     @Published public var activeSnapshots: [SnapshotTarget] = [] {
@@ -623,7 +625,25 @@ public final class PDFViewerViewModel: ObservableObject {
                 if let saved = ReadingStateManager.shared.state(for: doc.filePath) {
                     self.activeSnapshots = saved.snapshots
                     self.regenerateMissingThumbnails()
+                    if !self.isTransientWindow {
+                        self.recentSearches = saved.recentSearches ?? []
+                    }
                 }
+            }
+        }
+
+        // Another tab or window on the same document changed its recent searches.
+        NotificationCenter.default.addObserver(
+            forName: ReadingStateManager.recentSearchesDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            let sender = (note.object as AnyObject?).map(ObjectIdentifier.init)
+            let key = note.userInfo?["canonicalKey"] as? String
+            MainActor.assumeIsolated {
+                guard let self = self, sender != ObjectIdentifier(self), !self.isTransientWindow,
+                      let doc = self.document, CloudStorageHelper.canonicalKey(for: doc.filePath) == key else { return }
+                self.recentSearches = ReadingStateManager.shared.state(for: doc.filePath)?.recentSearches ?? []
             }
         }
     }
@@ -777,10 +797,12 @@ public final class PDFViewerViewModel: ObservableObject {
             self.agentConversationEngine.reset()
 
             // Restore saved reading position for non-transient windows.
+            self.recentSearches = []
             if !isTransientWindow, let saved = ReadingStateManager.shared.state(for: actualPath) {
                 self.currentPageIndex = min(max(saved.lastPageIndex, 0), max(doc.pageCount - 1, 0))
                 self.zoomScale = saved.zoomScale
                 self.activeSnapshots = saved.snapshots
+                self.recentSearches = saved.recentSearches ?? []
             }
 
             try await renderActor.openDocument(filePath: actualPath, password: password)

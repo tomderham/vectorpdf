@@ -916,6 +916,13 @@ public struct PDFViewerMainView: View {
                                 },
                                 onPrevious: {
                                     viewModel.previousSearchMatch()
+                                },
+                                recents: viewModel.recentSearches,
+                                onSelectRecent: { query in
+                                    viewModel.selectRecentSearch(query)
+                                },
+                                onClearRecents: {
+                                    viewModel.clearRecentSearches()
                                 }
                             )
                             
@@ -1030,6 +1037,9 @@ public struct PDFViewerMainView: View {
                         ScrollViewReader { proxy in
                             ScrollView {
                                 LazyVStack(spacing: 3) {
+                                    if !hasQuery && !viewModel.recentSearches.isEmpty {
+                                        RecentSearchesListView(viewModel: viewModel)
+                                    }
                                     ForEach(viewModel.searchPageGroups) { group in
                                         SearchPageSeparatorView(
                                             pageIndex: group.pageIndex,
@@ -1529,6 +1539,52 @@ public struct PDFViewerMainView: View {
             }
         }
         return true
+    }
+}
+
+/// The document's recent searches, shown in the Search sidebar while the field is empty.
+private struct RecentSearchesListView: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text("Recent Searches")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Clear") {
+                    viewModel.clearRecentSearches()
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
+                .help("Clear Recent Searches")
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 2)
+
+            ForEach(viewModel.recentSearches, id: \.self) { query in
+                Button {
+                    viewModel.selectRecentSearch(query)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(query)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(query)
+            }
+        }
+        .padding(.top, 4)
     }
 }
 

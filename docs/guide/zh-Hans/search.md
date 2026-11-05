@@ -1,5 +1,5 @@
-<!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
-<!-- source: 4bafc06135d7 -->
+<!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, 最近搜索, 搜索历史, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- source: 8a443734fd6b -->
 
 # 搜索文稿
 
@@ -20,6 +20,15 @@
 | 逐个浏览列表 | 点按一个结果，然后按下箭头键 |
 
 右键点按结果可[从中创建锚点](anchors.md)，或者在新窗口中打开它。
+
+## 再次搜索以前搜索过的内容
+
+每个文稿会记住你前往过结果的最近 10 次搜索。要再次搜索其中一项：
+
+- 点按搜索栏中的放大镜并选择它，或者
+- 在搜索栏为空时，在搜索栏下方的 Recent Searches 列表中点按它。
+
+VectorPDF 会前往最近的结果。要清除文稿的搜索记录，请从放大镜中选择 Clear Recent Searches，或点按列表上方的 Clear。对文稿应用涂黑也会清除其最近搜索。
 
 ## 搜索选项 {#search-options}
 

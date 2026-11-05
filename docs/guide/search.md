@@ -1,4 +1,4 @@
-<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, PDF -->
+<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
 
 # Search a document
 
@@ -19,6 +19,15 @@ Each result shows its page and the text around it, and every match is highlighte
 | Step through the list | Click a result, then press the arrow keys |
 
 Right-click a result to [create an anchor](anchors.md) from it, or to open it in a new window.
+
+## Search again for something you searched before
+
+Each document remembers the last 10 searches you went to a result for. To search for one again:
+
+- Click the magnifying glass in the search field and choose it, or
+- With the search field empty, click it in the Recent Searches list below the field.
+
+VectorPDF goes to the nearest result. To forget a document's searches, choose Clear Recent Searches from the magnifying glass, or click Clear above the list. Applying redactions to a document also clears its recent searches.
 
 ## Search options
 

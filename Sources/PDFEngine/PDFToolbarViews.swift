@@ -268,19 +268,29 @@ public struct NativeSearchField: NSViewRepresentable {
     var onCommit: () -> Void
     var onNext: (() -> Void)?
     var onPrevious: (() -> Void)?
+    /// Shown in the magnifier's menu, most recent first.
+    var recents: [String]
+    var onSelectRecent: ((String) -> Void)?
+    var onClearRecents: (() -> Void)?
     
     public init(
         text: Binding<String>,
         placeholder: String = "Search document...",
         onCommit: @escaping () -> Void,
         onNext: (() -> Void)? = nil,
-        onPrevious: (() -> Void)? = nil
+        onPrevious: (() -> Void)? = nil,
+        recents: [String] = [],
+        onSelectRecent: ((String) -> Void)? = nil,
+        onClearRecents: (() -> Void)? = nil
     ) {
         self._text = text
         self.placeholder = placeholder
         self.onCommit = onCommit
         self.onNext = onNext
         self.onPrevious = onPrevious
+        self.recents = recents
+        self.onSelectRecent = onSelectRecent
+        self.onClearRecents = onClearRecents
     }
     
     public func makeNSView(context: Context) -> NSSearchField {
@@ -300,7 +310,11 @@ public struct NativeSearchField: NSViewRepresentable {
         field.cell?.wraps = false
         field.cell?.lineBreakMode = .byClipping
         field.usesSingleLineMode = true
+        // The recents menu is ours (see Coordinator.updateRecentsMenu), not the field's built-in
+        // one, which is app-wide and adds entries on its own.
+        field.recentsAutosaveName = nil
         context.coordinator.searchField = field
+        context.coordinator.updateRecentsMenu(on: field)
         context.coordinator.focusAndSelectText()
         return field
     }
@@ -315,6 +329,7 @@ public struct NativeSearchField: NSViewRepresentable {
             nsView.placeholderString = placeholder
         }
         nsView.toolTip = text.isEmpty ? nil : text
+        context.coordinator.updateRecentsMenu(on: nsView)
     }
 
     public static func dismantleNSView(_ nsView: NSSearchField, coordinator: Coordinator) {
@@ -329,6 +344,7 @@ public struct NativeSearchField: NSViewRepresentable {
     public class Coordinator: NSObject, NSSearchFieldDelegate {
         var parent: NativeSearchField
         weak var searchField: NSSearchField?
+        private var menuRecents: [String]?
         
         init(_ parent: NativeSearchField) {
             self.parent = parent
@@ -353,6 +369,41 @@ public struct NativeSearchField: NSViewRepresentable {
         
         @objc func handleFocusSearch(_ notification: Notification) {
             focusAndSelectText()
+        }
+
+        /// Gives the magnifier a menu of recent searches, or none when there aren't any.
+        func updateRecentsMenu(on field: NSSearchField) {
+            guard menuRecents != parent.recents else { return }
+            menuRecents = parent.recents
+            field.searchMenuTemplate = parent.recents.isEmpty ? nil : makeRecentsMenu()
+        }
+
+        func makeRecentsMenu() -> NSMenu {
+            let menu = NSMenu(title: "Recent Searches")
+            let title = NSMenuItem(title: "Recent Searches", action: nil, keyEquivalent: "")
+            title.isEnabled = false
+            menu.addItem(title)
+            for query in parent.recents {
+                let item = NSMenuItem(title: query, action: #selector(selectRecent(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = query
+                item.indentationLevel = 1
+                menu.addItem(item)
+            }
+            menu.addItem(.separator())
+            let clear = NSMenuItem(title: "Clear Recent Searches", action: #selector(clearRecents(_:)), keyEquivalent: "")
+            clear.target = self
+            menu.addItem(clear)
+            return menu
+        }
+
+        @objc func selectRecent(_ sender: NSMenuItem) {
+            guard let query = sender.representedObject as? String else { return }
+            parent.onSelectRecent?(query)
+        }
+
+        @objc func clearRecents(_ sender: NSMenuItem) {
+            parent.onClearRecents?()
         }
 
         @objc func handleSelectionDidChange(_ notification: Notification) {

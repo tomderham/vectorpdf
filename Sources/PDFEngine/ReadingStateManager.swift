@@ -30,13 +30,17 @@ public struct DocumentReadingState: Codable, Equatable, Sendable {
     public var canonicalKey: String?
     /// When this state was last written — used to prune the least recently read documents.
     public var updatedAt: Date?
+    /// Queries the user went to a match for in the Search sidebar, most recent first (see
+    /// ReadingStateManager.addingRecentSearch). Optional so state saved before it existed decodes.
+    public var recentSearches: [String]?
 
-    public init(lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], canonicalKey: String? = nil, updatedAt: Date? = nil) {
+    public init(lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], canonicalKey: String? = nil, updatedAt: Date? = nil, recentSearches: [String]? = nil) {
         self.lastPageIndex = lastPageIndex
         self.zoomScale = zoomScale
         self.snapshots = snapshots
         self.canonicalKey = canonicalKey
         self.updatedAt = updatedAt
+        self.recentSearches = recentSearches
     }
 }
 
@@ -46,6 +50,19 @@ public struct DocumentReadingState: Codable, Equatable, Sendable {
 public final class ReadingStateManager: ObservableObject {
     public static let shared = ReadingStateManager()
     public static let didSyncExternallyNotification = Notification.Name("com.thomasderham.vectorpdf.readingstate.didSyncExternally")
+    /// Posted when a document's recent searches change on this Mac. The object is the view model
+    /// that changed them; userInfo["canonicalKey"] names the document.
+    public static let recentSearchesDidChangeNotification = Notification.Name("com.thomasderham.vectorpdf.readingstate.recentSearchesDidChange")
+    public static let maxRecentSearches = 10
+
+    /// `list` with `query` moved (or added) to the front. A query differing only in case replaces
+    /// the earlier one; blank queries are ignored.
+    public static func addingRecentSearch(_ query: String, to list: [String]) -> [String] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return list }
+        let rest = list.filter { $0.caseInsensitiveCompare(trimmed) != .orderedSame }
+        return Array(([trimmed] + rest).prefix(maxRecentSearches))
+    }
     private let userDefaultsKey = "com.thomasderham.vectorpdf.readingstate"
     private let kvsPrefix = "readingstate_"
 
@@ -178,10 +195,11 @@ public final class ReadingStateManager: ObservableObject {
     }
 
     /// Updates reading state for a document path, persisting to local storage and synchronizing
-    /// to iCloud Key-Value Storage when available.
-    public func updateState(for path: String, lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget]) {
+    /// to iCloud Key-Value Storage when available. `recentSearches` nil keeps the stored ones.
+    public func updateState(for path: String, lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], recentSearches: [String]? = nil) {
         let canonical = CloudStorageHelper.canonicalKey(for: path)
-        let newState = DocumentReadingState(lastPageIndex: lastPageIndex, zoomScale: zoomScale, snapshots: snapshots, canonicalKey: canonical, updatedAt: Date())
+        let searches = recentSearches ?? (states[canonical] ?? states[path])?.recentSearches
+        let newState = DocumentReadingState(lastPageIndex: lastPageIndex, zoomScale: zoomScale, snapshots: snapshots, canonicalKey: canonical, updatedAt: Date(), recentSearches: searches?.isEmpty == true ? nil : searches)
 
         // Store local path
         states[path] = newState
