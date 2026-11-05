@@ -422,35 +422,9 @@ public struct ChatCompletionsLanguageModel: Sendable, LanguageModel {
             )
           ]
         case .attachment(let attachment):
-          switch attachment.content {
-          case .image(let image):
-            #if canImport(CoreImage)
-            // Images are inlined as base64 data URLs (JPEG).
-            let base64String = image.cgImage.jpegData().base64EncodedString()
-            let dataURL = URL(string: "data:image/jpeg;base64,\(base64String)")!
-            let imageURL = ChatCompletionsClient.MessageContent.ImageURL(url: dataURL)
-            return [ChatCompletionsClient.MessageContent(imageURL: imageURL)]
-            #else
-            guard let url = image.url else {
-              throw LanguageModelError.unsupportedTranscriptContent(
-                LanguageModelError.UnsupportedTranscriptContent(
-                  unsupportedContent: [entry],
-                  debugDescription: "Image attachment without a URL is not supported by \(Self.self) on this platform."
-                )
-              )
-            }
-            let dataURL: URL
-            if url.scheme == "data" {
-              dataURL = url
-            } else {
-              let data = try Data(contentsOf: url)
-              let base64String = data.base64EncodedString()
-              dataURL = URL(string: "data:image/jpeg;base64,\(base64String)")!
-            }
-            let imageURL = ChatCompletionsClient.MessageContent.ImageURL(url: dataURL)
-            return [ChatCompletionsClient.MessageContent(imageURL: imageURL)]
-            #endif
-          @unknown default:
+          // Only images can be sent. Matched rather than switched on, so the other kinds (such as
+          // .data, new in the macOS 27.2 SDK) need no case naming them, which the 27.0 SDK lacks.
+          guard case .image(let image) = attachment.content else {
             throw LanguageModelError.unsupportedTranscriptContent(
               LanguageModelError.UnsupportedTranscriptContent(
                 unsupportedContent: [entry],
@@ -458,6 +432,32 @@ public struct ChatCompletionsLanguageModel: Sendable, LanguageModel {
               )
             )
           }
+          #if canImport(CoreImage)
+          // Images are inlined as base64 data URLs (JPEG).
+          let base64String = image.cgImage.jpegData().base64EncodedString()
+          let dataURL = URL(string: "data:image/jpeg;base64,\(base64String)")!
+          let imageURL = ChatCompletionsClient.MessageContent.ImageURL(url: dataURL)
+          return [ChatCompletionsClient.MessageContent(imageURL: imageURL)]
+          #else
+          guard let url = image.url else {
+            throw LanguageModelError.unsupportedTranscriptContent(
+              LanguageModelError.UnsupportedTranscriptContent(
+                unsupportedContent: [entry],
+                debugDescription: "Image attachment without a URL is not supported by \(Self.self) on this platform."
+              )
+            )
+          }
+          let dataURL: URL
+          if url.scheme == "data" {
+            dataURL = url
+          } else {
+            let data = try Data(contentsOf: url)
+            let base64String = data.base64EncodedString()
+            dataURL = URL(string: "data:image/jpeg;base64,\(base64String)")!
+          }
+          let imageURL = ChatCompletionsClient.MessageContent.ImageURL(url: dataURL)
+          return [ChatCompletionsClient.MessageContent(imageURL: imageURL)]
+          #endif
         @unknown default:
           throw LanguageModelError.unsupportedTranscriptContent(
             LanguageModelError.UnsupportedTranscriptContent(
@@ -554,6 +554,12 @@ public struct ChatCompletionsLanguageModel: Sendable, LanguageModel {
             return nil
           }.joined()
           pendingReasoning = (pendingReasoning ?? "") + text
+
+        #if compiler(>=6.4.2)
+        // An app's own data, new in the macOS 27.2 SDK (Swift 6.4.2): not part of the chat.
+        case .data:
+          continue
+        #endif
 
         @unknown default:
           continue

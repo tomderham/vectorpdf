@@ -262,13 +262,13 @@ struct VectorPDF: App {
         // actions down the responder chain, as AppKit's own items do.
         CommandGroup(replacing: .undoRedo) {
             Button(coordinator.undoState.undoTitle) {
-                NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+                NSApp.sendAction(NSSelectorFromString("undo:"), to: nil, from: nil)
             }
             .keyboardShortcut("z", modifiers: .command)
             .disabled(!coordinator.undoState.canUndo)
 
             Button(coordinator.undoState.redoTitle) {
-                NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+                NSApp.sendAction(NSSelectorFromString("redo:"), to: nil, from: nil)
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
             .disabled(!coordinator.undoState.canRedo)

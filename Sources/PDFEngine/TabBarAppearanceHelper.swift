@@ -234,15 +234,16 @@ public final class TabBarAppearanceHelper {
                     // Weak, so that none of these closures is what frees a window that has closed.
                     let siblings = NSHashTable<NSWindow>.weakObjects()
                     siblingWindows.forEach(siblings.add)
-                    let refreshSiblings = { [weak self] in
-                        guard let self else { return }
-                        for win in siblings.allObjects {
-                            self.refreshTabs(for: win)
+                    // Again after the close has finished, and twice more as AppKit settles.
+                    Task { @MainActor [weak self] in
+                        for pause in [0, 0.15, 0.15] {
+                            if pause > 0 { try? await Task.sleep(for: .seconds(pause)) }
+                            guard let self else { return }
+                            for win in siblings.allObjects {
+                                self.refreshTabs(for: win)
+                            }
                         }
                     }
-                    DispatchQueue.main.async(execute: refreshSiblings)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: refreshSiblings)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: refreshSiblings)
                 }
             }
         }
