@@ -1,8 +1,8 @@
-<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
+<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, annotations summary, CSV, Markdown, PDF -->
 
 # Export to other formats
 
-To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics or Flattened PDF. The annotations summary and measurements have their own commands.
+To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF or Optimized PDF. The annotations summary and measurements have their own commands.
 
 ## Plain text
 
@@ -24,6 +24,16 @@ Saves a PDF with annotations and form fields made part of the page, so they can'
 - **Flatten form fields (make static)**
 
 > **Note:** Flattening doesn't remove what's underneath. To remove content, use [redaction](redact.md).
+
+## Optimized PDF
+
+Saves a smaller copy of the PDF, including any changes you haven't saved. The document you have open doesn't change. Data the document no longer uses is removed, duplicates are merged and everything is compressed. In the save dialog, you can also choose:
+
+- **Keep only the characters each font uses:** removes the parts of embedded fonts the document doesn't use. On by default.
+- **Images:** keep them as they are, or reduce them to 300 dpi (for printing) or 150 dpi (for reading on screen). Only images sharper than that are reduced. Photos are saved as JPEG; diagrams and screenshots stay lossless. Black-and-white scans are left alone.
+- **Convert text to outlines:** draws every letter as a shape, so the document looks the same on plotters, cutters and print systems that don't have its fonts. Text in the copy can't be selected, searched or copied.
+
+How much smaller the copy is depends on the document. Scans and photos shrink the most when you reduce their images.
 
 ## Annotations summary
 

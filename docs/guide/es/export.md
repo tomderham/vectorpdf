@@ -1,9 +1,9 @@
-<!-- keywords: exportar, convertir, texto simple, texto, acoplar, acoplado, resumen de anotaciones, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: c72be921ec25 -->
+<!-- keywords: exportar, convertir, texto simple, texto, acoplar, acoplado, resumen de anotaciones, optimizar, optimizado, reducir tamaño, comprimir, más pequeño, imágenes, fuentes, contornos, texto a contornos, plóter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
+<!-- source: 0e99b5515751 -->
 
 # Exportar a otros formatos
 
-Para exportar un documento completo, elige File > Export Document As y, a continuación, Plain Text, Word Document, Scalable Vector Graphics o Flattened PDF. El resumen de anotaciones y las mediciones tienen sus propios comandos.
+Para exportar un documento completo, elige File > Export Document As y, a continuación, Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF u Optimized PDF. El resumen de anotaciones y las mediciones tienen sus propios comandos.
 
 ## Plain Text
 
@@ -25,6 +25,16 @@ Guarda un PDF con las anotaciones y los campos de formulario integrados en la p�
 - **Flatten form fields (make static)**
 
 > **Nota:** Acoplar no elimina lo que hay debajo. Para eliminar contenido, usa la [censura](redact.md).
+
+## Optimized PDF {#optimized-pdf}
+
+Guarda una copia más pequeña del PDF, incluidos los cambios que aún no hayas guardado. El documento abierto no cambia. Se eliminan los datos que el documento ya no usa, se combinan los duplicados y se comprime todo. En el cuadro de diálogo para guardar, también puedes elegir:
+
+- **Keep only the characters each font uses:** elimina las partes de las fuentes incrustadas que el documento no usa. Activado por omisión.
+- **Images:** deja las imágenes como están o redúcelas a 300 ppp (para imprimir) o 150 ppp (para leer en pantalla). Solo se reducen las imágenes con más resolución. Las fotos se guardan como JPEG; los diagramas y las capturas de pantalla se mantienen sin pérdida. Los escaneos en blanco y negro no se modifican.
+- **Convert text to outlines:** dibuja cada letra como una forma, para que el documento se vea igual en plóteres, cortadoras y sistemas de impresión que no tienen sus fuentes. El texto de la copia no se puede seleccionar, buscar ni copiar.
+
+Cuánto se reduce la copia depende del documento. Los escaneos y las fotos son los que más se reducen cuando reduces sus imágenes.
 
 ## Resumen de anotaciones
 

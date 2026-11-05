@@ -1,9 +1,9 @@
-<!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: c72be921ec25 -->
+<!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
+<!-- source: 0e99b5515751 -->
 
 # 他のフォーマットに書き出す
 
-書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、または Flattened PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
+書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、または Optimized PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
 
 ## Plain Text
 
@@ -25,6 +25,16 @@ Word などのアプリで編集できる `.docx` ファイルを保存します
 - **Flatten form fields (make static)**
 
 > **注記:** フラット化しても、下にある内容は削除されません。内容を削除するには、[墨消し](redact.md)を使用してください。
+
+## Optimized PDF {#optimized-pdf}
+
+PDF のサイズを小さくしたコピーを保存します。まだ保存していない変更も含まれます。開いている書類は変更されません。書類で使われなくなったデータは削除され、重複は統合され、すべてが圧縮されます。保存ダイアログでは、次の項目も選択できます:
+
+- **Keep only the characters each font uses:** 埋め込みフォントのうち、書類で使われていない部分を削除します。デフォルトでオンです。
+- **Images:** イメージをそのままにするか、300 dpi（印刷用）または 150 dpi（画面での閲覧用）に縮小します。それより解像度の高いイメージだけが縮小されます。写真は JPEG で保存され、図やスクリーンショットは劣化しません。白黒のスキャンは変更されません。
+- **Convert text to outlines:** すべての文字を図形として描画するため、書類のフォントを持たないプロッタ、カッター、印刷システムでも同じように表示されます。コピーのテキストは選択、検索、コピーできなくなります。
+
+コピーがどれだけ小さくなるかは書類によって異なります。イメージを縮小すると、スキャンや写真が最も小さくなります。
 
 ## 注釈の概要
 

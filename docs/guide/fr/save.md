@@ -1,5 +1,5 @@
-<!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, revenir, dernière version enregistrée, recharger, annuler les modifications, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # Enregistrer vos modifications
 
@@ -12,6 +12,12 @@ Les annotations, les données de formulaire, les modifications de pages et les c
 | Enregistrer une copie protégée par mot de passe | Choisissez File > [Save Encrypted with Password](passwords.md), ou appuyez sur ⌥⌘S |
 
 Si vous fermez un document contenant des modifications non enregistrées, VectorPDF vous demande s’il faut les enregistrer.
+
+## Annuler vos modifications
+
+Pour abandonner tout ce que vous avez fait depuis le dernier enregistrement, choisissez File > Revert to Saved. VectorPDF vous le demande d’abord, puis ouvre le fichier tel qu’il a été enregistré pour la dernière fois, à la page que vous lisiez. Cette opération est irréversible.
+
+Pour créer une copie plus légère d’un document, consultez [Optimized PDF](export.md#optimized-pdf).
 
 ## Partager un document
 

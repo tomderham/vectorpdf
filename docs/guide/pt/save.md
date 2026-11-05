@@ -1,5 +1,5 @@
-<!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # Salvar suas alterações
 
@@ -12,6 +12,12 @@ Marcações, dados de formulários, alterações de páginas e tarjamentos só s
 | Salvar uma cópia protegida por senha | Escolha File > [Save Encrypted with Password](passwords.md) ou pressione ⌥⌘S |
 
 Se você fechar um documento com alterações não salvas, o VectorPDF perguntará se deseja salvá-las.
+
+## Descartar as alterações
+
+Para descartar tudo o que foi feito desde a última vez que você salvou, escolha File > Revert to Saved. O VectorPDF pergunta primeiro e, em seguida, abre o arquivo como foi salvo pela última vez, na página que você estava lendo. Não é possível desfazer essa ação.
+
+Para criar uma cópia menor de um documento, consulte [Optimized PDF](export.md#optimized-pdf).
 
 ## Compartilhar um documento
 

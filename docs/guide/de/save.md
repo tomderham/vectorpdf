@@ -1,5 +1,5 @@
-<!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # Änderungen sichern
 
@@ -12,6 +12,12 @@ Markierungen, Formulareingaben, Seitenänderungen und Schwärzungen werden erst 
 | Passwortgeschützte Kopie sichern | Wähle File > [Save Encrypted with Password](passwords.md) oder drücke ⌥⌘S |
 
 Wenn du ein Dokument mit nicht gesicherten Änderungen schließt, fragt VectorPDF, ob du sie sichern möchtest.
+
+## Änderungen verwerfen
+
+Um alles seit dem letzten Sichern zu verwerfen, wähle File > Revert to Saved. VectorPDF fragt zuerst nach und öffnet dann die Datei so, wie sie zuletzt gesichert wurde, auf der Seite, die du gerade gelesen hast. Das Zurücksetzen kann nicht widerrufen werden.
+
+Wie du eine kleinere Kopie eines Dokuments erstellst, erfährst du unter [Optimized PDF](export.md#optimized-pdf).
 
 ## Ein Dokument teilen
 

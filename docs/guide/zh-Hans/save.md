@@ -1,5 +1,5 @@
-<!-- keywords: 存储, 另存为, 未存储, 共享, 更改, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # 存储更改
 
@@ -12,6 +12,12 @@
 | 存储受密码保护的副本 | 选取 File > [Save Encrypted with Password](passwords.md)，或者按下 ⌥⌘S |
 
 如果你关闭有未存储更改的文稿，VectorPDF 会询问是否存储。
+
+## 放弃更改
+
+若要放弃上次存储以来所做的全部更改，请选取 File > Revert to Saved。VectorPDF 会先询问，然后按上次存储时的状态打开文件，并停留在你正在阅读的页面。此操作无法撤销。
+
+若要制作文稿的较小副本，请参阅[Optimized PDF](export.md#optimized-pdf)。
 
 ## 共享文稿
 

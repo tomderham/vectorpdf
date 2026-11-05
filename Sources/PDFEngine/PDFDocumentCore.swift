@@ -1706,6 +1706,52 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
+    /// What File > Export Document As > Optimized PDF does beyond removing unused objects and
+    /// compressing everything.
+    public struct OptimizeOptions: Sendable, Equatable {
+        /// Embedded fonts cut down to the glyphs the document uses.
+        public var subsetFonts = true
+        /// Colour and grey images finer than 1.5 × this are downsampled to it; nil leaves them alone.
+        public var imageDPI: Int?
+        /// Text drawn as shapes, for plotters and print shops; it can no longer be selected or searched.
+        public var outlineText = false
+
+        public init(subsetFonts: Bool = true, imageDPI: Int? = nil, outlineText: Bool = false) {
+            self.subsetFonts = subsetFonts
+            self.imageDPI = imageDPI
+            self.outlineText = outlineText
+        }
+    }
+
+    /// Saves a smaller copy of the document, unsaved edits included, leaving this one as it is.
+    /// Slow on a large document, so call it off the main thread: the document is only locked
+    /// while its edits are copied out.
+    public func saveOptimized(to path: String, options: OptimizeOptions) throws {
+        let tempSourceURL = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-optimize-\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: tempSourceURL) }
+        do {
+            lock.lock()
+            defer { lock.unlock() }
+            var errorMsg: UnsafePointer<CChar>?
+            guard mupdf_pdf_save(ctx, doc, tempSourceURL.path, &errorMsg) == 0 else {
+                throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to prepare a copy to optimize")
+            }
+        }
+        // Optimizing changes the document it works on, so it works on a copy of its own.
+        let copy = try PDFDocumentCore(filePath: tempSourceURL.path, password: openedPassword)
+        try copy.performCoordinatedSave(to: URL(fileURLWithPath: path), isSameFile: path == filePath) { targetTempPath in
+            var errorMsg: UnsafePointer<CChar>?
+            let ret = mupdf_pdf_save_optimized(
+                copy.ctx, copy.doc, targetTempPath,
+                options.subsetFonts ? 1 : 0, Int32(options.imageDPI ?? 0), options.outlineText ? 1 : 0,
+                &errorMsg
+            )
+            guard ret == 0 else {
+                throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to save optimized PDF")
+            }
+        }
+    }
+
     // MARK: - Page Labels
 
     /// What to call a page in the interface: its label, or its position if it hasn't got one.

@@ -99,6 +99,8 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     }
 
     @Published public var hasActiveDocument: Bool = false
+    /// Whether the active document has unsaved changes, for File > Revert to Saved.
+    @Published public var isActiveDocumentEdited: Bool = false
     @Published public var documentTitle: String = ""
     @Published public var canZoomIn: Bool = false
     @Published public var canZoomOut: Bool = false
@@ -363,6 +365,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         guard let viewModel = viewModel else {
             activeViewModel = nil
             hasActiveDocument = false
+            isActiveDocumentEdited = false
             hasActiveSelection = false
             hasActiveLayers = false
             PDFViewerViewModel.active = nil
@@ -401,6 +404,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                 if self.hasActiveSelection != hasSel {
                     self.hasActiveSelection = hasSel
                 }
+                if self.isActiveDocumentEdited != vm.isDocumentEdited {
+                    self.isActiveDocumentEdited = vm.isDocumentEdited
+                }
                 let hasLayers = !vm.annotationLayers.isEmpty
                 if self.hasActiveLayers != hasLayers {
                     self.hasActiveLayers = hasLayers
@@ -416,6 +422,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     public func updateDocumentStatus() {
         let hasDoc = (activeViewModel?.document != nil)
         self.hasActiveDocument = hasDoc
+        self.isActiveDocumentEdited = activeViewModel?.isDocumentEdited ?? false
         self.documentTitle = activeViewModel?.documentTitle ?? ""
         self.canZoomIn = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) < Self.maxZoomScale)
         self.canZoomOut = hasDoc && ((activeViewModel?.zoomScale ?? 1.0) > Self.minZoomScale)

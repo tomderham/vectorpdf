@@ -168,6 +168,105 @@ extension PDFViewerViewModel {
         panel.begin(completionHandler: completion)
     }
 
+    /// Throws away the unsaved changes and opens the file as last saved, on the same page, after
+    /// asking. The changes can't be undone afterwards.
+    public func revertToSaved() async {
+        guard let doc = document, isDocumentEdited else { return }
+        if !Self.isRunningTests {
+            let alert = NSAlert()
+            alert.messageText = "Revert “\(documentTitle)” to the last saved version?"
+            alert.informativeText = "Your unsaved changes will be lost. This can’t be undone."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Revert")
+            alert.addButton(withTitle: "Cancel")
+            let response: NSApplication.ModalResponse
+            if let window = currentWindow ?? NSApplication.shared.keyWindow, window.attachedSheet == nil {
+                response = await withCheckedContinuation { continuation in
+                    alert.beginSheetModal(for: window) { continuation.resume(returning: $0) }
+                }
+            } else {
+                response = alert.runModal()
+            }
+            guard response == .alertFirstButtonReturn else { return }
+        }
+        // A field being typed in would otherwise commit its text into the reloaded document.
+        currentWindow?.makeFirstResponder(nil)
+        // loadDocument saves the reading position first and restores it, so the page stays put.
+        // The same path means it doesn't ask to save, and it drops the working copy and undo.
+        await loadDocument(from: doc.filePath, password: currentDocumentPassword)
+    }
+
+    /// Prompts for where to save a smaller copy of the PDF, with the options in
+    /// PDFDocumentCore.OptimizeOptions. Unsaved edits are included; the open document is unchanged.
+    public func saveDocumentOptimizedAs() {
+        guard let doc = document, !isReadOnlyDocument else { return }
+        flushPendingFormEdits()
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType.pdf]
+        panel.canCreateDirectories = true
+        let baseName = ((doc.filePath as NSString).lastPathComponent as NSString).deletingPathExtension
+        panel.nameFieldStringValue = "\(baseName) (Optimized).pdf"
+        panel.prompt = "Save"
+        panel.title = "Save as Optimized PDF"
+        panel.message = "Unused data is removed and everything is compressed."
+
+        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 96))
+        let fontsCheckbox = NSButton(checkboxWithTitle: "Keep only the characters each font uses", target: nil, action: nil)
+        fontsCheckbox.frame = NSRect(x: 10, y: 70, width: 380, height: 18)
+        fontsCheckbox.state = .on
+        let imagesLabel = NSTextField(labelWithString: "Images:")
+        imagesLabel.frame = NSRect(x: 10, y: 43, width: 60, height: 18)
+        let imagesPopup = NSPopUpButton(frame: NSRect(x: 70, y: 38, width: 240, height: 26), pullsDown: false)
+        imagesPopup.addItems(withTitles: ["Keep as they are", "Reduce to 300 dpi (print)", "Reduce to 150 dpi (screen)"])
+        let outlineCheckbox = NSButton(checkboxWithTitle: "Convert text to outlines (text can’t be selected or searched)", target: nil, action: nil)
+        outlineCheckbox.frame = NSRect(x: 10, y: 10, width: 390, height: 18)
+        outlineCheckbox.state = .off
+        for view in [fontsCheckbox, imagesLabel, imagesPopup, outlineCheckbox] { accessory.addSubview(view) }
+        panel.accessoryView = accessory
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            let options = PDFDocumentCore.OptimizeOptions(
+                subsetFonts: fontsCheckbox.state == .on,
+                imageDPI: [nil, 300, 150][max(0, imagesPopup.indexOfSelectedItem)],
+                outlineText: outlineCheckbox.state == .on
+            )
+            Task { @MainActor in
+                guard let self else { return }
+                let overwritesOpenFile = url.path == doc.filePath
+                if overwritesOpenFile { self.fileChangeWatcher = nil }
+                // Rewriting every image and font takes a while on a large document.
+                let failure: String? = await Task.detached(priority: .userInitiated) {
+                    do {
+                        try doc.saveOptimized(to: url.path, options: options)
+                        return nil
+                    } catch {
+                        return error.localizedDescription
+                    }
+                }.value
+                if let failure {
+                    if overwritesOpenFile { self.armFileChangeWatcher(path: doc.filePath) }
+                    self.showErrorAlert(title: "Failed to Save Optimized PDF", message: failure)
+                    return
+                }
+                PDFViewerAppCoordinator.shared.noteRecentDocument(url)
+                if overwritesOpenFile, self.document === doc {
+                    // The file now holds the edits too, so nothing is left unsaved.
+                    self.isDocumentEdited = false
+                    self.currentWindow?.isDocumentEdited = false
+                    await self.loadDocument(from: url.path, password: self.currentDocumentPassword)
+                }
+            }
+        }
+
+        if let window = currentWindow ?? NSApplication.shared.keyWindow ?? NSApplication.shared.mainWindow, window.attachedSheet == nil {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            panel.begin(completionHandler: completion)
+        }
+    }
+
     /// Prompts the user with a save panel to save the open PDF as a flattened document (baking annotations and form widgets into static content).
     public func saveDocumentFlattenedAs() {
         guard let doc = document, !isReadOnlyDocument else { return }

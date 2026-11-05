@@ -3324,6 +3324,61 @@ int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path
     return 0;
 }
 
+int mupdf_pdf_save_optimized(fz_context *ctx, fz_document *doc, const char *path, int subset_fonts, int image_dpi, int outline_text, const char **out_error) {
+    if (!ctx || !doc || !path) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        // Loads every object first, so a repair can't happen part way and lose the edits below.
+        pdf_check_document(ctx, pdoc);
+        // In pdf_clean_file's order: outlining text leaves fonts unused, before they're subset.
+        if (outline_text)
+            pdf_vectorize_pages(ctx, pdoc, 0, NULL, PDF_CLEAN_VECTORIZE_YES);
+        if (image_dpi > 0) {
+            pdf_image_rewriter_options img = { 0 };
+            int threshold = image_dpi + image_dpi / 2;
+            // JPEGs are re-encoded as JPEG; lossless images stay lossless, so line art and
+            // screenshots don't pick up JPEG artefacts. Black-and-white scans are left alone.
+            char *quality = image_dpi >= 300 ? "85" : "75";
+            img.color_lossy_image_subsample_method = FZ_SUBSAMPLE_BICUBIC;
+            img.color_lossy_image_subsample_threshold = threshold;
+            img.color_lossy_image_subsample_to = image_dpi;
+            img.color_lossy_image_recompress_method = FZ_RECOMPRESS_JPEG;
+            img.color_lossy_image_recompress_quality = quality;
+            img.color_lossless_image_subsample_method = FZ_SUBSAMPLE_BICUBIC;
+            img.color_lossless_image_subsample_threshold = threshold;
+            img.color_lossless_image_subsample_to = image_dpi;
+            img.color_lossless_image_recompress_method = FZ_RECOMPRESS_LOSSLESS;
+            img.gray_lossy_image_subsample_method = FZ_SUBSAMPLE_BICUBIC;
+            img.gray_lossy_image_subsample_threshold = threshold;
+            img.gray_lossy_image_subsample_to = image_dpi;
+            img.gray_lossy_image_recompress_method = FZ_RECOMPRESS_JPEG;
+            img.gray_lossy_image_recompress_quality = quality;
+            img.gray_lossless_image_subsample_method = FZ_SUBSAMPLE_BICUBIC;
+            img.gray_lossless_image_subsample_threshold = threshold;
+            img.gray_lossless_image_subsample_to = image_dpi;
+            img.gray_lossless_image_recompress_method = FZ_RECOMPRESS_LOSSLESS;
+            img.bitonal_image_recompress_method = FZ_RECOMPRESS_NEVER;
+            // Keeps an image as it was if the new one comes out bigger.
+            img.recompress_when = FZ_RECOMPRESS_WHEN_SMALLER;
+            pdf_rewrite_images(ctx, pdoc, &img);
+        }
+        if (subset_fonts)
+            pdf_subset_fonts(ctx, pdoc, 0, NULL);
+        pdf_write_options opts = default_save_options();
+        opts.do_garbage = 3;  // also merges duplicate objects, such as fonts embedded twice
+        opts.do_compress = 1; // zlib: other readers don't all support brotli
+        opts.do_compress_images = 1;
+        opts.do_compress_fonts = 1;
+        opts.do_use_objstms = 1;
+        pdf_save_document(ctx, pdoc, path, &opts);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path, int bake_annots, int bake_widgets, const char **out_error) {
     if (!ctx || !doc || !path) return -1;
     fz_try(ctx) {

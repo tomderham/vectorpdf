@@ -1,9 +1,9 @@
-<!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF -->
-<!-- source: c72be921ec25 -->
+<!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
+<!-- source: 0e99b5515751 -->
 
 # In andere Formate exportieren
 
-Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics oder Flattened PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
+Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF oder Optimized PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
 
 ## Plain Text
 
@@ -25,6 +25,16 @@ Sichert ein PDF, in dem Anmerkungen und Formularfelder fest in die Seite eingebe
 - **Flatten form fields (make static)**
 
 > **Hinweis:** Beim Reduzieren wird nicht entfernt, was darunter liegt. Um Inhalte zu entfernen, verwende die [Schwärzung](redact.md).
+
+## Optimized PDF {#optimized-pdf}
+
+Sichert eine kleinere Kopie des PDF, einschließlich aller Änderungen, die du noch nicht gesichert hast. Das geöffnete Dokument bleibt unverändert. Daten, die das Dokument nicht mehr verwendet, werden entfernt, Duplikate zusammengeführt und alles wird komprimiert. Im Dialogfenster zum Sichern kannst du außerdem Folgendes wählen:
+
+- **Keep only the characters each font uses:** Entfernt die Teile eingebetteter Schriften, die das Dokument nicht verwendet. Standardmäßig aktiviert.
+- **Images:** Belasse Bilder unverändert oder verringere sie auf 300 dpi (zum Drucken) oder 150 dpi (zum Lesen am Bildschirm). Nur Bilder mit höherer Auflösung werden verkleinert. Fotos werden als JPEG gesichert, Diagramme und Bildschirmfotos bleiben verlustfrei. Schwarzweiß-Scans bleiben unverändert.
+- **Convert text to outlines:** Zeichnet jeden Buchstaben als Form, sodass das Dokument auf Plottern, Schneidegeräten und Drucksystemen, die seine Schriften nicht haben, gleich aussieht. Text in der Kopie kann nicht ausgewählt, durchsucht oder kopiert werden.
+
+Wie viel kleiner die Kopie wird, hängt vom Dokument ab. Scans und Fotos schrumpfen am stärksten, wenn du ihre Bilder verkleinerst.
 
 ## Anmerkungsübersicht
 

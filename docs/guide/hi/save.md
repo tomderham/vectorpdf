@@ -1,5 +1,5 @@
-<!-- keywords: सहेजें, इस रूप में सहेजें, बिना सहेजे, साझा करें, Finder में दिखाएँ, बदलाव, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: सहेजें, इस रूप में सहेजें, बिना सहेजे, साझा करें, Finder में दिखाएँ, बदलाव, पिछली सहेजी गई स्थिति, वापस लाएँ, फिर से लोड करें, बदलाव रद्द करें, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # अपने बदलाव सहेजें
 
@@ -12,6 +12,12 @@
 | पासवर्ड से सुरक्षित कॉपी सहेजें | File > [Save Encrypted with Password](passwords.md) चुनें, या ⌥⌘S दबाएँ |
 
 अगर आप बिना सहेजे बदलावों वाला दस्तावेज़ बंद करते हैं, तो VectorPDF पूछता है कि उन्हें सहेजना है या नहीं।
+
+## अपने बदलाव रद्द करें
+
+पिछली बार सहेजने के बाद किए गए सभी बदलाव हटाने के लिए, File > Revert to Saved चुनें। VectorPDF पहले पूछता है, फिर फ़ाइल को वैसे ही खोलता है जैसी वह पिछली बार सहेजी गई थी, उसी पेज पर जिसे आप पढ़ रहे थे। इसे पूर्ववत नहीं किया जा सकता।
+
+किसी दस्तावेज़ की छोटी कॉपी बनाने के लिए, [Optimized PDF](export.md#optimized-pdf) देखें।
 
 ## दस्तावेज़ साझा करें
 

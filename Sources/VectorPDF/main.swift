@@ -377,6 +377,11 @@ struct VectorPDF: App {
             .keyboardShortcut("s", modifiers: [.command, .option])
             .disabled(!canEditDocument)
 
+            Button("Revert to Saved") {
+                Task { await resolvedViewModel?.revertToSaved() }
+            }
+            .disabled(!(hasDocument && coordinator.isActiveDocumentEdited))
+
             Divider()
 
             Button("Split PDF...") {
@@ -400,6 +405,10 @@ struct VectorPDF: App {
                 }
                 Button("Flattened PDF (.pdf)...") {
                     resolvedViewModel?.exportDocument(as: .flattenedPDF)
+                }
+                .disabled(!canEditDocument)
+                Button("Optimized PDF (.pdf)...") {
+                    resolvedViewModel?.saveDocumentOptimizedAs()
                 }
                 .disabled(!canEditDocument)
             }

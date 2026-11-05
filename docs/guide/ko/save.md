@@ -1,5 +1,5 @@
-<!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # 변경 사항 저장하기
 
@@ -12,6 +12,12 @@
 | 암호로 보호된 사본 저장하기 | File > [Save Encrypted with Password](passwords.md)를 선택하거나 ⌥⌘S 키를 누릅니다. |
 
 저장하지 않은 변경 사항이 있는 문서를 닫으면 VectorPDF에서 저장할지 묻습니다.
+
+## 변경 사항 버리기
+
+마지막으로 저장한 이후의 모든 변경 사항을 버리려면 File > Revert to Saved를 선택합니다. VectorPDF는 먼저 확인한 다음, 마지막으로 저장된 상태의 파일을 읽고 있던 페이지에서 엽니다. 이 작업은 실행 취소할 수 없습니다.
+
+문서의 크기를 줄인 사본을 만들려면 [Optimized PDF](export.md#optimized-pdf)를 참고합니다.
 
 ## 문서 공유하기
 

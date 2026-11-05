@@ -1,5 +1,5 @@
-<!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, save, save as, unsaved, share, Show in Finder, changes, PDF -->
-<!-- source: 7d9ec0f98946 -->
+<!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
+<!-- source: 2c2bdeb1617c -->
 
 # Guardar los cambios
 
@@ -12,6 +12,12 @@ Las anotaciones, los datos de formularios, los cambios de páginas y las censura
 | Guardar una copia protegida con contraseña | Elige File > [Save Encrypted with Password](passwords.md) o pulsa ⌥⌘S |
 
 Si cierras un documento con cambios sin guardar, VectorPDF te pregunta si quieres guardarlos.
+
+## Descartar los cambios
+
+Para descartar todo lo que hayas hecho desde la última vez que guardaste, elige File > Revert to Saved. VectorPDF te lo pregunta primero y, a continuación, abre el archivo tal como se guardó por última vez, en la página que estabas leyendo. No se puede deshacer.
+
+Para crear una copia más pequeña de un documento, consulta [Optimized PDF](export.md#optimized-pdf).
 
 ## Compartir un documento
 

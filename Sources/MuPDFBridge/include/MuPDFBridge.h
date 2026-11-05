@@ -255,6 +255,11 @@ int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, f
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
 int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path, const char *password, const char **out_error);
 int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path, int bake_annots, int bake_widgets, const char **out_error);
+// Saves a smaller copy: unused and duplicate objects removed, streams compressed into object
+// streams, and optionally fonts subset to the glyphs used, colour and grey images above
+// image_dpi * 1.5 downsampled to image_dpi (0 leaves images alone), and text turned into outlines.
+// It changes `doc`, so pass a throwaway copy, never the open document.
+int mupdf_pdf_save_optimized(fz_context *ctx, fz_document *doc, const char *path, int subset_fonts, int image_dpi, int outline_text, const char **out_error);
 
 // Page Manipulation
 int mupdf_pdf_rotate_page(fz_context *ctx, fz_document *doc, int pageno, int delta_degrees, const char **out_error);
