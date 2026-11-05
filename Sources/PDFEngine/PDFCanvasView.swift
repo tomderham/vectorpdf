@@ -335,6 +335,19 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             .store(in: &cancellables)
 
+        // An annotation on a layer just hidden can't stay selected.
+        viewModel.$layerVisibility
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, let sel = self.selectedAnnotation else { return }
+                if !self.viewModel.shownAnnotations(onPage: sel.pageIndex).contains(where: { $0.id == sel.id }) {
+                    self.selectedAnnotation = nil
+                    self.needsDisplay = true
+                }
+            }
+            .store(in: &cancellables)
+
         // Clear in-progress drafting state on mode change.
         viewModel.$canvasMode
             .removeDuplicates()

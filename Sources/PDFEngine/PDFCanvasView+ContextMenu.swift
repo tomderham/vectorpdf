@@ -88,6 +88,10 @@ extension PDFCanvasView {
                 menu.addItem(makeLineEndingItem(for: hitAnnot))
                 menu.addItem(NSMenuItem.separator())
             }
+            if let number = hitAnnot.documentObjectNumber, let layerItem = makeLayerItem(pageIndex: pIdx, objectNumber: number) {
+                menu.addItem(layerItem)
+                menu.addItem(NSMenuItem.separator())
+            }
             let removeTitle: String
             switch hitAnnot.type {
             case .highlight: removeTitle = "Remove Highlight"
@@ -119,9 +123,11 @@ extension PDFCanvasView {
         // An annotation that came with the file can't be edited on the canvas, but it can be read,
         // answered and given a status. It can be large, so the page's commands stay available.
         var fileCommentsItem: NSMenuItem?
+        var fileLayerItem: NSMenuItem?
         if let (pIdx, _, pPoint) = pageInfo(at: point),
            let thread = viewModel.annotationThread(pageIndex: pIdx, at: pPoint) {
             fileCommentsItem = makeCommentsItem(representing: (pIdx, thread.root.objectNumber))
+            fileLayerItem = makeLayerItem(pageIndex: pIdx, objectNumber: thread.root.objectNumber)
         }
 
         // No link, no selection — offer to create an anchor from surrounding text or open here in a new window.
@@ -129,6 +135,7 @@ extension PDFCanvasView {
             let menu = NSMenu(title: "Page")
             if let fileCommentsItem {
                 menu.addItem(fileCommentsItem)
+                if let fileLayerItem { menu.addItem(fileLayerItem) }
                 menu.addItem(NSMenuItem.separator())
             }
             if let (reference, pageIndex) = crossDocReference(at: point) {
@@ -174,10 +181,45 @@ extension PDFCanvasView {
     /// file is found as precisely as the document allows, and picked up so it has the same ones.
     private func annotationForCommands(at pagePoint: CGPoint, pageIndex: Int) -> PDFAnnotation? {
         let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIndex, at: pagePoint)
-        let shown = viewModel.pageAnnotations[pageIndex]?.last { annot in
+        let shown = viewModel.shownAnnotations(onPage: pageIndex).last { annot in
             annot.isFromFile ? annot.documentObjectNumber == fileHit : annot.contains(pagePoint: pagePoint)
         }
         return shown ?? fileHit.flatMap { viewModel.pickUpFileAnnotation(pageIndex: pageIndex, objectNumber: $0) }
+    }
+
+    /// Layer ▸ None, or each layer, to move an annotation onto. Only in a document with layers,
+    /// so other documents' menus stay as they are.
+    private func makeLayerItem(pageIndex: Int, objectNumber: Int) -> NSMenuItem? {
+        let layers = viewModel.annotationLayers
+        guard !layers.isEmpty, !viewModel.isReadOnlyDocument, let doc = viewModel.document else { return nil }
+        let current = doc.annotationLayer(pageIndex: pageIndex, objectNumber: objectNumber)
+        let item = NSMenuItem(title: "Layer", action: nil, keyEquivalent: "")
+        item.image = NSImage(systemSymbolName: "square.3.layers.3d", accessibilityDescription: nil)
+        let submenu = NSMenu(title: "Layer")
+        func choice(_ title: String, layer: Int?) -> NSMenuItem {
+            let entry = NSMenuItem(title: title, action: #selector(moveToLayerAction(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = [pageIndex, objectNumber, layer ?? 0]
+            entry.state = current == layer ? .on : .off
+            return entry
+        }
+        submenu.addItem(choice("None", layer: nil))
+        submenu.addItem(NSMenuItem.separator())
+        for layer in layers {
+            submenu.addItem(choice(layer.displayName, layer: layer.objectNumber))
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    @objc private func moveToLayerAction(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? [Int], target.count == 3 else { return }
+        viewModel.moveAnnotation(pageIndex: target[0], objectNumber: target[1], toLayer: target[2] > 0 ? target[2] : nil)
+        // Moved onto a hidden layer, it's gone from the page.
+        if let sel = selectedAnnotation, !viewModel.shownAnnotations(onPage: sel.pageIndex).contains(where: { $0.id == sel.id }) {
+            selectedAnnotation = nil
+        }
+        needsDisplay = true
     }
 
     private func makeLineEndingItem(for annot: PDFAnnotation) -> NSMenuItem {

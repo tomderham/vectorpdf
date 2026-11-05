@@ -306,6 +306,11 @@ public struct PDFMarkupToolbarView: View {
 
             Spacer()
 
+            // Only for a document with layers, so the bar is unchanged for the rest.
+            if !viewModel.layers.isEmpty {
+                AnnotationLayerMenu(viewModel: viewModel)
+            }
+
             // 4. Annotations Table Sheet Button
             PreviewToolbarButton(
                 helpText: "Annotations (List, filter and review)"

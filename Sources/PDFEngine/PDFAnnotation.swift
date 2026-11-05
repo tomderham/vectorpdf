@@ -377,6 +377,8 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     public var fileSubtype: String?
     /// Bumped whenever an annotation from the file changes, so its picture is drawn again.
     public var appearanceRevision = 0
+    /// The object number of the layer it's on (its /OC), or nil when it isn't on one.
+    public var layerObjectNumber: Int?
 
     public var isFromFile: Bool { fileSubtype != nil }
 

@@ -133,6 +133,8 @@ typedef struct {
     int n_points;
     float xy[2 * MUPDF_MEASUREMENT_MAX_POINTS]; /* page (top-down) coordinates */
     char text[256]; /* /Contents, UTF-8, truncated */
+    /* The layer it's on (its /OC's object number), or 0; and whether that's hidden. */
+    int layer, hidden;
 } mupdf_measurement_annot;
 int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int pageno,
                                      mupdf_measurement_annot *out, int capacity, int *out_count,
@@ -159,6 +161,8 @@ typedef struct {
     /* A line's end style, or -1. */
     int line_ending;
     int point_count;
+    /* The layer it's on (its /OC's object number), or 0; and whether that's hidden. */
+    int layer, hidden;
 } mupdf_annot_description;
 
 fz_document *mupdf_pdf_new_holding_document(fz_context *ctx);
@@ -205,6 +209,8 @@ typedef struct {
     long long created, modified; /* seconds since 1970, 0 or less if absent */
     char subtype[24];
     int is_callout, is_cloud;
+    /* The layer it's on (its /OC's object number), or 0; and whether that's hidden. */
+    int layer, hidden;
     char *author, *contents, *state, *state_model; /* UTF-8, never NULL */
 } mupdf_review_annot;
 int mupdf_pdf_get_review_annots(fz_context *ctx, fz_document *doc, int pageno,
@@ -283,6 +289,18 @@ int mupdf_pdf_layer_name(fz_context *ctx, fz_document *doc, int layer, char *buf
 // The layer (as numbered above) that's `position`th in the document's own list of them (its
 // /OCGs), which isn't the order above; -1 if there's none.
 int mupdf_pdf_layer_at_position(fz_context *ctx, fz_document *doc, int position);
+// The object number of a layer (as numbered above), which names it in every copy of the file and
+// doesn't change when layers are added; 0 if there's none.
+int mupdf_pdf_layer_object_number(fz_context *ctx, fz_document *doc, int layer);
+// Adds a layer, shown, to the end of the document's list, keeping the others as they're shown
+// now. Sets *out_object_number to the new layer's object number. Unlike showing and hiding
+// layers, this changes the file.
+int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int *out_object_number, const char **out_error);
+// The layer an annotation is on (its /OC's object number), or 0.
+int mupdf_pdf_annot_layer(fz_context *ctx, fz_document *doc, int pageno, int objnum, int *out_layer, const char **out_error);
+// Puts an annotation on the layer with this object number, or on none for 0, so it's shown and
+// hidden with it here and in other readers.
+int mupdf_pdf_set_annot_layer(fz_context *ctx, fz_document *doc, int pageno, int objnum, int layer, const char **out_error);
 // The document's own list of layers to show people (its /Order), with headings, nesting and
 // groups of which only one can be shown. 0 entries when it has none: list the layers instead.
 int mupdf_pdf_count_layer_ui(fz_context *ctx, fz_document *doc);
@@ -291,6 +309,7 @@ typedef struct {
     int type;       // 0 heading, 1 checkbox, 2 one of a group (radio)
     int selected;
     int locked;
+    int object_number; // the layer's, or 0 for a heading
 } mupdf_layer_ui_entry;
 int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size);
 // Shows or hides an entry, hiding the rest of its group when it's one of one, and doing nothing

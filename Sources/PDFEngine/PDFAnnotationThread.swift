@@ -48,6 +48,10 @@ public struct PDFAnnotationComment: Identifiable, Sendable, Equatable {
     public let modified: Date?
     public let state: String
     public let stateModel: String
+    /// The object number of the layer it's on, or nil.
+    public var layerObjectNumber: Int? = nil
+    /// Whether it's on a layer that's hidden, so it isn't shown on the page.
+    public var isOnHiddenLayer = false
 
     public var id: Int { objectNumber }
     public var date: Date? { modified ?? created }

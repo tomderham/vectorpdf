@@ -113,6 +113,15 @@ public struct TakeoffSummaryView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+
+                    // Only for a document with layers.
+                    if !viewModel.layers.isEmpty {
+                        TableColumn("Layer") { item in
+                            Text(viewModel.layerName(item.annotation.layerObjectNumber) ?? "—")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
 
@@ -125,6 +134,7 @@ public struct TakeoffSummaryView: View {
                         Text("\(items.count) Items")
                             .font(.caption.bold())
                             .foregroundColor(.secondary)
+                            .help(viewModel.layers.isEmpty ? "" : "Measurements on hidden layers aren't listed")
 
                         let totals = viewModel.takeoffTotals(items)
                         if let formattedLinear = totals.linear {

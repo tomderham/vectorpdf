@@ -67,7 +67,7 @@ extension PDFViewerViewModel {
     /// so a note on a large drawing can still be reached.
     public func annotationThread(pageIndex: Int, at point: CGPoint) -> PDFAnnotationThread? {
         document?.annotationThreads(pageIndex: pageIndex)
-            .filter { $0.root.rect.insetBy(dx: -3, dy: -3).contains(point) }
+            .filter { $0.root.rect.insetBy(dx: -3, dy: -3).contains(point) && !isOnHiddenLayer($0.root) }
             .min { $0.root.rect.width * $0.root.rect.height < $1.root.rect.width * $1.root.rect.height }
     }
 

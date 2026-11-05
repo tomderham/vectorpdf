@@ -162,7 +162,7 @@ extension PDFCanvasView {
                 let pFrame = annotationFrame
 
                 // 2.5 Page Annotations (Highlights, Underlines, Strikeouts, Freehand Ink, FreeText)
-                if let annots = viewModel.pageAnnotations[pageIdx] {
+                if case let annots = viewModel.shownAnnotations(onPage: pageIdx), !annots.isEmpty {
                     for annot in annots {
                         if annot.isFromFile {
                             drawFileAnnotation(annot, pFrame: pFrame, pBounds: pBounds)

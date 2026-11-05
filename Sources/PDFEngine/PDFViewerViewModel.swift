@@ -313,6 +313,12 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var layers: [PDFLayer] = []
     /// Bumped when layers are shown or hidden, so pictures drawn before that are thrown away.
     var layerGeneration = 0
+    /// Whether each layer is shown, by object number, for annotations on them.
+    @Published public internal(set) var layerVisibility: [Int: Bool] = [:]
+    /// The layer, by object number, that annotations made from now on go on; nil for none.
+    @Published public internal(set) var annotationLayer: Int?
+    /// While Undo puts an annotation back, the layer it was on (see `restoreAnnotation`).
+    var restoringAnnotationLayer: Int??
     var annotationThreadsTask: Task<Void, Never>?
     /// The annotation the Comments sidebar last asked to scroll to.
     @Published public internal(set) var annotationReveal: AnnotationReveal?
@@ -691,6 +697,8 @@ public final class PDFViewerViewModel: ObservableObject {
             pagesCurrentlyRendering.removeAll()
             self.document = doc
             self.layers = doc.layers()
+            self.layerVisibility = doc.layerVisibility()
+            self.annotationLayer = nil
             self.layerGeneration += 1
             self.currentDocumentPassword = password
             let fileURL = URL(fileURLWithPath: actualPath)

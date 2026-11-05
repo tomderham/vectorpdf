@@ -267,7 +267,7 @@ extension PDFCanvasView {
             var closestDist = snapThreshold
             var closestVertex: CGPoint? = nil
 
-            if let annots = viewModel.pageAnnotations[pageIndex] {
+            if case let annots = viewModel.shownAnnotations(onPage: pageIndex), !annots.isEmpty {
                 for annot in annots {
                     for pt in annot.measurementPoints {
                         let d = hypot(candidate.x - pt.x, candidate.y - pt.y)

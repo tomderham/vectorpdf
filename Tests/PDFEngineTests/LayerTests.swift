@@ -242,3 +242,248 @@ struct LayerTests {
         #expect(showsSquare(1, in: image))
     }
 }
+
+/// Whether `image`, rendered at scale 1, has anything other than white within 3 points of `point`
+/// (page coordinates, top-down).
+private func hasInk(near point: CGPoint, in image: CGImage) -> Bool {
+    guard let data = image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return false }
+    let step = image.bitsPerPixel / 8
+    for y in max(0, Int(point.y) - 3)...min(image.height - 1, Int(point.y) + 3) {
+        for x in max(0, Int(point.x) - 3)...min(image.width - 1, Int(point.x) + 3) {
+            let pixel = bytes + y * image.bytesPerRow + x * step
+            if pixel[0] < 200 || pixel[1] < 200 || pixel[2] < 200 { return true }
+        }
+    }
+    return false
+}
+
+@MainActor
+@Suite(.serialized)
+struct AnnotationLayerTests {
+    private func open(layers: [String] = threeLayers, config: String = "", in dir: URL) async throws -> (PDFViewerViewModel, URL) {
+        let url = dir.appendingPathComponent("\(UUID().uuidString).pdf")
+        try makeLayeredPDF(at: url, layers: layers, config: config)
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        vm.undoManager.groupsByEvent = false
+        return (vm, url)
+    }
+
+    private func step(_ vm: PDFViewerViewModel, _ body: () -> Void) {
+        vm.undoManager.beginUndoGrouping()
+        body()
+        vm.undoManager.endUndoGrouping()
+    }
+
+    private func layer(_ vm: PDFViewerViewModel, _ name: String) throws -> PDFLayer {
+        try #require(vm.layers.first { $0.name == name })
+    }
+
+    /// A rectangle, as one step for Undo (tests group their own, see `open`).
+    private func rectangle(_ vm: PDFViewerViewModel) -> PDFEngine.PDFAnnotation? {
+        var made: PDFEngine.PDFAnnotation?
+        step(vm) { made = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 300, y: 300), to: CGPoint(x: 400, y: 400)) }
+        return made
+    }
+
+    /// The saved file drawn by a renderer of its own, with layers shown as in `vm`.
+    private func renderSaved(_ vm: PDFViewerViewModel, _ url: URL) async throws -> CGImage {
+        vm.saveDocument()
+        let renderer = PDFRenderActor()
+        try await renderer.openDocument(filePath: url.path)
+        await renderer.setLayerStates(try #require(vm.document).layerStates())
+        return try await renderer.renderPage(pageIndex: 0, scale: 1).image
+    }
+
+    @Test func everyLayerCanHoldAnnotations() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let order = "/Order [ [ (Architectural) \(layerRef(0)) ] \(layerRef(1)) \(layerRef(2)) ]"
+        let (vm, _) = try await open(config: order, in: dir)
+        #expect(vm.annotationLayers.map(\.name) == threeLayers)
+        #expect(vm.layers.first?.objectNumber == nil)
+        #expect(Set(vm.annotationLayers.compactMap(\.objectNumber)) == [6, 7, 8])
+    }
+
+    @Test func newAnnotationsGoOnTheChosenLayer() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(in: dir)
+        let pipes = try layer(vm, "Pipes")
+        let doc = try #require(vm.document)
+
+        let onNone = try #require(rectangle(vm))
+        #expect(onNone.layerObjectNumber == nil)
+
+        vm.setAnnotationLayer(pipes.objectNumber)
+        let onPipes = try #require(rectangle(vm))
+        #expect(onPipes.layerObjectNumber == pipes.objectNumber)
+        #expect(doc.annotationLayer(pageIndex: 0, objectNumber: try #require(onPipes.documentObjectNumber)) == pipes.objectNumber)
+        #expect(vm.annotationThreads().contains { $0.root.layerObjectNumber == pipes.objectNumber })
+
+        // Saved, it's on the layer for other readers too.
+        vm.saveDocument()
+        let reopened = try PDFDocumentCore(filePath: url.path)
+        #expect(reopened.annotationThreads(pageIndex: 0).compactMap(\.root.layerObjectNumber) == [try #require(pipes.objectNumber)])
+    }
+
+    @Test func choosingAHiddenLayerShowsIt() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(in: dir)
+        vm.toggleLayer(try layer(vm, "Wiring"))
+        #expect(try !layer(vm, "Wiring").isVisible)
+        vm.setAnnotationLayer(try layer(vm, "Wiring").objectNumber)
+        #expect(try layer(vm, "Wiring").isVisible)
+    }
+
+    @Test func hidingALayerHidesItsAnnotations() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(in: dir)
+        vm.setAnnotationLayer(try layer(vm, "Walls").objectNumber)
+        let annot = try #require(rectangle(vm))
+        let edge = CGPoint(x: 300, y: 350)
+        #expect(vm.shownAnnotations(onPage: 0).contains { $0.id == annot.id })
+        #expect(vm.annotationThread(pageIndex: 0, at: edge) != nil)
+        #expect(hasInk(near: edge, in: try await renderSaved(vm, url)))
+
+        vm.toggleLayer(try layer(vm, "Walls"))
+        #expect(vm.shownAnnotations(onPage: 0).isEmpty)
+        #expect(vm.annotationThread(pageIndex: 0, at: edge) == nil)
+        #expect(vm.document?.annotationObjectNumber(pageIndex: 0, at: edge) == nil)
+        let thread = try #require(vm.annotationThreads().first)
+        #expect(vm.isOnHiddenLayer(thread.root))
+        #expect(!hasInk(near: edge, in: try await renderSaved(vm, url)))
+    }
+
+    @Test func undoPutsAnAnnotationBackOnItsLayer() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, url) = try await open(in: dir)
+        let pipes = try #require(try layer(vm, "Pipes").objectNumber)
+        vm.setAnnotationLayer(pipes)
+        var added: PDFEngine.PDFAnnotation?
+        step(vm) { added = rectangle(vm) }
+        let made = try #require(added)
+        // Where new ones go has changed since; Undo puts it back where it was.
+        vm.setAnnotationLayer(nil)
+        step(vm) { vm.removeAnnotation(made) }
+        vm.undoManager.undo()
+        let back = try #require(vm.pageAnnotations[0]?.first)
+        #expect(back.layerObjectNumber == pipes)
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: try #require(back.documentObjectNumber)) == pipes)
+
+        // From the file, erased: the copy kept for Undo keeps the layer, not a copy of it.
+        vm.saveDocument()
+        let fresh = PDFViewerViewModel()
+        await fresh.loadDocument(from: url.path)
+        fresh.undoManager.groupsByEvent = false
+        let number = try #require(fresh.annotationThreads().first?.root.objectNumber)
+        step(fresh) { fresh.deleteFileAnnotation(pageIndex: 0, objectNumber: number) }
+        #expect(fresh.annotationThreads().isEmpty)
+        fresh.undoManager.undo()
+        let restored = try #require(fresh.annotationThreads().first)
+        #expect(restored.root.layerObjectNumber == pipes)
+        #expect(fresh.document?.layers().count == 3)
+        fresh.toggleLayer(try layer(fresh, "Pipes"))
+        #expect(fresh.isOnHiddenLayer(try #require(fresh.annotationThreads().first).root))
+    }
+
+    @Test func anEditKeepsTheAnnotationOnItsLayer() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(in: dir)
+        let walls = try #require(try layer(vm, "Walls").objectNumber)
+        vm.setAnnotationLayer(walls)
+        let made = try #require(rectangle(vm))
+        vm.setAnnotationLayer(try layer(vm, "Wiring").objectNumber)
+        var restyled: PDFEngine.PDFAnnotation?
+        step(vm) {
+            vm.beginReplacingAnnotation(made)
+            restyled = vm.addRestyledShape(made, strokeWidth: 6)
+            vm.finishReplacingAnnotation()
+        }
+        #expect(try #require(restyled).layerObjectNumber == walls)
+    }
+
+    @Test func annotationsMoveBetweenLayersWithUndo() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(in: dir)
+        let made = try #require(rectangle(vm))
+        let number = try #require(made.documentObjectNumber)
+        let wiring = try #require(try layer(vm, "Wiring").objectNumber)
+
+        step(vm) { vm.moveAnnotation(made, toLayer: wiring) }
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: number) == wiring)
+        #expect(vm.pageAnnotations[0]?.first?.layerObjectNumber == wiring)
+        vm.undoManager.undo()
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: number) == nil)
+        #expect(vm.pageAnnotations[0]?.first?.layerObjectNumber == nil)
+        vm.undoManager.redo()
+        #expect(vm.document?.annotationLayer(pageIndex: 0, objectNumber: number) == wiring)
+    }
+
+    @Test func aNewLayerKeepsTheOthersAsTheyAreShown() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let order = "/Order [\(layerRef(0)) \(layerRef(1)) \(layerRef(2))] /OFF [\(layerRef(2))]"
+        let (vm, url) = try await open(config: order, in: dir)
+        vm.toggleLayer(try layer(vm, "Walls"))
+        #expect(vm.layers.map(\.isVisible) == [false, true, false])
+
+        let number = try #require(vm.addLayer(named: "My Markups"))
+        #expect(vm.layers.map(\.name) == threeLayers + ["My Markups"])
+        #expect(vm.layers.map(\.isVisible) == [false, true, false, true])
+        #expect(vm.annotationLayer == number)
+        #expect(vm.isDocumentEdited)
+        #expect(!(vm.document.map(text(of:)) ?? "").contains("WALLS"))
+
+        // Annotations go on it, and it's saved with them.
+        let made = try #require(rectangle(vm))
+        #expect(made.layerObjectNumber == number)
+        vm.saveDocument()
+        let reopened = try PDFDocumentCore(filePath: url.path)
+        #expect(reopened.layers().map(\.name) == threeLayers + ["My Markups"])
+        #expect(reopened.layers().map(\.isVisible) == [true, true, false, true])
+    }
+
+    @Test func aNewLayerInADocumentWithoutAnOrderIsListed() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(in: dir)
+        vm.addLayer(named: "Markups")
+        #expect(vm.layers.map(\.name) == threeLayers + ["Markups"])
+        // The renderer opens the changed file again and follows its layers.
+        #expect(await vm.reopenActors(at: try #require(vm.workingCopyPath)))
+        vm.toggleLayer(try layer(vm, "Walls"))
+        // The renderer is told in a task of its own.
+        var image = try await vm.renderActor.renderPage(pageIndex: 0, scale: 1).image
+        for _ in 0..<200 where showsSquare(0, in: image) {
+            try await Task.sleep(nanoseconds: 10_000_000)
+            image = try await vm.renderActor.renderPage(pageIndex: 0, scale: 1).image
+        }
+        #expect(!showsSquare(0, in: image))
+        #expect(showsSquare(1, in: image))
+        #expect(showsSquare(2, in: image))
+    }
+
+    @Test func theTakeoffLeavesOutHiddenMeasurements() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (vm, _) = try await open(in: dir)
+        vm.setAnnotationLayer(try layer(vm, "Pipes").objectNumber)
+        step(vm) { _ = vm.addMeasurementAnnotation(pageIndex: 0, type: .measureLength, points: [CGPoint(x: 100, y: 500), CGPoint(x: 300, y: 500)], value: 200, formattedText: "200 pt") }
+        vm.setAnnotationLayer(nil)
+        step(vm) { _ = vm.addMeasurementAnnotation(pageIndex: 0, type: .measureLength, points: [CGPoint(x: 100, y: 550), CGPoint(x: 200, y: 550)], value: 100, formattedText: "100 pt") }
+        #expect(vm.takeoffEntries().count == 2)
+        #expect(vm.generateTakeoffSummaryCSV().hasPrefix("Page,Index,Type,Color,Measurement,Value,Unit,Scale,Layer\n"))
+        #expect(vm.generateTakeoffSummaryCSV().contains("\"Pipes\""))
+
+        vm.toggleLayer(try layer(vm, "Pipes"))
+        let entries = vm.takeoffEntries()
+        #expect(entries.count == 1)
+        #expect(entries.first?.annotation.layerObjectNumber == nil)
+    }
+}

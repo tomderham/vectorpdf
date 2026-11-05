@@ -682,7 +682,9 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 created: raw.created > 0 ? Date(timeIntervalSince1970: TimeInterval(raw.created)) : nil,
                 modified: raw.modified > 0 ? Date(timeIntervalSince1970: TimeInterval(raw.modified)) : nil,
                 state: String(cString: raw.state),
-                stateModel: String(cString: raw.state_model)
+                stateModel: String(cString: raw.state_model),
+                layerObjectNumber: raw.layer > 0 ? Int(raw.layer) : nil,
+                isOnHiddenLayer: raw.hidden != 0
             )
         }
         return PDFAnnotationThread.threads(from: entries)
@@ -990,7 +992,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 guard mupdf_pdf_layer_ui_entry(ctx, doc, Int32(index), &entry, &text, Int32(text.count)) == 0 else { return nil }
                 let kind: PDFLayer.Kind = entry.type == 2 ? .radio : entry.type == 1 ? .checkbox : .heading
                 return PDFLayer(id: index, name: string(), depth: Int(entry.depth), kind: kind,
-                                isVisible: entry.selected != 0, isLocked: entry.locked != 0)
+                                isVisible: entry.selected != 0, isLocked: entry.locked != 0,
+                                objectNumber: entry.object_number > 0 ? Int(entry.object_number) : nil)
             }
         }
         var states = [Int32](repeating: 1, count: layerCount)
@@ -1000,8 +1003,10 @@ public final class PDFDocumentCore: @unchecked Sendable {
         let order = Set(positions).count == layerCount && positions.allSatisfy { $0 >= 0 } ? positions : Array(0..<layerCount)
         return order.map { index in
             _ = mupdf_pdf_layer_name(ctx, doc, Int32(index), &text, Int32(text.count))
+            let number = Int(mupdf_pdf_layer_object_number(ctx, doc, Int32(index)))
             return PDFLayer(id: index, name: string(), depth: 0, kind: .checkbox,
-                            isVisible: states[index] != 0, isLocked: false)
+                            isVisible: states[index] != 0, isLocked: false,
+                            objectNumber: number > 0 ? number : nil)
         }
     }
 
@@ -1040,6 +1045,60 @@ public final class PDFDocumentCore: @unchecked Sendable {
         states[id] = states[id] == 0 ? 1 : 0
         guard mupdf_pdf_set_layer_states(ctx, doc, states, Int32(count)) == 0 else {
             throw PDFError.operationFailed("Failed to change layer")
+        }
+    }
+
+    /// Whether each layer is shown, by object number: every layer, including any the document
+    /// doesn't list, for telling whether an annotation on it is shown.
+    public func layerVisibility() -> [Int: Bool] {
+        guard isPDF else { return [:] }
+        lock.lock()
+        defer { lock.unlock() }
+        let count = Int(mupdf_pdf_count_layers(ctx, doc))
+        guard count > 0 else { return [:] }
+        var states = [Int32](repeating: 1, count: count)
+        guard mupdf_pdf_get_layer_states(ctx, doc, &states, Int32(count)) == 0 else { return [:] }
+        var visibility: [Int: Bool] = [:]
+        for index in 0..<count {
+            let number = Int(mupdf_pdf_layer_object_number(ctx, doc, Int32(index)))
+            if number > 0 { visibility[number] = states[index] != 0 }
+        }
+        return visibility
+    }
+
+    /// Adds a shown layer named `name` after the others, and returns its object number. This
+    /// changes the file, unlike showing and hiding layers; the other copies of it see the new
+    /// layer once they open it again.
+    public func addLayer(named name: String) throws -> Int {
+        guard isPDF else { throw PDFError.operationFailed("Only a PDF can have layers") }
+        lock.lock()
+        defer { lock.unlock() }
+        var number: Int32 = 0
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_add_layer(ctx, doc, name, &number, &errorMsg) == 0, number > 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to add layer")
+        }
+        return Int(number)
+    }
+
+    /// The object number of the layer an annotation is on, or nil.
+    public func annotationLayer(pageIndex: Int, objectNumber: Int) -> Int? {
+        guard isPDF else { return nil }
+        lock.lock()
+        defer { lock.unlock() }
+        var layer: Int32 = 0
+        guard mupdf_pdf_annot_layer(ctx, doc, Int32(pageIndex), Int32(objectNumber), &layer, nil) == 0, layer > 0 else { return nil }
+        return Int(layer)
+    }
+
+    /// Puts an annotation on the layer with this object number, or on none.
+    public func setAnnotationLayer(pageIndex: Int, objectNumber: Int, layer: Int?) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_set_annot_layer(ctx, doc, Int32(pageIndex), Int32(objectNumber), Int32(layer ?? 0), &errorMsg) == 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to change the annotation's layer")
         }
     }
 
@@ -1146,8 +1205,9 @@ public final class PDFDocumentCore: @unchecked Sendable {
         return ret == 1
     }
 
-    /// Measurement annotations stored on pageIndex, recomputed from stored geometry.
-    public func measurementAnnotations(pageIndex: Int) -> [PDFAnnotation] {
+    /// Measurement annotations stored on pageIndex, recomputed from stored geometry. With
+    /// `shownOnly`, not ones on hidden layers.
+    public func measurementAnnotations(pageIndex: Int, shownOnly: Bool = false) -> [PDFAnnotation] {
         guard isPDF else { return [] }
         lock.lock()
         defer { lock.unlock() }
@@ -1163,6 +1223,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         guard ret == 0 else { return [] }
         return buffer.prefix(Int(min(filled, total))).compactMap { m -> PDFAnnotation? in
             var raw = m
+            if shownOnly && raw.hidden != 0 { return nil }
             let n = Int(raw.n_points)
             let points: [CGPoint] = withUnsafeBytes(of: &raw.xy) { bytes in
                 let xy = bytes.bindMemory(to: Float.self)
@@ -1203,6 +1264,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 measurementText: text
             )
             annot.documentObjectNumber = Int(raw.objnum)
+            annot.layerObjectNumber = raw.layer > 0 ? Int(raw.layer) : nil
             return annot
         }
     }
@@ -1248,6 +1310,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         public let lineEnding: PDFLineEnding?
         /// A line's ends, or a polygon's corners.
         public let points: [CGPoint]
+        /// The object number of the layer it's on, or nil.
+        public var layer: Int? = nil
     }
 
     private func holding() -> FZDocument? {
@@ -1368,7 +1432,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
             isCloud: raw.is_cloud != 0,
             isMeasurement: raw.is_measurement != 0,
             lineEnding: raw.line_ending >= 0 ? PDFLineEnding(rawValue: raw.line_ending) : nil,
-            points: points.prefix(Int(raw.point_count)).map { CGPoint(x: CGFloat($0.x), y: CGFloat($0.y)) }
+            points: points.prefix(Int(raw.point_count)).map { CGPoint(x: CGFloat($0.x), y: CGFloat($0.y)) },
+            layer: raw.layer > 0 ? Int(raw.layer) : nil
         )
     }
 

@@ -165,6 +165,11 @@ public struct PDFMeasurementToolbarView: View {
 
             Spacer()
 
+            // Only for a document with layers, so the bar is unchanged for the rest.
+            if !viewModel.layers.isEmpty {
+                AnnotationLayerMenu(viewModel: viewModel)
+            }
+
             // 7. Close Toolbar Button
             PreviewToolbarButton(
                 helpText: "Close Measurement Toolbar (⇧⌘M)"

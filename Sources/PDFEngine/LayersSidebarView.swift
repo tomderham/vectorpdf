@@ -34,17 +34,52 @@ struct LayersSidebarView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
+                if !viewModel.isReadOnlyDocument {
+                    Button {
+                        viewModel.promptForNewLayer()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .help("New Layer")
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
+
+            if !viewModel.isReadOnlyDocument && !viewModel.annotationLayers.isEmpty {
+                HStack(spacing: 4) {
+                    Text("New annotations:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    AnnotationLayerMenu(viewModel: viewModel, showsIcon: false)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 6)
+            }
 
             Divider()
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(viewModel.layers) { layer in
-                        LayerRowView(layer: layer) {
+                        LayerRowView(layer: layer, isAnnotationLayer: layer.objectNumber != nil && layer.objectNumber == viewModel.annotationLayer) {
                             viewModel.toggleLayer(layer)
+                        }
+                        .contextMenu {
+                            if layer.canHoldAnnotations && !viewModel.isReadOnlyDocument {
+                                if viewModel.annotationLayer == layer.objectNumber {
+                                    Button("Stop Putting New Annotations Here") {
+                                        viewModel.setAnnotationLayer(nil)
+                                    }
+                                } else {
+                                    Button("Put New Annotations Here") {
+                                        viewModel.setAnnotationLayer(layer.objectNumber)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -58,7 +93,7 @@ struct LayersSidebarView: View {
                 Image(systemName: "info.circle")
                     .font(.caption2)
                     .padding(.top, 1)
-                Text("Hidden layers aren't printed, selected or found by search. Which layers are shown isn't saved.")
+                Text("Hidden layers, and annotations on them, aren't printed, selected or found by search. Which layers are shown isn't saved.")
                     .font(.caption2)
             }
             .foregroundStyle(.secondary)
@@ -72,11 +107,11 @@ struct LayersSidebarView: View {
 
 private struct LayerRowView: View {
     let layer: PDFLayer
+    /// New annotations go on it.
+    let isAnnotationLayer: Bool
     let toggle: () -> Void
 
-    private var name: String {
-        layer.name.isEmpty ? "Untitled Layer" : layer.name
-    }
+    private var name: String { layer.displayName }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -105,6 +140,12 @@ private struct LayerRowView: View {
                 .buttonStyle(.plain)
                 .disabled(layer.isLocked)
             }
+            if isAnnotationLayer {
+                Image(systemName: "pencil.tip")
+                    .font(.caption2)
+                    .foregroundStyle(Color.accentColor)
+                    .help("New annotations go on this layer")
+            }
             if layer.isLocked {
                 Image(systemName: "lock.fill")
                     .font(.caption2)
@@ -119,5 +160,47 @@ private struct LayerRowView: View {
         .help(name)
         .padding(.leading, CGFloat(layer.depth) * 14)
         .padding(.vertical, 2)
+    }
+}
+
+/// Chooses the layer new annotations go on, or adds one. Shown only for documents with layers.
+struct AnnotationLayerMenu: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    var showsIcon = true
+
+    private var title: String {
+        viewModel.layerName(viewModel.annotationLayer) ?? "No Layer"
+    }
+
+    var body: some View {
+        Menu {
+            Picker("New Annotations Go On", selection: Binding(
+                get: { viewModel.annotationLayer ?? 0 },
+                set: { viewModel.setAnnotationLayer($0 == 0 ? nil : $0) }
+            )) {
+                Text("No Layer").tag(0)
+                ForEach(viewModel.annotationLayers) { layer in
+                    Text(layer.displayName).tag(layer.objectNumber ?? 0)
+                }
+            }
+            .pickerStyle(.inline)
+            Divider()
+            Button("New Layer…") {
+                viewModel.promptForNewLayer()
+            }
+        } label: {
+            if showsIcon {
+                Label(title, systemImage: "square.3.layers.3d")
+                    .labelStyle(.titleAndIcon)
+                    .font(.caption)
+            } else {
+                Text(title)
+                    .font(.caption)
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(viewModel.isReadOnlyDocument)
+        .help("The layer new annotations go on")
     }
 }

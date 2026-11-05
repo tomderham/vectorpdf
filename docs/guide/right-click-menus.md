@@ -23,6 +23,8 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 
 If you right-click a plain-text reference and related documents are open in other tabs, the menu also has commands to [go to it or find it](cross-document-references.md).
 
+In a document with [layers](layers.md), the menu for an annotation also has **Layer**, to move it to another layer or to none.
+
 ## In the sidebar
 
 | Right-click | Commands |
@@ -32,6 +34,7 @@ If you right-click a plain-text reference and related documents are open in othe
 | A search result | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | An annotation in the Comments tab | Show on Page, Comments…, Delete |
+| A layer in the Layers tab | Put New Annotations Here, or Stop Putting New Annotations Here. See [Show and hide layers](layers.md). |
 
 ## In the window
 

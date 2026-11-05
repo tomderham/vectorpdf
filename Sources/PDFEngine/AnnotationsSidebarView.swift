@@ -26,8 +26,14 @@ struct AnnotationsSidebarView: View {
     @State private var filter = PDFAnnotationFilter()
     @State private var selection: PDFAnnotationThread.ID?
 
+    /// Not ones on hidden layers, which aren't on the page.
     private var threadsByPage: [Int: [PDFAnnotationThread]] {
-        viewModel.annotationThreadsByPage ?? [:]
+        let all = viewModel.annotationThreadsByPage ?? [:]
+        guard !viewModel.layerVisibility.isEmpty else { return all }
+        return all.compactMapValues { threads in
+            let shown = threads.filter { !viewModel.isOnHiddenLayer($0.root) }
+            return shown.isEmpty ? nil : shown
+        }
     }
 
     private var allThreads: [PDFAnnotationThread] {
@@ -49,6 +55,13 @@ struct AnnotationsSidebarView: View {
                 ProgressView()
                     .controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if threadsByPage.isEmpty && viewModel.annotationThreadsByPage?.isEmpty == false {
+                ContentUnavailableView {
+                    Label("Comments Hidden", systemImage: "square.3.layers.3d")
+                } description: {
+                    Text("Every annotation is on a hidden layer. Show its layer in the Layers tab to see it.")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if threadsByPage.isEmpty {
                 ContentUnavailableView {
                     Label("No Comments", systemImage: "text.bubble")

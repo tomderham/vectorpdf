@@ -114,7 +114,7 @@ extension PDFCanvasView {
         // For .select, .text, .callout and .shape modes: Check if clicked on an existing annotation that can move
         if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .shape {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
-                let list = viewModel.pageAnnotations[pageIdx] ?? []
+                let list = viewModel.shownAnnotations(onPage: pageIdx)
 
                 // 1. If an annotation is already selected on this page, check if clicking on its corner resize handles
                 if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
@@ -861,7 +861,7 @@ extension PDFCanvasView {
         // Hover feedback over annotations or callout handles in interactive modes
         if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
-               let list = viewModel.pageAnnotations[pageIdx] {
+               case let list = viewModel.shownAnnotations(onPage: pageIdx), !list.isEmpty {
                 // If an annotation is selected on this page, check if hovering over its corner handles
                 if let sel = selectedAnnotation, sel.pageIndex == pageIdx,
                    let selAnnot = list.first(where: { $0.id == sel.id }),

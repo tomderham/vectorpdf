@@ -137,6 +137,14 @@ extension PDFViewerViewModel {
             if let old = annotationBeingReplaced?.documentObjectNumber {
                 try? document?.moveAnnotationThread(pageIndex: annot.pageIndex, from: old, to: objectNumber)
             }
+            if let layer = layerForAddedAnnotation(onPage: annot.pageIndex) {
+                do {
+                    try document?.setAnnotationLayer(pageIndex: annot.pageIndex, objectNumber: objectNumber, layer: layer)
+                    stored.layerObjectNumber = layer
+                } catch {
+                    print("Failed to put the annotation on its layer: \(error)")
+                }
+            }
         }
         pageAnnotations[annot.pageIndex, default: []].append(stored)
         noteAnnotationsChanged(onPage: annot.pageIndex)
@@ -346,6 +354,9 @@ extension PDFViewerViewModel {
     /// brought back.
     @discardableResult
     func restoreAnnotation(_ annot: PDFAnnotation) -> PDFAnnotation? {
+        // Back on the layer it was on, not the one new annotations go on.
+        restoringAnnotationLayer = .some(annot.layerObjectNumber)
+        defer { restoringAnnotationLayer = nil }
         let page = annot.pageIndex
         switch annot.type {
         case .highlight, .underline, .strikeout:
@@ -605,6 +616,7 @@ extension PDFViewerViewModel {
         annot.documentObjectNumber = objectNumber
         annot.fileSubtype = found.subtype
         annot.appearanceRevision = revision
+        annot.layerObjectNumber = found.layer
         return annot
     }
 

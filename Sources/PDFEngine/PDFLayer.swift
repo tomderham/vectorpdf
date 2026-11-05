@@ -36,15 +36,24 @@ public struct PDFLayer: Identifiable, Equatable, Sendable {
     public let isVisible: Bool
     /// The document doesn't let it be shown or hidden.
     public let isLocked: Bool
+    /// The layer's PDF object number, which annotations on it refer to (their /OC). Nil for a
+    /// heading, or where it can't be found.
+    public let objectNumber: Int?
 
-    public init(id: Int, name: String, depth: Int, kind: Kind, isVisible: Bool, isLocked: Bool) {
+    public init(id: Int, name: String, depth: Int, kind: Kind, isVisible: Bool, isLocked: Bool, objectNumber: Int? = nil) {
         self.id = id
         self.name = name
         self.depth = depth
         self.kind = kind
         self.isVisible = isVisible
         self.isLocked = isLocked
+        self.objectNumber = objectNumber
     }
 
     public var canToggle: Bool { kind != .heading && !isLocked }
+
+    /// Whether annotations can be put on it.
+    public var canHoldAnnotations: Bool { kind != .heading && objectNumber != nil }
+
+    public var displayName: String { name.isEmpty ? "Untitled Layer" : name }
 }

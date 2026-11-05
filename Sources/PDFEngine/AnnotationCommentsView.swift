@@ -499,6 +499,14 @@ struct AnnotationsTableView: View {
                     TableColumn("Comment") { Text($0.root.text).font(.caption).lineLimit(2) }
                     TableColumn("Replies") { Text($0.replies.isEmpty ? "" : "\($0.replies.count)").font(.caption.monospacedDigit()) }
                         .width(min: 40, ideal: 48, max: 56)
+                    // Only for a document with layers.
+                    if !viewModel.layers.isEmpty {
+                        TableColumn("Layer") { thread in
+                            Text(viewModel.layerName(thread.root.layerObjectNumber).map { viewModel.isOnHiddenLayer(thread.root) ? "\($0) (Hidden)" : $0 } ?? "")
+                                .font(.caption)
+                        }
+                        .width(min: 60, ideal: 100)
+                    }
                 }
                 .contextMenu(forSelectionType: PDFAnnotationThread.ID.self, menu: { _ in }, primaryAction: { ids in show(ids.first) })
             }

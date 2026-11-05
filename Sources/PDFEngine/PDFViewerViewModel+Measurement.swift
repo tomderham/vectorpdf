@@ -173,12 +173,12 @@ extension PDFViewerViewModel {
         pageScaleConfigs[pageIndex] ?? document?.loadPageScale(pageIndex: pageIndex) ?? currentScaleConfig
     }
 
-    /// Returns every measurement in the document.
+    /// Returns every measurement in the document, except ones on hidden layers.
     public func takeoffEntries() -> [TakeoffEntry] {
         guard let doc = document else { return [] }
         var entries: [TakeoffEntry] = []
         for pageIndex in 0..<doc.pageCount {
-            let annots = doc.measurementAnnotations(pageIndex: pageIndex)
+            let annots = doc.measurementAnnotations(pageIndex: pageIndex, shownOnly: true)
             guard !annots.isEmpty else { continue }
             let scale = resolvedScaleConfig(for: pageIndex)
             for annot in annots {
@@ -256,10 +256,12 @@ extension PDFViewerViewModel {
 
         for (pageIndex, pageEntries) in Dictionary(grouping: entries, by: \.pageIndex).sorted(by: { $0.key < $1.key }) {
             md += "## Page \(pageIndex + 1) (Scale: \(pageEntries[0].scale.ratioString))\n\n"
-            md += "| Item | Type | Color | Measurement |\n"
-            md += "| :--- | :--- | :--- | :--- |\n"
+            let byLayer = !layers.isEmpty
+            md += "| Item | Type | Color | Measurement |" + (byLayer ? " Layer |" : "") + "\n"
+            md += "| :--- | :--- | :--- | :--- |" + (byLayer ? " :--- |" : "") + "\n"
             for (idx, entry) in pageEntries.enumerated() {
-                md += "| #\(idx + 1) | \(Self.takeoffTypeName(entry.annotation.type)) | \(entry.annotation.color.displayName) | **\(entry.formattedValue)** |\n"
+                md += "| #\(idx + 1) | \(Self.takeoffTypeName(entry.annotation.type)) | \(entry.annotation.color.displayName) | **\(entry.formattedValue)** |"
+                md += byLayer ? " \(layerName(entry.annotation.layerObjectNumber) ?? "") |\n" : "\n"
             }
             md += "\n"
         }
@@ -279,10 +281,13 @@ extension PDFViewerViewModel {
 
     public func generateTakeoffSummaryCSV() -> String {
         func quoted(_ s: String) -> String { "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
-        var csv = "Page,Index,Type,Color,Measurement,Value,Unit,Scale\n"
+        // A Layer column only for a document with layers.
+        let byLayer = !layers.isEmpty
+        var csv = "Page,Index,Type,Color,Measurement,Value,Unit,Scale" + (byLayer ? ",Layer" : "") + "\n"
         for (pageIndex, pageEntries) in Dictionary(grouping: takeoffEntries(), by: \.pageIndex).sorted(by: { $0.key < $1.key }) {
             for (idx, entry) in pageEntries.enumerated() {
-                csv += "\(pageIndex + 1),\(idx + 1),\(Self.takeoffTypeName(entry.annotation.type)),\(entry.annotation.color.displayName),\(quoted(entry.formattedValue)),\(String(format: "%.3f", entry.realValue)),\(quoted(entry.unitSymbol)),\(quoted(entry.scale.ratioString))\n"
+                csv += "\(pageIndex + 1),\(idx + 1),\(Self.takeoffTypeName(entry.annotation.type)),\(entry.annotation.color.displayName),\(quoted(entry.formattedValue)),\(String(format: "%.3f", entry.realValue)),\(quoted(entry.unitSymbol)),\(quoted(entry.scale.ratioString))"
+                csv += byLayer ? ",\(quoted(layerName(entry.annotation.layerObjectNumber) ?? ""))\n" : "\n"
             }
         }
         return csv
