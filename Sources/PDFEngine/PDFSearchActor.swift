@@ -90,18 +90,35 @@ final class SearchWorkerPool: Sendable {
     let filePath: String
     let password: String?
     let capacity: Int
-    private let state: Mutex<(idle: [SearchResource], closed: Bool)>
+    /// How long the pool waits, with no worker in use, before closing all but one idle worker.
+    /// Each holds its own copy of the document (for a large one, its whole object table), so
+    /// they aren't kept for the rest of the session; the next search opens them again.
+    let idleTrimDelay: TimeInterval
+
+    private struct State {
+        var idle: [SearchResource]
+        var closed = false
+        /// Workers checked out and not yet checked in.
+        var inUse = 0
+        /// Counts check-outs, so a trim scheduled before the latest search knows to skip.
+        var checkOuts = 0
+    }
+    private let state: Mutex<State>
     /// The layer states workers are given as they're checked out; empty for the document's own.
     private let layerStates = Mutex<[Int32]>([])
 
-    init(first: SearchResource, filePath: String, password: String?, capacity: Int) {
+    init(first: SearchResource, filePath: String, password: String?, capacity: Int, idleTrimDelay: TimeInterval = 60) {
         self.filePath = filePath
         self.password = password
         self.capacity = capacity
-        self.state = Mutex(([first], false))
+        self.idleTrimDelay = idleTrimDelay
+        self.state = Mutex(State(idle: [first]))
     }
 
     var isClosed: Bool { state.withLock { $0.closed } }
+
+    /// Workers waiting for the next search, each with the document open.
+    var idleCount: Int { state.withLock { $0.idle.count } }
 
     /// Shows and hides layers in every worker from the next search on.
     func setLayerStates(_ states: [Int32]) {
@@ -110,18 +127,48 @@ final class SearchWorkerPool: Sendable {
 
     /// An idle worker, or a new one; nil once closed or if the document can't be opened again.
     func checkOut() -> SearchResource? {
-        let (idle, closed) = state.withLock { state in (state.idle.popLast(), state.closed) }
-        let worker = idle ?? (closed ? nil : try? SearchResource(filePath: filePath, password: password))
-        worker?.applyLayerStates(layerStates.withLock { $0 })
+        let (idle, closed) = state.withLock { state -> (SearchResource?, Bool) in
+            guard !state.closed else { return (nil, true) }
+            state.inUse += 1
+            state.checkOuts += 1
+            return (state.idle.popLast(), false)
+        }
+        guard !closed else { return nil }
+        guard let worker = idle ?? (try? SearchResource(filePath: filePath, password: password)) else {
+            state.withLock { $0.inUse -= 1 }
+            return nil
+        }
+        worker.applyLayerStates(layerStates.withLock { $0 })
         return worker
     }
 
     func checkIn(_ worker: SearchResource) {
         // A worker that isn't kept is released here, outside the lock.
-        _ = state.withLock { state -> SearchResource? in
-            guard !state.closed, state.idle.count < capacity else { return worker }
-            state.idle.append(worker)
-            return nil
+        let (_, idleSince) = state.withLock { state -> (SearchResource?, Int?) in
+            state.inUse -= 1
+            let released: SearchResource?
+            if !state.closed, state.idle.count < capacity {
+                state.idle.append(worker)
+                released = nil
+            } else {
+                released = worker
+            }
+            return (released, state.inUse == 0 && !state.closed ? state.checkOuts : nil)
+        }
+        if let idleSince { scheduleTrim(ifStillIdleSince: idleSince) }
+    }
+
+    /// Closes all but one idle worker once the pool has had nothing checked out for
+    /// `idleTrimDelay`, unless a search started meanwhile.
+    private func scheduleTrim(ifStillIdleSince checkOuts: Int) {
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + idleTrimDelay) { [weak self] in
+            guard let self else { return }
+            // The workers closed are released here, outside the lock.
+            _ = self.state.withLock { state -> [SearchResource] in
+                guard !state.closed, state.inUse == 0, state.checkOuts == checkOuts, state.idle.count > 1 else { return [] }
+                defer { state.idle.removeLast(state.idle.count - 1) }
+                return Array(state.idle.dropFirst())
+            }
         }
     }
 
