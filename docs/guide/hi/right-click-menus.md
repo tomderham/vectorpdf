@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # राइट-क्लिक मेनू
 
@@ -42,7 +42,7 @@
 
 | राइट-क्लिक | कमांड |
 | --- | --- |
-| दस्तावेज़ का शीर्षक, या टूलबार का खाली हिस्सा | Favorites में जोड़ने या उससे हटाने का कमांड, Save All Open Tabs as a Group, Update Group “नाम” with Open Tabs, और आपके Tab Groups और Favorites |
+| दस्तावेज़ का शीर्षक, या टूलबार का खाली हिस्सा | Favorites में जोड़ने या उससे हटाने का कमांड, Save All Open Tabs as a Group, Update Group “नाम” with Open Tabs, Compare With (देखें [दो दस्तावेज़ों की तुलना करें](compare-documents.md)), और आपके Tab Groups और Favorites |
 | Start स्क्रीन की कोई पंक्ति | Open, Open in New Tab, Open in New Window, Show in Finder, और Remove या Delete |
 
 कुछ कमांड तभी दिखते हैं जब वे लागू होते हैं। उदाहरण के लिए, Save All Open Tabs as a Group के लिए एक से ज़्यादा टैब चाहिए, और ऐंकर से खोली गई विंडो में ऐंकर कमांड उपलब्ध नहीं होते।

@@ -1,5 +1,5 @@
 <!-- keywords: कीबोर्ड, शॉर्टकट, कुंजियाँ, हॉट की, जेस्चर, ट्रैकपैड, माउस, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # कीबोर्ड शॉर्टकट
 
@@ -13,6 +13,7 @@
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | File मेनू, या दस्तावेज़ के शीर्षक पर राइट-क्लिक करें और Compare With चुनें |
 | Insert Pages from PDF | ⌥⌘I, या किसी थंबनेल पर राइट-क्लिक करें |
 | Duplicate Pages | ⇧⌘D, या किसी थंबनेल पर राइट-क्लिक करें |
 | Save | ⌘S |
@@ -36,6 +37,7 @@
 | Next Page | ⌥Down Arrow, ⌥Right Arrow या Right Arrow |
 | First Page | ⌘Up Arrow या ⌘Home |
 | Last Page | ⌘Down Arrow या ⌘End |
+| पिछला या अगला बदलाव, दस्तावेज़ों की तुलना करते समय | ⌥⌘Up Arrow या ⌥⌘Down Arrow, या Changes टैब के तीर |
 | पेज में आगे या पीछे | Space या ⇧Space |
 | Next Tab | ⇧⌘] या ⌃Tab |
 | Previous Tab | ⇧⌘[ या ⇧⌃Tab |

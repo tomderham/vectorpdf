@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # Abbreviazioni da tastiera
 
@@ -13,6 +13,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | Menu File, oppure fai clic con il pulsante destro sul titolo del documento e scegli Compare With |
 | Insert Pages from PDF | ⌥⌘I, oppure clic con il tasto destro su una miniatura |
 | Duplicate Pages | ⇧⌘D, oppure clic con il tasto destro su una miniatura |
 | Save | ⌘S |
@@ -36,6 +37,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Next Page | ⌥Down Arrow, ⌥Right Arrow o Right Arrow |
 | First Page | ⌘Up Arrow o ⌘Home |
 | Last Page | ⌘Down Arrow o ⌘End |
+| Modifica precedente o successiva, confrontando documenti | ⌥⌘Up Arrow o ⌥⌘Down Arrow, oppure le frecce nella scheda Changes |
 | Avanti o indietro nella pagina | Space o ⇧Space |
 | Next Tab | ⇧⌘] o ⌃Tab |
 | Previous Tab | ⇧⌘[ o ⇧⌃Tab |

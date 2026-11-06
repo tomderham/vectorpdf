@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # Kontextmenüs
 
@@ -42,7 +42,7 @@ In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung au�
 
 | Rechtsklick auf | Befehle |
 | --- | --- |
-| Den Titel des Dokuments oder einen leeren Bereich der Symbolleiste | Zu Favorites hinzufügen oder daraus entfernen, Save All Open Tabs as a Group, Update Group “Name” with Open Tabs sowie deine Tabgruppen und Favoriten |
+| Den Titel des Dokuments oder einen leeren Bereich der Symbolleiste | Zu Favorites hinzufügen oder daraus entfernen, Save All Open Tabs as a Group, Update Group “Name” with Open Tabs, Compare With (siehe [Zwei Dokumente vergleichen](compare-documents.md)) sowie deine Tabgruppen und Favoriten |
 | Eine Zeile auf dem Start-Bildschirm | Open, Open in New Tab, Open in New Window, Show in Finder und Remove oder Delete |
 
 Manche Befehle werden nur angezeigt, wenn sie zutreffen. So erfordert „Save All Open Tabs as a Group“ mehr als einen Tab, und in einem aus einem Anker geöffneten Fenster sind keine Ankerbefehle verfügbar.

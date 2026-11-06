@@ -1,4 +1,4 @@
-<!-- source: e08761d6a9dd -->
+<!-- source: 656a91c48947 -->
 
 # VectorPDF 사용 설명서
 
@@ -23,6 +23,7 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 - [PDF에 첨부된 파일](attachments.md)
 - [PDF 색상 변경하기](pdf-colors.md)
 - [텍스트 선택, 복사 및 찾아보기](select-text.md)
+- [두 문서 비교하기](compare-documents.md)
 
 ## 검색
 

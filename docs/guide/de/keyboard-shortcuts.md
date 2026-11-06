@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # Tastaturkurzbefehle
 
@@ -13,6 +13,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | Menü „File“, oder klicke mit der rechten Maustaste auf den Titel des Dokuments und wähle „Compare With“ |
 | Insert Pages from PDF | ⌥⌘I oder Rechtsklick auf eine Miniatur |
 | Duplicate Pages | ⇧⌘D oder Rechtsklick auf eine Miniatur |
 | Save | ⌘S |
@@ -36,6 +37,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Next Page | ⌥Down Arrow, ⌥Right Arrow oder Right Arrow |
 | First Page | ⌘Up Arrow oder ⌘Home |
 | Last Page | ⌘Down Arrow oder ⌘End |
+| Vorherige oder nächste Änderung, beim Vergleichen von Dokumenten | ⌥⌘Up Arrow oder ⌥⌘Down Arrow, oder die Pfeile im Tab „Changes“ |
 | Durch die Seite vor- oder zurückblättern | Space oder ⇧Space |
 | Next Tab | ⇧⌘] oder ⌃Tab |
 | Previous Tab | ⇧⌘[ oder ⇧⌃Tab |

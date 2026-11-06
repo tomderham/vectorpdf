@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # Menu di scelta rapida
 
@@ -42,7 +42,7 @@ In un documento con [livelli](layers.md), il menu di un'annotazione contiene anc
 
 | Clic con il tasto destro su | Comandi |
 | --- | --- |
-| Il titolo del documento o una parte vuota della barra degli strumenti | Aggiunta o rimozione dai preferiti, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, e i tuoi Tab Groups e Favorites |
+| Il titolo del documento o una parte vuota della barra degli strumenti | Aggiunta o rimozione dai preferiti, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, Compare With (vedi [Confrontare due documenti](compare-documents.md)), e i tuoi Tab Groups e Favorites |
 | Una riga nella schermata Start | Open, Open in New Tab, Open in New Window, Show in Finder, e Remove o Delete |
 
 Alcuni comandi compaiono solo quando sono applicabili. Ad esempio, Save All Open Tabs as a Group richiede più di un pannello, e i comandi degli ancoraggi non sono disponibili in una finestra aperta da un ancoraggio.

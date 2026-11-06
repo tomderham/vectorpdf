@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # 右键菜单
 
@@ -42,7 +42,7 @@
 
 | 右键点按 | 命令 |
 | --- | --- |
-| 文稿标题或工具栏的空白部分 | 添加到 Favorites 或从中移除、Save All Open Tabs as a Group、Update Group “名称” with Open Tabs，以及你的 Tab Groups 和 Favorites |
+| 文稿标题或工具栏的空白部分 | 添加到 Favorites 或从中移除、Save All Open Tabs as a Group、Update Group “名称” with Open Tabs、Compare With（请参阅[比较两份文稿](compare-documents.md)），以及你的 Tab Groups 和 Favorites |
 | Start 屏幕上的一行 | Open、Open in New Tab、Open in New Window、Show in Finder，以及 Remove 或 Delete |
 
 某些命令仅在适用时才会出现。例如，Save All Open Tabs as a Group 需要有多个标签页，而在从锚点打开的窗口中无法使用锚点命令。

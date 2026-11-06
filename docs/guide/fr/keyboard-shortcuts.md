@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # Raccourcis clavier
 
@@ -13,6 +13,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | Menu File, ou cliquez avec le bouton droit sur le titre du document et choisissez Compare With |
 | Insert Pages from PDF | ⌥⌘I, ou clic droit sur une vignette |
 | Duplicate Pages | ⇧⌘D, ou clic droit sur une vignette |
 | Save | ⌘S |
@@ -36,6 +37,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Next Page | ⌥Down Arrow, ⌥Right Arrow ou Right Arrow |
 | First Page | ⌘Up Arrow ou ⌘Home |
 | Last Page | ⌘Down Arrow ou ⌘End |
+| Modification précédente ou suivante, en comparant des documents | ⌥⌘Up Arrow ou ⌥⌘Down Arrow, ou les flèches de l’onglet Changes |
 | Avancer ou reculer dans la page | Space ou ⇧Space |
 | Next Tab | ⇧⌘] ou ⌃Tab |
 | Previous Tab | ⇧⌘[ ou ⇧⌃Tab |

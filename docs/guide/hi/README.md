@@ -1,4 +1,4 @@
-<!-- source: e08761d6a9dd -->
+<!-- source: 656a91c48947 -->
 
 # VectorPDF उपयोगकर्ता गाइड
 
@@ -23,6 +23,7 @@ VectorPDF तकनीकी शोध-पत्रों, विनिर्द
 - [PDF से जुड़ी फ़ाइलें](attachments.md)
 - [PDF के रंग बदलें](pdf-colors.md)
 - [टेक्स्ट चुनें, कॉपी करें और उसका अर्थ देखें](select-text.md)
+- [दो दस्तावेज़ों की तुलना करें](compare-documents.md)
 
 ## खोजें
 

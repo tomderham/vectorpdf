@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # 键盘快捷键
 
@@ -13,6 +13,7 @@
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | File 菜单，或右键点按文稿标题并选取 Compare With |
 | Insert Pages from PDF | ⌥⌘I，或右键点按缩略图 |
 | Duplicate Pages | ⇧⌘D，或右键点按缩略图 |
 | Save | ⌘S |
@@ -36,6 +37,7 @@
 | Next Page | ⌥Down Arrow、⌥Right Arrow 或 Right Arrow |
 | First Page | ⌘Up Arrow 或 ⌘Home |
 | Last Page | ⌘Down Arrow 或 ⌘End |
+| 上一处或下一处更改（比较文稿时） | ⌥⌘Up Arrow 或 ⌥⌘Down Arrow，或 Changes 标签页中的箭头 |
 | 在页面中向前或向后移动 | Space 或 ⇧Space |
 | Next Tab | ⇧⌘] 或 ⌃Tab |
 | Previous Tab | ⇧⌘[ 或 ⇧⌃Tab |

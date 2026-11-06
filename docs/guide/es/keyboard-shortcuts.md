@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # Atajos de teclado
 
@@ -13,6 +13,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | Menú File, o haz clic con el botón derecho en el título del documento y elige Compare With |
 | Insert Pages from PDF | ⌥⌘I, o clic con el botón derecho en una miniatura |
 | Duplicate Pages | ⇧⌘D, o clic con el botón derecho en una miniatura |
 | Save | ⌘S |
@@ -36,6 +37,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | Next Page | ⌥Down Arrow, ⌥Right Arrow o Right Arrow |
 | First Page | ⌘Up Arrow o ⌘Home |
 | Last Page | ⌘Down Arrow o ⌘End |
+| Cambio anterior o siguiente, al comparar documentos | ⌥⌘Up Arrow o ⌥⌘Down Arrow, o las flechas de la pestaña Changes |
 | Avanzar o retroceder por la página | Space o ⇧Space |
 | Next Tab | ⇧⌘] o ⌃Tab |
 | Previous Tab | ⇧⌘[ o ⇧⌃Tab |

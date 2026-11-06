@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # 오른쪽 클릭 메뉴
 
@@ -42,7 +42,7 @@
 
 | 오른쪽 클릭 대상 | 명령 |
 | --- | --- |
-| 문서 제목 또는 도구 막대의 빈 부분 | Favorites에 추가 또는 제거, Save All Open Tabs as a Group, Update Group “이름” with Open Tabs, 내 Tab Groups 및 Favorites |
+| 문서 제목 또는 도구 막대의 빈 부분 | Favorites에 추가 또는 제거, Save All Open Tabs as a Group, Update Group “이름” with Open Tabs, Compare With([두 문서 비교하기](compare-documents.md) 참조), 내 Tab Groups 및 Favorites |
 | Start 화면의 행 | Open, Open in New Tab, Open in New Window, Show in Finder, Remove 또는 Delete |
 
 일부 명령은 해당하는 경우에만 나타납니다. 예를 들어 Save All Open Tabs as a Group을 사용하려면 탭이 두 개 이상 있어야 하며, 앵커에서 연 윈도우에서는 앵커 명령을 사용할 수 없습니다.

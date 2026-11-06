@@ -1,5 +1,5 @@
 <!-- keywords: キーボード, ショートカット, キー, ホットキー, ジェスチャ, トラックパッド, マウス, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # キーボードショートカット
 
@@ -13,6 +13,7 @@
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | File メニュー、または書類のタイトルを右クリックして Compare With を選択 |
 | Insert Pages from PDF | ⌥⌘I、またはサムネールを右クリック |
 | Duplicate Pages | ⇧⌘D、またはサムネールを右クリック |
 | Save | ⌘S |
@@ -36,6 +37,7 @@
 | Next Page | ⌥Down Arrow、⌥Right Arrow、または Right Arrow |
 | First Page | ⌘Up Arrow または ⌘Home |
 | Last Page | ⌘Down Arrow または ⌘End |
+| 前または次の変更（書類の比較中） | ⌥⌘Up Arrow または ⌥⌘Down Arrow、または Changes タブの矢印 |
 | ページ内を前方または後方へ移動 | Space または ⇧Space |
 | Next Tab | ⇧⌘] または ⌃Tab |
 | Previous Tab | ⇧⌘[ または ⇧⌃Tab |

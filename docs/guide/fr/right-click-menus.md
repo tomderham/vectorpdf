@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # Menus du clic droit
 
@@ -42,7 +42,7 @@ Dans un document avec des [calques](layers.md), le menu d’une annotation propo
 
 | Clic droit sur | Commandes |
 | --- | --- |
-| Le titre du document ou une partie vide de la barre d’outils | Ajout à Favorites ou retrait de Favorites, Save All Open Tabs as a Group, Update Group “nom” with Open Tabs, ainsi que vos Tab Groups et Favorites |
+| Le titre du document ou une partie vide de la barre d’outils | Ajout à Favorites ou retrait de Favorites, Save All Open Tabs as a Group, Update Group “nom” with Open Tabs, Compare With (voir [Comparer deux documents](compare-documents.md)), ainsi que vos Tab Groups et Favorites |
 | Une ligne de l’écran Start | Open, Open in New Tab, Open in New Window, Show in Finder, et Remove ou Delete |
 
 Certaines commandes n’apparaissent que lorsqu’elles s’appliquent. Par exemple, Save All Open Tabs as a Group nécessite plus d’un onglet, et les commandes d’ancre ne sont pas disponibles dans une fenêtre ouverte depuis une ancre.

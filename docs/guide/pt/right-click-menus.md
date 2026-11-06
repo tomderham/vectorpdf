@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 80ea412de254 -->
+<!-- source: 0ebee28196fa -->
 
 # Menus do botão direito
 
@@ -42,7 +42,7 @@ Em um documento com [camadas](layers.md), o menu de uma anotação também tem *
 
 | Onde clicar com o botão direito | Comandos |
 | --- | --- |
-| O título do documento ou uma parte vazia da barra de ferramentas | Adicionar aos favoritos ou remover dos favoritos, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, e seus Grupos de Abas e favoritos |
+| O título do documento ou uma parte vazia da barra de ferramentas | Adicionar aos favoritos ou remover dos favoritos, Save All Open Tabs as a Group, Update Group “nome” with Open Tabs, Compare With (consulte [Comparar dois documentos](compare-documents.md)), e seus Grupos de Abas e favoritos |
 | Uma linha na tela Start | Open, Open in New Tab, Open in New Window, Show in Finder, e Remove ou Delete |
 
 Alguns comandos aparecem somente quando se aplicam. Por exemplo, Save All Open Tabs as a Group requer mais de uma aba, e os comandos de âncora não estão disponíveis em uma janela aberta a partir de uma âncora.

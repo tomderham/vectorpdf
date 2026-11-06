@@ -12,6 +12,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | File menu, or right-click the document's title and choose Compare With |
 | Insert Pages from PDF | ⌥⌘I, or right-click a thumbnail |
 | Duplicate Pages | ⇧⌘D, or right-click a thumbnail |
 | Save | ⌘S |
@@ -35,6 +36,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Next Page | ⌥Down Arrow, ⌥Right Arrow or Right Arrow |
 | First Page | ⌘Up Arrow or ⌘Home |
 | Last Page | ⌘Down Arrow or ⌘End |
+| Previous or Next Change, comparing documents | ⌥⌘Up Arrow or ⌥⌘Down Arrow, or the arrows in the Changes tab |
 | Forward or backward through the page | Space or ⇧Space |
 | Next Tab | ⇧⌘] or ⌃Tab |
 | Previous Tab | ⇧⌘[ or ⇧⌃Tab |

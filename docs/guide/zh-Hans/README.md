@@ -1,4 +1,4 @@
-<!-- source: e08761d6a9dd -->
+<!-- source: 656a91c48947 -->
 
 # VectorPDF 使用手册
 
@@ -23,6 +23,7 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 - [附加到 PDF 的文件](attachments.md)
 - [更改 PDF 颜色](pdf-colors.md)
 - [选择、拷贝和查询文本](select-text.md)
+- [比较两份文稿](compare-documents.md)
 
 ## 搜索
 

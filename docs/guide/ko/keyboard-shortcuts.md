@@ -1,5 +1,5 @@
 <!-- keywords: 키보드, 단축키, 키, 핫키, 제스처, 트랙패드, 마우스, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: bc2b0891b2b4 -->
+<!-- source: 62bd385b039a -->
 
 # 키보드 단축키
 
@@ -13,6 +13,7 @@
 | New Tab | ⌘T |
 | Open PDF | ⌘O |
 | Open PDF in New Tab | ⌥⌘O |
+| Compare Documents | File 메뉴, 또는 문서 제목을 오른쪽 클릭하고 Compare With 선택 |
 | Insert Pages from PDF | ⌥⌘I 또는 축소판을 오른쪽 클릭 |
 | Duplicate Pages | ⇧⌘D 또는 축소판을 오른쪽 클릭 |
 | Save | ⌘S |
@@ -36,6 +37,7 @@
 | Next Page | ⌥Down Arrow, ⌥Right Arrow 또는 Right Arrow |
 | First Page | ⌘Up Arrow 또는 ⌘Home |
 | Last Page | ⌘Down Arrow 또는 ⌘End |
+| 이전 또는 다음 변경 사항(문서 비교 중) | ⌥⌘Up Arrow 또는 ⌥⌘Down Arrow, 또는 Changes 탭의 화살표 |
 | 페이지 단위로 앞으로 또는 뒤로 이동 | Space 또는 ⇧Space |
 | Next Tab | ⇧⌘] 또는 ⌃Tab |
 | Previous Tab | ⇧⌘[ 또는 ⇧⌃Tab |
