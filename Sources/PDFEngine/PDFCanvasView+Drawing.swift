@@ -836,6 +836,18 @@ extension PDFCanvasView {
                     color.setFill()
                     path.fill()
                 }
+                // Text in another place in the other document: underlined, not filled, as the text
+                // itself is the same.
+                let zoom = viewModel.effectiveZoom
+                for rect in marks.moved[pageIdx] ?? [] {
+                    let start = canvasPoint(for: CGPoint(x: rect.minX, y: rect.maxY), pFrame: pFrame, pBounds: pBounds)
+                    let line = NSBezierPath()
+                    line.move(to: NSPoint(x: start.x, y: start.y + 1))
+                    line.line(to: NSPoint(x: start.x + rect.width * zoom, y: start.y + 1))
+                    line.lineWidth = max(1, 1.5 * min(zoom, 2))
+                    CompareMarks.movedColor.withAlphaComponent(0.8).setStroke()
+                    line.stroke()
+                }
                 // The change chosen in the Changes list, or with Next or Previous Change: filled more
                 // strongly (outlining each line would box in a long change line by line).
                 if let active = marks.active, active.pageIndex == pageIdx {

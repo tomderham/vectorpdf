@@ -31,6 +31,9 @@ public struct CompareMarks: Equatable {
     public var changed: [Int: [CGRect]] = [:]
     /// Thin markers where the other document has text this one doesn't.
     public var gaps: [Int: [CGRect]] = [:]
+    /// Text that's the same in the other document but in another place, a box per line:
+    /// underlined, as it isn't a change to the text.
+    public var moved: [Int: [CGRect]] = [:]
     /// The change chosen with Next or Previous Change.
     public var active: Active?
     /// The revision's side, shown in green; the original's is red.
@@ -41,8 +44,9 @@ public struct CompareMarks: Equatable {
         public let rects: [CGRect]
     }
 
-    public var isEmpty: Bool { changed.isEmpty && gaps.isEmpty && active == nil }
+    public var isEmpty: Bool { changed.isEmpty && gaps.isEmpty && moved.isEmpty && active == nil }
     var color: NSColor { isRevised ? .systemGreen : .systemRed }
+    static let movedColor = NSColor.systemBlue
 }
 
 /// A set-once flag that tells a comparison running off the main thread to stop.
@@ -86,12 +90,8 @@ public final class DocumentCompareSession: ObservableObject {
     @Published public private(set) var comparison: DocumentComparison?
     /// Index into the comparison's changes of the one chosen with Next or Previous Change.
     @Published public private(set) var currentChange: Int?
-    @Published public var options = CompareOptions() {
+    @Published public var options = CompareOptions(ignoresRenumbering: true) {
         didSet { if options != oldValue { compareText() } }
-    }
-    /// Whether scrolling one document scrolls the other to the matching text.
-    @Published public var isScrollingTogether = true {
-        didSet { if isScrollingTogether && !oldValue { follow(from: lastScrolled) } }
     }
 
     /// The share of the pane's height, from the top, where the line that's kept level in both
@@ -245,6 +245,8 @@ public final class DocumentCompareSession: ObservableObject {
         status = .comparing
         let texts = self.texts
         let options = self.options
+        // The comparison on show, of the same texts, which Ignore Renumbering can start from.
+        let previous = texts != nil ? comparison : nil
         let sources = [(originalDoc.filePath, original.currentDocumentPassword, original.ocrResults),
                        (revisedDoc.filePath, revised.currentDocumentPassword, revised.ocrResults)]
         Task.detached(priority: .userInitiated) { [weak self] in
@@ -255,7 +257,7 @@ public final class DocumentCompareSession: ObservableObject {
                     return (a, b)
                 }()
                 guard let read, !flag.isCancelled else { return nil }
-                return (read.0, read.1, DocumentComparison(original: read.0, revised: read.1, options: options))
+                return (read.0, read.1, DocumentComparison(original: read.0, revised: read.1, options: options, previous: previous))
             }
             await MainActor.run {
                 guard let self, generation == self.comparisonGeneration else { return }
@@ -281,6 +283,7 @@ public final class DocumentCompareSession: ObservableObject {
             viewModel(side).compareMarks = CompareMarks(
                 changed: comparison.highlights(on: side),
                 gaps: comparison.gapMarkers(on: side),
+                moved: comparison.highlights(on: side, for: comparison.moves),
                 isRevised: side == .revised
             )
         }
@@ -455,7 +458,7 @@ public final class DocumentCompareSession: ObservableObject {
     /// Scrolls the other document so the text matching the reading line of `side` is level with
     /// it.
     private func follow(from side: CompareSide) {
-        guard isScrollingTogether, let map = currentScrollMap(), let reading = readingOffset(side) else { return }
+        guard let map = currentScrollMap(), let reading = readingOffset(side) else { return }
         setReadingOffset(map.offset(reading, from: side), on: side.other, across: horizontalPosition(side))
     }
 
@@ -557,6 +560,13 @@ struct CompareOriginalPane: View {
 struct CompareChangesSidebar: View {
     @ObservedObject var session: DocumentCompareSession
 
+    /// Whether either document has links within it, which Ignore Renumbering follows. Until the
+    /// comparison is read, it may.
+    private var hasLinks: Bool {
+        guard let comparison = session.comparison else { return true }
+        return !comparison.original.links.isEmpty || !comparison.revised.links.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
@@ -564,8 +574,11 @@ struct CompareChangesSidebar: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle("Ignore Case", isOn: $session.options.ignoresCase)
                     Toggle("Ignore Punctuation", isOn: $session.options.ignoresPunctuation)
-                    Toggle("Scroll Together", isOn: $session.isScrollingTogether)
-                        .help("Scrolling one document scrolls the other to the same text")
+                    Toggle("Ignore Renumbering", isOn: $session.options.ignoresRenumbering)
+                        .help(hasLinks
+                              ? "Leaves out new clause, figure, table and page numbers in contents entries and cross-references that link to the same place in both, and in the headings and captions they link to"
+                              : "These documents have no links within them to follow, so renumbering can't be told apart from other changes")
+                        .disabled(!hasLinks)
                 }
                 .toggleStyle(.checkbox)
                 .controlSize(.small)
@@ -674,6 +687,12 @@ struct CompareChangesSidebar: View {
                     if comparison.changes.isEmpty {
                         Text("No differences in the text")
                             .font(.callout.weight(.semibold))
+                    }
+                    if !comparison.moves.isEmpty {
+                        Text(comparison.moves.count == 1 ? "1 passage in another place, underlined" : "\(comparison.moves.count) passages in another place, underlined")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .help("Text that's the same in both documents but in another place, such as a table that falls on the other side of a page break. It isn't counted as a change.")
                     }
                     if let warning = Self.warning(for: comparison) {
                         Text(warning)

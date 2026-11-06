@@ -111,6 +111,32 @@ struct SearchBenchmarkTests {
         #expect(comparison.similarity > 0.95)
     }
 
+    /// Compare Documents on two revisions of your own, given by `VECTORPDF_COMPARE_ORIGINAL` and
+    /// `VECTORPDF_COMPARE_REVISED`, with each option and without: the time each diff takes and
+    /// the changes it finds.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["VECTORPDF_COMPARE_ORIGINAL"] != nil))
+    func compareGivenDocuments() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let originalPath = try #require(environment["VECTORPDF_COMPARE_ORIGINAL"])
+        let revisedPath = try #require(environment["VECTORPDF_COMPARE_REVISED"])
+        let start = Date()
+        let original = try #require(try ComparedText.load(filePath: originalPath))
+        let revised = try #require(try ComparedText.load(filePath: revisedPath))
+        print(String(format: "CompareBenchmark: %d and %d pages, %d and %d words, %d and %d links: read in %.0f ms",
+                     original.pageCount, revised.pageCount, original.words.count, revised.words.count,
+                     original.links.count, revised.links.count, Date().timeIntervalSince(start) * 1000))
+        var previous: DocumentComparison?
+        for (label, options, reuse) in [("plain", CompareOptions(), false),
+                                        ("ignoring renumbering", CompareOptions(ignoresRenumbering: true), false),
+                                        ("ignoring renumbering, from the plain one", CompareOptions(ignoresRenumbering: true), true)] {
+            let diffStart = Date()
+            let comparison = DocumentComparison(original: original, revised: revised, options: options, previous: reuse ? previous : nil)
+            print(String(format: "CompareBenchmark: %@: diffed in %.0f ms; %d changes, %d moves, similarity %.4f",
+                         label, Date().timeIntervalSince(diffStart) * 1000, comparison.changes.count, comparison.moves.count, comparison.similarity))
+            if previous == nil { previous = comparison }
+        }
+    }
+
     private static func residentMemory() -> UInt64 {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)

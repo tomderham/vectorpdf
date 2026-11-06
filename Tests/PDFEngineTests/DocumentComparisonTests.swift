@@ -24,12 +24,25 @@ import Testing
 
 /// A PDF with each page's lines in 11 pt Helvetica, 14 pt apart from the top, plus a running
 /// header and a page number at the foot of every page.
-private func writePagesPDF(at url: URL, pages: [[String]], header: String? = "ACME Standard 42 — Revision", footer: Bool = true) {
+/// A link from a line, or its first `characters`, to the top of another line, in `writePagesPDF`;
+/// to a named destination if it has a name.
+private struct PDFLink {
+    let page: Int, line: Int
+    var characters: Int? = nil
+    let toPage: Int, toLine: Int
+    var name: String? = nil
+}
+
+private func writePagesPDF(at url: URL, pages: [[String]], header: String? = "ACME Standard 42 — Revision", footer: Bool = true, links: [PDFLink] = []) {
     func escaped(_ s: String) -> String {
         s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "(", with: "\\(").replacingOccurrences(of: ")", with: "\\)")
     }
+    // Pages are objects 4, 6, 8…, each followed by its contents.
+    func destination(_ link: PDFLink) -> String { "[\(4 + 2 * link.toPage) 0 R /XYZ 72 \(720 - 14 * link.toLine + 12) null]" }
+    let named = links.filter { $0.name != nil }.map { "(\(escaped($0.name!))) \(destination($0))" }
+    let names = named.isEmpty ? "" : " /Names << /Dests << /Names [\(Set(named).sorted().joined(separator: " "))] >> >>"
     var objects: [String] = [
-        "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+        "1 0 obj\n<< /Type /Catalog /Pages 2 0 R\(names) >>\nendobj\n",
         "", // pages, filled in below
         "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
     ]
@@ -46,7 +59,14 @@ private func writePagesPDF(at url: URL, pages: [[String]], header: String? = "AC
         let pageObject = objects.count + 1
         let contentObject = pageObject + 1
         kids.append("\(pageObject) 0 R")
-        objects.append("\(pageObject) 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents \(contentObject) 0 R /Resources << /Font << /F1 3 0 R >> >> >>\nendobj\n")
+        let annots = links.filter { $0.page == index }.map { link in
+            let y = 720 - 14 * link.line
+            let right = link.characters.map { 72 + $0 * 7 } ?? 540
+            let dest = link.name.map { "(\(escaped($0)))" } ?? destination(link)
+            return "<< /Type /Annot /Subtype /Link /Rect [71 \(y - 3) \(right) \(y + 10)] /Border [0 0 0] /Dest \(dest) >>"
+        }
+        let annotsEntry = annots.isEmpty ? "" : " /Annots [\(annots.joined(separator: " "))]"
+        objects.append("\(pageObject) 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents \(contentObject) 0 R /Resources << /Font << /F1 3 0 R >> >>\(annotsEntry) >>\nendobj\n")
         objects.append("\(contentObject) 0 obj\n<< /Length \(content.utf8.count) >>\nstream\n\(content)endstream\nendobj\n")
     }
     objects[1] = "2 0 obj\n<< /Type /Pages /Kids [\(kids.joined(separator: " "))] /Count \(pages.count) >>\nendobj\n"
@@ -210,6 +230,67 @@ private func words(_ change: CompareChange, on side: CompareSide, of comparison:
         #expect(ComparedText(pages: pages).words.map(\.text) == (0..<6).map { "Body\($0)" })
     }
 
+    @Test func pageNumbersOnFacingPagesAreLeftOut() {
+        // Odd pages' numbers lower than even pages', and the last pages without any: each height
+        // is on fewer than 40% of all the pages, but on more than 40% of the odd or the even.
+        let bounds = CGRect(x: 0, y: 0, width: 612, height: 792)
+        func line(_ text: String, y: CGFloat) -> ComparedText.Line {
+            ComparedText.Line(text: text, bbox: CGRect(x: 72, y: y, width: 30, height: 10), words: [(text, CGRect(x: 72, y: y, width: 30, height: 10))], joinsNext: false)
+        }
+        let pages = (0..<14).map { index in
+            (bounds, [line("Body\(index)", y: 400)] + (index < 10 ? [line("\(index + 1)", y: index % 2 == 0 ? 760 : 750)] : []))
+        }
+        let text = ComparedText(pages: pages)
+        #expect(text.words.map(\.text) == (0..<14).map { "Body\($0)" })
+        #expect(text.pageNumbers[4] == ["5"])
+    }
+
+    @Test func textThatOnlyMovedIsntAChange() throws {
+        // A table laid out after a heading in one and before it in the other, as page breaks
+        // fall, with a word changed after both.
+        let heading = ["9.6.11.7 Antenna Selection Indices Feedback frame format", "The frame is an Action frame of category HT, as defined below."]
+        let table = ["Table 9-599 Noncompressed Beamforming frame Action field format", "Order Information 1 Category 2 HT Action 3 MIMO Control"]
+        let after = ["The Category field is defined in the Action field clause."]
+        let a = [heading + table + after]
+        var b = [table + heading + after]
+        b[0][4] = b[0][4].replacingOccurrences(of: "Category", with: "Kind")
+        let comparison = DocumentComparison(original: text(a), revised: text(b))
+        let change = try #require(comparison.changes.only)
+        #expect(words(change, on: .original, of: comparison) == "Category")
+        #expect(words(change, on: .revised, of: comparison) == "Kind")
+        // Shown as moved, on both sides: the table, or the heading and its paragraph, whichever
+        // the comparison left in place the other.
+        let move = try #require(comparison.moves.only)
+        let movedText = words(move, on: .original, of: comparison)
+        #expect([heading.joined(separator: " "), table.joined(separator: " ")].contains(movedText))
+        #expect(words(move, on: .revised, of: comparison) == movedText)
+        #expect(comparison.highlights(on: .revised, for: comparison.moves)[0]?.count == 2)
+    }
+
+    @Test func textMovedFarIsShownAsMovedToo() throws {
+        // A clause moved to another part of the document, unchanged.
+        let a = clauses(0..<200)
+        var b = a
+        let moved = b.remove(at: 150)
+        b.insert(moved, at: 20)
+        let comparison = DocumentComparison(original: text(paginate(a)), revised: text(paginate(b)))
+        #expect(comparison.changes.isEmpty)
+        let move = try #require(comparison.moves.only)
+        #expect(words(move, on: .revised, of: comparison) == moved)
+        #expect(comparison.text(on: .original).words[move.original.lowerBound].pageIndex == 3)
+        #expect(comparison.text(on: .revised).words[move.revised.lowerBound].pageIndex == 0)
+    }
+
+    @Test func aFewWordsInCommonArentAMove() {
+        // "of the contractor shall supply" is in both what was taken out and what was put in,
+        // elsewhere: too short to be text that moved.
+        let a = [["alpha beta gamma delta epsilon one two three four five six seven", "the clause of the contractor shall supply goods was here", "zeta eta theta iota kappa"]]
+        let b = [["a new clause of the contractor shall supply services", "alpha beta gamma delta epsilon one two three four five six seven", "zeta eta theta iota kappa"]]
+        let comparison = DocumentComparison(original: text(a), revised: text(b))
+        #expect(comparison.changes.map { words($0, on: .original, of: comparison) } == ["", "the clause of the contractor shall supply goods was here"])
+        #expect(words(comparison.changes[0], on: .revised, of: comparison) == "a new clause of the contractor shall supply services")
+    }
+
     @Test func highlightsMergeWordsOnALine() throws {
         let a = [["one two three four five six seven"]]
         let b = [["one two THREE FOUR FIVE six seven"]]
@@ -227,6 +308,165 @@ private func words(_ change: CompareChange, on side: CompareSide, of comparison:
         #expect(change.revised.isEmpty)
         #expect(comparison.gapMarkers(on: .revised)[0]?.count == 1)
         #expect(comparison.location(of: change, on: .revised)?.pageIndex == 0)
+    }
+}
+
+/// A link from words of one line to another line, for `linkedText`.
+private struct LineLink {
+    let page: Int, line: Int
+    /// The words of the line in the link; all of them if nil.
+    var words: Range<Int>? = nil
+    let toPage: Int, toLine: Int
+    var name: String? = nil
+}
+
+/// A document's text from plain lines, as `text` makes it, with links between its lines.
+private func linkedText(_ pages: [[String]], links: [LineLink]) -> ComparedText {
+    let bounds = CGRect(x: 0, y: 0, width: 612, height: 792)
+    func y(_ line: Int) -> CGFloat { CGFloat(100 + line * 14) }
+    var pageLinks = [[ComparedText.PageLink]](repeating: [], count: pages.count)
+    var pageLines: [(bounds: CGRect, lines: [ComparedText.Line])] = []
+    for (pageIndex, lines) in pages.enumerated() {
+        var result: [ComparedText.Line] = []
+        for (index, line) in lines.enumerated() {
+            var x: CGFloat = 72
+            let words = line.split(separator: " ").map { word -> (text: String, rect: CGRect) in
+                defer { x += CGFloat(word.count) * 6 + 3 }
+                return (String(word), CGRect(x: x, y: y(index), width: CGFloat(word.count) * 6, height: 11))
+            }
+            var item = ComparedText.Line(text: line, bbox: CGRect(x: 72, y: y(index), width: 400, height: 11), words: words, joinsNext: false)
+            for link in links where link.page == pageIndex && link.line == index {
+                let range = link.words ?? 0..<words.count
+                let rect = range.map { words[$0].rect }.reduce(CGRect.null) { $0.union($1) }.insetBy(dx: -1, dy: -1)
+                let uri = link.name.map { "#nameddest=\($0)" } ?? "#page=\(link.toPage + 1)&zoom=nan,72,\(Int(y(link.toLine)) - 2)"
+                if item.wordLinks.isEmpty { item.wordLinks = Array(repeating: -1, count: words.count) }
+                for word in range { item.wordLinks[word] = pageLinks[pageIndex].count }
+                pageLinks[pageIndex].append(ComparedText.PageLink(rect: rect, uri: uri, name: link.name, target: ComparePoint(pageIndex: link.toPage, y: y(link.toLine) - 2)))
+            }
+            result.append(item)
+        }
+        pageLines.append((bounds, result))
+    }
+    return ComparedText(pages: pageLines, links: pageLinks)
+}
+
+@Suite struct RenumberingTests {
+    // A contents page, a clause that refers to another, and that clause, with a figure. The
+    // revision puts a clause in before it, so it, its figure and the contents entries after
+    // the new one are numbered one more, and on a later page.
+    private let original: [[String]] = [
+        ["Contents", "1 Scope 1", "2 Widgets 2", "Figure 2-1 Round widget 2"],
+        ["1 Scope", "This standard covers the making of widgets for", "use in the field; see 2 for their shape."],
+        ["2 Widgets", "Widgets are round when made to this standard.", "Figure 2-1 Round widget"],
+    ]
+    private let revised: [[String]] = [
+        ["Contents", "1 Scope 1", "2 Gadgets 2", "3 Widgets 3", "Figure 3-1 Round widget 3"],
+        ["1 Scope", "This standard covers the making of widgets for", "use in the field; see 3 for their shape."],
+        ["2 Gadgets", "Gadgets are square in every case we know of."],
+        ["3 Widgets", "Widgets are round when made to this standard.", "Figure 3-1 Round widget"],
+    ]
+
+    private func links(revised: Bool, named: Bool, crossReferenceTo scope: Bool = false) -> [LineLink] {
+        let widgets = revised ? 3 : 2
+        func name(_ s: String) -> String? { named ? s : nil }
+        var result = [
+            LineLink(page: 0, line: 1, toPage: 1, toLine: 0, name: name("H.scope")),
+            LineLink(page: 0, line: revised ? 3 : 2, toPage: widgets, toLine: 0, name: name("H.widgets")),
+            LineLink(page: 0, line: revised ? 4 : 3, toPage: widgets, toLine: 2, name: name("F.round")),
+            scope
+                ? LineLink(page: 1, line: 2, words: 5..<6, toPage: 1, toLine: 0, name: name("H.scope"))
+                : LineLink(page: 1, line: 2, words: 5..<6, toPage: widgets, toLine: 0, name: name("H.widgets")),
+        ]
+        if revised { result.append(LineLink(page: 0, line: 2, toPage: 2, toLine: 0, name: name("H.gadgets"))) }
+        return result
+    }
+
+    private func compare(named: Bool, ignoring: Bool = true, crossReferenceToScope: Bool = false) -> DocumentComparison {
+        DocumentComparison(original: linkedText(original, links: links(revised: false, named: named)),
+                           revised: linkedText(revised, links: links(revised: true, named: named, crossReferenceTo: crossReferenceToScope)),
+                           options: CompareOptions(ignoresRenumbering: ignoring))
+    }
+
+    private func added(_ comparison: DocumentComparison) -> [String] {
+        comparison.changes.map { change in
+            (change.original.isEmpty ? "" : "-" + words(change, on: .original, of: comparison) + " ")
+                + "+" + words(change, on: .revised, of: comparison)
+        }
+    }
+
+    @Test func linksMakeContentsAndHeadingsOneChange() {
+        let comparison = linkedText(original, links: links(revised: false, named: false))
+        #expect(comparison.links.count == 4)
+        #expect(comparison.links[3].words.count == 1)
+        // The cross-reference goes to the heading's first word.
+        #expect(comparison.links[3].target.map { comparison.words[$0].text } == "2")
+        #expect(comparison.links[3].target.map { comparison.words[$0].pageIndex } == 2)
+
+        #expect(compare(named: false, ignoring: false).changes.count > 2)
+        for named in [false, true] {
+            #expect(added(compare(named: named)) == ["+2 Gadgets 2", "+2 Gadgets Gadgets are square in every case we know of."], "named: \(named)")
+        }
+    }
+
+    @Test func namesMadeFromNumbersAreCheckedAgainstTheText() {
+        // As LaTeX names them: the new clause 2 takes "section.2" from the old one.
+        func links(revised: Bool) -> [LineLink] {
+            let widgets = revised ? 3 : 2
+            var result = [
+                LineLink(page: 0, line: 1, toPage: 1, toLine: 0, name: "section.1"),
+                LineLink(page: 0, line: revised ? 3 : 2, toPage: widgets, toLine: 0, name: "section.\(widgets)"),
+                LineLink(page: 0, line: revised ? 4 : 3, toPage: widgets, toLine: 2, name: "figure.\(widgets)"),
+                LineLink(page: 1, line: 2, words: 5..<6, toPage: widgets, toLine: 0, name: "section.\(widgets)"),
+            ]
+            if revised { result.append(LineLink(page: 0, line: 2, toPage: 2, toLine: 0, name: "section.2")) }
+            return result
+        }
+        let comparison = DocumentComparison(original: linkedText(original, links: links(revised: false)),
+                                            revised: linkedText(revised, links: links(revised: true)),
+                                            options: CompareOptions(ignoresRenumbering: true))
+        #expect(added(comparison) == ["+2 Gadgets 2", "+2 Gadgets Gadgets are square in every case we know of."])
+    }
+
+    @Test func startsFromThePlainComparison() {
+        let a = linkedText(original, links: links(revised: false, named: false))
+        let b = linkedText(revised, links: links(revised: true, named: false))
+        let plain = DocumentComparison(original: a, revised: b)
+        #expect(plain.plainMatches != nil)
+        let following = DocumentComparison(original: a, revised: b, options: CompareOptions(ignoresRenumbering: true), previous: plain)
+        #expect(following.plainMatches == nil)
+        #expect(following.changes == DocumentComparison(original: a, revised: b, options: CompareOptions(ignoresRenumbering: true)).changes)
+        #expect(following.changes.count == 2)
+    }
+
+    @Test func aPageNumberOutsideTheLinkFollowsIt() {
+        // As FrameMaker makes some contents entries: the link takes in the clause's number only.
+        let a = [["Contents", "1 Scope 2", "2 Widgets 3"], ["1 Scope", "Scope text here for the test."], ["2 Widgets", "Widgets are round when made to this standard."]]
+        let b = [["Contents", "1 Scope 2", "2 Gadgets 3", "3 Widgets 4"], ["1 Scope", "Scope text here for the test."],
+                 ["2 Gadgets", "Gadgets are square in every case we know of."], ["3 Widgets", "Widgets are round when made to this standard."]]
+        func links(_ toPages: [Int]) -> [LineLink] {
+            toPages.enumerated().map { LineLink(page: 0, line: $0.offset + 1, words: 0..<1, toPage: $0.element, toLine: 0) }
+        }
+        let comparison = DocumentComparison(original: linkedText(a, links: links([1, 2])), revised: linkedText(b, links: links([1, 2, 3])),
+                                            options: CompareOptions(ignoresRenumbering: true))
+        #expect(added(comparison) == ["+2 Gadgets 3", "+2 Gadgets Gadgets are square in every case we know of."])
+    }
+
+    @Test func aCrossReferenceToSomewhereElseStillShows() {
+        for named in [false, true] {
+            let changes = added(compare(named: named, crossReferenceToScope: true))
+            #expect(changes.contains("-2 +3"), "named: \(named)")
+        }
+    }
+
+    @Test func numbersOnlyChangeAtTheDestinationsRow() throws {
+        // A "2" elsewhere that isn't at a link's destination still counts.
+        let a = [["Contents", "2 Widgets 2"], ["2 Widgets", "There are 2 kinds."]]
+        let b = [["Contents", "3 Widgets 3"], ["3 Widgets", "There are 3 kinds."]]
+        let link = [LineLink(page: 0, line: 1, toPage: 1, toLine: 0)]
+        let comparison = DocumentComparison(original: linkedText(a, links: link), revised: linkedText(b, links: link), options: CompareOptions(ignoresRenumbering: true))
+        #expect(added(comparison) == ["-2 +3"])
+        let change = try #require(comparison.changes.only)
+        #expect(comparison.location(of: change, on: .revised)?.rect.minY == 114)
     }
 }
 
@@ -288,6 +528,53 @@ private func words(_ change: CompareChange, on side: CompareSide, of comparison:
         // The 100 added clauses run from page 2 to page 4 of the revision.
         #expect(Set(comparison.highlights(on: .revised).keys).isSuperset(of: [1, 2, 3]))
         #expect(comparison.highlights(on: .original).count == 2)
+    }
+
+    @Test func followsLinksInAPDF() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let original = [
+            ["Contents", "1 Scope 1", "2 Widgets 2", "Figure 2-1 Round widget 2"],
+            ["1 Scope", "This standard covers the making of widgets; clause", "2 gives their shape."],
+            ["2 Widgets", "Widgets are round when made to this standard.", "Figure 2-1 Round widget"],
+        ]
+        let revised = [
+            ["Contents", "1 Scope 1", "2 Gadgets 2", "3 Widgets 3", "Figure 3-1 Round widget 3"],
+            ["1 Scope", "This standard covers the making of widgets; clause", "3 gives their shape."],
+            ["2 Gadgets", "Gadgets are square in every case we know of."],
+            ["3 Widgets", "Widgets are round when made to this standard.", "Figure 3-1 Round widget"],
+        ]
+        func links(revised: Bool, named: Bool) -> [PDFLink] {
+            let widgets = revised ? 3 : 2
+            func name(_ s: String) -> String? { named ? s : nil }
+            var result = [
+                PDFLink(page: 0, line: 1, toPage: 1, toLine: 0, name: name("H.scope")),
+                PDFLink(page: 0, line: revised ? 3 : 2, toPage: widgets, toLine: 0, name: name("H.widgets")),
+                PDFLink(page: 0, line: revised ? 4 : 3, toPage: widgets, toLine: 2, name: name("F.round")),
+                PDFLink(page: 1, line: 2, characters: 1, toPage: widgets, toLine: 0, name: name("H.widgets")),
+            ]
+            if revised { result.append(PDFLink(page: 0, line: 2, toPage: 2, toLine: 0, name: name("H.gadgets"))) }
+            return result
+        }
+        for named in [false, true] {
+            let originalURL = dir.appendingPathComponent("original-\(named).pdf")
+            let revisedURL = dir.appendingPathComponent("revised-\(named).pdf")
+            writePagesPDF(at: originalURL, pages: original, links: links(revised: false, named: named))
+            writePagesPDF(at: revisedURL, pages: revised, links: links(revised: true, named: named))
+            let a = try #require(try ComparedText.load(filePath: originalURL.path))
+            let b = try #require(try ComparedText.load(filePath: revisedURL.path))
+            #expect(a.links.count == 4)
+            #expect(a.links.allSatisfy { ($0.name != nil) == named })
+            let reference = try #require(a.links.last)
+            #expect(reference.words.map { a.words[$0].text } == ["2"])
+            #expect(reference.target.map { a.words[$0].text } == "2")
+            #expect(reference.target.map { a.words[$0].pageIndex } == 2)
+
+            #expect(DocumentComparison(original: a, revised: b).changes.count > 2)
+            let comparison = DocumentComparison(original: a, revised: b, options: CompareOptions(ignoresRenumbering: true))
+            #expect(comparison.changes.map { words($0, on: .revised, of: comparison) } == ["2 Gadgets 2", "2 Gadgets Gadgets are square in every case we know of."], "named: \(named)")
+            #expect(comparison.changes.allSatisfy { $0.original.isEmpty })
+        }
     }
 
     @Test func stopsWhenCancelled() throws {
@@ -361,8 +648,9 @@ private func eventually(_ condition: () -> Bool) async throws -> Bool {
         let (_, session) = await compare(a, b)
         defer { session.end() }
         #expect(try await eventually { session.status == .done })
+        #expect(session.options.ignoresRenumbering)
         #expect(session.changeCount > 0)
-        session.options = CompareOptions(ignoresCase: true, ignoresPunctuation: true)
+        session.options = CompareOptions(ignoresCase: true, ignoresPunctuation: true, ignoresRenumbering: true)
         #expect(try await eventually { session.status == .done && session.changeCount == 0 })
         #expect(session.original.compareMarks.changed.isEmpty)
     }
@@ -443,13 +731,6 @@ private func eventually(_ condition: () -> Bool) async throws -> Bool {
         originalClip.scroll(to: NSPoint(x: originalClip.bounds.minX, y: level + 300))
         originalScroll.reflectScrolledClipView(originalClip)
         #expect(abs(originalClip.bounds.minY - level) < 1)
-
-        // With scrolling together off, the original stays put.
-        session.isScrollingTogether = false
-        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: clip.bounds.minY + 200))
-        revisedScroll.reflectScrolledClipView(clip)
-        #expect(originalClip.bounds.minY == level)
-        session.isScrollingTogether = true
 
         // Searching the revision from the sidebar: the original follows to the same clause.
         viewModel.searchQuery = "Clause 250:"

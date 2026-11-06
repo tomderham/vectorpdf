@@ -31,10 +31,18 @@ import MuPDFBridge
 public struct CompareOptions: Sendable, Equatable {
     public var ignoresCase: Bool
     public var ignoresPunctuation: Bool
+    /// Leave out numbers that changed only because others were added or removed before them:
+    /// in links that go to the same place in both documents (contents entries, cross-references),
+    /// and the same change of number at the place they go to (the heading or caption). Which
+    /// links go to the same place comes from the documents themselves, not from what the text
+    /// looks like: a destination named the same in both (FrameMaker keeps the names from one
+    /// revision to the next), or else destinations at text the comparison has matched.
+    public var ignoresRenumbering: Bool
 
-    public init(ignoresCase: Bool = false, ignoresPunctuation: Bool = false) {
+    public init(ignoresCase: Bool = false, ignoresPunctuation: Bool = false, ignoresRenumbering: Bool = false) {
         self.ignoresCase = ignoresCase
         self.ignoresPunctuation = ignoresPunctuation
+        self.ignoresRenumbering = ignoresRenumbering
     }
 
     /// The form of `word` that's compared; empty for a word these options leave out entirely.
@@ -80,6 +88,26 @@ public struct CompareWord: Sendable, Equatable {
     }
 }
 
+/// A link within a compared document, such as a contents entry or a cross-reference: the words
+/// it covers and where it goes.
+public struct CompareLink: Sendable, Equatable {
+    /// The words it covers, in the document's words; never empty.
+    public let words: Range<Int>
+    /// The named destination it goes to, if it goes to one rather than to a page and position.
+    public let name: String?
+    /// The first word at the place it goes to, if there's text there.
+    public let target: Int?
+    /// The page it goes to.
+    public let targetPage: Int?
+
+    public init(words: Range<Int>, name: String?, target: Int?, targetPage: Int? = nil) {
+        self.words = words
+        self.name = name
+        self.target = target
+        self.targetPage = targetPage
+    }
+}
+
 /// A document's text as compared: its words in reading order, without running headers, footers,
 /// page numbers or margin line numbers.
 public struct ComparedText: Sendable {
@@ -87,11 +115,18 @@ public struct ComparedText: Sendable {
     public let pageCount: Int
     /// Pages with no text at all, such as scans without OCR, where the comparison can't follow.
     public let pagesWithoutText: Int
+    /// Its links to other places in it, in document order, none overlapping.
+    public let links: [CompareLink]
+    /// By page, the numbers it goes by: its label (by default, its position from 1) and the
+    /// numbers in its running header and footer, which can count from a later page.
+    public let pageNumbers: [Set<String>]
 
-    public init(words: [CompareWord], pageCount: Int, pagesWithoutText: Int = 0) {
+    public init(words: [CompareWord], pageCount: Int, pagesWithoutText: Int = 0, links: [CompareLink] = [], pageNumbers: [Set<String>] = []) {
         self.words = words
         self.pageCount = pageCount
         self.pagesWithoutText = pagesWithoutText
+        self.links = links
+        self.pageNumbers = pageNumbers
     }
 }
 
@@ -151,17 +186,26 @@ public struct DocumentComparison: Sendable {
     public let revised: ComparedText
     /// In document order.
     public let changes: [CompareChange]
+    /// Text that's the same in both, but in another place: in the revision's order. Not among
+    /// `changes`, as the text itself didn't change.
+    public let moves: [CompareChange]
     /// The matched lines, in the original's reading order.
     public let anchors: [CompareAnchor]
     /// Words common to both, as a share of the longer document's words: 1 for the same text.
     public let similarity: Double
+    /// How these options compare words, apart from renumbering, and for each word of the
+    /// original the word of the revision it's matched to (or -1), comparing them so: the plain
+    /// comparison Ignore Renumbering starts from, kept to start from again. Nil when renumbering
+    /// was ignored, or there are no links to follow.
+    let plainMatches: (options: CompareOptions, revisedOf: [Int32])?
 
     public func text(on side: CompareSide) -> ComparedText {
         side == .original ? original : revised
     }
 
-    /// Compares two documents' words.
-    public init(original: ComparedText, revised: ComparedText, options: CompareOptions = CompareOptions()) {
+    /// Compares two documents' words. With ignoresRenumbering, `previous`, a comparison of the
+    /// same two documents, saves comparing them plainly first if it did (see `plainMatches`).
+    public init(original: ComparedText, revised: ComparedText, options: CompareOptions = CompareOptions(), previous: DocumentComparison? = nil) {
         self.original = original
         self.revised = revised
 
@@ -169,59 +213,381 @@ public struct DocumentComparison: Sendable {
         // out (punctuation, with ignoresPunctuation) aren't compared: they are part of whatever
         // change is around them, or of nothing.
         var ids: [String: Int32] = [:]
-        func tokens(_ words: [CompareWord]) -> (tokens: [Int32], wordIndex: [Int]) {
-            var tokens: [Int32] = []
-            var wordIndex: [Int] = []
-            tokens.reserveCapacity(words.count)
-            wordIndex.reserveCapacity(words.count)
-            for (index, word) in words.enumerated() {
-                let key = options.key(for: word.text)
-                guard !key.isEmpty else { continue }
-                let id: Int32
-                if let known = ids[key] {
-                    id = known
-                } else {
-                    id = Int32(ids.count)
-                    ids[key] = id
-                }
-                tokens.append(id)
-                wordIndex.append(index)
-            }
-            return (tokens, wordIndex)
+        func id(_ key: String) -> Int32 {
+            if let known = ids[key] { return known }
+            let id = Int32(ids.count)
+            ids[key] = id
+            return id
         }
-        let a = tokens(original.words)
-        let b = tokens(revised.words)
-        let tokenMatches = TextDiff.matches(a.tokens, b.tokens)
+        // By the word as it appears: far fewer than the words, and finding a word's key takes
+        // longer than looking it up. -1 for a word left out.
+        var idOfWord: [String: Int32] = [:]
+        func tokens(_ text: ComparedText) -> Tokens {
+            var result = Tokens()
+            result.tokens.reserveCapacity(text.words.count)
+            result.wordIndex.reserveCapacity(text.words.count)
+            result.compared = [Bool](repeating: false, count: text.words.count)
+            for (index, word) in text.words.enumerated() {
+                let wordID: Int32
+                if let known = idOfWord[word.text] {
+                    wordID = known
+                } else {
+                    let key = options.key(for: word.text)
+                    wordID = key.isEmpty ? -1 : id(key)
+                    idOfWord[word.text] = wordID
+                }
+                guard wordID >= 0 else { continue }
+                result.tokens.append(wordID)
+                result.wordIndex.append(index)
+                result.compared[index] = true
+            }
+            result.link = [Int32](repeating: -1, count: result.tokens.count)
+            return result
+        }
+        // `plain` with each link one token, by its key, where the other document has a link with
+        // that key; a link without one is compared as its words, as it would be plainly.
+        func collapsingLinks(_ plain: Tokens, _ text: ComparedText, keys: [String], isPaired: (String) -> Bool) -> Tokens {
+            var result = Tokens()
+            result.tokens.reserveCapacity(plain.tokens.count)
+            result.wordIndex.reserveCapacity(plain.tokens.count)
+            result.link.reserveCapacity(plain.tokens.count)
+            result.compared = plain.compared
+            var token = 0
+            for (index, link) in text.links.enumerated() where isPaired(keys[index]) {
+                while token < plain.tokens.count, plain.wordIndex[token] < link.words.lowerBound {
+                    result.tokens.append(plain.tokens[token])
+                    result.wordIndex.append(plain.wordIndex[token])
+                    result.link.append(-1)
+                    token += 1
+                }
+                result.tokens.append(id("\u{1}link:" + keys[index]))
+                result.wordIndex.append(link.words.lowerBound)
+                result.link.append(Int32(index))
+                for word in link.words { result.compared[word] = false }
+                result.compared[link.words.lowerBound] = true
+                while token < plain.tokens.count, plain.wordIndex[token] < link.words.upperBound { token += 1 }
+            }
+            result.tokens.append(contentsOf: plain.tokens[token...])
+            result.wordIndex.append(contentsOf: plain.wordIndex[token...])
+            result.link.append(contentsOf: repeatElement(-1, count: plain.tokens.count - token))
+            return result
+        }
+        var a = tokens(original)
+        var b = tokens(revised)
+        let hasLinks = !original.links.isEmpty || !revised.links.isEmpty
+        var plainOptions = options
+        plainOptions.ignoresRenumbering = false
+        // Revised words compared as the original's, by ignoresRenumbering, and as which word.
+        var renumbered: [Int: String] = [:]
+        if options.ignoresRenumbering, hasLinks {
+            let plain: [Int32]
+            if let previous = previous?.plainMatches, previous.options == plainOptions, previous.revisedOf.count == original.words.count {
+                plain = previous.revisedOf
+            } else {
+                plain = Self.revisedOf(TextDiff.matches(a.tokens, b.tokens), a, b, count: original.words.count)
+            }
+            let keys = Self.linkKeys(original: original, revised: revised, plain: plain, a, b, key: options.key(for:))
+            func isPaired(_ key: String) -> Bool { keys.links[key].map { !$0.original.isEmpty && !$0.revised.isEmpty } == true }
+            a = collapsingLinks(a, original, keys: keys.original, isPaired: isPaired)
+            b = collapsingLinks(b, revised, keys: keys.revised, isPaired: isPaired)
+            renumbered = Self.renumberTargets(&b, a, original: original, revised: revised, keys: keys, key: options.key(for:), id: { ids[$0] })
+        }
+        let ordered = TextDiff.matches(a.tokens, b.tokens)
+        self.plainMatches = !options.ignoresRenumbering && hasLinks ? (plainOptions, Self.revisedOf(ordered, a, b, count: original.words.count)) : nil
+        let (tokenMatches, moved, moves) = Self.findingMoves(Self.slidToLines(ordered, a, b, original: original, revised: revised), a, b, original: original, revised: revised)
+        self.moves = moves
         let matches = tokenMatches.map { (a.wordIndex[$0.0], b.wordIndex[$0.1]) }
+        // A link's other words are compared with it: those of a link matched are matched, and
+        // those of one that isn't are part of the change.
+        func withUnmatchedLinks(_ tokens: inout Tokens, _ text: ComparedText, matched: [Int]) {
+            var isMatched = [Bool](repeating: false, count: tokens.tokens.count)
+            for token in matched { isMatched[token] = true }
+            for (token, link) in tokens.link.enumerated() where link >= 0 && !isMatched[token] {
+                for word in text.links[Int(link)].words { tokens.compared[word] = true }
+            }
+        }
+        if a.link.contains(where: { $0 >= 0 }) || b.link.contains(where: { $0 >= 0 }) {
+            withUnmatchedLinks(&a, original, matched: tokenMatches.map(\.0))
+            withUnmatchedLinks(&b, revised, matched: tokenMatches.map(\.1))
+        }
 
-        let changes = Self.changes(from: matches, originalCount: original.words.count, revisedCount: revised.words.count, isComparedOriginal: Set(a.wordIndex), isComparedRevised: Set(b.wordIndex))
-        self.changes = changes.map { Self.slidToLineStart($0, original: original.words, revised: revised.words, options: options) }
+        let changes = Self.changes(from: matches, originalCount: original.words.count, revisedCount: revised.words.count, isComparedOriginal: a.compared, isComparedRevised: b.compared, moved: moved)
+        self.changes = changes.map { Self.slidToLineStart($0, original: original.words, revised: revised.words, options: options, renumbered: renumbered) }
         self.anchors = Self.anchors(from: matches, original: original.words, revised: revised.words)
         let longer = max(a.tokens.count, b.tokens.count)
         self.similarity = longer == 0 ? 1 : Double(tokenMatches.count) / Double(longer)
+    }
+
+    /// A document's words as compared: each a number, the same for words compared as equal.
+    struct Tokens {
+        var tokens: [Int32] = []
+        /// The word each token stands for (a link's first word, for a link).
+        var wordIndex: [Int] = []
+        /// The link each token stands for, in the document's links; -1 for a word.
+        var link: [Int32] = []
+        /// By word, whether it's compared: all but those the options leave out, and the words
+        /// of a link after its first, while it's one token.
+        var compared: [Bool] = []
+
+        /// The first token at or after `word`.
+        func token(atOrAfter word: Int) -> Int {
+            var low = 0, high = wordIndex.count
+            while low < high {
+                let mid = (low + high) / 2
+                if wordIndex[mid] < word { low = mid + 1 } else { high = mid }
+            }
+            return low
+        }
+    }
+
+    /// What each link is compared as, with ignoresRenumbering: where it goes, in a form the same
+    /// for two links (one in each document) that go to the same place. That's the name of the
+    /// destination, where both documents have one by that name; FrameMaker keeps them from one
+    /// revision to the next, unless the text says otherwise (see below). Otherwise it's the text
+    /// there, by the plain comparison of the two (`plain`, with links compared as words, by
+    /// original word): a destination in the original is paired with the one in the revision that
+    /// most of the words just after it (two at least) are matched to words just after. That's the
+    /// words, not the first, which can be the number that changed, and can even be matched to the
+    /// number of a heading put in before. A link with neither is compared as itself, the same as
+    /// no other, and so as its words (see `collapsingLinks`).
+    struct LinkKeys {
+        var original: [String]
+        var revised: [String]
+        /// Where links with each key go, in each document (the first word there), and the links.
+        var targets: [String: (original: Int, revised: Int)] = [:]
+        var links: [String: (original: [Int], revised: [Int])] = [:]
+    }
+
+    /// For each word of the original, the word of the revision `matches` matches it to, or -1.
+    static func revisedOf(_ matches: [(Int, Int)], _ a: Tokens, _ b: Tokens, count: Int) -> [Int32] {
+        var result = [Int32](repeating: -1, count: count)
+        for (i, j) in matches { result[a.wordIndex[i]] = Int32(b.wordIndex[j]) }
+        return result
+    }
+
+    static func linkKeys(original: ComparedText, revised: ComparedText, plain revisedOf: [Int32], _ a: Tokens, _ b: Tokens, key: (String) -> String) -> LinkKeys {
+        // Each destination by its first token; in the original, paired with the destination in
+        // the revision with most of the words after it matched to words after this one.
+        var revisedTargets = Set<Int>()
+        for link in revised.links {
+            if let target = link.target { revisedTargets.insert(b.token(atOrAfter: target)) }
+        }
+        var pairedTarget: [Int: Int] = [:]
+        var votes: [Int: [Int: Int]] = [:]
+        for link in original.links {
+            guard let target = link.target else { continue }
+            let ta = a.token(atOrAfter: target)
+            guard votes[ta] == nil else { continue }
+            var count: [Int: Int] = [:]
+            for i in ta..<min(ta + 8, a.tokens.count) where revisedOf[a.wordIndex[i]] >= 0 {
+                let j = b.token(atOrAfter: Int(revisedOf[a.wordIndex[i]]))
+                for tb in max(0, j - 7)...j where revisedTargets.contains(tb) { count[tb, default: 0] += 1 }
+            }
+            votes[ta] = count
+            // More than a stray word in common.
+            if let best = count.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }), best.value >= 2 {
+                pairedTarget[ta] = best.key
+            }
+        }
+
+        // A name both documents have, unless the text says it goes to different places in each:
+        // a name made from a number (LaTeX's "section.2") goes to another clause once they're
+        // renumbered. The text says so when the words after the destination in the original are
+        // matched to words after another destination in the revision, more of them than to words
+        // after the one by that name. Where the plain comparison has matched little there, the
+        // name is taken at its word, and so it is where the links to it read the same in both but
+        // for the pages they go to: the same contents entry, moved to another page.
+        var linksOfName: [String: (original: [Int], revised: [Int])] = [:]
+        for (index, link) in original.links.enumerated() { if let name = link.name { linksOfName[name, default: ([], [])].original.append(index) } }
+        for (index, link) in revised.links.enumerated() { if let name = link.name { linksOfName[name, default: ([], [])].revised.append(index) } }
+        func readsTheSame(_ name: String) -> Bool {
+            guard let links = linksOfName[name] else { return false }
+            return links.original.count == links.revised.count && zip(links.original, links.revised).allSatisfy { i, j in
+                let linkA = original.links[i], linkB = revised.links[j]
+                guard linkA.words.count == linkB.words.count else { return false }
+                return zip(linkA.words, linkB.words).allSatisfy { x, y in
+                    let wordA = original.words[x].text, wordB = revised.words[y].text
+                    if key(wordA) == key(wordB) { return true }
+                    guard let pageA = linkA.targetPage, let pageB = linkB.targetPage,
+                          pageA < original.pageNumbers.count, pageB < revised.pageNumbers.count else { return false }
+                    return original.pageNumbers[pageA].contains(withoutLeader(wordA)) && revised.pageNumbers[pageB].contains(withoutLeader(wordB))
+                }
+            }
+        }
+        var targetsOfName: [String: (original: Int?, revised: Int?)] = [:]
+        for link in original.links {
+            if let name = link.name, let target = link.target { targetsOfName[name, default: (nil, nil)].original = a.token(atOrAfter: target) }
+        }
+        for link in revised.links {
+            if let name = link.name, let target = link.target { targetsOfName[name, default: (nil, nil)].revised = b.token(atOrAfter: target) }
+        }
+        var names = Set(original.links.compactMap(\.name)).intersection(revised.links.compactMap(\.name))
+        for name in names {
+            guard let targets = targetsOfName[name], let ta = targets.original, let tb = targets.revised else { continue }
+            if let paired = pairedTarget[ta], paired != tb, (votes[ta]?[paired] ?? 0) > (votes[ta]?[tb] ?? 0), !readsTheSame(name) {
+                names.remove(name)
+            }
+        }
+        func isNamed(_ link: CompareLink) -> Bool { link.name.map(names.contains) == true }
+
+        var keyOfRevisedTarget: [Int: String] = [:]
+        for (ta, tb) in pairedTarget.sorted(by: { $0.key < $1.key }) where keyOfRevisedTarget[tb] == nil {
+            keyOfRevisedTarget[tb] = "t:\(ta)"
+        }
+        var keys = LinkKeys(original: [], revised: [])
+        keys.original = original.links.enumerated().map { index, link in
+            if isNamed(link), let name = link.name { return "n:" + name }
+            if let target = link.target {
+                let ta = a.token(atOrAfter: target)
+                if let tb = pairedTarget[ta], keyOfRevisedTarget[tb] == "t:\(ta)" { return "t:\(ta)" }
+            }
+            return "a:\(index)"
+        }
+        keys.revised = revised.links.enumerated().map { index, link in
+            if isNamed(link), let name = link.name { return "n:" + name }
+            if let target = link.target, let key = keyOfRevisedTarget[b.token(atOrAfter: target)] { return key }
+            return "b:\(index)"
+        }
+        for (index, key) in keys.original.enumerated() { keys.links[key, default: ([], [])].original.append(index) }
+        for (index, key) in keys.revised.enumerated() { keys.links[key, default: ([], [])].revised.append(index) }
+        for (key, links) in keys.links {
+            guard let a = links.original.first.flatMap({ original.links[$0].target }),
+                  let b = links.revised.first.flatMap({ revised.links[$0].target }) else { continue }
+            keys.targets[key] = (a, b)
+        }
+        return keys
+    }
+
+    /// With ignoresRenumbering, the numbers at the places links go to (a heading's or a
+    /// caption's) that changed as the links' text did, made the same as the original's in `b`:
+    /// for links going to one place, the words of their text that differ, word for word, once the
+    /// words it starts and ends with alike are set aside ("9-806" for "9-809", from "Figure 9-806
+    /// … 1501" and "Figure 9-809 … 1510"). Only words at the same place on the row the
+    /// destination is on, on both sides, are changed. Returns, by word, the original's word each
+    /// changed one is now compared as.
+    static func renumberTargets(_ b: inout Tokens, _ a: Tokens, original: ComparedText, revised: ComparedText, keys: LinkKeys, key: (String) -> String, id: (String) -> Int32?) -> [Int: String] {
+        struct Swap: Hashable { let from: Int32, to: Int32 }
+        func sameRow(_ x: CompareWord, _ y: CompareWord) -> Bool {
+            guard x.pageIndex == y.pageIndex, let r = x.rects.first, let s = y.rects.first else { return false }
+            return min(r.maxY, s.maxY) - max(r.minY, s.minY) > min(r.height, s.height) / 2
+        }
+        var result: [Int: String] = [:]
+        // After each link, before the next, a word that differs only as the pages the links go
+        // to do: a contents entry whose link takes in its number, or its first row, but not its
+        // page number, which can be rows after.
+        for links in keys.links.values {
+            for (i, j) in zip(links.original, links.revised) {
+                let linkA = original.links[i], linkB = revised.links[j]
+                guard let pageA = linkA.targetPage, let pageB = linkB.targetPage,
+                      pageA < original.pageNumbers.count, pageB < revised.pageNumbers.count else { continue }
+                let startA = a.token(atOrAfter: linkA.words.upperBound), startB = b.token(atOrAfter: linkB.words.upperBound)
+                let pageOfA = original.words[linkA.words.lowerBound].pageIndex, pageOfB = revised.words[linkB.words.lowerBound].pageIndex
+                // Up to the next link, or as far as the longest entry runs.
+                for offset in 0..<40 {
+                    let x = startA + offset, y = startB + offset
+                    guard x < a.tokens.count, y < b.tokens.count, a.link[x] < 0, b.link[y] < 0,
+                          original.words[a.wordIndex[x]].pageIndex == pageOfA, revised.words[b.wordIndex[y]].pageIndex == pageOfB else { break }
+                    let wordA = Self.withoutLeader(original.words[a.wordIndex[x]].text), wordB = Self.withoutLeader(revised.words[b.wordIndex[y]].text)
+                    if a.tokens[x] != b.tokens[y], original.pageNumbers[pageA].contains(wordA), revised.pageNumbers[pageB].contains(wordB) {
+                        b.tokens[y] = a.tokens[x]
+                        result[b.wordIndex[y]] = key(original.words[a.wordIndex[x]].text)
+                    }
+                }
+            }
+        }
+        for (linkKey, targets) in keys.targets {
+            guard let links = keys.links[linkKey] else { continue }
+            // The links in each document in order, paired.
+            var swaps = Set<Swap>()
+            for (i, j) in zip(links.original, links.revised) {
+                let wordsA = original.links[i].words.map { id(key(original.words[$0].text)) }
+                let wordsB = revised.links[j].words.map { id(key(revised.words[$0].text)) }
+                var start = 0
+                while start < min(wordsA.count, wordsB.count), wordsA[start] == wordsB[start] { start += 1 }
+                var end = 0
+                while end < min(wordsA.count, wordsB.count) - start, wordsA[wordsA.count - 1 - end] == wordsB[wordsB.count - 1 - end] { end += 1 }
+                let middleA = wordsA[start..<(wordsA.count - end)], middleB = wordsB[start..<(wordsB.count - end)]
+                guard middleA.count == middleB.count else { continue }
+                for (x, y) in zip(middleA, middleB) {
+                    if let x, let y, x != y { swaps.insert(Swap(from: y, to: x)) }
+                }
+            }
+            guard !swaps.isEmpty else { continue }
+            let firstA = a.token(atOrAfter: targets.original), firstB = b.token(atOrAfter: targets.revised)
+            guard firstA < a.tokens.count, firstB < b.tokens.count else { continue }
+            let rowA = original.words[a.wordIndex[firstA]], rowB = revised.words[b.wordIndex[firstB]]
+            for offset in 0..<8 {
+                let i = firstA + offset, j = firstB + offset
+                guard i < a.tokens.count, j < b.tokens.count, a.link[i] < 0, b.link[j] < 0,
+                      sameRow(original.words[a.wordIndex[i]], rowA), sameRow(revised.words[b.wordIndex[j]], rowB) else { break }
+                if a.tokens[i] != b.tokens[j], swaps.contains(Swap(from: b.tokens[j], to: a.tokens[i])) {
+                    b.tokens[j] = a.tokens[i]
+                    result[b.wordIndex[j]] = key(original.words[a.wordIndex[i]].text)
+                }
+            }
+        }
+        return result
+    }
+
+    /// `word` without the dots leading up to it, as a contents entry's page number can have.
+    static func withoutLeader(_ word: String) -> String {
+        String(word.drop { ".…·\u{2024}\u{2025}".contains($0) })
     }
 
     /// The runs between matched words. A word left out of the comparison (by the options) is part
     /// of the change it's inside, and of no change otherwise. Two changes with only one or two
     /// words in common between them are one change, which reads better than a highlight broken
     /// by a "the" or an "of".
-    private static func changes(from matches: [(Int, Int)], originalCount: Int, revisedCount: Int, isComparedOriginal: Set<Int>, isComparedRevised: Set<Int>) -> [CompareChange] {
+    private static func changes(from matches: [(Int, Int)], originalCount: Int, revisedCount: Int, isComparedOriginal: [Bool], isComparedRevised: [Bool], moved: (original: [Bool], revised: [Bool])) -> [CompareChange] {
         var raw: [CompareChange] = []
         var equalAfter: [Int] = []
         var previous = (-1, -1)
         var equalRun = 0
+        // Trim words that weren't compared off the ends, so a change doesn't take in the
+        // punctuation around it.
+        func trimmed(_ range: Range<Int>, _ isCompared: [Bool]) -> Range<Int> {
+            var range = range
+            while let first = range.first, !isCompared[first] { range = (first + 1)..<range.upperBound }
+            while let last = range.last, !isCompared[last] { range = range.lowerBound..<last }
+            return range
+        }
+        // The runs of `range` that didn't move.
+        func unmoved(_ range: Range<Int>, _ isMoved: [Bool], _ isCompared: [Bool]) -> [Range<Int>] {
+            var result: [Range<Int>] = []
+            var start: Int?
+            for index in range.lowerBound...range.upperBound {
+                if index < range.upperBound, !isMoved[index] {
+                    if start == nil { start = index }
+                } else if let first = start {
+                    let run = trimmed(first..<index, isCompared)
+                    if !run.isEmpty { result.append(run) }
+                    start = nil
+                }
+            }
+            return result
+        }
+        func add(_ change: CompareChange, after equal: Int) {
+            if !raw.isEmpty { equalAfter.append(equal) }
+            raw.append(change)
+        }
         func addGap(to next: (Int, Int)) {
-            var original = (previous.0 + 1)..<next.0
-            var revised = (previous.1 + 1)..<next.1
-            // Trim words that weren't compared off the ends, so a change doesn't take in the
-            // punctuation around it.
-            while let first = original.first, !isComparedOriginal.contains(first) { original = (first + 1)..<original.upperBound }
-            while let last = original.last, !isComparedOriginal.contains(last) { original = original.lowerBound..<last }
-            while let first = revised.first, !isComparedRevised.contains(first) { revised = (first + 1)..<revised.upperBound }
-            while let last = revised.last, !isComparedRevised.contains(last) { revised = revised.lowerBound..<last }
+            let original = trimmed((previous.0 + 1)..<next.0, isComparedOriginal)
+            let revised = trimmed((previous.1 + 1)..<next.1, isComparedRevised)
             guard !original.isEmpty || !revised.isEmpty else { return }
-            if !raw.isEmpty { equalAfter.append(equalRun) }
-            raw.append(CompareChange(original: original, revised: revised))
+            let isMoved = (moved.original.isEmpty ? false : original.contains { moved.original[$0] })
+                || (moved.revised.isEmpty ? false : revised.contains { moved.revised[$0] })
+            if !isMoved {
+                add(CompareChange(original: original, revised: revised), after: equalRun)
+            } else {
+                // What's left once text that moved is set aside: each run on its own, taken out or
+                // put in, and not merged with the others, which the moved text is between.
+                let pieces = unmoved(original, moved.original, isComparedOriginal).map { CompareChange(original: $0, revised: revised.lowerBound..<revised.lowerBound) }
+                    + unmoved(revised, moved.revised, isComparedRevised).map { CompareChange(original: original.lowerBound..<original.lowerBound, revised: $0) }
+                for (index, piece) in pieces.enumerated() {
+                    add(piece, after: index == 0 ? equalRun : Int.max)
+                }
+                if pieces.isEmpty { return }
+            }
             equalRun = 0
         }
         for match in matches {
@@ -247,11 +613,161 @@ public struct DocumentComparison: Sendable {
         return merged
     }
 
+    /// The fewest words in a row, the same in both documents, that count as text that moved
+    /// rather than text taken out in one place and put in at another.
+    static let movedRun = 10
+
+    /// The most words in a row a match can be and still be compared again for text that moved.
+    static let strayRun = 5
+
+    /// `matches` with each run taken out or put in, on one side only, moved to start a line where
+    /// it can (as `slidToLineStart` does for what's shown), so text that moved is cut at the same
+    /// place on both sides. Repeated words let a diff end a run in several places equally well:
+    /// "… site. Clause 250: … to the" or "Clause 250: … to the site.".
+    static func slidToLines(_ matches: [(Int, Int)], _ a: Tokens, _ b: Tokens, original: ComparedText, revised: ComparedText) -> [(Int, Int)] {
+        var m = matches
+        func startsLine(_ tokens: Tokens, _ text: ComparedText, _ token: Int) -> Bool {
+            token == 0 || text.words[tokens.wordIndex[token - 1]].line != text.words[tokens.wordIndex[token]].line
+        }
+        for p in m.indices.dropFirst() {
+            let previous = m[p - 1], next = m[p]
+            let gapA = (previous.0 + 1)..<next.0, gapB = (previous.1 + 1)..<next.1
+            guard gapA.isEmpty != gapB.isEmpty else { continue }
+            // The side with the run, as (token in it, token on the other side) pairs.
+            let onA = !gapA.isEmpty
+            let gap = onA ? gapA : gapB
+            let tokens = onA ? a : b, text = onA ? original : revised
+            func side(_ match: (Int, Int)) -> Int { onA ? match.0 : match.1 }
+            func other(_ match: (Int, Int)) -> Int { onA ? match.1 : match.0 }
+            func make(_ here: Int, _ there: Int) -> (Int, Int) { onA ? (here, there) : (there, here) }
+            guard !startsLine(tokens, text, gap.lowerBound) else { continue }
+            // Back: while the token before the run equals its last, and is matched just before.
+            var shift = 0
+            var found: Int?
+            while shift < gap.count, shift < 40, p - 1 - shift >= 0 {
+                let match = m[p - 1 - shift]
+                guard side(match) == gap.lowerBound - 1 - shift, shift == 0 || other(match) == other(m[p - shift]) - 1,
+                      tokens.tokens[gap.lowerBound - 1 - shift] == tokens.tokens[gap.upperBound - 1 - shift] else { break }
+                shift += 1
+                if startsLine(tokens, text, gap.lowerBound - shift) { found = shift; break }
+            }
+            if let found {
+                // The matches the run passes over now match the same words at its far end.
+                for k in 1...found {
+                    m[p - k] = make(gap.upperBound - k, other(m[p - k]))
+                }
+                continue
+            }
+            // Forward: while the token after the run equals its first, and is matched just after.
+            shift = 0
+            var forward: Int?
+            while shift < gap.count, shift < 40, p + shift < m.count {
+                let match = m[p + shift]
+                guard side(match) == gap.upperBound + shift, shift == 0 || other(match) == other(m[p + shift - 1]) + 1,
+                      tokens.tokens[gap.lowerBound + shift] == tokens.tokens[gap.upperBound + shift] else { break }
+                shift += 1
+                if startsLine(tokens, text, gap.lowerBound + shift) { forward = shift; break }
+            }
+            guard let forward else { continue }
+            for k in 0..<forward {
+                m[p + k] = make(gap.lowerBound + k, other(m[p + k]))
+            }
+        }
+        return m.sorted { $0.0 < $1.0 }
+    }
+
+    /// Words taken out in one place and put in at another, unchanged: what's left unmatched,
+    /// compared again on its own, in runs of `movedRun` words in a row or more in both. The
+    /// comparison keeps the documents' order, so a table that comes before a heading in one and
+    /// after it in the other (as a page break falls) is matched one way and not the other. Short
+    /// runs it matched (fewer than `strayRun`), which text that moved can share with what's
+    /// around it, are compared again too, and give way to text that moved. Whether the layout
+    /// moved it (a table floating past a page break) or its author did, the PDF doesn't say, so
+    /// it's shown as moved, not hidden. Returns the matches left, by word which moved, and each
+    /// run that moved.
+    static func findingMoves(_ matches: [(Int, Int)], _ a: Tokens, _ b: Tokens, original: ComparedText, revised: ComparedText) -> (matches: [(Int, Int)], moved: (original: [Bool], revised: [Bool]), moves: [CompareChange]) {
+        // Matches in short runs: in a row in both, fewer than strayRun of them.
+        var isStray = [Bool](repeating: false, count: matches.count)
+        var runStart = 0
+        for index in stride(from: 1, through: matches.count, by: 1) {
+            let continues = index < matches.count && matches[index].0 == matches[index - 1].0 + 1 && matches[index].1 == matches[index - 1].1 + 1
+            if !continues {
+                if index - runStart < strayRun { for k in runStart..<index { isStray[k] = true } }
+                runStart = index
+            }
+        }
+        var leftA = [Bool](repeating: true, count: a.tokens.count)
+        var leftB = [Bool](repeating: true, count: b.tokens.count)
+        // For a token in a short run, what it's matched to.
+        var strayPartner = [Int32](repeating: -1, count: a.tokens.count)
+        for (index, (i, j)) in matches.enumerated() {
+            if isStray[index] {
+                strayPartner[i] = Int32(j)
+            } else {
+                leftA[i] = false
+                leftB[j] = false
+            }
+        }
+        let restA = a.tokens.indices.filter { leftA[$0] }, restB = b.tokens.indices.filter { leftB[$0] }
+        guard restA.count >= movedRun, restB.count >= movedRun else { return (matches, ([], []), []) }
+        let again = TextDiff.matches(restA.map { a.tokens[$0] }, restB.map { b.tokens[$0] })
+        var movedTokenA = [Bool](repeating: false, count: a.tokens.count)
+        var movedTokenB = [Bool](repeating: false, count: b.tokens.count)
+        var moves: [CompareChange] = []
+        func lastWord(_ token: Int, _ tokens: Tokens, _ text: ComparedText) -> Int {
+            tokens.link[token] >= 0 ? text.links[Int(tokens.link[token])].words.upperBound - 1 : tokens.wordIndex[token]
+        }
+        var start = 0
+        var found = false
+        while start < again.count {
+            // A run: in a row among what's left, and in a row in each document's text.
+            var end = start + 1
+            while end < again.count,
+                  restA[again[end].0] == restA[again[end - 1].0] + 1, restB[again[end].1] == restB[again[end - 1].1] + 1 {
+                end += 1
+            }
+            if end - start >= movedRun {
+                // Matched where it is in both already: not a move.
+                let inPlace = (start..<end).allSatisfy { k in strayPartner[restA[again[k].0]] == Int32(restB[again[k].1]) }
+                if !inPlace {
+                    for k in start..<end {
+                        movedTokenA[restA[again[k].0]] = true
+                        movedTokenB[restB[again[k].1]] = true
+                    }
+                    let firstA = a.wordIndex[restA[again[start].0]], firstB = b.wordIndex[restB[again[start].1]]
+                    moves.append(CompareChange(original: firstA..<(lastWord(restA[again[end - 1].0], a, original) + 1),
+                                               revised: firstB..<(lastWord(restB[again[end - 1].1], b, revised) + 1)))
+                    found = true
+                }
+            }
+            start = end
+        }
+        guard found else { return (matches, ([], []), []) }
+        var movedA = [Bool](repeating: false, count: original.words.count)
+        var movedB = [Bool](repeating: false, count: revised.words.count)
+        func mark(_ moved: [Bool], _ tokens: Tokens, _ text: ComparedText, into words: inout [Bool]) {
+            // Each run of moved tokens, with the words between them (punctuation, a link's).
+            var token = 0
+            while token < moved.count {
+                guard moved[token] else { token += 1; continue }
+                var last = token
+                while last + 1 < moved.count, moved[last + 1] { last += 1 }
+                let end = tokens.link[last] >= 0 ? text.links[Int(tokens.link[last])].words.upperBound - 1 : tokens.wordIndex[last]
+                for word in tokens.wordIndex[token]...end { words[word] = true }
+                token = last + 1
+            }
+        }
+        mark(movedTokenA, a, original, into: &movedA)
+        mark(movedTokenB, b, revised, into: &movedB)
+        let kept = matches.filter { !movedTokenA[$0.0] && !movedTokenB[$0.1] }
+        return (kept, (movedA, movedB), moves.sorted { $0.revised.lowerBound < $1.revised.lowerBound })
+    }
+
     /// A change on one side only, moved to start at the start of a line where it can be. A run
     /// of words added after a repeated phrase can as well be put before it ("…site. Clause 250:
     /// … to the" or "Clause 250: … to the site."); the one that starts a line reads as what was
     /// added.
-    private static func slidToLineStart(_ change: CompareChange, original: [CompareWord], revised: [CompareWord], options: CompareOptions) -> CompareChange {
+    private static func slidToLineStart(_ change: CompareChange, original: [CompareWord], revised: [CompareWord], options: CompareOptions, renumbered: [Int: String]) -> CompareChange {
         guard change.original.isEmpty != change.revised.isEmpty else { return change }
         let side: CompareSide = change.original.isEmpty ? .revised : .original
         let words = side == .original ? original : revised
@@ -261,8 +777,11 @@ public struct DocumentComparison: Sendable {
         }
         guard !startsLine(range.lowerBound) else { return change }
         func same(_ i: Int, _ j: Int) -> Bool {
-            let key = options.key(for: words[i].text)
-            return !key.isEmpty && key == options.key(for: words[j].text)
+            func key(_ index: Int) -> String {
+                (side == .revised ? renumbered[index] : nil) ?? options.key(for: words[index].text)
+            }
+            let first = key(i)
+            return !first.isEmpty && first == key(j)
         }
         // Back while the word before equals the change's last word, then forward while its first
         // equals the word after it; at most a line's worth each way.
@@ -664,6 +1183,32 @@ extension ComparedText {
         var words: [(text: String, rect: CGRect)]
         /// Ends in a hyphen that splits a word across to the next line.
         let joinsNext: Bool
+        /// For each word, the link on its page it's in (see `PageLink`), or -1; empty for none.
+        var wordLinks: [Int] = []
+    }
+
+    /// A link on a page to another place in the document.
+    struct PageLink: Sendable {
+        let rect: CGRect
+        /// What identifies where it goes: two links with the same go to the same place.
+        let uri: String
+        /// The named destination it goes to, if any.
+        let name: String?
+        /// Where it goes.
+        let target: ComparePoint?
+    }
+
+    /// Notes which of `links` each word of `lines` is in: the link its middle is in.
+    static func assignLinks(_ links: [PageLink], to lines: inout [Line]) {
+        guard !links.isEmpty else { return }
+        for index in lines.indices {
+            let nearby = links.indices.filter { links[$0].rect.intersects(lines[index].bbox) }
+            guard !nearby.isEmpty else { continue }
+            lines[index].wordLinks = lines[index].words.map { word in
+                let middle = CGPoint(x: word.rect.midX, y: word.rect.midY)
+                return nearby.first { links[$0].rect.contains(middle) } ?? -1
+            }
+        }
     }
 
     /// The lines of a page's text in reading order, without margin line numbers, each split
@@ -739,7 +1284,10 @@ extension ComparedText {
 
     /// Running headers and footers: lines set apart at the top or bottom of the page (see
     /// `edgeLines`) whose text, with its numbers taken out, repeats at the same height on at
-    /// least `runningLineShare` of the pages (and at least three). Page numbers are among them.
+    /// least `runningLineShare` of the odd pages or of the even pages (and on three at least): a
+    /// book's facing pages put them at different heights, or on different sides, so each is on
+    /// only half the pages, and less with pages laid out otherwise (landscape tables, the front
+    /// matter). Page numbers are among them.
     /// They'd otherwise anchor the text around them to the wrong pages, and show up as changes
     /// wherever the pages shift.
     static func runningLines(pages: [(bounds: CGRect, lines: [Line])]) -> [Set<Int>] {
@@ -753,14 +1301,23 @@ extension ComparedText {
             let height = Int(((line.bbox.midY - bounds.minY) / 4).rounded())
             return "\(height):" + text
         }
-        var pagesWithKey: [String: Set<Int>] = [:]
+        // By key, how many odd and how many even pages it's on (counting from page 1).
+        var pagesWithKey: [String: (odd: Set<Int>, even: Set<Int>)] = [:]
         for (pageIndex, page) in pages.enumerated() {
             for index in edges[pageIndex] {
-                pagesWithKey[key(page.lines[index], bounds: page.bounds), default: []].insert(pageIndex)
+                let key = key(page.lines[index], bounds: page.bounds)
+                if pageIndex % 2 == 0 {
+                    pagesWithKey[key, default: ([], [])].odd.insert(pageIndex)
+                } else {
+                    pagesWithKey[key, default: ([], [])].even.insert(pageIndex)
+                }
             }
         }
-        let threshold = max(3, Int((Double(pages.count) * runningLineShare).rounded(.up)))
-        let running = Set(pagesWithKey.filter { $0.value.count >= threshold }.keys)
+        func threshold(_ count: Int) -> Int { Int((Double(count) * runningLineShare).rounded(.up)) }
+        let odd = threshold((pages.count + 1) / 2), even = threshold(pages.count / 2)
+        let running = Set(pagesWithKey.filter { key, pages in
+            pages.odd.count + pages.even.count >= 3 && (pages.odd.count >= odd || pages.even.count >= even)
+        }.keys)
         return pages.enumerated().map { pageIndex, page in
             Set(edges[pageIndex].filter { running.contains(key(page.lines[$0], bounds: page.bounds)) })
         }
@@ -768,14 +1325,37 @@ extension ComparedText {
 
     /// The words of `pages` in order, without running headers and footers, a word hyphenated
     /// across two lines joined into one.
-    init(pages: [(bounds: CGRect, lines: [Line])]) {
+    init(pages: [(bounds: CGRect, lines: [Line])], links pageLinks: [[PageLink]] = [], labels: [String]? = nil) {
         let running = Self.runningLines(pages: pages)
+        let pageNumbers = pages.indices.map { pageIndex -> Set<String> in
+            var numbers: Set<String> = [labels.flatMap { pageIndex < $0.count ? $0[pageIndex] : nil } ?? String(pageIndex + 1)]
+            for index in running[pageIndex] {
+                for word in pages[pageIndex].lines[index].words where Self.isPageNumber(word.text) {
+                    numbers.insert(word.text)
+                }
+            }
+            return numbers
+        }
         var words: [CompareWord] = []
         var lineNumber = 0
-        var pending: (text: String, pageIndex: Int, rect: CGRect, line: Int)?
+        var pending: (text: String, pageIndex: Int, rect: CGRect, line: Int, link: PageLink?)?
         var pagesWithoutText = 0
+        // Runs of words in links that go to the same place, which become `CompareLink`s once
+        // the words their destinations are at are known. A link broken across lines is several.
+        var spans: [(words: Range<Int>, link: PageLink)] = []
+        func append(_ word: CompareWord, link: PageLink?) {
+            if let link {
+                if let last = spans.last, last.words.upperBound == words.count, last.link.uri == link.uri {
+                    spans[spans.count - 1].words = last.words.lowerBound..<(words.count + 1)
+                } else {
+                    spans.append((words.count..<(words.count + 1), link))
+                }
+            }
+            words.append(word)
+        }
         for (pageIndex, page) in pages.enumerated() {
             if page.lines.isEmpty { pagesWithoutText += 1 }
+            let links = pageIndex < pageLinks.count ? pageLinks[pageIndex] : []
             for (index, line) in page.lines.enumerated() where !running[pageIndex].contains(index) {
                 lineNumber += 1
                 for (wordIndex, word) in line.words.enumerated() {
@@ -783,29 +1363,66 @@ extension ComparedText {
                     var rects = [word.rect]
                     var line0 = lineNumber
                     var start = pageIndex
+                    var link = wordIndex < line.wordLinks.count && line.wordLinks[wordIndex] >= 0 ? links[line.wordLinks[wordIndex]] : nil
                     if wordIndex == 0, let first = pending {
                         text = first.text + text
                         rects = [first.rect, word.rect]
                         line0 = first.line
                         start = first.pageIndex
+                        link = first.link
                         pending = nil
                     }
                     if wordIndex == line.words.count - 1 && line.joinsNext {
                         // Held for the first word of the next line, without its hyphen.
                         let trimmed = text.last.map { "-\u{00AD}\u{2010}".contains($0) } == true ? String(text.dropLast()) : text
                         if rects.count == 1 {
-                            pending = (trimmed, start, rects[0], line0)
+                            pending = (trimmed, start, rects[0], line0, link)
                             continue
                         }
                     }
-                    words.append(CompareWord(text: text, pageIndex: start, rects: rects, line: line0))
+                    append(CompareWord(text: text, pageIndex: start, rects: rects, line: line0), link: link)
                 }
             }
         }
         if let pending {
-            words.append(CompareWord(text: pending.text, pageIndex: pending.pageIndex, rects: [pending.rect], line: pending.line))
+            append(CompareWord(text: pending.text, pageIndex: pending.pageIndex, rects: [pending.rect], line: pending.line), link: pending.link)
         }
-        self.init(words: words, pageCount: pages.count, pagesWithoutText: pagesWithoutText)
+
+        // The word a destination is at: the highest on its page whose middle is below it, and of
+        // those on that row, the first in reading order. A destination is the top of what it's
+        // at, or a little above it, which can be just inside the line before's descenders. (Not
+        // the first below it in reading order: that can be a footer, written first.)
+        var pageStart = [Int](repeating: words.count, count: pages.count + 1)
+        for (index, word) in words.enumerated().reversed() where word.pageIndex < pages.count {
+            pageStart[word.pageIndex] = index
+        }
+        for page in stride(from: pages.count - 1, through: 0, by: -1) {
+            pageStart[page] = min(pageStart[page], pageStart[page + 1])
+        }
+        var targets: [String: Int?] = [:]
+        func target(of link: PageLink) -> Int? {
+            if let known = targets[link.uri] { return known }
+            var found: Int?
+            if let point = link.target, point.pageIndex >= 0, point.pageIndex < pages.count {
+                var best: (index: Int, rect: CGRect)?
+                for index in pageStart[point.pageIndex]..<pageStart[point.pageIndex + 1] {
+                    guard words[index].pageIndex == point.pageIndex, let rect = words[index].rects.first, rect.midY >= point.y else { continue }
+                    if let current = best, rect.midY >= current.rect.midY - min(rect.height, current.rect.height) / 2 { continue }
+                    best = (index, rect)
+                }
+                found = best?.index
+            }
+            targets[link.uri] = found
+            return found
+        }
+        let links = spans.map { CompareLink(words: $0.words, name: $0.link.name, target: target(of: $0.link), targetPage: $0.link.target?.pageIndex) }
+        self.init(words: words, pageCount: pages.count, pagesWithoutText: pagesWithoutText, links: links, pageNumbers: pageNumbers)
+    }
+
+    /// Whether `word` is a number as `runningLines` takes them out of its lines: in digits, or
+    /// in Roman numerals.
+    static func isPageNumber(_ word: String) -> Bool {
+        !word.isEmpty && (word.allSatisfy { $0.isASCII && $0.isNumber } || word.lowercased().allSatisfy { "ivxlc".contains($0) })
     }
 
     /// Reads the words of the document at `filePath`, several pages at once on contexts of their
@@ -814,7 +1431,9 @@ extension ComparedText {
     public static func load(filePath: String, password: String? = nil, ocrPages: [Int: PDFOCRPageResult] = [:], workerCount: Int = PDFSearchActor.defaultWorkerCount, isCancelled: @Sendable () -> Bool = { false }) throws -> ComparedText? {
         let first = try SearchResource(filePath: filePath, password: password)
         let pageCount = first.pageCount
+        let labels = pageLabels(of: first, pageCount: pageCount)
         let pages = Mutex([(bounds: CGRect, lines: [Line])](repeating: (.zero, []), count: pageCount))
+        let links = Mutex([[PageLink]](repeating: [], count: pageCount))
         let next = Atomic<Int>(0)
         let workers = Mutex<[SearchResource]>([first])
 
@@ -827,23 +1446,27 @@ extension ComparedText {
             } else {
                 return
             }
+            var destinations: [String: ComparePoint?] = [:]
             while !isCancelled() {
                 let pageIndex = next.add(1, ordering: .relaxed).oldValue
                 guard pageIndex < pageCount else { break }
-                guard let page = structuredPage(pageIndex, of: worker, ocr: ocrPages[pageIndex]) else {
+                guard let (page, pageLinks) = structuredPage(pageIndex, of: worker, ocr: ocrPages[pageIndex], destinations: &destinations) else {
                     continue
                 }
-                let lines = lines(of: page)
+                var lines = lines(of: page)
+                assignLinks(pageLinks, to: &lines)
                 pages.withLock { $0[pageIndex] = (page.bounds, lines) }
+                if !pageLinks.isEmpty { links.withLock { $0[pageIndex] = pageLinks } }
             }
         }
         guard !isCancelled() else { return nil }
-        return ComparedText(pages: pages.withLock { $0 })
+        return ComparedText(pages: pages.withLock { $0 }, links: links.withLock { $0 }, labels: labels)
     }
 
     /// Page `pageIndex`'s text, from the worker's copy of the document, or its OCR result if it
-    /// has no text of its own.
-    private static func structuredPage(_ pageIndex: Int, of worker: SearchResource, ocr: PDFOCRPageResult?) -> StructuredPage? {
+    /// has no text of its own, and its links to other places in the document. `destinations`
+    /// keeps where each link the worker has seen goes, as many links go to one place.
+    private static func structuredPage(_ pageIndex: Int, of worker: SearchResource, ocr: PDFOCRPageResult?, destinations: inout [String: ComparePoint?]) -> (StructuredPage, [PageLink])? {
         let ctx = worker.ctx
         var pagePtr: FZPage?
         guard mupdf_page_load(ctx, worker.doc, Int32(pageIndex), &pagePtr, nil) == 0, let page = pagePtr else { return nil }
@@ -852,9 +1475,55 @@ extension ComparedText {
         mupdf_page_bounds(ctx, page, &rect, nil)
         let bounds = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: CGFloat(rect.x1 - rect.x0), height: CGFloat(rect.y1 - rect.y0))
         guard let structured = try? StructuredPage.load(from: page, pageIndex: pageIndex, ctx: ctx) else { return nil }
+        let links = internalLinks(on: page, of: worker, destinations: &destinations)
         if let ocr, structured.blocks.allSatisfy({ $0.type != .text || $0.lines.isEmpty }) {
-            return ocr.structuredPage(bounds: bounds)
+            return (ocr.structuredPage(bounds: bounds), links)
         }
-        return structured
+        return (structured, links)
+    }
+
+    /// The document's page labels, if it has any.
+    private static func pageLabels(of worker: SearchResource, pageCount: Int) -> [String]? {
+        guard mupdf_pdf_has_page_labels(worker.ctx, worker.doc) != 0 else { return nil }
+        var buffer = [CChar](repeating: 0, count: 256)
+        return (0..<pageCount).map { index in
+            buffer[0] = 0
+            mupdf_pdf_page_label(worker.ctx, worker.doc, Int32(index), &buffer, Int32(buffer.count), nil)
+            let bytes = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            let label = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            return label.isEmpty ? String(index + 1) : label
+        }
+    }
+
+    /// The links on `page` to places in its document. MuPDF gives a link to a named destination
+    /// as "#nameddest=" and the name.
+    private static func internalLinks(on page: FZPage, of worker: SearchResource, destinations: inout [String: ComparePoint?]) -> [PageLink] {
+        let ctx = worker.ctx
+        var linksPtr: FZLink?
+        guard mupdf_links_load(ctx, page, &linksPtr, nil) == 0, let first = linksPtr else { return [] }
+        defer { mupdf_links_drop(ctx, first) }
+        var result: [PageLink] = []
+        var current: FZLink? = first
+        while let link = current {
+            current = mupdf_link_next(link)
+            guard let cURI = mupdf_link_uri(link) else { continue }
+            let uri = String(cString: cURI)
+            let destination: ComparePoint?
+            if let known = destinations[uri] {
+                destination = known
+            } else {
+                var page: Int32 = -1
+                var x: Float = 0, y: Float = 0
+                destination = mupdf_resolve_link_page(ctx, worker.doc, uri, &page, &x, &y) == 0 ? ComparePoint(pageIndex: Int(page), y: CGFloat(y)) : nil
+                destinations[uri] = destination
+            }
+            guard let destination else { continue }
+            let r = mupdf_link_rect(link)
+            let rect = CGRect(x: CGFloat(r.x0), y: CGFloat(r.y0), width: CGFloat(r.x1 - r.x0), height: CGFloat(r.y1 - r.y0))
+            let prefix = "#nameddest="
+            let name = uri.hasPrefix(prefix) ? String(uri.dropFirst(prefix.count)) : nil
+            result.append(PageLink(rect: rect, uri: uri, name: name, target: destination))
+        }
+        return result
     }
 }

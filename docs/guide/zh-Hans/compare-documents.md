@@ -1,5 +1,5 @@
-<!-- keywords: 比较, 对比, 差异, 修订, 修订版, 版本, 更改, 并排, 同步滚动, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together -->
-<!-- source: 6bba3876ac5f -->
+<!-- keywords: 比较, 对比, 差异, 修订, 修订版, 版本, 更改, 并排, 同步滚动, 重新编号, 页码, 交叉引用, 目录, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
+<!-- source: 84d22a753af8 -->
 
 # 比较两份文稿
 
@@ -20,6 +20,7 @@ Compare Documents 会并排显示一份文稿的两个版本，并在两边高�
 - 从原始文稿中删除的单词在左侧以红色高亮显示。
 - 修订版中新增的单词在右侧以绿色高亮显示。
 - 如果只有一边新增了文本，另一边会用一条细条标出它应在的位置。
+- 两边相同但位置不同的文本会在两边加蓝色下划线，例如落到分页符另一侧的表格，或被移动的条款。需要连续十个或更多单词才算。移动的文本不算作更改；Changes 标签页顶部会显示有多少段落位于别处。
 
 边栏中的 Changes 标签页会列出每一处更改：删除的单词以红色删除线显示，新增的单词以绿色显示，并附有修订版中的页码。点按一处更改即可在两份文稿中前往该处。
 
@@ -35,13 +36,24 @@ Compare Documents 会并排显示一份文稿的两个版本，并在两边高�
 
 两边从上往下约三分之一处的那一行显示相同的文本。如果一边有另一边没有的文本，另一边会等你滚动过这段文本。你可以滚动任意一边，另一边会跟随。
 
-若要分别滚动两边，请在 Changes 标签页顶部关闭 Scroll Together。再次打开即可重新对齐。
-
 缩放一边会同时缩放两边，并且你正在阅读的文本会保持在原处。放大到超过页面宽度时，横向滚动一边也会横向滚动另一边，使两边显示页面的同一部分。
 
 ## 比较选项
 
 在 Changes 标签页顶部，选取 Ignore Case 或 Ignore Punctuation 可忽略大小写或标点符号的差异。弯引号和直引号，以及不同种类的破折号，始终视为相同。
+
+### 忽略重新编号
+
+添加或移除某个条款、图或表后，其后的所有内容都会重新编号，其后的每个页码也会改变。在长文稿中，大部分更改可能只是目录、图表目录和交叉引用中的新编号。Ignore Renumbering 默认打开，会忽略这些更改：
+
+- 目录或图表目录中的条目，或者“参见 9.4.2.18”之类的交叉引用，如果在两个版本中链接到同一位置，即使其编号或页码是新的，也不算更改。
+- 在其链接到的位置，标题或说明文字本身的编号如果以同样方式改变，也不算更改。例如“Figure 9-806”变为“Figure 9-809”。
+
+什么算作同一位置取决于文稿中的链接，而不是编号的样子。现在链接到别处的交叉引用仍会显示为更改；不属于链接的编号也是如此，例如以纯文本输入的“Table 9-12”。措辞改变的标题仍会在标题本身处显示为更改，即使它在目录中的条目不显示。
+
+Ignore Renumbering 需要文稿内部含有链接，大多数文字处理和排版应用都会为目录和交叉引用创建链接。如果两个文稿都没有链接，则此选项不可用。由会丢弃链接的应用重新存储的 PDF 没有链接，即使原文稿有。
+
+若要查看每个更改过的编号，请关闭 Ignore Renumbering。
 
 ## 如果比较没有帮助
 

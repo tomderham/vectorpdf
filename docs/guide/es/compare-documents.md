@@ -1,5 +1,5 @@
-<!-- keywords: comparar, comparación, diferencias, revisión, versiones, cambios, lado a lado, desplazamiento sincronizado, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together -->
-<!-- source: 6bba3876ac5f -->
+<!-- keywords: comparar, comparación, diferencias, revisión, versiones, cambios, lado a lado, desplazamiento sincronizado, renumeración, números de página, referencias cruzadas, índice, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
+<!-- source: 84d22a753af8 -->
 
 # Comparar dos documentos
 
@@ -20,6 +20,7 @@ La comparación se abre en una pestaña nueva, con el original a la izquierda y 
 - Las palabras quitadas del original se resaltan en rojo, a la izquierda.
 - Las palabras añadidas en la revisión se resaltan en verde, a la derecha.
 - Donde solo se añadió texto en un lado, una barra fina en el otro marca dónde estaría.
+- El texto que es igual en ambos pero está en otro lugar aparece subrayado en azul en los dos lados, como una tabla que cae al otro lado de un salto de página o una cláusula que se movió. Hacen falta diez palabras seguidas o más. El texto movido no cuenta como cambio; en la parte superior de la pestaña Changes se indica cuántos pasajes están en otro lugar.
 
 La pestaña Changes de la barra lateral muestra todos los cambios: las palabras quitadas tachadas en rojo, las añadidas en verde, y el número de página en la revisión. Haz clic en un cambio para ir a él en los dos documentos.
 
@@ -35,13 +36,24 @@ Las pestañas Outline & Thumbnails y Search de la barra lateral funcionan sobre 
 
 La línea situada a un tercio de la altura de cada lado muestra el mismo texto. Cuando un lado tiene texto que el otro no tiene, el otro espera hasta que lo hayas pasado. Puedes desplazarte por cualquiera de los dos; el otro lo sigue.
 
-Para desplazarlos por separado, desactiva Scroll Together en la parte superior de la pestaña Changes. Vuelve a activarlo para alinearlos de nuevo.
-
 Al hacer zoom en un lado se hace zoom en ambos, y el texto que estás leyendo se queda donde está. Con más zoom que el ancho de la página, desplazar un lado en horizontal desplaza también el otro, para que ambos muestren la misma parte de la página.
 
 ## Opciones de comparación
 
 En la parte superior de la pestaña Changes, elige Ignore Case o Ignore Punctuation para omitir las diferencias de mayúsculas o de puntuación. Las comillas tipográficas y rectas, y los distintos tipos de guion, siempre cuentan como iguales.
+
+### Ignorar la renumeración
+
+Cuando se añade o se quita una cláusula, una figura o una tabla, todo lo que viene después se vuelve a numerar, y cambia cada número de página posterior. En un documento largo, la mayoría de los cambios pueden ser números nuevos en el índice, la lista de figuras y las referencias cruzadas. Ignore Renumbering, que está activado desde el principio, los omite:
+
+- Una entrada del índice o de una lista de figuras, o una referencia cruzada como «véase 9.4.2.18», no cuenta como cambiada cuando enlaza con el mismo lugar en ambas versiones, aunque su número o su número de página sea nuevo.
+- En el lugar con el que enlaza, el propio número del título o del pie tampoco cuenta como cambiado cuando cambió de la misma forma. Por ejemplo, «Figure 9-806» que pasa a ser «Figure 9-809».
+
+Lo que cuenta como el mismo lugar sale de los enlaces de los documentos, no del aspecto de los números. Una referencia cruzada que ahora enlaza con otro sitio sigue apareciendo como cambio, igual que un número que no forma parte de un enlace, como «Table 9-12» escrito como texto normal. Un título redactado de otra forma sigue apareciendo como cambiado en el propio título, aunque su entrada del índice no.
+
+Ignore Renumbering necesita documentos con enlaces internos, que la mayoría de los procesadores de texto y apps de maquetación crean para el índice y las referencias cruzadas. No está disponible cuando ninguno de los documentos tiene. Un PDF guardado de nuevo con una app que descarta los enlaces no tiene ninguno, aunque el original sí los tuviera.
+
+Para ver todos los números que cambiaron, desactiva Ignore Renumbering.
 
 ## Si la comparación no resulta útil
 
