@@ -66,7 +66,11 @@ public final class PDFDocumentCore: @unchecked Sendable {
     public private(set) var pageBounds: [CGRect]
     public private(set) var pageYOffsets: [CGFloat]
     public private(set) var totalHeight: CGFloat
-    public internal(set) var outline: [PDFOutlineNode]
+    public internal(set) var outline: [PDFOutlineNode] {
+        didSet { outlineSections = OutlineSections(outline: outline) }
+    }
+    /// Where each outline entry starts, to tell which section a place on a page is in.
+    public private(set) var outlineSections = OutlineSections(outline: [])
     /// False for EPUB, XPS, CBZ and FB2 documents, which can be read but not edited or saved:
     /// they have no annotations, form fields, page labels or drawing scales to read either.
     public let isPDF: Bool
@@ -218,6 +222,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         } else {
             self.outline = []
         }
+        self.outlineSections = OutlineSections(outline: outline)
         self.pageLabels = readPageLabels(pageCount: totalPages)
     }
 
@@ -266,6 +271,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
             
             let p = Int(mupdf_outline_page(item))
             let pageIndex = p >= 0 ? p : nil
+            let y = mupdf_outline_y(item)
+            let targetY: CGFloat? = pageIndex != nil && y.isFinite ? CGFloat(y) : nil
             
             let children: [PDFOutlineNode]
             if let down = mupdf_outline_down(item) {
@@ -274,7 +281,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 children = []
             }
             
-            nodes.append(PDFOutlineNode(title: titleStr, uri: uriStr, targetPage: pageIndex, children: children))
+            nodes.append(PDFOutlineNode(title: titleStr, uri: uriStr, targetPage: pageIndex, targetY: targetY, children: children))
             curr = mupdf_outline_next(item)
         }
         

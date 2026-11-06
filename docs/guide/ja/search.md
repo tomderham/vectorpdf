@@ -1,5 +1,5 @@
-<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
-<!-- source: 8a443734fd6b -->
+<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, セクション, アウトライン, 目次, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- source: 0bf81b258540 -->
 
 # 書類を検索する
 
@@ -8,7 +8,7 @@
 1. ⌘F を押します。サイドバーに Search タブが表示されます。
 2. 検索する語句を入力します。検索結果は、現在のページから順に、見つかるたびに表示されます。
 
-各検索結果にはページと前後のテキストが表示され、一致した箇所はすべて書類内でハイライトされます。
+検索結果はページごとに前後のテキストとともに一覧表示され、一致した箇所はすべて書類内でハイライトされます。[アウトライン](outline-and-thumbnails.md)のある書類では、検索結果がそれぞれのセクションごとにもまとめられます。セクションの名前は、そのセクションの結果をスクロールしている間はリストの一番上に留まります。どの上位セクションに含まれるかを確認するには、名前の上にポインタを置きます。
 
 ## 検索結果の間を移動する
 

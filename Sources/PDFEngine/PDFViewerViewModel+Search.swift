@@ -24,7 +24,8 @@ import ObjectiveC
 extension PDFViewerViewModel {
     // MARK: - Search Functionality
     public struct SearchPageGroup: Identifiable, Sendable {
-        public var id: Int { pageIndex }
+        /// The first match's, since a page split between sections has a group in each.
+        public var id: UUID { matches.first?.id ?? UUID() }
         public let pageIndex: Int
         public var matches: [SearchResult]
         
@@ -41,6 +42,34 @@ extension PDFViewerViewModel {
                 groups[groups.count - 1].matches.append(match)
             } else {
                 groups.append(SearchPageGroup(pageIndex: match.pageIndex, matches: [match]))
+            }
+        }
+        return groups
+    }
+
+    /// The results on the pages of one outline section, in order.
+    public struct SearchSectionGroup: Identifiable, Sendable {
+        /// The first match's: results out of reading order can bring a section back.
+        public var id: UUID { pages.first?.id ?? UUID() }
+        /// Nil for results before the document's first outline entry, or with no outline.
+        public let section: OutlineSections.Section?
+        public var pages: [SearchPageGroup]
+    }
+
+    /// The search results by outline section, then by page.
+    public var searchSectionGroups: [SearchSectionGroup] {
+        let sections = document?.outlineSections ?? OutlineSections(outline: [])
+        var groups: [SearchSectionGroup] = []
+        for match in searchResults {
+            let section = sections.isEmpty ? nil : sections.section(page: match.pageIndex, y: match.highlightQuads.isEmpty ? nil : match.boundingRect.midY)
+            if groups.isEmpty || groups[groups.count - 1].section != section {
+                groups.append(SearchSectionGroup(section: section, pages: []))
+            }
+            let last = groups.count - 1
+            if let page = groups[last].pages.last, page.pageIndex == match.pageIndex {
+                groups[last].pages[groups[last].pages.count - 1].matches.append(match)
+            } else {
+                groups[last].pages.append(SearchPageGroup(pageIndex: match.pageIndex, matches: [match]))
             }
         }
         return groups

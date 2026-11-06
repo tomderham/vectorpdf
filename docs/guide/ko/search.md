@@ -1,5 +1,5 @@
-<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
-<!-- source: 8a443734fd6b -->
+<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, 섹션, 개요, 목차, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- source: 0bf81b258540 -->
 
 # 문서 검색하기
 
@@ -8,7 +8,7 @@
 1. ⌘F 키를 누릅니다. VectorPDF의 사이드바에 Search 탭이 표시됩니다.
 2. 찾으려는 내용을 입력합니다. 현재 페이지부터 시작하여 찾는 대로 결과가 나타납니다.
 
-각 결과에는 해당 페이지와 주변 텍스트가 표시되며, 일치하는 모든 항목이 문서에서 하이라이트됩니다.
+결과는 페이지별로 주변 텍스트와 함께 나열되며, 일치하는 모든 항목이 문서에서 하이라이트됩니다. [개요](outline-and-thumbnails.md)가 있는 문서에서는 결과가 속한 섹션별로도 묶입니다. 섹션 이름은 해당 섹션의 결과를 스크롤하는 동안 목록 맨 위에 고정됩니다. 어떤 상위 섹션에 속하는지 보려면 이름 위에 포인터를 올려 놓습니다.
 
 ## 결과 사이를 이동하기
 

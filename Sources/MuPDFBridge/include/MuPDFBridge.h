@@ -56,6 +56,8 @@ void mupdf_outline_drop(fz_context *ctx, fz_outline *outline);
 const char *mupdf_outline_title(fz_outline *outline);
 const char *mupdf_outline_uri(fz_outline *outline);
 int mupdf_outline_page(fz_outline *outline);
+/// Where on its page the entry points, in page space; NAN when the destination gives no position.
+float mupdf_outline_y(fz_outline *outline);
 fz_outline *mupdf_outline_next(fz_outline *outline);
 fz_outline *mupdf_outline_down(fz_outline *outline);
 

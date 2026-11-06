@@ -17,6 +17,7 @@
 
 #include "include/MuPDFBridge.h"
 #include "TextClipFilter.h"
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -221,6 +222,10 @@ const char *mupdf_outline_uri(fz_outline *outline) {
 
 int mupdf_outline_page(fz_outline *outline) {
     return outline ? outline->page.page : -1;
+}
+
+float mupdf_outline_y(fz_outline *outline) {
+    return outline && outline->page.page >= 0 ? outline->y : NAN;
 }
 
 fz_outline *mupdf_outline_next(fz_outline *outline) {

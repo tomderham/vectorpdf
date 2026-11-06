@@ -1,5 +1,5 @@
-<!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, 最近搜索, 搜索历史, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
-<!-- source: 8a443734fd6b -->
+<!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, 最近搜索, 搜索历史, 章节, 大纲, 目录, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- source: 0bf81b258540 -->
 
 # 搜索文稿
 
@@ -8,7 +8,7 @@
 1. 按下 ⌘F。VectorPDF 会在边栏中显示 Search 标签页。
 2. 键入要查找的内容。结果一经找到就会显示，并从你当前所在的页面开始。
 
-每个结果都会显示所在页面及周围的文本，文稿中的每个匹配项都会高亮显示。
+结果按页面列出，每个结果附有周围的文本，文稿中的每个匹配项都会高亮显示。在带有[大纲](outline-and-thumbnails.md)的文稿中，结果还会按所在章节分组。在你滚动浏览某个章节的结果时，章节名称会一直停留在列表顶部。要查看它属于哪些上级章节，请将指针悬停在名称上。
 
 ## 在结果之间移动
 

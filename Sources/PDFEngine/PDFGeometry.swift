@@ -93,13 +93,16 @@ public struct PDFOutlineNode: Sendable, Identifiable {
     public let title: String
     public let uri: String?
     public let targetPage: Int?
+    /// Where on `targetPage` the entry points, in page space (y down); nil when it names only the page.
+    public let targetY: CGFloat?
     public let children: [PDFOutlineNode]
     
-    public init(id: UUID = UUID(), title: String, uri: String? = nil, targetPage: Int? = nil, children: [PDFOutlineNode] = []) {
+    public init(id: UUID = UUID(), title: String, uri: String? = nil, targetPage: Int? = nil, targetY: CGFloat? = nil, children: [PDFOutlineNode] = []) {
         self.id = id
         self.title = title
         self.uri = uri
         self.targetPage = targetPage
+        self.targetY = targetY
         self.children = children
     }
     
@@ -125,6 +128,7 @@ public struct PDFOutlineNode: Sendable, Identifiable {
                     title: node.title,
                     uri: node.uri,
                     targetPage: node.targetPage,
+                    targetY: node.targetY,
                     children: filteredChildren
                 ))
             }

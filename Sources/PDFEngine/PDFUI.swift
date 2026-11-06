@@ -1045,61 +1045,72 @@ public struct PDFViewerMainView: View {
                         // Use ScrollView/LazyVStack to avoid table view reentrancy while search results stream in.
                         ScrollViewReader { proxy in
                             ScrollView {
-                                LazyVStack(spacing: 3) {
+                                // Each outline section's header stays at the top while its results scroll past.
+                                LazyVStack(spacing: 3, pinnedViews: [.sectionHeaders]) {
                                     if !hasQuery && !viewModel.recentSearches.isEmpty {
                                         RecentSearchesListView(viewModel: viewModel)
+                                            .padding(.horizontal, 6)
                                     }
-                                    ForEach(viewModel.searchPageGroups) { group in
-                                        SearchPageSeparatorView(
-                                            pageIndex: group.pageIndex,
-                                            count: group.matches.count
-                                        )
+                                    ForEach(viewModel.searchSectionGroups) { sectionGroup in
+                                        Section {
+                                            ForEach(sectionGroup.pages) { group in
+                                                SearchPageSeparatorView(
+                                                    pageLabel: viewModel.document?.displayLabel(forPage: group.pageIndex) ?? String(group.pageIndex + 1),
+                                                    count: group.matches.count
+                                                )
+                                                .padding(.horizontal, 6)
                                         
-                                        ForEach(group.matches) { match in
-                                            SearchResultRowView(
-                                                match: match,
-                                                isActive: viewModel.isActiveMatch(match)
-                                            )
-                                            .onTapGesture {
-                                                isSearchResultsFocused = true
-                                                DispatchQueue.main.async {
-                                                    viewModel.navigateToMatch(match, shouldScrollList: false)
+                                                ForEach(group.matches) { match in
+                                                    SearchResultRowView(
+                                                        match: match,
+                                                        isActive: viewModel.isActiveMatch(match)
+                                                    )
+                                                    .padding(.horizontal, 6)
+                                                    .onTapGesture {
+                                                        isSearchResultsFocused = true
+                                                        DispatchQueue.main.async {
+                                                            viewModel.navigateToMatch(match, shouldScrollList: false)
+                                                        }
+                                                    }
+                                                    .contextMenu {
+                                                        Button {
+                                                            viewModel.addSnapshot(from: match)
+                                                        } label: {
+                                                            Label {
+                                                                Text("Create Anchor")
+                                                            } icon: {
+                                                                Image.anchorIcon
+                                                            }
+                                                        }
+
+                                                        Button {
+                                                            viewModel.addSnapshotAndOpenInNewWindow(from: match)
+                                                        } label: {
+                                                            Label {
+                                                                Text("Create Anchor and Open in New Window")
+                                                            } icon: {
+                                                                Image.anchorIcon
+                                                            }
+                                                        }
+
+                                                        Divider()
+
+                                                        Button {
+                                                            viewModel.openSnapshotInNewWindow(from: match)
+                                                        } label: {
+                                                            Label("Open in New Window", systemImage: "macwindow.badge.plus")
+                                                        }
+                                                    }
+                                                    .id(match.id)
                                                 }
                                             }
-                                            .contextMenu {
-                                                Button {
-                                                    viewModel.addSnapshot(from: match)
-                                                } label: {
-                                                    Label {
-                                                        Text("Create Anchor")
-                                                    } icon: {
-                                                        Image.anchorIcon
-                                                    }
-                                                }
-
-                                                Button {
-                                                    viewModel.addSnapshotAndOpenInNewWindow(from: match)
-                                                } label: {
-                                                    Label {
-                                                        Text("Create Anchor and Open in New Window")
-                                                    } icon: {
-                                                        Image.anchorIcon
-                                                    }
-                                                }
-
-                                                Divider()
-
-                                                Button {
-                                                    viewModel.openSnapshotInNewWindow(from: match)
-                                                } label: {
-                                                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
-                                                }
+                                        } header: {
+                                            if let section = sectionGroup.section {
+                                                SearchSectionHeaderView(path: section.path)
                                             }
-                                            .id(match.id)
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 6)
                                 .padding(.vertical, 4)
                             }
                             .focusable()
@@ -1611,19 +1622,45 @@ private struct RecentSearchesListView: View {
     }
 }
 
+/// The outline section of the results below it: a full-width bar, so it reads as the level above
+/// the page labels. Only the section's own title is shown, cut at the end when it's long (numbered
+/// headings start with their number); the path from the top of the outline is in its help tag.
+private struct SearchSectionHeaderView: View {
+    let path: [String]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "list.bullet")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(path.last ?? "")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+        .help(path.joined(separator: " › "))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(path.joined(separator: ", "))
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// A page's results start here: a plain label, below the section bars and above the result cards.
 private struct SearchPageSeparatorView: View {
-    let pageIndex: Int
+    let pageLabel: String
     let count: Int
     
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-            
-            Text("Page \(pageIndex + 1)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(Color.primary)
+            Text("Page \(pageLabel)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             
             Spacer()
             
@@ -1638,17 +1675,8 @@ private struct SearchPageSeparatorView: View {
                 )
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-        )
         .padding(.top, 8)
-        .padding(.bottom, 2)
+        .padding(.bottom, 1)
     }
 }
 

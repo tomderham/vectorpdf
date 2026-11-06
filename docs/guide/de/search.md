@@ -1,5 +1,5 @@
-<!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, Suchverlauf, letzte Suchen, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
-<!-- source: 8a443734fd6b -->
+<!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, Suchverlauf, letzte Suchen, Abschnitt, Gliederung, Inhaltsverzeichnis, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- source: 0bf81b258540 -->
 
 # Ein Dokument durchsuchen
 
@@ -8,7 +8,7 @@
 1. Drücke ⌘F. VectorPDF zeigt den Tab „Search“ in der Seitenleiste an.
 2. Gib ein, wonach du suchst. Die Ergebnisse werden angezeigt, sobald sie gefunden werden, beginnend mit der aktuellen Seite.
 
-Jedes Ergebnis zeigt seine Seite und den umgebenden Text, und jeder Treffer wird im Dokument hervorgehoben.
+Die Ergebnisse werden nach Seite aufgelistet, jeweils mit dem umgebenden Text, und jeder Treffer wird im Dokument hervorgehoben. Hat das Dokument eine [Gliederung](outline-and-thumbnails.md), werden die Ergebnisse außerdem nach dem Abschnitt gruppiert, in dem sie stehen. Der Name des Abschnitts bleibt oben in der Liste, während du durch seine Ergebnisse scrollst. Um zu sehen, zu welchen übergeordneten Abschnitten er gehört, halte den Zeiger darüber.
 
 ## Zwischen Ergebnissen wechseln
 

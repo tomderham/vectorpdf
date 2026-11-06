@@ -1,4 +1,4 @@
-<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
+<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
 
 # Search a document
 
@@ -7,7 +7,7 @@
 1. Press ⌘F. VectorPDF shows the Search tab in the sidebar.
 2. Type what you're looking for. Results appear as they're found, starting from the page you're on.
 
-Each result shows its page and the text around it, and every match is highlighted in the document.
+Results are listed by page, each with the text around it, and every match is highlighted in the document. In a document with an [outline](outline-and-thumbnails.md), results are also grouped by the section they're in. The section's name stays at the top of the list while you scroll through its results. To see which larger sections it's part of, hold the pointer over it.
 
 ## Move between results
 

@@ -1,5 +1,5 @@
-<!-- keywords: cercare, ricerca, trova, trova successivo, maiuscole e minuscole, parola intera, ricerca intelligente, schemi ignorati, espressione regolare, tag, ricerche recenti, cronologia ricerche, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, PDF -->
-<!-- source: 8a443734fd6b -->
+<!-- keywords: cercare, ricerca, trova, trova successivo, maiuscole e minuscole, parola intera, ricerca intelligente, schemi ignorati, espressione regolare, tag, ricerche recenti, cronologia ricerche, sezione, struttura, indice, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- source: 0bf81b258540 -->
 
 # Cercare in un documento
 
@@ -8,7 +8,7 @@
 1. Premi ⌘F. VectorPDF mostra il pannello Search nella barra laterale.
 2. Digita ciò che stai cercando. I risultati compaiono man mano che vengono trovati, a partire dalla pagina in cui ti trovi.
 
-Ogni risultato mostra la pagina e il testo circostante, e ogni corrispondenza viene evidenziata nel documento.
+I risultati sono elencati per pagina, ciascuno con il testo circostante, e ogni corrispondenza viene evidenziata nel documento. In un documento con una [struttura](outline-and-thumbnails.md), i risultati sono anche raggruppati per la sezione in cui si trovano. Il nome della sezione resta in cima all’elenco mentre scorri i suoi risultati. Per vedere di quali sezioni più ampie fa parte, tieni il puntatore sopra il nome.
 
 ## Spostarsi tra i risultati
 
