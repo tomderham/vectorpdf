@@ -822,6 +822,31 @@ extension PDFCanvasView {
                 }
             }
 
+            // 3.05 Compare Documents: what differs from the other document
+            let marks = viewModel.compareMarks
+            if !marks.isEmpty {
+                let color = marks.color
+                for rect in marks.changed[pageIdx] ?? [] {
+                    let path = highlightPath(for: PDFQuad(rect: rect.insetBy(dx: -1, dy: -1)), minSize: CGSize(width: 4, height: 8), pFrame: pFrame, pBounds: pBounds)
+                    color.withAlphaComponent(0.28).setFill()
+                    path.fill()
+                }
+                for rect in marks.gaps[pageIdx] ?? [] {
+                    let path = highlightPath(for: PDFQuad(rect: rect), minSize: CGSize(width: 2, height: 8), pFrame: pFrame, pBounds: pBounds)
+                    color.setFill()
+                    path.fill()
+                }
+                // The change chosen in the Changes list, or with Next or Previous Change: filled more
+                // strongly (outlining each line would box in a long change line by line).
+                if let active = marks.active, active.pageIndex == pageIdx {
+                    for rect in active.rects {
+                        let path = highlightPath(for: PDFQuad(rect: rect.insetBy(dx: -1, dy: -1)), minSize: CGSize(width: 4, height: 8), pFrame: pFrame, pBounds: pBounds)
+                        color.withAlphaComponent(rect.width < 4 ? 1 : 0.32).setFill()
+                        path.fill()
+                    }
+                }
+            }
+
             // 3.1 Redaction Found Matches Highlights
             if viewModel.isRedactionBarVisible && viewModel.editRedactTab == .findAndRedact {
                 let pageRedactMatches = viewModel.redactionMatches.filter { $0.result.pageIndex == pageIdx }

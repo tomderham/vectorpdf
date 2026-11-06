@@ -165,6 +165,7 @@ public struct PDFViewerMainView: View {
         initialTarget: SnapshotTarget? = nil,
         isSnapshotWindow: Bool = false,
         groupOrigin: UUID? = nil,
+        comparingOriginal: URL? = nil,
         onOpenNewTab: ((URL) -> Void)? = nil,
         onOpenNewWindow: ((URL) -> Void)? = nil
     ) {
@@ -189,6 +190,10 @@ public struct PDFViewerMainView: View {
         }()
         let vm = PDFViewerViewModel()
         vm.documentTitle = initialTitle
+        if let comparingOriginal {
+            // A Compare Documents tab: this document is the revision.
+            vm.compareSession = DocumentCompareSession(original: comparingOriginal, revised: vm)
+        }
         self._viewModel = StateObject(wrappedValue: vm)
     }
 
@@ -594,16 +599,17 @@ public struct PDFViewerMainView: View {
                 viewModel.onOpenNewWindow = onOpenNewWindow
             }
             viewModel.groupOrigin = groupOrigin
-            viewModel.isTransientWindow = isSnapshotWindow
+            viewModel.isTransientWindow = isSnapshotWindow || viewModel.isComparePane
             if !isSnapshotWindow {
                 PDFViewerAppCoordinator.shared.trackForReadingStateFlush(viewModel)
-                groupAnchors.attach(to: viewModel)
+                if !viewModel.isComparePane { groupAnchors.attach(to: viewModel) }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notif in
             // Flush reading state when window closes.
             if let win = notif.object as? NSWindow, win == viewModel.currentWindow {
                 viewModel.saveReadingStateIfNeeded()
+                viewModel.compareSession?.end()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notif in
@@ -620,6 +626,8 @@ public struct PDFViewerMainView: View {
         }
         .onDrop(of: [UTType.fileURL], isTargeted: nil, perform: handleFileDrop)
         .onReceive(NotificationCenter.default.publisher(for: .openFilePathCommand)) { notif in
+            // A comparison keeps its documents: files opened go to other tabs.
+            guard !viewModel.isComparePane else { return }
             guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
             if let path = notif.object as? String {
                 Task {
@@ -741,6 +749,12 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(1)
                             .help("Search Document (Cmd+F)")
+                        if viewModel.compareSession != nil {
+                            Image(systemName: "plus.forwardslash.minus")
+                                .imageScale(.medium)
+                                .tag(7)
+                                .help("Changes")
+                        } else {
                         Image.anchorIcon
                             .imageScale(.medium)
                             .tag(2)
@@ -769,11 +783,14 @@ public struct PDFViewerMainView: View {
                                 .tag(3)
                                 .help("Ask About This Document")
                         }
+                        }
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
                     .controlSize(.regular)
-                    .segmentedControlTooltips([
+                    .segmentedControlTooltips(viewModel.compareSession != nil
+                        ? ["Outline & Thumbnails of the Revised Document", "Search the Revised Document (Cmd+F)", "Changes"]
+                        : [
                         "Outline & Thumbnails",
                         "Search Document (Cmd+F)",
                         "Anchors"
@@ -1218,6 +1235,8 @@ public struct PDFViewerMainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onAppear { groupAnchors.refresh() }
+                } else if selectedSidebarTab == 7, let session = viewModel.compareSession {
+                    CompareChangesSidebar(session: session)
                 } else if selectedSidebarTab == 5 {
                     LayersSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 6 {
@@ -1449,19 +1468,43 @@ public struct PDFViewerMainView: View {
             // Extend sidebar material through toolbar region.
             .toolbarBackground(.hidden, for: .windowToolbar)
         } detail: {
-            documentCanvas
+            if let session = viewModel.compareSession {
+                // Not a split view: the tab bar and the title bar's drag area take a window's
+                // first split view's left pane for the sidebar.
+                HStack(spacing: 0) {
+                    CompareOriginalPane(session: session)
+                        .frame(maxWidth: .infinity)
+                    Divider()
+                    VStack(spacing: 0) {
+                        ComparePaneHeader(side: .revised, name: session.revisedName)
+                        Divider()
+                        documentCanvas
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            } else {
+                documentCanvas
+            }
         }
         .toolbar {
             documentToolbarContent
         }
         .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
         .toolbarBackground(.visible, for: .windowToolbar)
-        .navigationTitle("")
+        // The title bar hides titles; a comparison's names both documents for its tab.
+        .navigationTitle(viewModel.compareSession != nil ? viewModel.documentTitle : "")
     }
 
     /// Shows or hides the sidebar as the view model decided when the document opened, on the tab
     /// it chose (see PDFViewerViewModel.sidebarOpening).
     private func showSidebarForOpenedDocument() {
+        if viewModel.compareSession != nil {
+            // A comparison opens on its list of changes.
+            viewModel.isSidebarVisible = true
+            sidebarVisibility = .all
+            selectedSidebarTab = 7
+            return
+        }
         sidebarVisibility = viewModel.isSidebarVisible ? .all : .detailOnly
         switch viewModel.sidebarOpeningTab {
         case .contents: selectedSidebarTab = 0
@@ -1482,6 +1525,9 @@ public struct PDFViewerMainView: View {
                     .disabled(viewModel.document == nil)
             }
             
+            // A comparison doesn't rotate, show spreads or mark up; its Changes tab and the Go
+            // menu move between changes.
+            if viewModel.compareSession == nil {
             // Rotate group
             PillToolbarItem {
                 AdaptiveToolbarPair {
@@ -1534,7 +1580,8 @@ public struct PDFViewerMainView: View {
                 }
                 .disabled(viewModel.document == nil || viewModel.isReadOnlyDocument)
             }
-            
+            }
+
             if let doc = viewModel.document {
                 ToolbarItem(placement: .status) {
                     EditablePagePill(viewModel: viewModel, pageCount: doc.pageCount)
@@ -2036,6 +2083,29 @@ public enum DocumentContextMenuHelper {
             menu.addItem(item)
         }
 
+        // Compare this document with another open one, or one chosen.
+        if let doc = viewModel.document, !viewModel.isComparePane {
+            let this = URL(fileURLWithPath: doc.filePath)
+            let compareMenu = NSMenu(title: "Compare With")
+            let compareItem = NSMenuItem(title: "Compare With", action: nil, keyEquivalent: "")
+            compareItem.submenu = compareMenu
+            if let image = NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: nil) {
+                compareItem.image = image
+            }
+            for other in DocumentWindowing.openDocumentURLs where other != this {
+                let item = NSMenuItem(title: other.lastPathComponent, action: #selector(ActionTarget.handleCompare(_:)), keyEquivalent: "")
+                item.target = ActionTarget.shared
+                item.representedObject = (this, other as URL?, viewModel)
+                compareMenu.addItem(item)
+            }
+            if !compareMenu.items.isEmpty { compareMenu.addItem(NSMenuItem.separator()) }
+            let chooseItem = NSMenuItem(title: "Choose…", action: #selector(ActionTarget.handleCompare(_:)), keyEquivalent: "")
+            chooseItem.target = ActionTarget.shared
+            chooseItem.representedObject = (this, nil as URL?, viewModel)
+            compareMenu.addItem(chooseItem)
+            menu.addItem(compareItem)
+        }
+
         menu.addItem(NSMenuItem.separator())
 
         let tabGroups = TabGroupManager.shared.groups
@@ -2136,6 +2206,16 @@ public enum DocumentContextMenuHelper {
                 vm.openDocumentPreferringNewWindow(atPath: path)
             } else if let path = sender.representedObject as? String {
                 PDFViewerViewModel.active?.openDocumentPreferringNewWindow(atPath: path)
+            }
+        }
+
+        @objc func handleCompare(_ sender: NSMenuItem) {
+            guard let (original, revised, vm) = sender.representedObject as? (URL, URL?, PDFViewerViewModel) else { return }
+            let window = vm.currentWindow ?? NSApp.keyWindow
+            if let revised {
+                DocumentWindowing.openComparison(original: original, revised: revised, besides: window)
+            } else {
+                DocumentWindowing.promptCompareDocuments(from: window, original: original)
             }
         }
 

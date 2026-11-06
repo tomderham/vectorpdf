@@ -321,6 +321,10 @@ struct VectorPDF: App {
             }
             .keyboardShortcut("o", modifiers: [.command, .option])
 
+            Button("Compare Documents...") {
+                DocumentWindowing.promptCompareDocuments(from: NSApp.keyWindow)
+            }
+
             Button("Insert Pages from PDF...") {
                 resolvedViewModel?.promptImportPDF(atSlot: nil)
             }
@@ -793,6 +797,21 @@ struct VectorPDF: App {
             }
             .keyboardShortcut(.downArrow, modifiers: .command)
             .disabled(!hasDocument || !(resolvedViewModel?.canGoNextPage ?? false))
+
+            Divider()
+
+            // In a Compare Documents tab, from either document.
+            Button("Previous Change") {
+                resolvedViewModel?.compareContext?.previousChange()
+            }
+            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+            .disabled(resolvedViewModel?.compareContext == nil)
+
+            Button("Next Change") {
+                resolvedViewModel?.compareContext?.nextChange()
+            }
+            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+            .disabled(resolvedViewModel?.compareContext == nil)
 
             Divider()
 

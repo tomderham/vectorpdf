@@ -22,6 +22,8 @@
 #include <string.h>
 #include <strings.h>
 #include <os/lock.h>
+#include <os/log.h>
+#include <dispatch/dispatch.h>
 #include <time.h>
 
 // Thread Synchronization Locks for MuPDF context cloning. Every fz_malloc, fz_free and reference
@@ -48,6 +50,18 @@ static void mupdf_quiet_warning(void *user, const char *message) {
     (void)message;
 }
 
+// Errors MuPDF recovers from (a damaged content stream, a missing resource) go to the system log
+// at debug level, not the terminal: a document with a few damaged pages prints a line for each
+// whenever they're read, and a comparison or search reads every page. Errors that stop an
+// operation still reach the caller through the bridge's error messages.
+static void mupdf_log_error(void *user, const char *message) {
+    (void)user;
+    static os_log_t log;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ log = os_log_create("VectorPDF", "MuPDF"); });
+    os_log_debug(log, "%{public}s", message);
+}
+
 // Context Lifecycle
 fz_context *mupdf_context_create(size_t max_store_bytes) {
     fz_locks_context locks;
@@ -59,6 +73,7 @@ fz_context *mupdf_context_create(size_t max_store_bytes) {
     fz_context *ctx = fz_new_context(NULL, &locks, store);
     if (ctx) {
         fz_set_warning_callback(ctx, mupdf_quiet_warning, NULL);
+        fz_set_error_callback(ctx, mupdf_log_error, NULL);
         fz_register_document_handlers(ctx);
     }
     return ctx;
@@ -73,6 +88,7 @@ fz_context *mupdf_context_clone(fz_context *base) {
     fz_context *ctx = fz_clone_context(base);
     if (ctx) {
         fz_set_warning_callback(ctx, mupdf_quiet_warning, NULL);
+        fz_set_error_callback(ctx, mupdf_log_error, NULL);
     }
     return ctx;
 }
@@ -118,6 +134,7 @@ fz_context *mupdf_context_create_independent(size_t max_store_bytes) {
         return NULL;
     }
     fz_set_warning_callback(ctx, mupdf_quiet_warning, NULL);
+    fz_set_error_callback(ctx, mupdf_log_error, NULL);
     fz_register_document_handlers(ctx);
     return ctx;
 }

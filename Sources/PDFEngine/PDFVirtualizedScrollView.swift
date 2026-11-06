@@ -102,6 +102,15 @@ public final class PDFScrollView: NSScrollView {
         }
         super.mouseDown(with: event)
     }
+
+    /// When the user last scrolled this view with a mouse wheel or trackpad, which a Compare
+    /// Documents tab uses to tell the document being read from the one following it.
+    private(set) var lastUserScroll: Date = .distantPast
+
+    public override func scrollWheel(with event: NSEvent) {
+        lastUserScroll = Date()
+        super.scrollWheel(with: event)
+    }
 }
 
 /// High-performance AppKit virtualized scroll view hosting a single native PDFCanvasView.
@@ -139,6 +148,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         
         context.coordinator.scrollView = scrollView
         context.coordinator.canvasView = canvasView
+        viewModel.hostScrollView = scrollView
         
         return scrollView
     }

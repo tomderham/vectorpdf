@@ -24,7 +24,8 @@ extension PDFCanvasView {
     // MARK: - AcroForm Control Synchronization
     
     public func syncFormControls() {
-        guard let doc = viewModel.document else {
+        // A Compare Documents pane is read-only: its fields show as drawn on the page.
+        guard let doc = viewModel.document, !viewModel.isComparePane else {
             for (_, view) in activeFormControls {
                 view.removeFromSuperview()
                 forgetPlacement(of: view)

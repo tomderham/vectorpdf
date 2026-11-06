@@ -103,8 +103,29 @@ public final class PDFViewerViewModel: ObservableObject {
 
     /// True for an EPUB, XPS, CBZ or FB2 document, which MuPDF reads but can't save. It keeps
     /// text selection, links and search: only the tools that write to the file are unavailable (markup, measurement, redaction, page
-    /// edits, saving).
-    public var isReadOnlyDocument: Bool { document?.isPDF == false }
+    /// edits, saving). Also true in a Compare Documents pane, which is for reading only.
+    public var isReadOnlyDocument: Bool { document?.isPDF == false || isComparePane }
+
+    /// True for one of the two panes of a Compare Documents tab (see `DocumentCompareSession`):
+    /// read-only, and not the window's document, so loading doesn't set the window's title or
+    /// add to Open Recent. Implies `isTransientWindow`.
+    public internal(set) var isComparePane = false {
+        didSet { if isComparePane { isTransientWindow = true } }
+    }
+
+    /// What a Compare Documents pane highlights: the words that differ, a marker where the other
+    /// document has text this one doesn't, and the change chosen with Next/Previous Change.
+    @Published public internal(set) var compareMarks = CompareMarks()
+
+    /// The comparison when this is a Compare Documents tab, whose document is the revision.
+    public internal(set) var compareSession: DocumentCompareSession?
+
+    /// The comparison this document is one side of, in either pane of a Compare Documents tab:
+    /// for menu commands, which go to whichever pane was clicked last.
+    public internal(set) weak var compareContext: DocumentCompareSession?
+
+    /// The scroll view showing this document, once it's on screen.
+    public internal(set) weak var hostScrollView: NSScrollView?
 
     /// True from when a document starts opening in this window until it's open or has failed. The
     /// window has no document yet, but it isn't an empty Start window.
@@ -757,10 +778,12 @@ public final class PDFViewerViewModel: ObservableObject {
             let fileName = fileURL.lastPathComponent
             self.documentTitle = fileName
             PDFViewerAppCoordinator.shared.registerActive(self)
-            PDFViewerAppCoordinator.shared.noteRecentDocument(fileURL)
+            if !isComparePane {
+                PDFViewerAppCoordinator.shared.noteRecentDocument(fileURL)
+            }
 
             // Set representedURL and window title on this tab's window
-            if let window = currentWindow ?? NSApplication.shared.keyWindow {
+            if !isComparePane, let window = currentWindow ?? NSApplication.shared.keyWindow {
                 window.title = fileName
                 window.representedURL = fileURL
                 window.isDocumentEdited = false

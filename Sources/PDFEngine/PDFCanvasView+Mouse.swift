@@ -110,7 +110,7 @@ extension PDFCanvasView {
         }
 
         // For .select, .text, .callout and .shape modes: Check if clicked on an existing annotation that can move
-        if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .shape {
+        if !viewModel.isComparePane, viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout || viewModel.canvasMode == .shape {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
                 let list = viewModel.shownAnnotations(onPage: pageIdx)
 

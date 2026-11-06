@@ -72,6 +72,45 @@ struct SearchBenchmarkTests {
                      Double(baseline) / 1_048_576, Double(peak) / 1_048_576))
     }
 
+    /// Compare Documents on the same document and a revision with pages taken out and others put
+    /// in: reading both documents' words, then diffing them. The document repeats its sources,
+    /// so most of its text occurs several times: a hard case for anchoring.
+    @Test func compareLargeDocuments() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let originalURL = dir.appendingPathComponent("original.pdf")
+        let revisedURL = dir.appendingPathComponent("revised.pdf")
+        let output = PDFDocument()
+        let sources = ["hr1968-ih.pdf", "lcms2-tutorial.pdf", "nist-tn-2255.pdf", "rfc9457.pdf"]
+            .compactMap { PDFDocument(url: Fixture.url($0)) }
+        while output.pageCount < 1000 {
+            for source in sources {
+                for i in 0..<source.pageCount {
+                    if let page = source.page(at: i)?.copy() as? PDFPage { output.insert(page, at: output.pageCount) }
+                }
+            }
+        }
+        #expect(output.write(to: originalURL))
+        // Twenty pages out near the start, and five pages of the RFC in near the middle.
+        for _ in 0..<20 { output.removePage(at: 50) }
+        for i in 0..<5 {
+            if let page = sources[3].page(at: i)?.copy() as? PDFPage { output.insert(page, at: 500 + i) }
+        }
+        #expect(output.write(to: revisedURL))
+
+        let start = Date()
+        let original = try #require(try ComparedText.load(filePath: originalURL.path))
+        let revised = try #require(try ComparedText.load(filePath: revisedURL.path))
+        let loaded = Date()
+        let comparison = DocumentComparison(original: original, revised: revised)
+        let done = Date()
+        print(String(format: "CompareBenchmark: %d and %d pages, %d and %d words: read in %.0f ms, diffed in %.0f ms; %d changes, %d anchors, similarity %.3f",
+                     original.pageCount, revised.pageCount, original.words.count, revised.words.count,
+                     loaded.timeIntervalSince(start) * 1000, done.timeIntervalSince(loaded) * 1000,
+                     comparison.changes.count, comparison.anchors.count, comparison.similarity))
+        #expect(comparison.similarity > 0.95)
+    }
+
     private static func residentMemory() -> UInt64 {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)
