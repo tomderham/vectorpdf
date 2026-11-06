@@ -1,5 +1,5 @@
 <!-- keywords: Tab, Tabs, Fenster, neuer Tab, neues Fenster, untergeordnete Fenster, Ankerfenster, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: 28be3e93df4e -->
+<!-- source: 44d49fcd2f34 -->
 
 # Tabs und Fenster
 
@@ -10,6 +10,7 @@ VectorPDF verwendet die standardmäßigen Fenster-Tabs von macOS.
 - **Neuer Tab:** Drücke ⌘T oder klicke in der Tableiste auf die Taste „+“.
 - **Ein PDF in einem neuen Tab öffnen:** Drücke ⌥⌘O oder ziehe es auf ein geöffnetes Dokument.
 - **Neues Fenster:** Drücke ⌘N für ein leeres Fenster oder ⌘O, um ein PDF in einem neuen Fenster zu öffnen.
+- **Tab verschieben:** Ziehe ihn auf die Tableiste eines anderen Fensters oder aus der Tableiste heraus, um ihm ein eigenes Fenster zu geben.
 - **Tabs wechseln:** Drücke ⇧⌘] für den nächsten Tab und ⇧⌘[ für den vorherigen (Go > Next Tab und Go > Previous Tab). ⌃Tab und ⇧⌃Tab funktionieren ebenfalls.
 
 Um die geöffneten Tabs als Gruppe zu sichern, klicke mit der rechten Maustaste auf den Titel des Dokuments und wähle dann „Save All Open Tabs as a Group“. Weitere Informationen findest du unter [Favoriten und Tabgruppen](favorites-and-tab-groups.md).

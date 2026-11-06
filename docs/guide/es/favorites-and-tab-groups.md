@@ -1,5 +1,5 @@
 <!-- keywords: favorito, favoritos, grupo de pestañas, grupos de pestañas, grupo, grupos, fijar, estrella, sesión, proyecto, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: e25fc5652272 -->
+<!-- source: fbdc29d05937 -->
 
 # Favoritos y grupos de pestañas
 
@@ -28,7 +28,7 @@ Elige el grupo en el menú Favorites y luego elige Open, o haz clic en él en la
 
 ### Cambiar un grupo
 
-Abre el grupo, añade o cierra pestañas y elige Favorites > Update Group “nombre” with Open Tabs, donde “nombre” es el nombre del grupo.
+Abre el grupo, añade o cierra pestañas (o arrastra pestañas desde otras ventanas) y elige Favorites > Update Group “nombre” with Open Tabs, donde “nombre” es el nombre del grupo. Una pestaña que arrastres fuera de la ventana del grupo deja de formar parte del grupo.
 
 ### Eliminar un grupo
 

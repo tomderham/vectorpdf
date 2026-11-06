@@ -1,5 +1,5 @@
 <!-- keywords: お気に入り, タブグループ, グループ, ピン, スター, セッション, プロジェクト, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: e25fc5652272 -->
+<!-- source: fbdc29d05937 -->
 
 # お気に入りとタブグループ
 
@@ -28,7 +28,7 @@ Favorites メニューでグループを選択してから Open を選択する�
 
 ### グループを変更する
 
-グループを開いてタブを追加するか閉じてから、Favorites > Update Group “名前” with Open Tabs を選択します。“名前” はグループの名前です。
+グループを開いてタブを追加するか閉じて(ほかのウインドウからタブをドラッグしてくることもできます)から、Favorites > Update Group “名前” with Open Tabs を選択します。“名前” はグループの名前です。グループのウインドウからドラッグして出したタブは、グループに含まれなくなります。
 
 ### グループを削除する
 

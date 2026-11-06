@@ -1,5 +1,5 @@
 <!-- keywords: preferito, preferiti, gruppo di pannelli, gruppi di pannelli, gruppo, gruppi, fissare, stella, sessione, progetto, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: e25fc5652272 -->
+<!-- source: fbdc29d05937 -->
 
 # Preferiti e gruppi di pannelli
 
@@ -28,7 +28,7 @@ Scegli il gruppo nel menu Favorites, quindi scegli Open, oppure fai clic su di e
 
 ### Modificare un gruppo
 
-Apri il gruppo, aggiungi o chiudi dei pannelli, quindi scegli Favorites > Update Group “nome” with Open Tabs, dove “nome” è il nome del gruppo.
+Apri il gruppo, aggiungi o chiudi dei pannelli (o trascinane altri da altre finestre), quindi scegli Favorites > Update Group “nome” with Open Tabs, dove “nome” è il nome del gruppo. Un pannello che trascini fuori dalla finestra del gruppo non fa più parte del gruppo.
 
 ### Eliminare un gruppo
 

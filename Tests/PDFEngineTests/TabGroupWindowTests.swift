@@ -84,4 +84,44 @@ struct TabGroupWindowTests {
             try await Task.sleep(for: .milliseconds(400))
         }
     }
+
+    /// A saved group's tabs share other windows' tab-bar identity once open, so tabs can be
+    /// dragged in and out, and a tab joins or leaves the group as it moves.
+    @Test(.showsWindows) func tabsMoveIntoAndOutOfASavedGroup() async throws {
+        _ = NSApplication.shared
+        let group = TabGroup(name: "Group", documentPaths: [testFile("rfc9457.pdf"), testFile("nist-tn-2255.pdf")])
+        func viewModel(_ window: NSWindow) -> PDFViewerViewModel? {
+            (window.contentViewController as? NSHostingController<PDFViewerMainView>)?.rootView.viewModel
+        }
+
+        let opened = try #require(DocumentWindowing.openGroup(group))
+        try await Task.sleep(for: .milliseconds(600))
+        let groupTabs = opened.tabbedWindows ?? [opened]
+        #expect(groupTabs.count == 2)
+        #expect(groupTabs.allSatisfy { $0.tabbingIdentifier == DocumentWindowing.documentTabbingIdentifier })
+        #expect(groupTabs.allSatisfy { viewModel($0)?.groupOrigin == group.id })
+
+        let plain = DocumentWindowing.makeWindow(for: URL(fileURLWithPath: testFile("hr1968-ih.pdf")))
+        plain.setFrameOrigin(NSPoint(x: opened.frame.minX + 60, y: opened.frame.minY - 60))
+        plain.orderFront(nil)
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(plain.tabbingIdentifier == opened.tabbingIdentifier)
+
+        // Out: the group's second tab moves to the plain window and leaves the group.
+        let leaving = groupTabs[1]
+        plain.addTabbedWindow(leaving, ordered: .above)
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(viewModel(leaving)?.groupOrigin == nil)
+        #expect(viewModel(groupTabs[0])?.groupOrigin == group.id)
+
+        // In: the plain window's own tab moves to the group's window and joins it.
+        opened.addTabbedWindow(plain, ordered: .above)
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(viewModel(plain)?.groupOrigin == group.id)
+
+        for window in Set((opened.tabbedWindows ?? [opened]) + (leaving.tabbedWindows ?? [leaving])) {
+            window.close()
+        }
+        try await Task.sleep(for: .milliseconds(400))
+    }
 }

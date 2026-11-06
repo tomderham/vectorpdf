@@ -27,7 +27,7 @@ Choose the group in the Favorites menu, then choose Open, or click it on the Sta
 
 ### Change a group
 
-Open the group, add or close tabs, then choose Favorites > Update Group “name” with Open Tabs, where “name” is the group's name.
+Open the group, add or close tabs (or drag tabs in from other windows), then choose Favorites > Update Group “name” with Open Tabs, where “name” is the group's name. A tab you drag out of the group's window is no longer part of the group.
 
 ### Delete a group
 

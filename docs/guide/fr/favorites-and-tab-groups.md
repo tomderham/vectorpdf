@@ -1,5 +1,5 @@
 <!-- keywords: favori, favoris, groupe d’onglets, groupes d’onglets, groupe, groupes, épingler, étoile, projet, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: e25fc5652272 -->
+<!-- source: fbdc29d05937 -->
 
 # Favorites et Tab Groups
 
@@ -28,7 +28,7 @@ Choisissez le groupe dans le menu Favorites, puis choisissez Open, ou cliquez de
 
 ### Modifier un groupe
 
-Ouvrez le groupe, ajoutez ou fermez des onglets, puis choisissez Favorites > Update Group “nom” with Open Tabs, où “nom” est le nom du groupe.
+Ouvrez le groupe, ajoutez ou fermez des onglets (ou faites glisser des onglets depuis d’autres fenêtres), puis choisissez Favorites > Update Group “nom” with Open Tabs, où “nom” est le nom du groupe. Un onglet que vous faites glisser hors de la fenêtre du groupe ne fait plus partie du groupe.
 
 ### Supprimer un groupe
 

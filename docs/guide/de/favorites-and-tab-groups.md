@@ -1,5 +1,5 @@
 <!-- keywords: Favorit, Favoriten, Tabgruppe, Tabgruppen, Gruppe, Gruppen, anheften, Stern, Sitzung, Projekt, favorite, favorites, tab group, tab groups, group, groups, pin, star, session, project -->
-<!-- source: e25fc5652272 -->
+<!-- source: fbdc29d05937 -->
 
 # Favoriten und Tabgruppen
 
@@ -28,7 +28,7 @@ Wähle die Gruppe im Menü „Favorites“ aus und wähle dann „Open“, oder 
 
 ### Eine Gruppe ändern
 
-Öffne die Gruppe, füge Tabs hinzu oder schließe welche und wähle dann Favorites > Update Group “Name” with Open Tabs, wobei “Name” der Name der Gruppe ist.
+Öffne die Gruppe, füge Tabs hinzu oder schließe welche (oder ziehe Tabs aus anderen Fenstern hinein) und wähle dann Favorites > Update Group “Name” with Open Tabs, wobei “Name” der Name der Gruppe ist. Ein Tab, den du aus dem Fenster der Gruppe herausziehst, gehört nicht mehr zur Gruppe.
 
 ### Eine Gruppe löschen
 

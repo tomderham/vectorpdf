@@ -35,6 +35,20 @@ final class PDFViewerWindow: NSWindow {
         didSet { TitlebarDragStrip.install(in: self) }
     }
 
+    private var tabGroupObservation: NSKeyValueObservation?
+
+    override init(contentRect: NSRect, styleMask style: NSWindow.StyleMask, backing backingStoreType: NSWindow.BackingStoreType, defer flag: Bool) {
+        super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
+        // A tab dragged into or out of a saved group's window joins or leaves that group. AppKit
+        // reports a move more than once, so read the group once it's done.
+        tabGroupObservation = observe(\.tabGroup) { window, _ in
+            DispatchQueue.main.async { [weak window] in
+                guard let window, let viewModel = PDFViewerAppCoordinator.shared.viewModel(for: window) else { return }
+                viewModel.groupOrigin = DocumentWindowing.savedGroupID(for: window)
+            }
+        }
+    }
+
     /// The document's, for Edit > Undo. Asking the delegate isn't enough: the window makes its
     /// own undo manager before the document's delegate is attached, and keeps using it.
     override var undoManager: UndoManager? {
@@ -175,6 +189,19 @@ public enum DocumentWindowing {
     /// Installs a handler on the base NSWindow class so that clicking the native tab-bar "+"
     /// button on any window not already covered by the PDFViewerWindow subclass's own override
     /// (e.g. a SnapshotWindowManager preview window) opens a new tab instead of a silent no-op.
+    /// Every document window's tab-bar identity, so a tab can be dragged between any two of them,
+    /// saved groups included.
+    static let documentTabbingIdentifier = "VectorPDFDocument"
+
+    /// The saved Tab Group each open group's tabs belong to. It belongs to the tab group, not
+    /// the tab: one dragged out leaves the group, one dragged in joins it.
+    private static let savedGroupIDs = NSMapTable<NSWindowTabGroup, NSUUID>.weakToStrongObjects()
+
+    /// The saved Tab Group `window`'s tabs were opened from, if it's still among them.
+    static func savedGroupID(for window: NSWindow) -> UUID? {
+        window.tabGroup.flatMap { savedGroupIDs.object(forKey: $0) as UUID? }
+    }
+
     public static func installTabBarPlusButtonHandler() {
         let sel = #selector(NSWindow.newWindowForTab(_:))
         guard class_getInstanceMethod(NSWindow.self, sel) == nil else { return }
@@ -236,9 +263,7 @@ public enum DocumentWindowing {
         window.tabbingMode = .preferred
         // Listed by DockMenu instead of AppKit, whose list SwiftUI's menu rebuilds lose.
         window.isExcludedFromWindowsMenu = true
-        if let tabbingIdentifier {
-            window.tabbingIdentifier = tabbingIdentifier
-        }
+        window.tabbingIdentifier = tabbingIdentifier ?? documentTabbingIdentifier
         // Show the tab bar by default on single-tab windows.
         if window.tabGroup?.isTabBarVisible != true {
             window.toggleTabBar(nil)
@@ -358,8 +383,9 @@ public enum DocumentWindowing {
         return true
     }
 
-    /// Opens every document in `group` as tabs of a window, under a tab-bar identity unique
-    /// to that group (so it never merges with unrelated tabs already open elsewhere).
+    /// Opens every document in `group` as tabs of a window. They open under a tab-bar identity of
+    /// their own, so macOS doesn't merge them into a window already open, and take the usual one
+    /// once they're on screen, so tabs can be dragged in and out.
     /// If `sourceWindow` (or the key window) is a standalone empty Start Screen window with
     /// no other tabs and no document loaded, this seamlessly replaces that window at its current
     /// frame instead of opening a redundant new window and leaving the blank one orphaned.
@@ -388,7 +414,15 @@ public enum DocumentWindowing {
                 firstWindow = window
             }
         }
+        if let tabGroup = firstWindow?.tabGroup {
+            savedGroupIDs.setObject(group.id as NSUUID, forKey: tabGroup)
+        }
         firstWindow?.makeKeyAndOrderFront(nil)
+        DispatchQueue.main.async { [weak firstWindow] in
+            for window in firstWindow.map({ $0.tabbedWindows ?? [$0] }) ?? [] {
+                window.tabbingIdentifier = documentTabbingIdentifier
+            }
+        }
         closeAfterCurrentEvent(windowToReplace)
         return firstWindow
     }

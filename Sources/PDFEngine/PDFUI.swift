@@ -598,7 +598,8 @@ public struct PDFViewerMainView: View {
             if let onOpenNewWindow = onOpenNewWindow {
                 viewModel.onOpenNewWindow = onOpenNewWindow
             }
-            viewModel.groupOrigin = groupOrigin
+            // The window's group if it has one by now: the tab may have been dragged since it opened.
+            viewModel.groupOrigin = viewModel.currentWindow.map(DocumentWindowing.savedGroupID(for:)) ?? groupOrigin
             viewModel.isTransientWindow = isSnapshotWindow || viewModel.isComparePane
             if !isSnapshotWindow {
                 PDFViewerAppCoordinator.shared.trackForReadingStateFlush(viewModel)
