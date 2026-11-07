@@ -23,6 +23,8 @@ Saves a PDF with annotations and form fields made part of the page, so they can'
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
 
+The flattened PDF has only what's on the [layers](layers.md) shown. Hidden layers are left out, with everything on them, annotations included. The layers left can still be shown and hidden, and annotations flattened onto the page stay on their layers.
+
 > **Note:** Flattening doesn't remove what's underneath. To remove content, use [redaction](redact.md).
 
 ## Optimized PDF

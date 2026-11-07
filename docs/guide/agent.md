@@ -9,6 +9,8 @@ The Agent answers questions about the open document, and shows you the passages 
 1. Click the Ask About This Document tab in the sidebar. The first time, VectorPDF indexes the document on your Mac, and shows its progress.
 2. Type a question, then press Return, or click Ask. Press ⇧Return for a new line.
 
+In a document with [layers](layers.md), only the layers shown are indexed. If you show or hide layers, the document is indexed again.
+
 Under the answer, click **Sources** to see the passages it used, with their pages. Passages the answer cites are marked **Cited**. Click a passage to go to it.
 
 You can ask follow-up questions. To start again, click **New Conversation**.

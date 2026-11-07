@@ -1,5 +1,5 @@
 <!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # In andere Formate exportieren
 
@@ -23,6 +23,8 @@ Sichert ein PDF, in dem Anmerkungen und Formularfelder fest in die Seite eingebe
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+Das reduzierte PDF enthält nur, was auf den angezeigten [Ebenen](layers.md) liegt. Ausgeblendete Ebenen werden mit allem, was darauf liegt, weggelassen, auch mit Anmerkungen. Die verbleibenden Ebenen lassen sich weiterhin ein- und ausblenden, und Anmerkungen, die in die Seite reduziert werden, bleiben auf ihren Ebenen.
 
 > **Hinweis:** Beim Reduzieren wird nicht entfernt, was darunter liegt. Um Inhalte zu entfernen, verwende die [Schwärzung](redact.md).
 

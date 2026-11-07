@@ -1,5 +1,5 @@
 <!-- keywords: Agent, IA, perguntar, pergunta, perguntas, respostas, fontes, resumir, conversa, AI, ask, question, questions, Apple Intelligence, answers, sources, summarize, chat -->
-<!-- source: 262e5b31abb2 -->
+<!-- source: 7759f941e883 -->
 
 # Fazer perguntas sobre um documento
 
@@ -9,6 +9,8 @@ O Agent responde a perguntas sobre o documento aberto e mostra os trechos em que
 
 1. Clique na aba Ask About This Document na barra lateral. Na primeira vez, o VectorPDF indexa o documento no seu Mac e mostra o progresso.
 2. Digite uma pergunta e pressione Return ou clique em Ask. Pressione ⇧Return para inserir uma nova linha.
+
+Em um documento com [camadas](layers.md), só as camadas mostradas são indexadas. Se você mostrar ou ocultar camadas, o documento é indexado de novo.
 
 Abaixo da resposta, clique em **Sources** para ver os trechos usados, com suas páginas. Os trechos citados na resposta aparecem marcados como **Cited**. Clique em um trecho para ir até ele.
 

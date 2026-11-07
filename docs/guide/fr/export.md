@@ -1,5 +1,5 @@
 <!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, optimiser, optimisé, réduire la taille, compresser, plus léger, images, polices, contours, vectoriser le texte, traceur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # Exporter vers d’autres formats
 
@@ -23,6 +23,8 @@ Enregistre un PDF dont les annotations et les champs de formulaire font partie i
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+Le PDF aplati ne contient que ce qui se trouve sur les [calques](layers.md) affichés. Les calques masqués sont exclus avec tout ce qu’ils contiennent, annotations comprises. Les calques restants peuvent toujours être affichés et masqués, et les annotations aplaties sur la page restent sur leurs calques.
 
 > **Remarque :** L’aplatissement ne supprime pas ce qui se trouve en dessous. Pour retirer du contenu, utilisez le [caviardage](redact.md).
 

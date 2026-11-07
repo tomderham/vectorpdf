@@ -1,5 +1,5 @@
 <!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # 他のフォーマットに書き出す
 
@@ -23,6 +23,8 @@ Word などのアプリで編集できる `.docx` ファイルを保存します
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+フラット化した PDF には、表示している[レイヤー](layers.md)上のものだけが含まれます。非表示のレイヤーは、注釈を含め、その上にあるものすべてとともに除外されます。残ったレイヤーは引き続き表示と非表示を切り替えられ、ページにフラット化された注釈は元のレイヤー上に残ります。
 
 > **注記:** フラット化しても、下にある内容は削除されません。内容を削除するには、[墨消し](redact.md)を使用してください。
 

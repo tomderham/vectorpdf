@@ -27,12 +27,20 @@ struct LayersSidebarView: View {
         viewModel.layers.filter { $0.kind != .heading }.count
     }
 
+    private var layerCountText: String {
+        "\(layerCount) Layer\(layerCount == 1 ? "" : "s")"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("\(layerCount) Layer\(layerCount == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if viewModel.layerConfigurations.isEmpty {
+                    Text(layerCountText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    LayerConfigurationMenu(viewModel: viewModel, layerCountText: layerCountText)
+                }
                 Spacer()
                 if !viewModel.isReadOnlyDocument {
                     Button {
@@ -81,7 +89,7 @@ struct LayersSidebarView: View {
                 Image(systemName: "info.circle")
                     .font(.caption2)
                     .padding(.top, 1)
-                Text("Hidden layers, and annotations on them, aren't printed, selected or found by search. Which layers are shown isn't saved.")
+                Text("Hidden layers, and annotations on them, are left out of printing, selection, search and flattened PDFs. Which layers are shown isn't saved.")
                     .font(.caption2)
             }
             .foregroundStyle(.secondary)
@@ -90,6 +98,47 @@ struct LayersSidebarView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Chooses one of the ways the document offers its layers to be shown (its layer
+/// configurations), in place of the layer count at the top of the Layers tab. Shown only for a
+/// document offering more than its default.
+private struct LayerConfigurationMenu: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    let layerCountText: String
+
+    private var title: String {
+        let name = viewModel.chosenLayerConfiguration?.displayName ?? "Default"
+        return viewModel.isLayerConfigurationChanged ? "\(name) (Changed)" : name
+    }
+
+    var body: some View {
+        Menu {
+            Section("Show Layers As") {
+                ForEach(viewModel.layerConfigurations) { configuration in
+                    Button {
+                        viewModel.chooseLayerConfiguration(configuration)
+                    } label: {
+                        if configuration.id == viewModel.layerConfiguration {
+                            Label(configuration.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(configuration.displayName)
+                        }
+                    }
+                }
+            }
+            Divider()
+            Text(layerCountText)
+        } label: {
+            Text(title)
+                .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help(viewModel.isLayerConfigurationChanged
+              ? "Layers have been shown or hidden since this configuration was chosen. Choose it again to put them back."
+              : "The document's layer configurations: each shows and hides layers its own way")
     }
 }
 

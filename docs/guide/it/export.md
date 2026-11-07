@@ -1,5 +1,5 @@
 <!-- keywords: esportare, esportazione, convertire, testo semplice, testo, appiattire, appiattito, riepilogo annotazioni, ottimizzare, ottimizzato, ridurre dimensioni, comprimere, più leggero, immagini, font, contorni, testo in contorni, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # Esportare in altri formati
 
@@ -23,6 +23,8 @@ Salva un PDF in cui le annotazioni e i campi dei moduli diventano parte della pa
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+Il PDF appiattito contiene solo ciò che si trova sui [livelli](layers.md) mostrati. I livelli nascosti vengono esclusi con tutto ciò che contengono, annotazioni comprese. I livelli rimasti si possono ancora mostrare e nascondere, e le annotazioni appiattite nella pagina restano sui loro livelli.
 
 > **Nota:** l'appiattimento non rimuove ciò che si trova sotto. Per rimuovere contenuti, usa l'[oscuramento](redact.md).
 

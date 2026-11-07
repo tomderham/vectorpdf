@@ -1,5 +1,5 @@
-<!-- keywords: 图层, 可选内容, CAD, 图纸, 显示, 隐藏, 可见性, 标记, 注释, 新建图层, 重命名图层, 删除图层, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: 图层, 可选内容, CAD, 图纸, 显示, 隐藏, 可见性, 标记, 注释, 新建图层, 重命名图层, 删除图层, 图层配置, 配置, 图层状态, 出图, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # 显示和隐藏图层
 
@@ -12,7 +12,15 @@
 - **标题：** 用于将列在其下方的图层归为一组，标题本身不能隐藏。
 - **锁定的图层：** 旁边带有锁形图标。文稿不允许显示或隐藏它们。
 
-你隐藏的图层在[打印](print.md)、[选择文本](select-text.md)或[搜索](search.md)时也会被排除，因此你只会处理所看到的内容。
+你隐藏的图层在[打印](print.md)、[选择文本](select-text.md)、[搜索](search.md)、[导出拼合的 PDF](export.md#flattened-pdf)或[询问 Agent](agent.md)时也会被排除，因此你只会处理所看到的内容。
+
+## 选取图层配置
+
+有些文稿提供多种显示图层的方式，例如一种用于出图、每个专业一种或每种语言一种。在这类文稿中，Layers 标签页顶部会显示正在使用的配置，而不是图层数量。除非文稿为其默认配置命名，否则在你选取其他配置之前，它显示为 **Default**。
+
+点按它，然后选取一个配置。图层会按该配置的设定显示和隐藏，并按它的顺序列出。
+
+如果之后你显示或隐藏了某个图层，配置名称后会出现 **(Changed)**。再次选取该配置即可恢复其图层。
 
 ## 将注释放在图层上
 
@@ -40,6 +48,6 @@
 
 你添加、重命名或删除的图层会随文稿一起存储，注释所在的图层也是如此。
 
-显示哪些图层不会随文稿存储。下次打开文稿时，其图层会按照文稿本身的设置显示，你发送文稿的对象看到的也一样。
+显示哪些图层以及你选取了哪个配置都不会随文稿存储。下次打开文稿时，其图层会按照文稿本身的设置显示，你发送文稿的对象看到的也一样。
 
 > **注：** 带有图层的一两页文稿打开时会显示 Layers 标签页，除非你已为该文稿隐藏边栏。使用工具栏中的边栏按钮可显示边栏。

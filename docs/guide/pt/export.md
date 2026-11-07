@@ -1,5 +1,5 @@
 <!-- keywords: exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, otimizar, otimizado, reduzir tamanho, comprimir, menor, imagens, fontes, contornos, texto em contornos, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # Exportar para outros formatos
 
@@ -23,6 +23,8 @@ Salva um PDF em que as anotações e os campos de formulário passam a fazer par
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+O PDF nivelado tem só o que está nas [camadas](layers.md) mostradas. As camadas ocultas ficam de fora, com tudo o que há nelas, inclusive anotações. As camadas que restam ainda podem ser mostradas e ocultadas, e as anotações niveladas na página continuam nas suas camadas.
 
 > **Nota:** O nivelamento não remove o que está por baixo. Para remover conteúdo, use o [tarjamento](redact.md).
 

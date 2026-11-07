@@ -1,5 +1,5 @@
-<!-- keywords: calques, calque, contenu facultatif, CAO, plans, dessins, afficher, masquer, visibilité, annotations, nouveau calque, renommer un calque, supprimer un calque, layers, layer, optional content, OCG, CAD, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: calques, calque, contenu facultatif, CAO, plans, dessins, afficher, masquer, visibilité, annotations, nouveau calque, renommer un calque, supprimer un calque, configuration de calques, configurations, états des calques, traçage, layers, layer, optional content, OCG, CAD, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # Afficher et masquer les calques
 
@@ -12,7 +12,15 @@ L’onglet Layers n’apparaît en haut de la barre latérale que si le document
 - **Titres :** ils regroupent les calques listés en dessous et ne peuvent pas être masqués eux-mêmes.
 - **Calques verrouillés :** ils ont un cadenas à côté. Le document ne permet pas de les afficher ou de les masquer.
 
-Les calques que vous masquez sont aussi exclus quand vous [imprimez](print.md), [sélectionnez du texte](select-text.md) ou [effectuez une recherche](search.md) : vous ne travaillez qu’avec ce que vous voyez.
+Les calques que vous masquez sont aussi exclus quand vous [imprimez](print.md), [sélectionnez du texte](select-text.md), [effectuez une recherche](search.md), [exportez un PDF aplati](export.md#flattened-pdf) ou [interrogez l’Agent](agent.md) : vous ne travaillez qu’avec ce que vous voyez.
+
+## Choisir une configuration de calques
+
+Certains documents proposent plusieurs façons d’afficher leurs calques, par exemple une pour le traçage, une par corps de métier ou une par langue. Dans ce cas, le haut de l’onglet Layers indique la configuration utilisée, à la place du nombre de calques. Il s’agit de **Default** tant que vous n’en choisissez pas une autre, sauf si le document nomme sa configuration par défaut.
+
+Cliquez dessus, puis choisissez une configuration. Ses calques sont affichés et masqués comme elle l’indique, et listés comme elle les liste.
+
+Si vous affichez ou masquez ensuite un calque, **(Changed)** apparaît après le nom de la configuration. Choisissez à nouveau la configuration pour rétablir ses calques.
 
 ## Placer des annotations sur un calque
 
@@ -40,6 +48,6 @@ Les relecteurs placent souvent leurs annotations sur leurs propres calques, par 
 
 Les calques que vous ajoutez, renommez ou supprimez sont enregistrés avec le document, tout comme les calques sur lesquels se trouvent les annotations.
 
-Les calques affichés ne sont pas enregistrés avec le document. La prochaine fois que vous l’ouvrirez, ses calques seront affichés comme le document lui-même l’indique, et toute personne à qui vous l’envoyez verra la même chose.
+Les calques affichés et la configuration choisie ne sont pas enregistrés avec le document. La prochaine fois que vous l’ouvrirez, ses calques seront affichés comme le document lui-même l’indique, et toute personne à qui vous l’envoyez verra la même chose.
 
 > **Remarque :** Un document d’une ou deux pages contenant des calques s’ouvre sur l’onglet Layers, sauf si vous avez masqué la barre latérale pour ce document. Utilisez le bouton de barre latérale dans la barre d’outils pour l’afficher.

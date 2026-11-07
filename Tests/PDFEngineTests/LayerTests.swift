@@ -23,27 +23,55 @@ import Testing
 /// The object number of the `index`th layer in a PDF `makeLayeredPDF` writes, for `config`.
 private func layerRef(_ index: Int) -> String { "\(6 + index) 0 R" }
 
+/// Where `makeLayeredPDF` draws each layer's text and square.
+enum LayerDrawing: Sendable {
+    /// In the page's content, as marked content on the layer.
+    case onThePage
+    /// In a form of its own, drawn from the page inside marked content on the layer.
+    case formInsideMarkedContent
+    /// In a form of its own, as marked content on the layer inside it, drawn from the page.
+    case markedContentInsideForm
+}
+
 /// Writes a one-page PDF with a layer for each name in `layers`. Each layer holds its name in
 /// capitals as text, and a black 50pt square at x = 100 + 100 × its index, y = 100. `config`
-/// is the rest of the default configuration (`/D`): its /Order, /OFF, /RBGroups or /Locked.
-/// With no layers it's a plain page.
-private func makeLayeredPDF(at url: URL, layers: [String], config: String = "") throws {
+/// is the rest of the default configuration (`/D`): its /Order, /OFF, /RBGroups or /Locked;
+/// `properties` the rest of /OCProperties, such as /Configs. With no layers it's a plain page.
+private func makeLayeredPDF(at url: URL, layers: [String], config: String = "", properties extra: String = "",
+                            drawing: LayerDrawing = .onThePage) throws {
     let refs = layers.indices.map(layerRef).joined(separator: " ")
-    let ocProperties = layers.isEmpty ? "" : " /OCProperties << /OCGs [\(refs)] /D << \(config) >> >>"
+    let ocProperties = layers.isEmpty ? "" : " /OCProperties << /OCGs [\(refs)] /D << \(config) >> \(extra) >>"
+    let formNumber = { (index: Int) in 6 + layers.count + index }
     var content = "BT /F1 12 Tf 72 740 Td (Always shown) Tj ET\n"
+    var forms: [String] = []
     for (index, name) in layers.enumerated() {
-        content += "/OC /L\(index) BDC BT /F1 24 Tf 72 \(700 - 40 * index) Td (\(name.uppercased())) Tj ET "
-        content += "0 0 0 rg \(100 + 100 * index) 100 50 50 re f EMC\n"
+        let drawn = "BT /F1 24 Tf 72 \(700 - 40 * index) Td (\(name.uppercased())) Tj ET 0 0 0 rg \(100 + 100 * index) 100 50 50 re f"
+        let marked = "/OC /L\(index) BDC \(drawn) EMC"
+        switch drawing {
+        case .onThePage:
+            content += marked + "\n"
+        case .formInsideMarkedContent:
+            content += "/OC /L\(index) BDC /Fm\(index) Do EMC\n"
+            forms.append(form(drawn, properties: ""))
+        case .markedContentInsideForm:
+            content += "/Fm\(index) Do\n"
+            forms.append(form(marked, properties: "/Properties << /L\(index) \(layerRef(index)) >>"))
+        }
+    }
+    func form(_ stream: String, properties: String) -> String {
+        "<< /Type /XObject /Subtype /Form /BBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> \(properties) >> /Length \(stream.utf8.count) >>\nstream\n\(stream)\nendstream"
     }
     let properties = layers.indices.map { "/L\($0) \(layerRef($0))" }.joined(separator: " ")
+    let xobjects = forms.indices.map { "/Fm\($0) \(formNumber($0)) 0 R" }.joined(separator: " ")
     var objects = [
         "<< /Type /Catalog /Pages 2 0 R\(ocProperties) >>",
         "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> /Properties << \(properties) >> >> /Contents 4 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> /Properties << \(properties) >> /XObject << \(xobjects) >> >> /Contents 4 0 R >>",
         "<< /Length \(content.utf8.count) >>\nstream\n\(content)\nendstream",
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
     ]
     objects += layers.map { "<< /Type /OCG /Name (\($0)) >>" }
+    objects += forms
     var file = "%PDF-1.7\n"
     var offsets: [Int] = []
     for (index, object) in objects.enumerated() {
@@ -640,5 +668,250 @@ struct LayerEditingTests {
         vm.saveDocument()
         #expect(try PDFDocumentCore(filePath: url.path).layers().isEmpty)
         #expect(try PDFDocumentCore(filePath: url.path).layerStates().isEmpty)
+    }
+}
+
+/// /Configs for `makeLayeredPDF` with `threeLayers`: "Plot" shows only Walls and lists Walls and
+/// Wiring; "Electrical" hides Walls and lists them as the default does.
+private let plotAndElectrical = """
+    /Configs [ << /Name (Plot) /BaseState /OFF /ON [\(layerRef(0))] /Order [\(layerRef(0)) \(layerRef(2))] >> \
+    << /Name (Electrical) /OFF [\(layerRef(0))] >> ]
+    """
+
+@Suite(.serialized)
+struct LayerConfigurationTests {
+    private func open(config: String = "", properties: String = plotAndElectrical, drawing: LayerDrawing = .onThePage,
+                      in dir: URL) throws -> (PDFDocumentCore, URL) {
+        let url = dir.appendingPathComponent("\(UUID().uuidString).pdf")
+        try makeLayeredPDF(at: url, layers: threeLayers, config: config, properties: properties, drawing: drawing)
+        return (try PDFDocumentCore(filePath: url.path), url)
+    }
+
+    private func render(_ url: URL, _ states: PDFLayerStates? = nil) async throws -> CGImage {
+        let renderer = PDFRenderActor()
+        try await renderer.openDocument(filePath: url.path)
+        if let states { await renderer.setLayerStates(states) }
+        return try await renderer.renderPage(pageIndex: 0, scale: 1).image
+    }
+
+    @Test func aDocumentWithoutAlternativesOffersNone() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(properties: "", in: dir)
+        #expect(doc.layerConfigurations().isEmpty)
+    }
+
+    @Test func listsTheConfigurationsAndShowsLayersAsEachSays() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(in: dir)
+        #expect(doc.layerConfigurations().map(\.displayName) == ["Default", "Plot", "Electrical"])
+        #expect(doc.layerConfigurations().map(\.id) == [-1, 0, 1])
+
+        try doc.chooseLayerConfiguration(0)
+        #expect(doc.layerConfiguration == 0)
+        // Listed as it orders them.
+        #expect(doc.layers().map(\.name) == ["Walls", "Wiring"])
+        #expect(doc.layers().map(\.isVisible) == [true, false])
+        #expect(text(of: doc).contains("WALLS"))
+        #expect(!text(of: doc).contains("PIPES"))
+        #expect(!text(of: doc).contains("WIRING"))
+
+        // Without an order of its own, as the default lists them.
+        try doc.chooseLayerConfiguration(1)
+        #expect(doc.layers().map(\.name) == threeLayers)
+        #expect(doc.layers().map(\.isVisible) == [false, true, true])
+
+        try doc.chooseLayerConfiguration(-1)
+        #expect(doc.layers().map(\.isVisible) == [true, true, true])
+        #expect(throws: (any Error).self) { try doc.chooseLayerConfiguration(2) }
+    }
+
+    @Test func otherCopiesFollowTheConfigurationChosen() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, url) = try open(in: dir)
+        try doc.chooseLayerConfiguration(0)
+        let image = try await render(url, doc.layerStates())
+        #expect(showsSquare(0, in: image))
+        #expect(!showsSquare(1, in: image))
+        #expect(!showsSquare(2, in: image))
+
+        let search = PDFSearchActor(workerCount: 2)
+        try await search.openDocument(filePath: url.path)
+        await search.setLayerStates(doc.layerStates())
+        var found: [String] = []
+        for await result in await search.searchStream(query: "WIRING") { found.append(result.matchedText) }
+        #expect(found.isEmpty)
+    }
+
+    @Test func aNewLayerKeepsTheConfigurationChosen() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(in: dir)
+        try doc.chooseLayerConfiguration(0)
+        _ = try doc.addLayer(named: "Markups")
+        #expect(doc.layerConfiguration == 0)
+        #expect(doc.layers().map(\.name) == ["Walls", "Wiring", "Markups"])
+        #expect(doc.layers().map(\.isVisible) == [true, false, true])
+    }
+
+    @Test func tellsWhetherLayersAreShownAsTheFileSays() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(config: "/OFF [\(layerRef(1))]", in: dir)
+        #expect(doc.layersAreShownAsTheFileSays())
+        try doc.toggleLayer(id: 1)
+        #expect(!doc.layersAreShownAsTheFileSays())
+        try doc.toggleLayer(id: 1)
+        #expect(doc.layersAreShownAsTheFileSays())
+        try doc.chooseLayerConfiguration(1)
+        #expect(!doc.layersAreShownAsTheFileSays())
+    }
+
+    // MARK: - Flattened PDF
+
+    @Test(arguments: [LayerDrawing.onThePage, .formInsideMarkedContent, .markedContentInsideForm])
+    func flatteningLeavesOutHiddenLayers(drawing: LayerDrawing) async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(drawing: drawing, in: dir)
+        try doc.toggleLayer(id: try #require(doc.layers().first { $0.name == "Pipes" }).id)
+        let flat = dir.appendingPathComponent("flat.pdf")
+        try doc.saveFlattened(to: flat.path)
+
+        let flattened = try PDFDocumentCore(filePath: flat.path)
+        #expect(flattened.layers().map(\.name) == ["Walls", "Wiring"])
+        #expect(flattened.layers().allSatisfy { $0.isVisible })
+        #expect(flattened.layerConfigurations().isEmpty)
+        let flatText = text(of: flattened)
+        #expect(!flatText.contains("PIPES"))
+        #expect(flatText.contains("WALLS"))
+        #expect(flatText.contains("WIRING"))
+        #expect(flatText.contains("Always shown"))
+        let image = try await render(flat)
+        #expect(showsSquare(0, in: image))
+        #expect(!showsSquare(1, in: image))
+        #expect(showsSquare(2, in: image))
+        // The layers left still show and hide what's on them.
+        try flattened.toggleLayer(id: try #require(flattened.layers().first { $0.name == "Walls" }).id)
+        #expect(!text(of: flattened).contains("WALLS"))
+    }
+
+    @Test func flatteningWithEveryLayerShownKeepsThemAll() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(in: dir)
+        let flat = dir.appendingPathComponent("flat.pdf")
+        try doc.saveFlattened(to: flat.path)
+        let flattened = try PDFDocumentCore(filePath: flat.path)
+        #expect(flattened.layers().map(\.name) == threeLayers)
+        #expect(flattened.layerConfigurations().count == 3)
+    }
+
+    @Test func flatteningFollowsTheConfigurationChosen() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, _) = try open(in: dir)
+        try doc.chooseLayerConfiguration(0)
+        let flat = dir.appendingPathComponent("flat.pdf")
+        try doc.saveFlattened(to: flat.path)
+        let flattened = try PDFDocumentCore(filePath: flat.path)
+        #expect(flattened.layers().map(\.name) == ["Walls"])
+        #expect(text(of: flattened).contains("WALLS"))
+        #expect(!text(of: flattened).contains("WIRING"))
+    }
+
+    // MARK: - Agent
+
+    @Test func theAgentsIndexLeavesOutHiddenLayers() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (doc, url) = try open(in: dir)
+        try doc.chooseLayerConfiguration(0)
+        let builder = SemanticIndexBuilder()
+        try await builder.openDocument(filePath: url.path, layerStates: doc.layerStates())
+        var pages: [String] = []
+        for await (_, text) in await builder.extractPageTexts() { pages.append(text) }
+        let indexed = pages.joined(separator: "\n")
+        #expect(indexed.contains("WALLS"))
+        #expect(!indexed.contains("PIPES"))
+        #expect(!indexed.contains("WIRING"))
+    }
+}
+
+@MainActor
+@Suite(.serialized)
+struct LayerConfigurationViewerTests {
+    @Test func theLayersTabTellsWhenLayersHaveChangedSinceAConfigurationWasChosen() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("layered.pdf")
+        try makeLayeredPDF(at: url, layers: threeLayers, properties: plotAndElectrical)
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        #expect(vm.layerConfigurations.map(\.displayName) == ["Default", "Plot", "Electrical"])
+        #expect(vm.chosenLayerConfiguration?.isDefault == true)
+
+        let plot = vm.layerConfigurations[1]
+        vm.chooseLayerConfiguration(plot)
+        #expect(vm.layerConfiguration == 0)
+        #expect(vm.layers.map(\.name) == ["Walls", "Wiring"])
+        #expect(!vm.isLayerConfigurationChanged)
+        #expect(!vm.isDocumentEdited)
+
+        vm.toggleLayer(vm.layers[1])
+        #expect(vm.isLayerConfigurationChanged)
+        vm.toggleLayer(vm.layers[1])
+        #expect(!vm.isLayerConfigurationChanged)
+
+        vm.toggleLayer(vm.layers[0])
+        #expect(vm.isLayerConfigurationChanged)
+        // Choosing it again puts the layers back.
+        vm.chooseLayerConfiguration(plot)
+        #expect(!vm.isLayerConfigurationChanged)
+        #expect(vm.layers.map(\.isVisible) == [true, false])
+
+        // The renderer follows, in a task of its own.
+        var image = try await vm.renderActor.renderPage(pageIndex: 0, scale: 1).image
+        for _ in 0..<200 where showsSquare(1, in: image) {
+            try await Task.sleep(nanoseconds: 10_000_000)
+            image = try await vm.renderActor.renderPage(pageIndex: 0, scale: 1).image
+        }
+        #expect(showsSquare(0, in: image))
+        #expect(!showsSquare(1, in: image))
+    }
+
+    @Test func flatteningLeavesOutAnnotationsOnHiddenLayersAndKeepsTheRestOnTheirs() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("layered.pdf")
+        try makeLayeredPDF(at: url, layers: threeLayers)
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let walls = try #require(vm.layers.first { $0.name == "Walls" })
+        let pipes = try #require(vm.layers.first { $0.name == "Pipes" })
+        vm.setAnnotationLayer(walls.objectNumber)
+        _ = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 300, y: 300), to: CGPoint(x: 400, y: 400))
+        vm.setAnnotationLayer(pipes.objectNumber)
+        _ = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 300, y: 450), to: CGPoint(x: 400, y: 550))
+        vm.toggleLayer(try #require(vm.layers.first { $0.name == "Pipes" }))
+
+        let flat = dir.appendingPathComponent("flat.pdf")
+        try #require(vm.document).saveFlattened(to: flat.path)
+        let flattened = try PDFDocumentCore(filePath: flat.path)
+        #expect(flattened.annotationThreads(pageIndex: 0).isEmpty)
+
+        let wallsEdge = CGPoint(x: 300, y: 350), pipesEdge = CGPoint(x: 300, y: 500)
+        let renderer = PDFRenderActor()
+        try await renderer.openDocument(filePath: flat.path)
+        let image = try await renderer.renderPage(pageIndex: 0, scale: 1).image
+        #expect(hasInk(near: wallsEdge, in: image))
+        #expect(!hasInk(near: pipesEdge, in: image))
+
+        // Baked into the page, the rectangle is still on Walls.
+        try flattened.toggleLayer(id: try #require(flattened.layers().first { $0.name == "Walls" }).id)
+        await renderer.setLayerStates(flattened.layerStates())
+        #expect(!hasInk(near: wallsEdge, in: try await renderer.renderPage(pageIndex: 0, scale: 1).image))
     }
 }

@@ -1,5 +1,5 @@
 <!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, 优化, 减小文件大小, 压缩, 更小, 图像, 字体, 轮廓, 文本转轮廓, 绘图仪, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # 导出为其他格式
 
@@ -23,6 +23,8 @@
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+拼合的 PDF 只包含所显示[图层](layers.md)上的内容。隐藏的图层及其上的所有内容（包括注释）都会被排除。剩下的图层仍可显示和隐藏，拼合到页面上的注释仍留在各自的图层上。
 
 > **注：** 拼合不会移除下层的内容。若要移除内容，请使用[涂黑](redact.md)功能。
 

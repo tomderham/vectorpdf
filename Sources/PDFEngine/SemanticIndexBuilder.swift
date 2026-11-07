@@ -43,7 +43,9 @@ public actor SemanticIndexBuilder {
         self.resource = SemanticExtractionResource()
     }
 
-    public func openDocument(filePath: String, password: String? = nil) throws {
+    /// `layerStates` (from `PDFDocumentCore.layerStates`) leaves out the text on layers hidden on
+    /// screen, rather than on the ones the file hides.
+    public func openDocument(filePath: String, password: String? = nil, layerStates: PDFLayerStates = PDFLayerStates()) throws {
         var docPtr: FZDocument?
         var errorMsg: UnsafePointer<CChar>?
         let ret = mupdf_document_open(resource.ctx, filePath, &docPtr, &errorMsg)
@@ -68,6 +70,7 @@ public actor SemanticIndexBuilder {
             }
         }
 
+        layerStates.apply(ctx: resource.ctx, doc: d)
         self.resource.doc = d
     }
 

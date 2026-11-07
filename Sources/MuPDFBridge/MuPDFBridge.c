@@ -3572,12 +3572,40 @@ int mupdf_pdf_save_optimized(fz_context *ctx, fz_document *doc, const char *path
     return 0;
 }
 
+/* Puts an annotation's layer on its appearance streams, so that once baked into the page it's
+ * still on the layer. */
+static void vp_put_layer_on_appearance(fz_context *ctx, pdf_obj *annot, pdf_obj *oc) {
+    pdf_obj *n = pdf_dict_getp(ctx, annot, "AP/N");
+    if (pdf_is_stream(ctx, n)) {
+        pdf_dict_put(ctx, n, PDF_NAME(OC), oc);
+    } else if (pdf_is_dict(ctx, n)) {
+        for (int i = 0; i < pdf_dict_len(ctx, n); i++) {
+            pdf_obj *state = pdf_dict_get_val(ctx, n, i);
+            if (pdf_is_stream(ctx, state)) pdf_dict_put(ctx, state, PDF_NAME(OC), oc);
+        }
+    }
+}
+
+static void vp_put_layers_on_appearances(fz_context *ctx, pdf_document *pdoc) {
+    int pages = pdf_count_pages(ctx, pdoc);
+    for (int i = 0; i < pages; i++) {
+        pdf_obj *annots = pdf_dict_get(ctx, pdf_lookup_page_obj(ctx, pdoc, i), PDF_NAME(Annots));
+        for (int j = 0; j < pdf_array_len(ctx, annots); j++) {
+            pdf_obj *annot = pdf_array_get(ctx, annots, j);
+            pdf_obj *oc = pdf_dict_get(ctx, annot, PDF_NAME(OC));
+            if (oc) vp_put_layer_on_appearance(ctx, annot, oc);
+        }
+    }
+}
+
 int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path, int bake_annots, int bake_widgets, const char **out_error) {
     if (!ctx || !doc || !path) return -1;
     fz_try(ctx) {
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
         prepare_document_for_save(ctx, pdoc);
+        /* Baking draws appearances on the page whatever layer their annotation is on. */
+        if (bake_annots || bake_widgets) vp_put_layers_on_appearances(ctx, pdoc);
         pdf_bake_document(ctx, pdoc, bake_annots, bake_widgets);
         pdf_write_options save_opts = default_save_options();
         pdf_save_document(ctx, pdoc, path, &save_opts);
@@ -5489,6 +5517,12 @@ int mupdf_pdf_add_layer(fz_context *ctx, fz_document *doc, const char *name, int
         pdf_obj *order = pdf_dict_get(ctx, config, PDF_NAME(Order));
         if (pdf_is_array(ctx, order)) pdf_array_push(ctx, order, ocg);
         else if (n == 0) pdf_array_push(ctx, pdf_dict_put_array(ctx, config, PDF_NAME(Order), 1), ocg);
+        /* And in every alternative configuration's own list, so it's there whichever is chosen. */
+        pdf_obj *configs = pdf_dict_get(ctx, ocprops, PDF_NAME(Configs));
+        for (int i = 0; i < pdf_array_len(ctx, configs); i++) {
+            pdf_obj *own = pdf_dict_get(ctx, pdf_array_get(ctx, configs, i), PDF_NAME(Order));
+            if (pdf_is_array(ctx, own) && !pdf_array_contains(ctx, own, ocg)) pdf_array_push(ctx, own, ocg);
+        }
 
         vp_reload_layers(ctx, pdoc, old_nums, states, n);
         *out_object_number = pdf_to_num(ctx, ocg);
@@ -5593,7 +5627,7 @@ static int vp_order_numbers(fz_context *ctx, pdf_obj *ocgs, pdf_obj *order, int 
     return fill;
 }
 
-int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size) {
+int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int config, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size) {
     if (!ctx || !doc || !out) return -1;
     memset(out, 0, sizeof *out);
     if (text_buf && text_size > 0) text_buf[0] = 0;
@@ -5607,7 +5641,10 @@ int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf
         int count = pdf_count_layer_config_ui(ctx, pdoc);
         pdf_obj *ocprops = pdf_dict_getp(ctx, pdf_trailer(ctx, pdoc), "Root/OCProperties");
         numbers = fz_calloc(ctx, count > 0 ? count : 1, sizeof *numbers);
-        int walked = vp_order_numbers(ctx, pdf_dict_get(ctx, ocprops, PDF_NAME(OCGs)), pdf_dict_getp(ctx, ocprops, "D/Order"), numbers, count, 0, NULL);
+        /* The chosen configuration's /Order, or the default's, as load_ui in pdf-layer.c takes it. */
+        pdf_obj *order = config >= 0 ? pdf_dict_get(ctx, pdf_array_get(ctx, pdf_dict_get(ctx, ocprops, PDF_NAME(Configs)), config), PDF_NAME(Order)) : NULL;
+        if (!order) order = pdf_dict_getp(ctx, ocprops, "D/Order");
+        int walked = vp_order_numbers(ctx, pdf_dict_get(ctx, ocprops, PDF_NAME(OCGs)), order, numbers, count, 0, NULL);
         /* Only if the walk agrees with MuPDF's list; otherwise the entry can't be put to use. */
         if (walked == count && index >= 0 && index < count && (numbers[index] == 0) == (info.type == PDF_LAYER_UI_LABEL))
             out->object_number = numbers[index];
@@ -5913,4 +5950,276 @@ void mupdf_pdf_drop_layer_config(fz_context *ctx, mupdf_layer_config *config) {
     if (!ctx || !config) return;
     pdf_drop_obj(ctx, config->ocprops);
     fz_free(ctx, config);
+}
+
+// MARK: Alternative layer configurations
+
+int mupdf_pdf_count_layer_configs(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    int count = 0;
+    fz_var(count);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc && pdf_count_layers(ctx, pdoc) > 0) count = pdf_count_layer_configs(ctx, pdoc);
+    } fz_catch(ctx) {
+        count = 0;
+    }
+    return count;
+}
+
+int mupdf_pdf_layer_config_name(fz_context *ctx, fz_document *doc, int config, char *buf, int size) {
+    if (!ctx || !doc || !buf || size <= 0) return -1;
+    buf[0] = 0;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "not a PDF");
+        pdf_obj *ocprops = pdf_dict_getp(ctx, pdf_trailer(ctx, pdoc), "Root/OCProperties");
+        pdf_obj *cobj = config == -1 ? pdf_dict_get(ctx, ocprops, PDF_NAME(D))
+                                     : pdf_array_get(ctx, pdf_dict_get(ctx, ocprops, PDF_NAME(Configs)), config);
+        if (!pdf_is_dict(ctx, cobj)) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such layer configuration");
+        /* Not pdf_layer_config_name, which calls an unnamed default "Default" in English. */
+        const char *name = pdf_dict_get_text_string(ctx, cobj, PDF_NAME(Name));
+        if (name) fz_strlcpy(buf, name, size);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_pdf_select_layer_config(fz_context *ctx, fz_document *doc, int config, const int *states, int count, const char **out_error) {
+    if (!ctx || !doc || (!states && count > 0)) return -1;
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        if (config < -1 || config >= pdf_count_layer_configs(ctx, pdoc))
+            fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such layer configuration");
+        /* Checked first, so a copy with other layers isn't left half changed. */
+        if (states && pdf_count_layers(ctx, pdoc) != count)
+            fz_throw(ctx, FZ_ERROR_ARGUMENT, "The layers have changed");
+        pdf_select_layer_config(ctx, pdoc, config);
+        if (states) {
+            for (int i = 0; i < count; i++) pdf_enable_layer(ctx, pdoc, i, states[i] != 0);
+        }
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+static int vp_array_holds_num(fz_context *ctx, pdf_obj *array, int num) {
+    int n = pdf_array_len(ctx, array);
+    for (int i = 0; i < n; i++)
+        if (pdf_to_num(ctx, pdf_array_get(ctx, array, i)) == num) return 1;
+    return 0;
+}
+
+int mupdf_pdf_default_layer_states(fz_context *ctx, fz_document *doc, int *out_states, int count) {
+    if (!ctx || !doc || (!out_states && count > 0)) return -1;
+    int *nums = NULL;
+    int ok = 0;
+    fz_var(nums);
+    fz_var(ok);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        int n = pdoc ? vp_layer_numbers(ctx, pdoc, &nums) : 0;
+        if (n > 0 && n == count) {
+            /* As pdf_select_layer_config(-1) on a document just read: every layer starts shown. */
+            pdf_obj *d = pdf_dict_getp(ctx, pdf_trailer(ctx, pdoc), "Root/OCProperties/D");
+            int base = pdf_name_eq(ctx, pdf_dict_get(ctx, d, PDF_NAME(BaseState)), PDF_NAME(OFF)) ? 0 : 1;
+            pdf_obj *on = pdf_dict_get(ctx, d, PDF_NAME(ON));
+            pdf_obj *off = pdf_dict_get(ctx, d, PDF_NAME(OFF));
+            for (int i = 0; i < n; i++) {
+                int state = base;
+                if (vp_array_holds_num(ctx, on, nums[i])) state = 1;
+                if (vp_array_holds_num(ctx, off, nums[i])) state = 0;
+                out_states[i] = state;
+            }
+            ok = 1;
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, nums);
+    } fz_catch(ctx) {
+        return -1;
+    }
+    return ok ? 0 : -1;
+}
+
+// MARK: Leaving hidden layers out
+
+/* While a content stream is filtered, the processor MuPDF's interpreter runs, whose `hidden`
+ * count it keeps as marked content on hidden layers begins and ends. The filter is never nested:
+ * forms aren't filtered from inside the page (`recurse` is off), but each on its own. */
+typedef struct {
+    pdf_sanitize_filter_options sanitize;
+    pdf_processor *top;
+} vp_hide_filter;
+
+/* The sanitize filter's own Do for forms, which every one of them has. */
+static void (*vp_sanitize_do_form)(fz_context *, pdf_processor *, const char *, pdf_obj *);
+
+/* The interpreter leaves out a form or image that is itself on a hidden layer, but hands over one
+ * drawn inside marked content on one: leave that out too. */
+static void vp_hide_do_form(fz_context *ctx, pdf_processor *proc, const char *name, pdf_obj *xobj) {
+    if (proc->hidden > 0) return;
+    void (*original)(fz_context *, pdf_processor *, const char *, pdf_obj *) = __atomic_load_n(&vp_sanitize_do_form, __ATOMIC_ACQUIRE);
+    if (original) original(ctx, proc, name, xobj);
+}
+
+static int vp_hide_cull(fz_context *ctx, void *opaque, fz_rect bbox, fz_cull_type type) {
+    vp_hide_filter *filter = opaque;
+    /* A clip on its own still applies to what follows, as it does when the page is drawn. */
+    if (type == FZ_CULL_CLIP_PATH_DROP) return 0;
+    return filter->top && filter->top->hidden > 0;
+}
+
+static pdf_processor *vp_new_hide_filter(fz_context *ctx, pdf_document *doc, pdf_processor *chain, int struct_parents,
+                                         fz_matrix transform, pdf_filter_options *options, void *factory_options) {
+    vp_hide_filter *filter = factory_options;
+    pdf_processor *proc = pdf_new_sanitize_filter(ctx, doc, chain, struct_parents, transform, options, &filter->sanitize);
+    /* Without a usage the interpreter counts nothing as hidden. */
+    proc->usage = "View";
+    __atomic_store_n(&vp_sanitize_do_form, proc->op_Do_form, __ATOMIC_RELEASE);
+    proc->op_Do_form = vp_hide_do_form;
+    filter->top = proc;
+    return proc;
+}
+
+static int vp_is_hidden_oc(fz_context *ctx, pdf_document *pdoc, pdf_obj *oc) {
+    return oc && pdf_is_ocg_hidden(ctx, pdoc, NULL, "View", oc);
+}
+
+/* Takes the annotations on hidden layers off a page, with their pop-ups and replies. */
+static void vp_remove_hidden_annots(fz_context *ctx, pdf_document *pdoc, pdf_obj *page) {
+    pdf_obj *annots = pdf_dict_get(ctx, page, PDF_NAME(Annots));
+    int n = pdf_array_len(ctx, annots);
+    if (n == 0) return;
+    int *removed = fz_calloc(ctx, n, sizeof *removed);
+    fz_try(ctx) {
+        for (int i = 0; i < n; i++) {
+            pdf_obj *annot = pdf_array_get(ctx, annots, i);
+            pdf_obj *oc = pdf_dict_get(ctx, annot, PDF_NAME(OC));
+            if (vp_is_hidden_oc(ctx, pdoc, oc)) removed[i] = 1;
+        }
+        /* Pop-ups and replies go with what they belong to, however deep. */
+        for (int changed = 1; changed; ) {
+            changed = 0;
+            for (int i = 0; i < n; i++) {
+                if (removed[i]) continue;
+                pdf_obj *annot = pdf_array_get(ctx, annots, i);
+                int parent = pdf_to_num(ctx, pdf_dict_get(ctx, annot, PDF_NAME(Parent)));
+                int irt = pdf_to_num(ctx, pdf_dict_get(ctx, annot, PDF_NAME(IRT)));
+                for (int j = 0; j < n && !removed[i]; j++) {
+                    if (!removed[j]) continue;
+                    int num = pdf_to_num(ctx, pdf_array_get(ctx, annots, j));
+                    if (num > 0 && (num == parent || num == irt)) removed[i] = changed = 1;
+                }
+            }
+        }
+        for (int i = n - 1; i >= 0; i--)
+            if (removed[i]) pdf_array_delete(ctx, annots, i);
+    } fz_always(ctx) {
+        fz_free(ctx, removed);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+/* Filters a form's content where it is, so every use of it loses what's on hidden layers. */
+static void vp_filter_form_in_place(fz_context *ctx, pdf_document *pdoc, pdf_obj *form, pdf_filter_options *options) {
+    pdf_obj *filtered = pdf_filter_xobject_instance(ctx, form, NULL, fz_identity, options, NULL);
+    fz_buffer *buf = NULL;
+    fz_var(buf);
+    fz_try(ctx) {
+        if (filtered != form) {
+            buf = pdf_load_stream(ctx, filtered);
+            pdf_update_stream(ctx, pdoc, form, buf, 0);
+            pdf_obj *res = pdf_dict_get(ctx, filtered, PDF_NAME(Resources));
+            if (res) pdf_dict_put(ctx, form, PDF_NAME(Resources), res);
+        }
+    } fz_always(ctx) {
+        fz_drop_buffer(ctx, buf);
+        /* The copy is left unused, for the save's garbage collection to drop. */
+        pdf_drop_obj(ctx, filtered);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+int mupdf_pdf_remove_hidden_layers(fz_context *ctx, fz_document *doc, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    int *nums = NULL;
+    pdf_page *page = NULL;
+    pdf_obj *ref = NULL;
+    fz_var(nums);
+    fz_var(page);
+    fz_var(ref);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        int n = vp_layer_numbers(ctx, pdoc, &nums);
+        int any_hidden = 0;
+        for (int i = 0; i < n; i++) any_hidden |= !pdf_layer_is_enabled(ctx, pdoc, i);
+
+        int pages = pdf_count_pages(ctx, pdoc);
+        for (int i = 0; i < pages; i++)
+            vp_remove_hidden_annots(ctx, pdoc, pdf_lookup_page_obj(ctx, pdoc, i));
+
+        if (any_hidden) {
+            vp_hide_filter filter = { { 0 } };
+            filter.sanitize.opaque = &filter;
+            filter.sanitize.culler = vp_hide_cull;
+            pdf_filter_factory factories[2] = { { vp_new_hide_filter, &filter }, { NULL, NULL } };
+            pdf_filter_options options = { 0 };
+            options.filters = factories;
+
+            /* Forms first, each once: the objects added meanwhile are the filtered copies. */
+            int xref_len = pdf_xref_len(ctx, pdoc);
+            for (int num = 1; num < xref_len; num++) {
+                ref = pdf_new_indirect(ctx, pdoc, num, 0);
+                if (pdf_is_stream(ctx, ref) && pdf_name_eq(ctx, pdf_dict_get(ctx, ref, PDF_NAME(Subtype)), PDF_NAME(Form))) {
+                    filter.top = NULL;
+                    vp_filter_form_in_place(ctx, pdoc, ref, &options);
+                }
+                pdf_drop_obj(ctx, ref);
+                ref = NULL;
+            }
+            for (int i = 0; i < pages; i++) {
+                page = pdf_load_page(ctx, pdoc, i);
+                filter.top = NULL;
+                pdf_filter_page_contents(ctx, pdoc, page, &options);
+                fz_drop_page(ctx, &page->super);
+                page = NULL;
+            }
+
+            /* Then the hidden layers: what's left is all shown. */
+            pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+            pdf_obj *ocprops = pdf_dict_get(ctx, root, PDF_NAME(OCProperties));
+            pdf_obj *ocgs = pdf_dict_get(ctx, ocprops, PDF_NAME(OCGs));
+            pdf_obj *d = pdf_dict_get(ctx, ocprops, PDF_NAME(D));
+            for (int i = 0; i < n; i++) {
+                if (pdf_layer_is_enabled(ctx, pdoc, i)) continue;
+                vp_remove_from_array(ctx, ocgs, nums[i], 31);
+                vp_remove_from_config(ctx, d, nums[i]);
+            }
+            pdf_dict_del(ctx, ocprops, PDF_NAME(Configs));
+            if (pdf_array_len(ctx, ocgs) == 0) {
+                pdf_dict_del(ctx, root, PDF_NAME(OCProperties));
+            } else if (pdf_is_dict(ctx, d)) {
+                pdf_dict_del(ctx, d, PDF_NAME(BaseState));
+                pdf_dict_del(ctx, d, PDF_NAME(ON));
+                pdf_dict_del(ctx, d, PDF_NAME(OFF));
+            }
+            pdf_drop_ocg(ctx, pdoc);
+            pdoc->ocg = NULL;
+        }
+    } fz_always(ctx) {
+        fz_free(ctx, nums);
+        pdf_drop_obj(ctx, ref);
+        if (page) fz_drop_page(ctx, &page->super);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
 }

@@ -366,6 +366,15 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var layerVisibility: [Int: Bool] = [:]
     /// The layer, by object number, that annotations made from now on go on; nil for none.
     @Published public internal(set) var annotationLayer: Int?
+    /// The ways the document offers its layers to be shown, default first; empty when it offers
+    /// only its default, so the Layers tab offers no choice.
+    @Published public internal(set) var layerConfigurations: [PDFLayerConfiguration] = []
+    /// The one chosen (`PDFLayerConfiguration.id`), -1 for the default.
+    @Published public internal(set) var layerConfiguration = -1
+    /// Layers have been shown or hidden since it was chosen.
+    @Published public internal(set) var isLayerConfigurationChanged = false
+    /// How it showed the layers, by object number, to tell whether they've been changed since.
+    var layerConfigurationVisibility: [Int: Bool] = [:]
     /// While Undo puts an annotation back, the layer it was on (see `restoreAnnotation`).
     var restoringAnnotationLayer: Int??
     var annotationThreadsTask: Task<Void, Never>?
@@ -771,6 +780,10 @@ public final class PDFViewerViewModel: ObservableObject {
             self.layers = doc.layers()
             self.attachments = doc.attachments()
             self.layerVisibility = doc.layerVisibility()
+            self.layerConfigurations = doc.layerConfigurations()
+            self.layerConfiguration = doc.layerConfiguration
+            self.layerConfigurationVisibility = self.layerVisibility
+            self.isLayerConfigurationChanged = false
             self.annotationLayer = nil
             self.layerGeneration += 1
             self.currentDocumentPassword = password

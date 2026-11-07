@@ -1,5 +1,5 @@
 <!-- keywords: Agent, AI, 質問, 回答, 情報源, 要約, チャット, 書類について質問, Agent, AI, ask, question, questions, Apple Intelligence, answers, sources, summarize, chat -->
-<!-- source: 262e5b31abb2 -->
+<!-- source: 7759f941e883 -->
 
 # 書類について質問する
 
@@ -9,6 +9,8 @@ Agent は、開いている書類についての質問に回答し、回答の�
 
 1. サイドバーの Ask About This Document タブをクリックします。初回は、VectorPDF が Mac 上で書類のインデックスを作成し、進行状況を表示します。
 2. 質問を入力して、Return キーを押すか、Ask をクリックします。改行するには ⇧Return を押します。
+
+[レイヤー](layers.md)のある書類では、表示しているレイヤーだけがインデックスに登録されます。レイヤーを表示または非表示にすると、書類のインデックスが作成し直されます。
 
 回答の下にある **Sources** をクリックすると、回答に使用された箇所とそのページが表示されます。回答で引用された箇所には **Cited** と表示されます。箇所をクリックすると、その場所に移動します。
 

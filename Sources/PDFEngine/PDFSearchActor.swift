@@ -28,13 +28,13 @@ final class SearchResource: @unchecked Sendable {
     let ctx: FZContext
     let doc: FZDocument
     /// The layer states last given to `doc`; empty for the document's own.
-    private var layerStates: [Int32] = []
+    private var layerStates = PDFLayerStates()
 
     /// Shows and hides layers to match the document on screen, so text in hidden layers isn't
     /// found. Only while no search is using this worker.
-    func applyLayerStates(_ states: [Int32]) {
+    func applyLayerStates(_ states: PDFLayerStates) {
         guard states != layerStates, !states.isEmpty else { return }
-        if mupdf_pdf_set_layer_states(ctx, doc, states, Int32(states.count)) == 0 {
+        if states.apply(ctx: ctx, doc: doc) {
             layerStates = states
         }
     }
@@ -105,7 +105,7 @@ final class SearchWorkerPool: Sendable {
     }
     private let state: Mutex<State>
     /// The layer states workers are given as they're checked out; empty for the document's own.
-    private let layerStates = Mutex<[Int32]>([])
+    private let layerStates = Mutex(PDFLayerStates())
 
     init(first: SearchResource, filePath: String, password: String?, capacity: Int, idleTrimDelay: TimeInterval = 60) {
         self.filePath = filePath
@@ -121,7 +121,7 @@ final class SearchWorkerPool: Sendable {
     var idleCount: Int { state.withLock { $0.idle.count } }
 
     /// Shows and hides layers in every worker from the next search on.
-    func setLayerStates(_ states: [Int32]) {
+    func setLayerStates(_ states: PDFLayerStates) {
         layerStates.withLock { $0 = states }
     }
 
@@ -221,7 +221,7 @@ public actor PDFSearchActor {
     
     /// Shows and hides layers as `states` says (from `PDFDocumentCore.layerStates`), so searches
     /// from now on don't find text in hidden layers. A newly opened document starts with its own.
-    public func setLayerStates(_ states: [Int32]) {
+    public func setLayerStates(_ states: PDFLayerStates) {
         pool?.setLayerStates(states)
     }
 

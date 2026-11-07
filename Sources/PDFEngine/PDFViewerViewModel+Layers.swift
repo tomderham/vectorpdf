@@ -36,10 +36,52 @@ extension PDFViewerViewModel {
         layerVisibilityChanged()
     }
 
+    // MARK: - Layer configurations
+
+    /// Shows and hides layers as one of the document's configurations says, and lists them as it
+    /// does: a CAD drawing may come with one for plotting, or a map with one for each language.
+    /// Choosing the one already chosen puts back how it shows them. Nothing is saved.
+    public func chooseLayerConfiguration(_ configuration: PDFLayerConfiguration) {
+        guard let doc = document else { return }
+        do {
+            try doc.chooseLayerConfiguration(configuration.id)
+        } catch {
+            print("Failed to choose layer configuration \(configuration.displayName): \(error)")
+            return
+        }
+        layers = doc.layers()
+        layerVisibility = doc.layerVisibility()
+        layerConfiguration = doc.layerConfiguration
+        layerConfigurationVisibility = layerVisibility
+        layerVisibilityChanged()
+    }
+
+    /// The configuration chosen, for the Layers tab.
+    public var chosenLayerConfiguration: PDFLayerConfiguration? {
+        layerConfigurations.first { $0.id == layerConfiguration }
+    }
+
+    /// Whether a layer the configuration showed or hid has been changed since. Layers added since
+    /// don't count.
+    private func noteLayerConfigurationChanges() {
+        let changed = layerConfigurationVisibility.contains { number, shown in
+            layerVisibility[number].map { $0 != shown } ?? false
+        }
+        if changed != isLayerConfigurationChanged {
+            isLayerConfigurationChanged = changed
+        }
+    }
+
     /// Tells the renderer and search about the layers now shown, and drops everything drawn or
     /// read before.
     private func layerVisibilityChanged() {
         guard let doc = document else { return }
+        noteLayerConfigurationChanges()
+        // The Agent's index leaves out text on hidden layers too: build it again (the Agent tab,
+        // if it's showing, starts that as the index goes back to idle).
+        if agentIndexState != .idle {
+            invalidateAgentIndex(deleteCache: false)
+        }
         layerGeneration += 1
         let generation = layerGeneration
         thumbnailImages.removeAll()
@@ -269,6 +311,9 @@ extension PDFViewerViewModel {
         guard let doc = document else { return }
         layers = doc.layers()
         layerVisibility = doc.layerVisibility()
+        layerConfigurations = doc.layerConfigurations()
+        layerConfiguration = doc.layerConfiguration
+        noteLayerConfigurationChanges()
         if let layer = annotationLayer, layerVisibility[layer] == nil {
             annotationLayer = nil
         }

@@ -1,5 +1,5 @@
-<!-- keywords: Ebenen, Ebene, optionaler Inhalt, CAD, Zeichnungen, einblenden, ausblenden, Sichtbarkeit, Markierungen, Anmerkungen, neue Ebene, Ebene umbenennen, Ebene löschen, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: Ebenen, Ebene, optionaler Inhalt, CAD, Zeichnungen, einblenden, ausblenden, Sichtbarkeit, Markierungen, Anmerkungen, neue Ebene, Ebene umbenennen, Ebene löschen, Ebenenkonfiguration, Konfigurationen, Ebenenzustände, Plotten, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # Ebenen ein- und ausblenden
 
@@ -12,7 +12,15 @@ Der Tab „Layers“ erscheint oben in der Seitenleiste nur, wenn das Dokument E
 - **Überschriften:** Sie fassen die darunter aufgeführten Ebenen zusammen und können selbst nicht ausgeblendet werden.
 - **Gesperrte Ebenen:** Sie haben ein Schloss daneben. Das Dokument lässt nicht zu, dass sie ein- oder ausgeblendet werden.
 
-Ausgeblendete Ebenen werden auch beim [Drucken](print.md), beim [Auswählen von Text](select-text.md) und bei der [Suche](search.md) weggelassen. So arbeitest du nur mit dem, was du siehst.
+Ausgeblendete Ebenen werden auch beim [Drucken](print.md), beim [Auswählen von Text](select-text.md) bei der [Suche](search.md), beim [Exportieren eines reduzierten PDF](export.md#flattened-pdf) und bei [Fragen an den Agent](agent.md) weggelassen. So arbeitest du nur mit dem, was du siehst.
+
+## Eine Ebenenkonfiguration auswählen
+
+Manche Dokumente bieten mehr als eine Art, ihre Ebenen anzuzeigen, etwa eine zum Plotten, eine für jedes Gewerk oder eine für jede Sprache. Bei diesen zeigt der Tab „Layers“ oben statt der Anzahl der Ebenen die verwendete Konfiguration an. Sie heißt **Default**, bis du eine andere auswählst, außer das Dokument gibt seiner Standardkonfiguration einen Namen.
+
+Klicke darauf und wähle eine Konfiguration aus. Ihre Ebenen werden so ein- und ausgeblendet und so aufgelistet, wie sie es festlegt.
+
+Wenn du danach eine Ebene ein- oder ausblendest, erscheint **(Changed)** hinter dem Namen der Konfiguration. Wähle die Konfiguration erneut aus, um ihre Ebenen wiederherzustellen.
 
 ## Anmerkungen auf eine Ebene legen {#put-annotations-on-a-layer}
 
@@ -40,6 +48,6 @@ Prüfende legen ihre Markierungen oft auf eigene Ebenen, etwa eine pro Gewerk od
 
 Ebenen, die du hinzufügst, umbenennst oder löschst, werden mit dem Dokument gesichert, ebenso die Ebenen, auf denen Anmerkungen liegen.
 
-Welche Ebenen angezeigt werden, wird nicht mit dem Dokument gesichert. Beim nächsten Öffnen werden seine Ebenen so angezeigt, wie das Dokument selbst es festlegt, und alle, denen du es sendest, sehen dasselbe.
+Welche Ebenen angezeigt werden und welche Konfiguration du ausgewählt hast, wird nicht mit dem Dokument gesichert. Beim nächsten Öffnen werden seine Ebenen so angezeigt, wie das Dokument selbst es festlegt, und alle, denen du es sendest, sehen dasselbe.
 
 > **Hinweis:** Ein Dokument mit einer oder zwei Seiten und Ebenen wird mit dem Tab „Layers“ geöffnet, außer du hast die Seitenleiste dafür ausgeblendet. Verwende die Seitenleistentaste in der Symbolleiste, um sie einzublenden.

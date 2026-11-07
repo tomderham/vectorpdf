@@ -84,6 +84,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
     private static let pageSpacing: CGFloat = 16.0
 
     private let lock = NSLock()
+    /// The layer configuration chosen (`PDFLayerConfiguration.id`), -1 for the default. Under `lock`.
+    private var chosenLayerConfiguration = -1
     /// Copies of deleted and edited annotations, for Undo; never saved. Made when first needed.
     private var holdingDocument: FZDocument?
     private let openedPassword: String?
@@ -1004,7 +1006,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         if entryCount > 0 {
             return (0..<entryCount).compactMap { index in
                 var entry = mupdf_layer_ui_entry()
-                guard mupdf_pdf_layer_ui_entry(ctx, doc, Int32(index), &entry, &text, Int32(text.count)) == 0 else { return nil }
+                guard mupdf_pdf_layer_ui_entry(ctx, doc, Int32(chosenLayerConfiguration), Int32(index), &entry, &text, Int32(text.count)) == 0 else { return nil }
                 let kind: PDFLayer.Kind = entry.type == 2 ? .radio : entry.type == 1 ? .checkbox : .heading
                 return PDFLayer(id: index, name: string(), depth: Int(entry.depth), kind: kind,
                                 isVisible: entry.selected != 0, isLocked: entry.locked != 0,
@@ -1025,17 +1027,88 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
-    /// Whether each layer is shown, in the document's order, to give the other copies of the file
-    /// that draw it or read its text (see `PDFRenderActor.setLayerStates`).
-    public func layerStates() -> [Int32] {
-        guard isPDF else { return [] }
+    /// Which layers are shown, and the configuration chosen, to give the other copies of the file
+    /// that draw it or read its text (see `PDFRenderActor.setLayerStates`). Empty without layers.
+    public func layerStates() -> PDFLayerStates {
+        guard isPDF else { return PDFLayerStates() }
         lock.lock()
         defer { lock.unlock() }
+        return PDFLayerStates(configuration: chosenLayerConfiguration, states: rawLayerStates())
+    }
+
+    /// Under `lock`.
+    private func rawLayerStates() -> [Int32] {
         let count = Int(mupdf_pdf_count_layers(ctx, doc))
         guard count > 0 else { return [] }
         var states = [Int32](repeating: 1, count: count)
         guard mupdf_pdf_get_layer_states(ctx, doc, &states, Int32(count)) == 0 else { return [] }
         return states
+    }
+
+    /// Whether the layers are shown as the file opens them, so text read from them is what any
+    /// other copy of the file would read.
+    public func layersAreShownAsTheFileSays() -> Bool {
+        guard isPDF else { return true }
+        lock.lock()
+        defer { lock.unlock() }
+        let states = rawLayerStates()
+        guard !states.isEmpty else { return true }
+        guard chosenLayerConfiguration == -1 else { return false }
+        var defaults = [Int32](repeating: 1, count: states.count)
+        guard mupdf_pdf_default_layer_states(ctx, doc, &defaults, Int32(states.count)) == 0 else { return false }
+        return defaults.map { $0 != 0 } == states.map { $0 != 0 }
+    }
+
+    // MARK: Layer configurations
+
+    /// The ways the document offers its layers to be shown: its default, then the alternatives it
+    /// lists. Empty when it offers no alternatives, or has no layers.
+    public func layerConfigurations() -> [PDFLayerConfiguration] {
+        guard isPDF else { return [] }
+        lock.lock()
+        defer { lock.unlock() }
+        let count = Int(mupdf_pdf_count_layer_configs(ctx, doc))
+        guard count > 0 else { return [] }
+        var text = [CChar](repeating: 0, count: 512)
+        return (-1..<count).map { id in
+            if mupdf_pdf_layer_config_name(ctx, doc, Int32(id), &text, Int32(text.count)) != 0 { text[0] = 0 }
+            let bytes = text.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            let name = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            return PDFLayerConfiguration(id: id, name: name)
+        }
+    }
+
+    /// The configuration chosen with `chooseLayerConfiguration`, -1 for the default.
+    public var layerConfiguration: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return chosenLayerConfiguration
+    }
+
+    /// Shows and hides layers as a configuration says, and lists them as it does. Like showing and
+    /// hiding layers, only this copy of the file changes, and nothing is saved.
+    public func chooseLayerConfiguration(_ id: Int) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_pdf_select_layer_config(ctx, doc, Int32(id), nil, 0, &errorMsg) == 0 else {
+            throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to choose the layer configuration")
+        }
+        chosenLayerConfiguration = id
+    }
+
+    /// After the list of layers changed, which takes MuPDF back to the default configuration:
+    /// chooses the one that was chosen again, keeping the layers as they're shown. Under `lock`.
+    private func keepChosenLayerConfiguration() {
+        guard chosenLayerConfiguration != -1 else { return }
+        let states = rawLayerStates()
+        let configs = Int(mupdf_pdf_count_layer_configs(ctx, doc))
+        if chosenLayerConfiguration < configs,
+           mupdf_pdf_select_layer_config(ctx, doc, Int32(chosenLayerConfiguration), states, Int32(states.count), nil) == 0 {
+            return
+        }
+        chosenLayerConfiguration = -1
     }
 
     /// Shows or hides the layer `layers()` listed with this id. Only this copy of the file changes,
@@ -1090,6 +1163,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         defer { lock.unlock() }
         var number: Int32 = 0
         var errorMsg: UnsafePointer<CChar>?
+        defer { keepChosenLayerConfiguration() }
         guard mupdf_pdf_add_layer(ctx, doc, name, &number, &errorMsg) == 0, number > 0 else {
             throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to add layer")
         }
@@ -1102,6 +1176,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
+        defer { keepChosenLayerConfiguration() }
         guard mupdf_pdf_rename_layer(ctx, doc, Int32(objectNumber), name, &errorMsg) == 0 else {
             throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to rename layer")
         }
@@ -1134,6 +1209,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
+        defer { keepChosenLayerConfiguration() }
         guard mupdf_pdf_remove_layer(ctx, doc, Int32(objectNumber), &errorMsg) == 0 else {
             throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to delete layer")
         }
@@ -1164,6 +1240,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         var errorMsg: UnsafePointer<CChar>?
+        defer { keepChosenLayerConfiguration() }
         guard mupdf_pdf_restore_layer_config(ctx, doc, configuration.pointer, &errorMsg) == 0 else {
             throw PDFError.operationFailed(errorMsg.map { String(cString: $0) } ?? "Failed to put the layers back")
         }
@@ -1197,11 +1274,13 @@ public final class PDFDocumentCore: @unchecked Sendable {
     }
 
     /// Shows and hides layers as `states` says (from another copy's `layerStates`).
-    public func setLayerStates(_ states: [Int32]) {
+    public func setLayerStates(_ states: PDFLayerStates) {
         guard isPDF, !states.isEmpty else { return }
         lock.lock()
         defer { lock.unlock() }
-        _ = mupdf_pdf_set_layer_states(ctx, doc, states, Int32(states.count))
+        if states.apply(ctx: ctx, doc: doc) {
+            chosenLayerConfiguration = states.configuration
+        }
     }
 
     /// The drawing scale stored on pageIndex, if any.
@@ -1682,10 +1761,12 @@ public final class PDFDocumentCore: @unchecked Sendable {
     }
 
     /// Saves the modified PDF with annotations and/or form fields permanently flattened (baked) into static page graphics.
+    /// What's on hidden layers is left out, as are the hidden layers: the copy is as the document is shown.
     ///
     /// Preserves the interactive state of this in-memory document instance by executing the flattening
     /// operation on an isolated temporary document clone.
     public func saveFlattened(to path: String, bakeAnnotations: Bool = true, bakeWidgets: Bool = true) throws {
+        let layerStates = layerStates()
         lock.lock()
         defer { lock.unlock() }
 
@@ -1705,6 +1786,13 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
         // 2. Open the temporary file in an isolated document instance
         let tempDoc = try PDFDocumentCore(filePath: tempSourceURL.path, password: self.openedPassword)
+        if !layerStates.isEmpty {
+            tempDoc.setLayerStates(layerStates)
+            var layerErrorMsg: UnsafePointer<CChar>?
+            guard mupdf_pdf_remove_hidden_layers(tempDoc.ctx, tempDoc.doc, &layerErrorMsg) == 0 else {
+                throw PDFError.saveFailed(layerErrorMsg.map { String(cString: $0) } ?? "Failed to leave out the hidden layers")
+            }
+        }
 
         // 3. Bake and save to target path using coordinated save
         try performCoordinatedSave(to: destinationURL, isSameFile: isSameFile) { targetTempPath in

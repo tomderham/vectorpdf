@@ -1,5 +1,5 @@
-<!-- keywords: livelli, livello, contenuto facoltativo, CAD, disegni tecnici, mostrare, nascondere, visibilità, annotazioni, nuovo livello, rinominare livello, eliminare livello, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: livelli, livello, contenuto facoltativo, CAD, disegni tecnici, mostrare, nascondere, visibilità, annotazioni, nuovo livello, rinominare livello, eliminare livello, configurazione dei livelli, configurazioni, stati dei livelli, stampa plotter, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # Mostrare e nascondere i livelli
 
@@ -12,7 +12,15 @@ Il pannello Layers compare in cima alla barra laterale solo quando il documento 
 - **Intestazioni:** raggruppano i livelli elencati sotto di esse e non possono essere nascoste.
 - **Livelli bloccati:** hanno un lucchetto accanto. Il documento non permette di mostrarli o nasconderli.
 
-I livelli che nascondi vengono esclusi anche quando [stampi](print.md), [selezioni il testo](select-text.md) o [cerchi](search.md), così lavori solo con ciò che vedi.
+I livelli che nascondi vengono esclusi anche quando [stampi](print.md), [selezioni il testo](select-text.md), [cerchi](search.md), [esporti un PDF appiattito](export.md#flattened-pdf) o [fai domande all'Agent](agent.md), così lavori solo con ciò che vedi.
+
+## Scegliere una configurazione dei livelli
+
+Alcuni documenti offrono più di un modo per mostrare i livelli, ad esempio uno per la stampa su plotter, uno per ogni disciplina o uno per ogni lingua. In questi documenti, la parte superiore della scheda Layers mostra la configurazione in uso al posto del numero di livelli. È **Default** finché non ne scegli un'altra, a meno che il documento non dia un nome alla sua configurazione predefinita.
+
+Fai clic su di essa, quindi scegli una configurazione. I suoi livelli vengono mostrati e nascosti come indica, ed elencati come li elenca.
+
+Se poi mostri o nascondi un livello, dopo il nome della configurazione compare **(Changed)**. Scegli di nuovo la configurazione per ripristinarne i livelli.
 
 ## Mettere le annotazioni su un livello
 
@@ -40,6 +48,6 @@ I revisori spesso mettono le proprie annotazioni su livelli propri, ad esempio u
 
 I livelli che aggiungi, rinomini o elimini vengono salvati con il documento, così come i livelli su cui si trovano le annotazioni.
 
-Quali livelli sono mostrati non viene salvato con il documento. La prossima volta che lo apri, i suoi livelli vengono mostrati come stabilisce il documento stesso, e chiunque lo riceva da te vede lo stesso.
+Quali livelli sono mostrati e quale configurazione hai scelto non vengono salvati con il documento. La prossima volta che lo apri, i suoi livelli vengono mostrati come stabilisce il documento stesso, e chiunque lo riceva da te vede lo stesso.
 
 > **Nota:** Un documento di una o due pagine con livelli si apre sul pannello Layers, a meno che tu non abbia nascosto la barra laterale per quel documento. Usa il pulsante della barra laterale nella barra degli strumenti per mostrarla.

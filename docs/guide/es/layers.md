@@ -1,5 +1,5 @@
-<!-- keywords: capas, capa, contenido opcional, CAD, planos, dibujos, mostrar, ocultar, visibilidad, marcados, anotaciones, nueva capa, cambiar nombre de capa, eliminar capa, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: capas, capa, contenido opcional, CAD, planos, dibujos, mostrar, ocultar, visibilidad, marcados, anotaciones, nueva capa, cambiar nombre de capa, eliminar capa, configuración de capas, configuraciones, estados de capa, trazado, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # Mostrar y ocultar capas
 
@@ -12,7 +12,15 @@ La pestaña Layers aparece en la parte superior de la barra lateral solo cuando 
 - **Encabezados:** agrupan las capas que aparecen debajo y no se pueden ocultar.
 - **Capas bloqueadas:** tienen un candado al lado. El documento no permite mostrarlas ni ocultarlas.
 
-Las capas que ocultas también se omiten al [imprimir](print.md), [seleccionar texto](select-text.md) o [buscar](search.md), así que solo trabajas con lo que ves.
+Las capas que ocultas también se omiten al [imprimir](print.md), [seleccionar texto](select-text.md), [buscar](search.md), [exportar un PDF acoplado](export.md#flattened-pdf) o [preguntar al Agent](agent.md), así que solo trabajas con lo que ves.
+
+## Elegir una configuración de capas
+
+Algunos documentos traen más de una forma de mostrar sus capas, como una para trazar, una para cada especialidad o una para cada idioma. En ellos, la parte superior de la pestaña Layers muestra la configuración en uso en lugar del número de capas. Es **Default** hasta que eliges otra, salvo que el documento le dé nombre a la suya por omisión.
+
+Haz clic en ella y elige una configuración. Sus capas se muestran y se ocultan como indica, y se listan como las lista.
+
+Si después muestras u ocultas una capa, aparece **(Changed)** tras el nombre de la configuración. Vuelve a elegir la configuración para restablecer sus capas.
 
 ## Poner anotaciones en una capa
 
@@ -40,6 +48,6 @@ Los revisores suelen poner sus marcados en capas propias, como una por oficio o 
 
 Las capas que añades, renombras o eliminas se guardan con el documento, igual que las capas en las que están las anotaciones.
 
-Qué capas se muestran no se guarda con el documento. La próxima vez que lo abras, sus capas se mostrarán como lo indique el propio documento, y cualquier persona a la que se lo envíes verá lo mismo.
+Ni las capas que se muestran ni la configuración que elegiste se guardan con el documento. La próxima vez que lo abras, sus capas se mostrarán como lo indique el propio documento, y cualquier persona a la que se lo envíes verá lo mismo.
 
 > **Nota:** Un documento de una o dos páginas con capas se abre en la pestaña Layers, salvo que hayas ocultado la barra lateral para él. Usa el botón de la barra lateral en la barra de herramientas para mostrarla.

@@ -259,6 +259,7 @@ int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int page
 int mupdf_page_add_redact_annot(fz_context *ctx, fz_document *doc, int pageno, float x0, float y0, float x1, float y1, const char **out_error);
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error);
 int mupdf_pdf_save_encrypted(fz_context *ctx, fz_document *doc, const char *path, const char *password, const char **out_error);
+// Baked annotations stay on their layers.
 int mupdf_pdf_save_flattened(fz_context *ctx, fz_document *doc, const char *path, int bake_annots, int bake_widgets, const char **out_error);
 // Saves a smaller copy: unused and duplicate objects removed, streams compressed into object
 // streams, and optionally fonts subset to the glyphs used, colour and grey images above
@@ -367,10 +368,32 @@ typedef struct {
     int locked;
     int object_number; // the layer's, or 0 for a heading
 } mupdf_layer_ui_entry;
-int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size);
+// `config` is the configuration chosen with mupdf_pdf_select_layer_config, -1 for the default:
+// the list is the one it gives, if it gives one.
+int mupdf_pdf_layer_ui_entry(fz_context *ctx, fz_document *doc, int config, int index, mupdf_layer_ui_entry *out, char *text_buf, int text_size);
 // Shows or hides an entry, hiding the rest of its group when it's one of one, and doing nothing
 // to a locked entry or a heading.
 int mupdf_pdf_toggle_layer_ui(fz_context *ctx, fz_document *doc, int index, const char **out_error);
+// The document's alternative layer configurations (its /Configs), such as a plot set-up or a
+// language, not counting the default one (/D).
+int mupdf_pdf_count_layer_configs(fz_context *ctx, fz_document *doc);
+// A configuration's name (-1 for the default), copied into `buf`; empty when it has none.
+int mupdf_pdf_layer_config_name(fz_context *ctx, fz_document *doc, int config, char *buf, int size);
+// Shows and hides layers as configuration `config` says (-1 for the default), and takes its list
+// of layers, groups, locked layers and intent. With `states` (`count` of them, as
+// mupdf_pdf_get_layer_states gives them), shows the layers that way instead, keeping the rest.
+// Like showing and hiding layers, this doesn't change the file. Reading the layers again after the
+// list of them changes (adding, renaming or deleting one) goes back to the default: choose the
+// configuration again, with the states, after that.
+int mupdf_pdf_select_layer_config(fz_context *ctx, fz_document *doc, int config, const int *states, int count, const char **out_error);
+// How the default configuration shows each layer, as the file opens: `count` states, as
+// mupdf_pdf_get_layer_states gives them.
+int mupdf_pdf_default_layer_states(fz_context *ctx, fz_document *doc, int *out_states, int count);
+// Takes what hidden layers hold out of the document, as they're shown now: page content marked as
+// on them, forms and images on them, and annotations on them; then the hidden layers themselves.
+// The layers left are all shown, and the default configuration lists them; alternative
+// configurations are removed.
+int mupdf_pdf_remove_hidden_layers(fz_context *ctx, fz_document *doc, const char **out_error);
 
 // Store & Memory Management
 // No fz_empty_store wrapper: the store is shared by every cloned context, and emptying it frees

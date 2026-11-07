@@ -52,9 +52,12 @@ extension PDFViewerViewModel {
         let indexesWorkingCopy = workingCopyPath != nil
         let path = workingCopyPath ?? doc.filePath
         let password = currentDocumentPassword
+        // Text on hidden layers is left out, as it is from search.
+        let layerStates = doc.layerStates()
         // The cache is plain JSON in Application Support: never write (or trust) one for a
-        // password-protected document or a temporary working copy.
-        let usesCache = password == nil && !indexesWorkingCopy
+        // password-protected document or a temporary working copy. Nor for layers shown other
+        // than as the file shows them: the cache is for the file.
+        let usesCache = password == nil && !indexesWorkingCopy && doc.layersAreShownAsTheFileSays()
 
         agentIndexingTask?.cancel()
         agentIndexingTask = Task { [weak self] in
@@ -83,7 +86,7 @@ extension PDFViewerViewModel {
             let builder = SemanticIndexBuilder()
             self.agentIndexBuilder = builder
             do {
-                try await builder.openDocument(filePath: path, password: password)
+                try await builder.openDocument(filePath: path, password: password, layerStates: layerStates)
             } catch {
                 guard !Task.isCancelled else { return }
                 self.agentIndexState = .unavailable("Couldn't open the document for indexing.")

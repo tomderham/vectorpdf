@@ -1,5 +1,5 @@
 <!-- keywords: एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, ऑप्टिमाइज़, फ़ाइल का आकार घटाएँ, कंप्रेस, छोटा, इमेज, फ़ॉन्ट, आउटलाइन, टेक्स्ट को आउटलाइन में बदलें, प्लॉटर, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # अन्य फ़ॉर्मैट में एक्सपोर्ट करें
 
@@ -23,6 +23,8 @@
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+फ़्लैटन किए गए PDF में केवल वही होता है जो दिखाई गई [लेयर](layers.md) पर है। छिपी हुई लेयर, उन पर मौजूद हर चीज़ के साथ, छोड़ दी जाती हैं, ऐनोटेशन भी। बची हुई लेयर अब भी दिखाई और छिपाई जा सकती हैं, और पेज में फ़्लैटन किए गए ऐनोटेशन अपनी लेयर पर बने रहते हैं।
 
 > **नोट:** फ़्लैटन करने से नीचे की सामग्री नहीं हटती। सामग्री हटाने के लिए [रिडैक्शन](redact.md) का उपयोग करें।
 

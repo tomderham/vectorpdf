@@ -92,9 +92,9 @@ public actor PDFRenderActor {
     /// Shows and hides the document's layers as `states` says (from
     /// `PDFDocumentCore.layerStates`), redrawing every page from now on. A newly opened document
     /// starts with its own default states.
-    public func setLayerStates(_ states: [Int32]) {
+    public func setLayerStates(_ states: PDFLayerStates) {
         guard let doc = resource.doc, !states.isEmpty else { return }
-        guard mupdf_pdf_set_layer_states(resource.ctx, doc, states, Int32(states.count)) == 0 else { return }
+        guard states.apply(ctx: resource.ctx, doc: doc) else { return }
         resource.listCache.removeAll(ctx: resource.ctx)
     }
 

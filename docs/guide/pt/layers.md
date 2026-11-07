@@ -1,5 +1,5 @@
-<!-- keywords: camadas, camada, conteúdo opcional, CAD, plantas, desenhos, mostrar, ocultar, visibilidade, marcações, anotações, nova camada, renomear camada, apagar camada, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
-<!-- source: 0a0a671f9044 -->
+<!-- keywords: camadas, camada, conteúdo opcional, CAD, plantas, desenhos, mostrar, ocultar, visibilidade, marcações, anotações, nova camada, renomear camada, apagar camada, configuração de camadas, configurações, estados de camada, plotagem, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
+<!-- source: 4525c1273cca -->
 
 # Mostrar e ocultar camadas
 
@@ -12,7 +12,15 @@ A aba Layers aparece na parte superior da barra lateral somente quando o documen
 - **Títulos:** agrupam as camadas listadas abaixo deles e não podem ser ocultados.
 - **Camadas bloqueadas:** têm um cadeado ao lado. O documento não permite mostrá-las nem ocultá-las.
 
-As camadas que você oculta também ficam de fora quando você [imprime](print.md), [seleciona texto](select-text.md) ou [pesquisa](search.md), então você trabalha só com o que vê.
+As camadas que você oculta também ficam de fora quando você [imprime](print.md), [seleciona texto](select-text.md), [pesquisa](search.md), [exporta um PDF nivelado](export.md#flattened-pdf) ou [pergunta ao Agent](agent.md), então você trabalha só com o que vê.
+
+## Escolher uma configuração de camadas
+
+Alguns documentos vêm com mais de uma forma de mostrar suas camadas, como uma para plotagem, uma para cada disciplina ou uma para cada idioma. Neles, a parte de cima da aba Layers mostra a configuração em uso, no lugar do número de camadas. Ela é **Default** até você escolher outra, a menos que o documento dê nome à sua configuração padrão.
+
+Clique nela e escolha uma configuração. As camadas são mostradas e ocultadas como ela indica, e listadas como ela as lista.
+
+Se depois você mostrar ou ocultar uma camada, **(Changed)** aparece após o nome da configuração. Escolha a configuração de novo para restaurar as camadas dela.
 
 ## Colocar anotações em uma camada
 
@@ -40,6 +48,6 @@ Revisores costumam colocar suas marcações em camadas próprias, como uma por d
 
 As camadas que você adiciona, renomeia ou apaga são salvas com o documento, assim como as camadas em que estão as anotações.
 
-Quais camadas estão sendo mostradas não é salvo com o documento. Na próxima vez que você abri-lo, as camadas serão mostradas como o próprio documento define, e quem receber o documento verá o mesmo.
+Quais camadas estão sendo mostradas e qual configuração você escolheu não são salvos com o documento. Na próxima vez que você abri-lo, as camadas serão mostradas como o próprio documento define, e quem receber o documento verá o mesmo.
 
 > **Nota:** Um documento de uma ou duas páginas com camadas abre na aba Layers, a menos que você tenha ocultado a barra lateral para ele. Use o botão da barra lateral na barra de ferramentas para mostrá-la.

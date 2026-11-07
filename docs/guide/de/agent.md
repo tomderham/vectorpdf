@@ -1,5 +1,5 @@
 <!-- keywords: Agent, KI, fragen, Frage, Fragen, Antworten, Quellen, zusammenfassen, Chat, AI, ask, question, questions, Apple Intelligence, answers, sources, summarize, chat -->
-<!-- source: 262e5b31abb2 -->
+<!-- source: 7759f941e883 -->
 
 # Fragen zu einem Dokument stellen
 
@@ -9,6 +9,8 @@ Der Agent beantwortet Fragen zum geöffneten Dokument und zeigt dir die Textstel
 
 1. Klicke in der Seitenleiste auf den Tab „Ask About This Document“. Beim ersten Mal indexiert VectorPDF das Dokument auf deinem Mac und zeigt den Fortschritt an.
 2. Gib eine Frage ein und drücke dann die Return-Taste oder klicke auf „Ask“. Drücke ⇧Return für eine neue Zeile.
+
+In einem Dokument mit [Ebenen](layers.md) werden nur die angezeigten Ebenen indiziert. Wenn du Ebenen ein- oder ausblendest, wird das Dokument erneut indiziert.
 
 Klicke unter der Antwort auf **Sources**, um die verwendeten Textstellen mit ihren Seiten zu sehen. Textstellen, die in der Antwort zitiert werden, sind mit **Cited** gekennzeichnet. Klicke auf eine Textstelle, um zu ihr zu springen.
 

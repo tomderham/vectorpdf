@@ -1,5 +1,5 @@
 <!-- keywords: exportar, convertir, texto simple, texto, acoplar, acoplado, resumen de anotaciones, optimizar, optimizado, reducir tamaño, comprimir, más pequeño, imágenes, fuentes, contornos, texto a contornos, plóter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # Exportar a otros formatos
 
@@ -23,6 +23,8 @@ Guarda un PDF con las anotaciones y los campos de formulario integrados en la p�
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+El PDF acoplado solo contiene lo que hay en las [capas](layers.md) que se muestran. Las capas ocultas se omiten con todo lo que contienen, anotaciones incluidas. Las capas que quedan se pueden seguir mostrando y ocultando, y las anotaciones acopladas a la página siguen en sus capas.
 
 > **Nota:** Acoplar no elimina lo que hay debajo. Para eliminar contenido, usa la [censura](redact.md).
 

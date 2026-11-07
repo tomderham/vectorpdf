@@ -1,5 +1,5 @@
 <!-- keywords: Agent, IA, preguntar, pregunta, preguntas, respuestas, fuentes, resumir, chat, AI, ask, question, questions, Apple Intelligence, answers, sources, summarize -->
-<!-- source: 262e5b31abb2 -->
+<!-- source: 7759f941e883 -->
 
 # Preguntar sobre un documento
 
@@ -9,6 +9,8 @@ El Agent responde preguntas sobre el documento abierto y te muestra los pasajes 
 
 1. Haz clic en la pestaña Ask About This Document de la barra lateral. La primera vez, VectorPDF indexa el documento en tu Mac y muestra el progreso.
 2. Escribe una pregunta y pulsa Return, o haz clic en Ask. Pulsa ⇧Return para añadir una línea nueva.
+
+En un documento con [capas](layers.md), solo se indexan las capas que se muestran. Si muestras u ocultas capas, el documento se vuelve a indexar.
 
 Debajo de la respuesta, haz clic en **Sources** para ver los pasajes utilizados y sus páginas. Los pasajes que cita la respuesta llevan la marca **Cited**. Haz clic en un pasaje para ir a él.
 

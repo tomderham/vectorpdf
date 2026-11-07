@@ -1,4 +1,4 @@
-<!-- keywords: layers, layer, optional content, OCG, CAD, drawings, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer -->
+<!-- keywords: layers, layer, optional content, OCG, CAD, drawings, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
 
 # Show and hide layers
 
@@ -11,7 +11,15 @@ The Layers tab appears at the top of the sidebar only when the document has laye
 - **Headings:** these group the layers listed under them, and can't be hidden themselves.
 - **Locked layers:** these have a lock next to them. The document doesn't let them be shown or hidden.
 
-Layers you hide are also left out when you [print](print.md), [select text](select-text.md) or [search](search.md), so you only work with what you can see.
+Layers you hide are also left out when you [print](print.md), [select text](select-text.md), [search](search.md), [export a flattened PDF](export.md#flattened-pdf) or [ask the Agent](agent.md), so you only work with what you can see.
+
+## Choose a layer configuration
+
+Some documents come with more than one way of showing their layers, such as one for plotting, one for each trade or one for each language. In these, the top of the Layers tab shows the configuration in use, in place of the number of layers. It's **Default** until you choose another, unless the document names its default.
+
+Click it, then choose a configuration. Its layers are shown and hidden as it says, and listed as it lists them.
+
+If you then show or hide a layer, **(Changed)** appears after the configuration's name. Choose the configuration again to put its layers back.
 
 ## Put annotations on a layer
 
@@ -39,6 +47,6 @@ Reviewers often keep their markups on layers of their own, such as one for each 
 
 Layers you add, rename or delete are saved with the document, as are the layers annotations are on.
 
-Which layers are shown isn't saved with the document. The next time you open it, its layers are shown as the document itself sets them, and anyone you send it to sees the same.
+Which layers are shown, and which configuration you chose, aren't saved with the document. The next time you open it, its layers are shown as the document itself sets them, and anyone you send it to sees the same.
 
 > **Note:** A document of one or two pages with layers opens on the Layers tab, unless you've hidden the sidebar for it. Use the sidebar button in the toolbar to show it.

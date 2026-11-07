@@ -1,5 +1,5 @@
 <!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, 최적화, 파일 크기 줄이기, 압축, 작게, 이미지, 서체, 윤곽선, 텍스트를 윤곽선으로, 플로터, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 0e99b5515751 -->
+<!-- source: 6d68e3315dc3 -->
 
 # 다른 포맷으로 내보내기
 
@@ -23,6 +23,8 @@ Word 및 다른 앱에서 편집할 수 있는 `.docx` 파일을 저장합니다
 
 - **Flatten annotations and markups**
 - **Flatten form fields (make static)**
+
+평면화된 PDF에는 보이는 [레이어](layers.md)에 있는 것만 포함됩니다. 가린 레이어는 주석을 포함해 그 위의 모든 것과 함께 제외됩니다. 남은 레이어는 계속 보거나 가릴 수 있으며, 페이지에 평면화된 주석은 원래 레이어에 그대로 남습니다.
 
 > **참고:** 평면화해도 아래에 있는 내용은 제거되지 않습니다. 내용을 제거하려면 [가림 처리](redact.md)를 사용합니다.
 
