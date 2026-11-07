@@ -1,5 +1,5 @@
 <!-- keywords: Gliederung, Inhaltsverzeichnis, Inhalt, Lesezeichen, Miniatur, Miniaturen, Seitenleiste, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar -->
-<!-- source: cca8e6778fe7 -->
+<!-- source: 9d40d0fcf99f -->
 
 # Gliederung und Miniaturen
 
@@ -9,7 +9,7 @@ Klicke oben in der Seitenleiste auf den Tab „Outline & Thumbnails“ und wähl
 
 Die Gliederung ist das Inhaltsverzeichnis des Dokuments, sofern es eines hat. Beim Scrollen wird der Abschnitt hervorgehoben, den du gerade liest.
 
-- **Zu einem Abschnitt gehen:** Klicke darauf.
+- **Zu einem Abschnitt gehen:** Klicke darauf. Seine Überschrift wird nahe an den oberen Rand des Fensters gescrollt oder bleibt, wo sie ist, wenn du sie schon sehen kannst.
 - **Unterabschnitte ein- oder ausblenden:** Klicke auf den Pfeil neben einem Abschnitt.
 - **Einen Abschnitt finden:** Tippe in das Feld „Search outline“. Es werden nur passende Abschnitte angezeigt.
 - **Einen Abschnitt griffbereit halten:** Klicke mit der rechten Maustaste darauf, um einen [Anker](anchors.md) zu erstellen oder den Abschnitt in einem neuen Fenster zu öffnen.

@@ -175,6 +175,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastSearchJumpToken: Int = -1
         private var lastSnapshotJumpToken: Int = -1
         private var lastAnnotationRevealToken: Int = -1
+        private var lastOutlineJumpToken: Int = -1
         
         // Pinch-to-zoom tracking
         var isPinching: Bool = false
@@ -214,6 +215,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let isMatchNavigation = (viewModel.searchJumpToken != lastSearchJumpToken && (!viewModel.searchResults.isEmpty || !viewModel.redactionMatches.isEmpty))
             let isSnapshotJump = (viewModel.snapshotJumpToken != lastSnapshotJumpToken && viewModel.activeSnapshotTarget != nil)
             let isAnnotationReveal = (viewModel.annotationReveal.map { $0.token != lastAnnotationRevealToken } ?? false)
+            let isOutlineJump = (viewModel.outlineJump.map { $0.token != lastOutlineJumpToken } ?? false)
             
             if isNewDocument {
                 lastDocumentPath = doc.filePath
@@ -227,6 +229,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastSearchJumpToken = -1
                 lastSnapshotJumpToken = -1
                 lastAnnotationRevealToken = viewModel.annotationReveal?.token ?? -1
+                lastOutlineJumpToken = viewModel.outlineJump?.token ?? -1
             }
 
             if isLayoutModeChanged {
@@ -270,8 +273,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 }
             }
 
-            // 3. Handle Direct Page Jump (e.g. from Table of Contents or Layout Mode Change)
-            if (isPageJump || isNewDocument || isLayoutModeChanged) && !isMatchNavigation && !isSnapshotJump && !isAnnotationReveal {
+            // 3. Handle Direct Page Jump (e.g. page buttons, thumbnails, or Layout Mode Change)
+            if (isPageJump || isNewDocument || isLayoutModeChanged) && !isMatchNavigation && !isSnapshotJump && !isAnnotationReveal && !isOutlineJump {
                 lastNavigatedPage = viewModel.currentPageIndex
                 let targetPage = viewModel.currentPageIndex
                 if targetPage >= 0 && targetPage < doc.pageCount && targetPage < viewModel.effectivePageYOffsets.count {
@@ -321,6 +324,19 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastNavigatedPage = reveal.pageIndex
                 scroll(toPageRect: reveal.rect, pageIndex: reveal.pageIndex, minimumSize: CGSize(width: 24, height: 20), doc: doc, clipView: clipView, scrollView: scrollView)
             }
+
+            // 7. Handle an outline entry chosen in the sidebar: its heading, if it isn't on screen
+            if isOutlineJump, let jump = viewModel.outlineJump {
+                lastOutlineJumpToken = jump.token
+                lastNavigatedPage = jump.pageIndex
+                if let geometry = canvasView.pageGeometry(for: jump.pageIndex),
+                   let origin = OutlineJump.scrollOrigin(toShow: geometry.canvasRect(forPageRect: jump.rect), in: clipView.bounds, canvasSize: canvasView.frame.size) {
+                    isProgrammaticScroll = true
+                    clipView.scroll(to: origin)
+                    scrollView.reflectScrolledClipView(clipView)
+                    isProgrammaticScroll = false
+                }
+            }
             
             canvasView.needsDisplay = true
             canvasView.syncFormControls()
@@ -340,8 +356,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             scroll(toPageRect: viewModel.resolvedTargetRect(for: snap), pageIndex: pageIdx, minimumSize: CGSize(width: 24, height: 20), doc: doc, clipView: clipView, scrollView: scrollView)
         }
 
-        /// Scrolls so `pageRect` on page `pageIndex` is centred, keeping all of it in view with a
-        /// margin when it fits, or its top-left corner when it doesn't.
+        /// Scrolls to show `pageRect` on page `pageIndex`, only as far as needed: see
+        /// `ScrollReveal.origin`.
         private func scroll(toPageRect pageRect: CGRect, pageIndex pageIdx: Int, minimumSize: CGSize, doc: PDFDocumentCore, clipView: NSClipView, scrollView: NSScrollView) {
             guard let canvasView = self.canvasView,
                   let geometry = canvasView.pageGeometry(for: pageIdx) else { return }
@@ -349,41 +365,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             targetCanvasRect.size.width = max(targetCanvasRect.width, minimumSize.width)
             targetCanvasRect.size.height = max(targetCanvasRect.height, minimumSize.height)
 
-            // 1. Vertical Scrolling — center the rect while keeping its entirety visible
-            let maxScrollY = max(0, canvasView.bounds.height - clipView.bounds.height)
-            var scrollY: CGFloat
-            if targetCanvasRect.height >= clipView.bounds.height {
-                // Taller than the viewport: align its top with a comfortable margin
-                scrollY = targetCanvasRect.minY - 24
-            } else {
-                scrollY = targetCanvasRect.midY - (clipView.bounds.height / 2)
-                if scrollY > targetCanvasRect.minY - 24 {
-                    scrollY = targetCanvasRect.minY - 24
-                }
-                if scrollY + clipView.bounds.height < targetCanvasRect.maxY + 24 {
-                    scrollY = targetCanvasRect.maxY + 24 - clipView.bounds.height
-                }
-            }
-            scrollY = min(max(0, scrollY), maxScrollY)
-
-            // 2. Horizontal Scrolling — center the rect and keep it within the viewport
-            let maxScrollX = max(0, canvasView.bounds.width - clipView.bounds.width)
-            var scrollX: CGFloat
-            if targetCanvasRect.width >= clipView.bounds.width {
-                scrollX = targetCanvasRect.minX - 32
-            } else {
-                scrollX = targetCanvasRect.midX - (clipView.bounds.width / 2)
-                if scrollX > targetCanvasRect.minX - 32 {
-                    scrollX = targetCanvasRect.minX - 32
-                }
-                if scrollX + clipView.bounds.width < targetCanvasRect.maxX + 32 {
-                    scrollX = targetCanvasRect.maxX + 32 - clipView.bounds.width
-                }
-            }
-            scrollX = min(max(0, scrollX), maxScrollX)
-
+            let origin = ScrollReveal.origin(toShow: targetCanvasRect, in: clipView.bounds, canvasSize: canvasView.bounds.size)
+            guard origin != clipView.bounds.origin else { return }
             isProgrammaticScroll = true
-            clipView.scroll(to: NSPoint(x: scrollX, y: scrollY))
+            clipView.scroll(to: origin)
             scrollView.reflectScrolledClipView(clipView)
             isProgrammaticScroll = false
         }

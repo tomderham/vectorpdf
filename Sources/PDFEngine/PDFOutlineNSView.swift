@@ -26,7 +26,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     let searchQuery: String
     let currentPage: Int
     let viewModel: PDFViewerViewModel?
-    let onSelect: (Int) -> Void
+    let onSelect: (PDFOutlineNode) -> Void
 
     public init(
         outline: [PDFOutlineNode],
@@ -34,7 +34,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         searchQuery: String = "",
         currentPage: Int = 0,
         viewModel: PDFViewerViewModel? = nil,
-        onSelect: @escaping (Int) -> Void
+        onSelect: @escaping (PDFOutlineNode) -> Void
     ) {
         self.outline = outline
         self.documentIdentity = documentIdentity
@@ -113,7 +113,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
     @MainActor
     public final class Coordinator: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
-        var onSelect: (Int) -> Void
+        var onSelect: (PDFOutlineNode) -> Void
         var viewModel: PDFViewerViewModel?
         weak var outlineView: NSOutlineView?
         weak var emptyLabel: NSTextField?
@@ -128,7 +128,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         private var selectedNodePage: Int?
         private var searchWorkItem: DispatchWorkItem?
 
-        init(viewModel: PDFViewerViewModel?, onSelect: @escaping (Int) -> Void) {
+        init(viewModel: PDFViewerViewModel?, onSelect: @escaping (PDFOutlineNode) -> Void) {
             self.viewModel = viewModel
             self.onSelect = onSelect
         }
@@ -369,7 +369,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             self.selectedNodePage = page
             refreshActiveIndicators(scrollToVisible: false)
             DispatchQueue.main.async { [weak self] in
-                self?.onSelect(page)
+                self?.onSelect(wrapper.node)
             }
         }
 
@@ -389,7 +389,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 self.selectedNodePage = page
                 refreshActiveIndicators(scrollToVisible: false)
                 DispatchQueue.main.async { [weak self] in
-                    self?.onSelect(page)
+                    self?.onSelect(wrapper.node)
                 }
             }
         }

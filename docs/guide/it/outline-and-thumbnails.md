@@ -1,5 +1,5 @@
 <!-- keywords: struttura, indice, sommario, contenuti, segnalibri, miniatura, miniature, barra laterale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar -->
-<!-- source: cca8e6778fe7 -->
+<!-- source: 9d40d0fcf99f -->
 
 # Struttura e miniature
 
@@ -9,7 +9,7 @@ Fai clic sul pannello Outline & Thumbnails nella parte superiore della barra lat
 
 La struttura è l'indice del documento, se presente. La sezione che stai leggendo viene evidenziata mentre scorri.
 
-- **Andare a una sezione:** fai clic su di essa.
+- **Andare a una sezione:** fai clic su di essa. Il suo titolo scorre vicino alla parte superiore della finestra, oppure resta dov'è se lo vedi già.
 - **Mostrare o nascondere le sottosezioni:** fai clic sulla freccia accanto a una sezione.
 - **Trovare una sezione:** digita nel campo “Search outline”. Vengono mostrate solo le sezioni corrispondenti.
 - **Tenere a portata di mano una sezione:** fai clic su di essa con il tasto destro per creare un [ancoraggio](anchors.md) o per aprirla in una nuova finestra.

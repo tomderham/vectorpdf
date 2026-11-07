@@ -913,8 +913,8 @@ public struct PDFViewerMainView: View {
                                         searchQuery: tocSearchQuery,
                                         currentPage: viewModel.currentPageIndex,
                                         viewModel: viewModel
-                                    ) { targetPage in
-                                        viewModel.jumpToPage(targetPage)
+                                    ) { node in
+                                        viewModel.jumpToOutlineEntry(node)
                                     }
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 } else {

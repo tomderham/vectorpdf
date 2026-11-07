@@ -8,7 +8,7 @@ Click the Outline & Thumbnails tab at the top of the sidebar, then choose **Outl
 
 The outline is the document's table of contents, if it has one. The section you're reading is highlighted as you scroll.
 
-- **Go to a section:** click it.
+- **Go to a section:** click it. Its heading is scrolled to near the top of the window, or left where it is if you can already see it.
 - **Show or hide subsections:** click the arrow next to a section.
 - **Find a section:** type in the “Search outline” field. Only matching sections are shown.
 - **Keep a section handy:** right-click it to create an [anchor](anchors.md), or to open it in a new window.

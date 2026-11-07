@@ -380,6 +380,8 @@ public final class PDFViewerViewModel: ObservableObject {
     var annotationThreadsTask: Task<Void, Never>?
     /// The annotation the Comments sidebar last asked to scroll to.
     @Published public internal(set) var annotationReveal: AnnotationReveal?
+    /// The outline entry's heading last asked to be shown (see `jumpToOutlineEntry`).
+    @Published public internal(set) var outlineJump: OutlineJump?
     /// Annotations deleted this session that the renderer's copy of the file may still hold, by
     /// page and object number, so it leaves them out.
     var removedAnnotationNumbers: [Int: Set<Int>] = [:]
@@ -1127,6 +1129,25 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
     
+    /// Goes to an outline entry's heading: leaves the view where it is if the heading is already
+    /// on screen, or scrolls it to near the top if not. Entries pointing at a page but no place
+    /// on it go to the top of the page.
+    public func jumpToOutlineEntry(_ node: PDFOutlineNode) {
+        guard let page = node.targetPage else { return }
+        guard let doc = document, page >= 0, page < doc.pageCount,
+              let y = node.targetY, y.isFinite else {
+            jumpToPage(page)
+            return
+        }
+        loadPageMetadata(page)
+        outlineJump = OutlineJump(
+            token: (outlineJump?.token ?? 0) &+ 1,
+            pageIndex: page,
+            rect: OutlineJump.headingRect(y: y, title: node.title, pageBounds: doc.pageBounds[page], page: pageStructuredData[page])
+        )
+        jumpToPage(page)
+    }
+
     public var canGoPreviousPage: Bool {
         guard let doc = document, doc.pageCount > 0 else { return false }
         return currentPageIndex > 0

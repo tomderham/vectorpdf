@@ -1,5 +1,5 @@
 <!-- keywords: plan, table des matières, sommaire, signets, vignette, vignettes, barre latérale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar -->
-<!-- source: cca8e6778fe7 -->
+<!-- source: 9d40d0fcf99f -->
 
 # Plan et vignettes
 
@@ -9,7 +9,7 @@ Cliquez sur l’onglet Outline & Thumbnails en haut de la barre latérale, puis 
 
 Le plan est la table des matières du document, s’il en a une. La section que vous lisez est mise en évidence pendant le défilement.
 
-- **Accéder à une section :** cliquez dessus.
+- **Accéder à une section :** cliquez dessus. Son titre défile près du haut de la fenêtre, ou reste où il est si vous le voyez déjà.
 - **Afficher ou masquer les sous-sections :** cliquez sur la flèche à côté d’une section.
 - **Trouver une section :** saisissez du texte dans le champ « Search outline ». Seules les sections correspondantes sont affichées.
 - **Garder une section à portée de main :** cliquez dessus avec le bouton droit pour créer une [ancre](anchors.md) ou l’ouvrir dans une nouvelle fenêtre.
