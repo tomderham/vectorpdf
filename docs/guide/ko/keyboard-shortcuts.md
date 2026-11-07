@@ -1,5 +1,5 @@
 <!-- keywords: 키보드, 단축키, 키, 핫키, 제스처, 트랙패드, 마우스, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # 키보드 단축키
 
@@ -76,6 +76,7 @@
 | --- | --- |
 | 링크 미리 보기 | 링크 위에서 ⌘ 키를 길게 누르기 또는 강한 클릭 |
 | 새로운 윈도우에서 링크 열기 | ⌘-클릭 |
+| PDF의 특정 위치에 해당하는 LaTeX 소스 열기 | ⇧⌘을 누른 채 클릭([SyncTeX 파일](latex.md)이 있는 PDF에서) |
 | 단어 선택하기 | 이중 클릭 |
 | 줄 선택하기 | 세 번 클릭 |
 | 영역 선택하기 | ⌥-드래그 |

@@ -38,6 +38,11 @@ extension PDFCanvasView {
             }
         }
 
+        // ⇧⌘-click: open the source line under the pointer in the LaTeX editor (SyncTeX).
+        if handleSyncTeXClick(event, at: point) {
+            return
+        }
+
         // In redact mode: capture start point for draft redaction box
         if viewModel.canvasMode == .redact {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {

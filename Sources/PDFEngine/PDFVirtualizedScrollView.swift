@@ -175,6 +175,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastSearchJumpToken: Int = -1
         private var lastSnapshotJumpToken: Int = -1
         private var lastAnnotationRevealToken: Int = -1
+        private var lastSyncTeXRevealToken: Int = -1
         private var lastOutlineJumpToken: Int = -1
         
         // Pinch-to-zoom tracking
@@ -216,6 +217,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let isSnapshotJump = (viewModel.snapshotJumpToken != lastSnapshotJumpToken && viewModel.activeSnapshotTarget != nil)
             let isAnnotationReveal = (viewModel.annotationReveal.map { $0.token != lastAnnotationRevealToken } ?? false)
             let isOutlineJump = (viewModel.outlineJump.map { $0.token != lastOutlineJumpToken } ?? false)
+            let isSyncTeXReveal = (viewModel.syncTeXReveal.map { $0.token != lastSyncTeXRevealToken } ?? false)
             
             if isNewDocument {
                 lastDocumentPath = doc.filePath
@@ -230,6 +232,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastSnapshotJumpToken = -1
                 lastAnnotationRevealToken = viewModel.annotationReveal?.token ?? -1
                 lastOutlineJumpToken = viewModel.outlineJump?.token ?? -1
+                lastSyncTeXRevealToken = viewModel.syncTeXReveal?.token ?? -1
             }
 
             if isLayoutModeChanged {
@@ -274,7 +277,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             }
 
             // 3. Handle Direct Page Jump (e.g. page buttons, thumbnails, or Layout Mode Change)
-            if (isPageJump || isNewDocument || isLayoutModeChanged) && !isMatchNavigation && !isSnapshotJump && !isAnnotationReveal && !isOutlineJump {
+            if (isPageJump || isNewDocument || isLayoutModeChanged) && !isMatchNavigation && !isSnapshotJump && !isAnnotationReveal && !isOutlineJump && !isSyncTeXReveal {
                 lastNavigatedPage = viewModel.currentPageIndex
                 let targetPage = viewModel.currentPageIndex
                 if targetPage >= 0 && targetPage < doc.pageCount && targetPage < viewModel.effectivePageYOffsets.count {
@@ -338,6 +341,13 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 }
             }
             
+            // 8. Handle a SyncTeX forward search: the line, if it isn't on screen
+            if isSyncTeXReveal, let reveal = viewModel.syncTeXReveal {
+                lastSyncTeXRevealToken = reveal.token
+                lastNavigatedPage = reveal.pageIndex
+                scroll(toPageRect: reveal.bounds, pageIndex: reveal.pageIndex, minimumSize: CGSize(width: 24, height: 20), doc: doc, clipView: clipView, scrollView: scrollView)
+            }
+
             canvasView.needsDisplay = true
             canvasView.syncFormControls()
         }

@@ -1,4 +1,4 @@
-<!-- source: 656a91c48947 -->
+<!-- source: 2d2679324bf8 -->
 
 # Manual do Usuário do VectorPDF
 
@@ -24,6 +24,7 @@ O VectorPDF é um leitor de PDF rápido para artigos técnicos, especificações
 - [Alterar as cores do PDF](pdf-colors.md)
 - [Selecionar, copiar e pesquisar texto](select-text.md)
 - [Comparar dois documentos](compare-documents.md)
+- [Ir entre o código LaTeX e o PDF](latex.md)
 
 ## Buscar
 

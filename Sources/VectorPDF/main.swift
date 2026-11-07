@@ -20,8 +20,13 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 import PDFEngine
+import SyncTeXLink
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// SyncTeX requests that arrived before launch finished, acted on once it has.
+    private var pendingSyncTeXRequests: [SyncTeXForwardRequest] = []
+    private var hasFinishedLaunching = false
+
     /// The file path passed as a CLI argument (`open -a VectorPDF file.pdf`, or running the
     /// built binary directly), if any.
     private static func commandLineFilePath() -> String? {
@@ -69,6 +74,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DocumentWindowing.closeStandaloneEmptyStartWindows()
             }
         }
+        hasFinishedLaunching = true
+        let syncTeXRequests = pendingSyncTeXRequests
+        pendingSyncTeXRequests = []
+        for request in syncTeXRequests {
+            handleSyncTeXRequest(request)
+        }
         StoredData.cleanUpAtLaunch()
         GitHubUpdater.shared.start(
             gitHubUser: "tomderham",
@@ -100,8 +111,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where OpenableDocumentTypes.canOpen(url) {
-            handleSystemOpenFile(url: url)
+        for url in urls {
+            if url.isFileURL {
+                if OpenableDocumentTypes.canOpen(url) { handleSystemOpenFile(url: url) }
+            } else if url.scheme?.lowercased() == SyncTeXForwardRequest.scheme {
+                // From displayline (or a link): anything malformed is dropped without a word.
+                guard let request = SyncTeXForwardRequest(url: url) else { continue }
+                if hasFinishedLaunching {
+                    handleSyncTeXRequest(request)
+                } else {
+                    pendingSyncTeXRequests.append(request)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func handleSyncTeXRequest(_ request: SyncTeXForwardRequest) {
+        Task { @MainActor in
+            await PDFViewerAppCoordinator.shared.handleSyncTeXForwardRequest(request)
         }
     }
 

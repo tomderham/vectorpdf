@@ -1,5 +1,5 @@
 <!-- keywords: सेटिंग्ज़, प्राथमिकताएँ, विकल्प, अपडेट, अपडेट जाँचें, ब्राउज़र, लेखक, ऐनोटेशन लेखक, स्टोरेज, डिस्क स्थान, साफ़ करें, डेटा हटाएँ, अनइंस्टॉल, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 95e6c661738e -->
+<!-- source: 91c5b0e9ab3d -->
 
 # सेटिंग्ज़
 
@@ -12,6 +12,7 @@ VectorPDF > Settings चुनें, या ⌘, दबाएँ।
 | AI Synthesis Engine | macOS 27 पर चुनती है कि [Agent के जवाब कौन लिखेगा](agent-engines.md)। |
 | PDF Color | सेट करती है कि [पेज कैसे दिखें](pdf-colors.md): Follow System, Light, Dark या Sepia। |
 | Open Links In | वेब लिंक के लिए ब्राउज़र चुनती है। |
+| LaTeX (SyncTeX) | वह एडिटर चुनता है जो PDF पर ⇧⌘ दबाकर क्लिक करने पर [LaTeX सोर्स](latex.md) खोलता है। |
 | Ignored Search Patterns | वह टेक्स्ट दिखाती है जिसे [Smart Search अनदेखा करता है](search.md#ignore-clutter-in-the-text)। |
 | Digital Stamp | आपका [स्टैम्प](stamps.md) बनाती है, बदलती है या हटाती है। |
 | Sync reading positions with iCloud | आपके [पेज, ज़ूम, ऐंकर](reading-positions.md) और [हाल की खोजों](search.md) को आपके दूसरे Mac पर भी रखता है। |

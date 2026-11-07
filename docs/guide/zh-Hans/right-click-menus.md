@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # 右键菜单
 
@@ -23,6 +23,8 @@
 | 页面上的其他任何位置 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 如果你右键点按纯文本引用，并且相关文稿已在其他标签页中打开，菜单还会提供[前往或查找该引用](cross-document-references.md)的命令。
+
+在开启 SyncTeX 由 LaTeX 生成的 PDF 中，文稿中的每个菜单都以 **Show in Editor** 开头，它会打开你点按位置对应的[源代码行](latex.md)。
 
 在带有[图层](layers.md)的文稿中，注释的菜单还包含 **Layer**，可将其移到另一个图层或不放在任何图层上。
 

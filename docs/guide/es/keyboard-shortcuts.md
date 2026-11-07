@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # Atajos de teclado
 
@@ -76,6 +76,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | --- | --- |
 | Previsualizar un enlace | Mantener pulsada la tecla ⌘ sobre él, o hacer clic fuerte |
 | Abrir un enlace en una ventana nueva | ⌘-clic |
+| Abrir el código LaTeX de un lugar del PDF | Clic con ⇧⌘, en un PDF con un [archivo SyncTeX](latex.md) |
 | Seleccionar una palabra | Doble clic |
 | Seleccionar una línea | Triple clic |
 | Seleccionar un área | Arrastrar con ⌥ pulsada |

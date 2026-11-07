@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # Menus do botão direito
 
@@ -23,6 +23,8 @@ Clique com o botão direito, ou clique com a tecla Control pressionada, para ver
 | Qualquer outro lugar da página | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Se você clicar com o botão direito em uma referência em texto simples e houver documentos relacionados abertos em outras abas, o menu também terá comandos para [ir até ela ou encontrá-la](cross-document-references.md).
+
+Em um PDF gerado pelo LaTeX com o SyncTeX ativado, todos os menus do documento começam com **Show in Editor**, que abre a [linha do código](latex.md) do ponto em que você clicou.
 
 Em um documento com [camadas](layers.md), o menu de uma anotação também tem **Layer**, para movê-la para outra camada ou para nenhuma.
 

@@ -23,6 +23,8 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 
 If you right-click a plain-text reference and related documents are open in other tabs, the menu also has commands to [go to it or find it](cross-document-references.md).
 
+In a PDF built from LaTeX with SyncTeX on, every menu in the document starts with **Show in Editor**, which opens the [source line](latex.md) for the place you clicked.
+
 In a document with [layers](layers.md), the menu for an annotation also has **Layer**, to move it to another layer or to none.
 
 ## In the sidebar

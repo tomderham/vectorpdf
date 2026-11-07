@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # 键盘快捷键
 
@@ -76,6 +76,7 @@
 | --- | --- |
 | 预览链接 | 将指针放在链接上并按住 ⌘，或者用力点按 |
 | 在新窗口中打开链接 | 按住 ⌘ 点按 |
+| 打开 PDF 中某处的 LaTeX 源代码 | 按住 ⇧⌘ 点按（在带有 [SyncTeX 文件](latex.md)的 PDF 中） |
 | 选择一个单词 | 连按两下 |
 | 选择一行 | 连按三下 |
 | 选择一个区域 | 按住 ⌥ 拖移 |

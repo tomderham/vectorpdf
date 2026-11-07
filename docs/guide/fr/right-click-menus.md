@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # Menus du clic droit
 
@@ -23,6 +23,8 @@ Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, po
 | Partout ailleurs sur la page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Si vous cliquez avec le bouton droit sur une référence en texte brut alors que des documents liés sont ouverts dans d’autres onglets, le menu propose aussi des commandes pour [y accéder ou la trouver](cross-document-references.md).
+
+Dans un PDF produit par LaTeX avec SyncTeX activé, chaque menu du document commence par **Show in Editor**, qui ouvre la [ligne de code](latex.md) de l’endroit où vous avez cliqué.
 
 Dans un document avec des [calques](layers.md), le menu d’une annotation propose aussi **Layer**, pour la déplacer vers un autre calque ou vers aucun.
 

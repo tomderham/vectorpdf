@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # राइट-क्लिक मेनू
 
@@ -23,6 +23,8 @@
 | पेज पर कहीं और | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 अगर आप सादे टेक्स्ट वाले किसी संदर्भ पर राइट-क्लिक करते हैं और संबंधित दस्तावेज़ दूसरे टैब में खुले हैं, तो मेनू में [उस पर जाने या उसे ढूँढने](cross-document-references.md) के कमांड भी होते हैं।
+
+SyncTeX चालू करके LaTeX से बने PDF में, दस्तावेज़ का हर मेनू **Show in Editor** से शुरू होता है, जो आपके क्लिक की जगह की [सोर्स लाइन](latex.md) खोलता है।
 
 [लेयर](layers.md) वाले दस्तावेज़ में, किसी ऐनोटेशन के मेनू में **Layer** भी होता है, जिससे उसे किसी दूसरी लेयर पर या किसी भी लेयर से बाहर ले जाया जा सकता है।
 

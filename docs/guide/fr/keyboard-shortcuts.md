@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # Raccourcis clavier
 
@@ -76,6 +76,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | --- | --- |
 | Prévisualiser un lien | Maintenir la touche ⌘ enfoncée sur le lien, ou clic forcé |
 | Ouvrir un lien dans une nouvelle fenêtre | ⌘-clic |
+| Ouvrir le code LaTeX d’un endroit du PDF | Clic en maintenant ⇧⌘, dans un PDF avec un [fichier SyncTeX](latex.md) |
 | Sélectionner un mot | Double-clic |
 | Sélectionner une ligne | Triple-clic |
 | Sélectionner une zone | ⌥-glisser |

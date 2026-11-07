@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # 右クリックメニュー
 
@@ -23,6 +23,8 @@
 | ページ上のその他の場所 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 
 プレーンテキストの参照を右クリックしたときに、関連する書類が別のタブで開いている場合は、メニューに[その参照に移動または検索する](cross-document-references.md)コマンドも表示されます。
+
+SyncTeX を有効にして LaTeX で作成した PDF では、書類内のすべてのメニューの先頭に **Show in Editor** があり、クリックした位置の[ソースの行](latex.md)を開きます。
 
 [レイヤー](layers.md)のある書類では、注釈のメニューに **Layer** もあり、別のレイヤーに移動したり、どのレイヤーからも外したりできます。
 

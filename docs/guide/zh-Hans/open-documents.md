@@ -1,5 +1,5 @@
 <!-- keywords: 打开, 打开 PDF, 打开文件, PDF, 最近使用, 密码, 云, 重新载入, 拖移, 电子书, 漫画, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 076e48886ae4 -->
+<!-- source: 48a137d82361 -->
 
 # 打开文稿
 
@@ -27,7 +27,7 @@ VectorPDF 能识别 iCloud 云盘、Google Drive、Dropbox、OneDrive 和 Box �
 
 ## 文件发生更改时
 
-VectorPDF 会监视每个打开的文件。如果其他应用更改了文件，文稿会自动重新载入。如果你正在用 LaTeX 或其他工具生成 PDF 并希望保持打开，这会很有用。
+VectorPDF 会监视每个打开的文件。如果其他应用更改了文件，文稿会自动重新载入。如果你正在用 LaTeX 或其他工具生成 PDF 并希望保持打开，这会很有用。重新载入时会保留你的位置、缩放、旋转和页面布局；如果文件仍在写入，会等写入完成后再载入。关于 LaTeX，另请参阅[在 LaTeX 源代码和 PDF 之间跳转](latex.md)。
 
 如果你有未存储的更改，VectorPDF 会询问是选择 **Reload from Disk**（这会丢失你的更改），还是选择 **Keep My Changes**。
 

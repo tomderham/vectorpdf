@@ -2393,6 +2393,23 @@ extension PDFDocumentCore {
         )
     }
 
+    /// How SyncTeX positions map onto page `pageIndex`; nil if it isn't a PDF page.
+    public func syncTeXMapping(for pageIndex: Int) -> SyncTeXPageMapping? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard pageIndex >= 0, pageIndex < pageCount else { return nil }
+        var mediaBox = fz_rect()
+        var ctm = fz_matrix()
+        var errorMsg: UnsafePointer<CChar>?
+        guard mupdf_page_get_user_space_transform(ctx, doc, Int32(pageIndex), &mediaBox, &ctm, &errorMsg) == 0 else { return nil }
+        return SyncTeXPageMapping(
+            mediaBox: CGRect(x: CGFloat(mediaBox.x0), y: CGFloat(mediaBox.y0),
+                             width: CGFloat(mediaBox.x1 - mediaBox.x0), height: CGFloat(mediaBox.y1 - mediaBox.y0)),
+            userToPage: CGAffineTransform(a: CGFloat(ctm.a), b: CGFloat(ctm.b), c: CGFloat(ctm.c),
+                                          d: CGFloat(ctm.d), tx: CGFloat(ctm.e), ty: CGFloat(ctm.f))
+        )
+    }
+
     public func getPageBoxes(for pageIndex: Int) -> PageBoxGeometry {
         lock.lock()
         defer { lock.unlock() }

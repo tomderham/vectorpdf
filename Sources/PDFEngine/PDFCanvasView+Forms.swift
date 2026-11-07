@@ -55,8 +55,9 @@ extension PDFCanvasView {
             
             if viewModel.pageFormWidgets[pageIdx] == nil {
                 // Defer loading metadata to avoid mutating published state during layout().
-                Task { @MainActor [weak self] in
-                    self?.viewModel.loadPageMetadata(pageIdx)
+                // The view model weakly: the canvas holds it unowned, and it can be gone by then.
+                Task { @MainActor [weak viewModel] in
+                    viewModel?.loadPageMetadata(pageIdx)
                 }
                 // Retain live controls while metadata is loading.
                 let pagePrefix = "p\(pageIdx)_"

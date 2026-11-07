@@ -75,6 +75,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | --- | --- |
 | Preview a link | Hold ⌘ over it, or Force Click |
 | Open a link in a new window | ⌘-click |
+| Open the LaTeX source of a place in the PDF | ⇧⌘-click, in a PDF with a [SyncTeX file](latex.md) |
 | Select a word | Double-click |
 | Select a line | Triple-click |
 | Select an area | ⌥-drag |

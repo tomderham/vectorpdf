@@ -33,7 +33,7 @@ public enum AgentIndexState: Equatable {
 /// Observable view model managing document state, rendering, search, and navigation.
 @MainActor
 public final class PDFViewerViewModel: ObservableObject {
-    @Published public private(set) var document: PDFDocumentCore?
+    @Published public internal(set) var document: PDFDocumentCore?
     @Published public var currentPageIndex: Int = 0 {
         didSet {
             if currentPageIndex != oldValue {
@@ -382,6 +382,17 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var annotationReveal: AnnotationReveal?
     /// The outline entry's heading last asked to be shown (see `jumpToOutlineEntry`).
     @Published public internal(set) var outlineJump: OutlineJump?
+    /// The place a SyncTeX forward search last asked to be shown and highlighted (see
+    /// `showSyncTeXLocation`).
+    @Published public internal(set) var syncTeXReveal: SyncTeXReveal?
+    /// Whether the document has a SyncTeX file beside it, so ⇧⌘-click and Show in Editor work.
+    @Published public internal(set) var hasSyncTeX = false
+    /// The document's parsed SyncTeX file, made when first needed and again when TeX rewrites it.
+    var syncTeXIndex: SyncTeXIndex?
+    /// Set while `handleExternalFileChange` reloads the file, so a failure doesn't show an alert.
+    var isReloadingAfterExternalChange = false
+    /// The file's modification date when it was loaded, to tell a build has replaced it since.
+    var loadedFileModificationDate: Date?
     /// Annotations deleted this session that the renderer's copy of the file may still hold, by
     /// page and object number, so it leaves them out.
     var removedAnnotationNumbers: [Int: Set<Int>] = [:]
@@ -711,6 +722,10 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    nonisolated static func modificationDate(ofFileAt path: String) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
+    }
+
     public func loadDocument(from path: String, password: String? = nil) async {
         if isDocumentEdited && document?.filePath != path {
             let canProceed = promptSaveBeforeClosingIfNeeded()
@@ -771,9 +786,19 @@ public final class PDFViewerViewModel: ObservableObject {
                 }
             }
 
+            // Reloading the same file (it changed on disk, as after a LaTeX build) keeps the view
+            // as the user had it, rather than as for a newly opened document.
+            let isReload = document?.filePath == actualPath
+            let keptLayout = (rotation: viewRotationDegrees, isTwoPage: isTwoPageMode,
+                              sidebarBeforeTwoPage: sidebarVisibleBeforeTwoPage, isSidebarVisible: isSidebarVisible)
+            let modified = Self.modificationDate(ofFileAt: actualPath)
             let doc = try await Task.detached(priority: .userInitiated) {
                 try PDFDocumentCore(filePath: actualPath, password: password)
             }.value
+            self.loadedFileModificationDate = modified
+            self.syncTeXIndex = nil
+            let hasSyncTeX = !isComparePane && SyncTeXFile.find(forPDF: doc.filePath) != nil
+            if self.hasSyncTeX != hasSyncTeX { self.hasSyncTeX = hasSyncTeX }
             // Park render requests until renderActor has opened the new file.
             isRenderActorReady = false
             pagesAwaitingRenderActor.removeAll()
@@ -850,9 +875,9 @@ public final class PDFViewerViewModel: ObservableObject {
             let initialScreen = (currentWindow ?? NSApplication.shared.keyWindow)?.screen ?? NSScreen.main ?? NSScreen.screens.first
             self.displayScale = PDFViewerAppCoordinator.physicalScale(for: initialScreen)
             // Reset rotation and spread layout for newly opened document.
-            self.viewRotationDegrees = 0
-            self.isTwoPageMode = false
-            self.sidebarVisibleBeforeTwoPage = nil
+            self.viewRotationDegrees = isReload ? keptLayout.rotation : 0
+            self.isTwoPageMode = isReload && keptLayout.isTwoPage
+            self.sidebarVisibleBeforeTwoPage = isReload ? keptLayout.sidebarBeforeTwoPage : nil
             self.recomputeEffectiveLayout()
             // The sidebar as the user last left it for this document, or as suits the document.
             let isShort = doc.pageCount <= Self.shortDocumentPageCount
@@ -865,8 +890,12 @@ public final class PDFViewerViewModel: ObservableObject {
                 hasAttachments: !self.attachments.isEmpty,
                 savedChoice: isTransientWindow ? nil : ReadingStateManager.shared.state(for: actualPath)?.sidebarVisible
             )
-            self.sidebarOpeningTab = opening.tab
-            self.isSidebarVisible = opening.isVisible
+            if isReload {
+                self.isSidebarVisible = keptLayout.isSidebarVisible
+            } else {
+                self.sidebarOpeningTab = opening.tab
+                self.isSidebarVisible = opening.isVisible
+            }
 
             // Reset Agent state for newly opened document.
             self.agentIndexingTask?.cancel()
@@ -916,6 +945,9 @@ public final class PDFViewerViewModel: ObservableObject {
             // Never leave the render path parked behind a load that didn't complete.
             isRenderActorReady = true
             print("Failed to load document: \(error)")
+            // A reload that fails (a build caught writing the file) keeps what's shown; the next
+            // change on disk tries again.
+            guard !isReloadingAfterExternalChange else { return }
             self.showErrorAlert(
                 title: "Failed to Open Document",
                 message: "“\((path as NSString).lastPathComponent)” could not be opened: \(error.localizedDescription)"
@@ -942,7 +974,30 @@ public final class PDFViewerViewModel: ObservableObject {
             guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
 
+        // A PDF still being written (pdfTeX writes as it goes) is left for its next change; one
+        // that stays unfinished is loaded anyway, a moment later.
+        if !Self.pdfLooksComplete(atPath: path) {
+            let size = (try? FileManager.default.attributesOfItem(atPath: path))?[.size] as? Int64
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            let sizeNow = (try? FileManager.default.attributesOfItem(atPath: path))?[.size] as? Int64
+            // Still growing: its next change brings this back.
+            guard document?.filePath == path, Self.pdfLooksComplete(atPath: path) || sizeNow == size else { return }
+        }
+        isReloadingAfterExternalChange = true
+        defer { isReloadingAfterExternalChange = false }
         await loadDocument(from: path, password: currentDocumentPassword)
+    }
+
+    /// Whether the file ends as a finished PDF does, with `%%EOF` in its last kilobyte. Other
+    /// formats always count as finished.
+    nonisolated static func pdfLooksComplete(atPath path: String) -> Bool {
+        guard path.lowercased().hasSuffix(".pdf") else { return true }
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { try? handle.close() }
+        guard let end = try? handle.seekToEnd(), end > 0 else { return false }
+        try? handle.seek(toOffset: end > 1024 ? end - 1024 : 0)
+        guard let tail = try? handle.readToEnd() else { return false }
+        return tail.range(of: Data("%%EOF".utf8)) != nil
     }
 
     /// Prompts for this document's password (an NSAlert with a secure text field, matching

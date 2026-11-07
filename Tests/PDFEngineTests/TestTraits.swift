@@ -26,6 +26,13 @@ extension Trait where Self == ConditionTrait {
         .enabled(if: ProcessInfo.processInfo.environment["VECTORPDF_UI_TESTS"] == "1",
                  "Shows windows; run with VECTORPDF_UI_TESTS=1")
     }
+
+    /// For tests that compile LaTeX: they need TeX (MacTeX or BasicTeX, in /Library/TeX/texbin)
+    /// and only run with `VECTORPDF_TEX_TESTS=1 swift test`.
+    static var needsTeX: Self {
+        .enabled(if: ProcessInfo.processInfo.environment["VECTORPDF_TEX_TESTS"] == "1",
+                 "Compiles LaTeX; run with VECTORPDF_TEX_TESTS=1")
+    }
 }
 
 /// End of a test view's responder chain. Keys a view deliberately ignores would otherwise reach

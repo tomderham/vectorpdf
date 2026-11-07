@@ -1,5 +1,5 @@
 <!-- keywords: abrir, abrir PDF, abrir archivo, PDF, recientes, contraseña, nube, recargar, arrastrar, libro electrónico, cómic, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 076e48886ae4 -->
+<!-- source: 48a137d82361 -->
 
 # Abrir documentos
 
@@ -27,7 +27,7 @@ VectorPDF reconoce los archivos de iCloud Drive, Google Drive, Dropbox, OneDrive
 
 ## Cuando un archivo cambia
 
-VectorPDF vigila cada archivo abierto. Si otra app cambia el archivo, el documento se vuelve a cargar por sí solo. Esto resulta útil si generas un PDF desde LaTeX u otra herramienta y quieres mantenerlo abierto.
+VectorPDF vigila cada archivo abierto. Si otra app cambia el archivo, el documento se vuelve a cargar por sí solo. Esto resulta útil si generas un PDF desde LaTeX u otra herramienta y quieres mantenerlo abierto. Al volver a cargarse, conserva tu posición, el zoom, la rotación y la disposición de páginas, y espera a que termine de escribirse un archivo que aún se está generando. Para LaTeX, consulta también [Ir entre el código LaTeX y el PDF](latex.md).
 
 Si tienes cambios sin guardar, VectorPDF te pregunta si quieres usar **Reload from Disk**, con lo que pierdes tus cambios, o **Keep My Changes**.
 

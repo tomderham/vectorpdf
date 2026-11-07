@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # Abbreviazioni da tastiera
 
@@ -76,6 +76,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | --- | --- |
 | Visualizzare l'anteprima di un link | Tieni premuto ⌘ sul link, oppure fai clic profondo |
 | Aprire un link in una nuova finestra | ⌘-clic |
+| Aprire il sorgente LaTeX di un punto del PDF | Clic tenendo premuti ⇧⌘, in un PDF con un [file SyncTeX](latex.md) |
 | Selezionare una parola | Doppio clic |
 | Selezionare una riga | Triplo clic |
 | Selezionare un'area | Trascina tenendo premuto ⌥ |

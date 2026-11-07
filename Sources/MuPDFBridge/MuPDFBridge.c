@@ -4975,6 +4975,29 @@ int mupdf_document_get_permissions(fz_context *ctx, fz_document *doc, mupdf_docu
     return 0;
 }
 
+int mupdf_page_get_user_space_transform(fz_context *ctx, fz_document *doc, int pageno, fz_rect *out_mediabox, fz_matrix *out_ctm, const char **out_error) {
+    if (!ctx || !doc || !out_mediabox || !out_ctm) {
+        if (out_error) *out_error = "Invalid parameters";
+        return -1;
+    }
+    pdf_page *ppage = NULL;
+    fz_var(ppage);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_obj *media_obj = pdf_dict_get_inheritable(ctx, ppage->obj, PDF_NAME(MediaBox));
+        *out_mediabox = media_obj ? pdf_to_rect(ctx, media_obj) : fz_make_rect(0, 0, 612, 792);
+        pdf_page_transform(ctx, ppage, NULL, out_ctm);
+    } fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
 int mupdf_page_get_boxes(fz_context *ctx, fz_document *doc, int pageno, mupdf_page_boxes *out_boxes, const char **out_error) {
     if (!ctx || !doc || !out_boxes) {
         if (out_error) *out_error = "Invalid parameters";

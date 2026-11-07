@@ -1,5 +1,5 @@
 <!-- keywords: 열기, PDF 열기, 파일 열기, PDF, 최근 항목, 암호, 클라우드, 다시 불러오기, 드래그, 전자책, 만화, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 076e48886ae4 -->
+<!-- source: 48a137d82361 -->
 
 # 문서 열기
 
@@ -27,7 +27,7 @@ VectorPDF는 iCloud Drive, Google Drive, Dropbox, OneDrive 및 Box에 있는 파
 
 ## 파일이 변경된 경우
 
-VectorPDF는 열려 있는 각 파일을 감시합니다. 다른 앱에서 파일을 변경하면 문서가 자동으로 다시 로드됩니다. LaTeX나 다른 도구로 PDF를 생성하면서 문서를 계속 열어 두려는 경우에 유용합니다.
+VectorPDF는 열려 있는 각 파일을 감시합니다. 다른 앱에서 파일을 변경하면 문서가 자동으로 다시 로드됩니다. LaTeX나 다른 도구로 PDF를 생성하면서 문서를 계속 열어 두려는 경우에 유용합니다. 다시 로드해도 보던 위치, 확대/축소, 회전, 페이지 레이아웃이 유지되며, 아직 쓰는 중인 파일은 다 쓰일 때까지 기다립니다. LaTeX에 대해서는 [LaTeX 소스와 PDF 간에 이동하기](latex.md)도 참조하십시오.
 
 저장하지 않은 변경 사항이 있으면 VectorPDF에서 변경 사항을 잃게 되는 **Reload from Disk**를 선택할지 **Keep My Changes**를 선택할지 묻습니다.
 

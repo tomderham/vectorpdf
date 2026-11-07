@@ -86,6 +86,7 @@ BUNDLE_ID="$BUNDLE_ID" ./Scripts/build_app_bundle.sh release
 apply_provisioning_profile "${APP_NAME}.app" "$PROFILE" "$WORK_DIR"
 
 echo "Signing $APP_NAME as $BUNDLE_ID..."
+codesign --force --options runtime -s "$SIGNING_IDENTITY" "${APP_NAME}.app/Contents/Helpers/displayline"
 codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
 codesign -d --entitlements - "${APP_NAME}.app" 2>/dev/null | grep -q private-cloud-compute
 

@@ -1,5 +1,5 @@
 <!-- keywords: 開く, PDF を開く, ファイルを開く, PDF, 最近使った項目, パスワード, クラウド, 再読み込み, ドラッグ, 電子書籍, コミック, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 076e48886ae4 -->
+<!-- source: 48a137d82361 -->
 
 # 書類を開く
 
@@ -27,7 +27,7 @@ VectorPDF は、iCloud Drive、Google Drive、Dropbox、OneDrive、Box のファ
 
 ## ファイルが変更されたとき
 
-VectorPDF は、開いている各ファイルを監視しています。別のアプリがファイルを変更すると、書類は自動的に再読み込みされます。LaTeX などのツールから PDF を生成しながら、開いたままにしておきたい場合に便利です。
+VectorPDF は、開いている各ファイルを監視しています。別のアプリがファイルを変更すると、書類は自動的に再読み込みされます。LaTeX などのツールから PDF を生成しながら、開いたままにしておきたい場合に便利です。再読み込みしても、表示位置、拡大率、回転、ページレイアウトは保たれます。また、書き込み中のファイルは書き込みが終わるまで待ってから読み込みます。LaTeX については[LaTeX ソースと PDF の間を移動する](latex.md)も参照してください。
 
 保存していない変更がある場合は、変更を破棄して **Reload from Disk** を実行するか、**Keep My Changes** を選択するかを確認されます。
 

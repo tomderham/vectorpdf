@@ -1,5 +1,5 @@
 <!-- keywords: 설정, 환경설정, 옵션, 업데이트, 업데이트 확인, 브라우저, 작성자, 주석 작성자, 저장 공간, 디스크 공간, 지우기, 데이터 제거, 데이터 삭제, 제거, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 95e6c661738e -->
+<!-- source: 91c5b0e9ab3d -->
 
 # 설정
 
@@ -12,6 +12,7 @@ VectorPDF > Settings를 선택하거나 ⌘, 키를 누릅니다.
 | AI Synthesis Engine | macOS 27에서 [Agent의 답변을 작성하는 주체](agent-engines.md)를 선택합니다. |
 | PDF Color | [페이지가 표시되는 방식](pdf-colors.md)을 Follow System, Light, Dark 또는 Sepia로 설정합니다. |
 | Open Links In | 웹 링크에 사용할 브라우저를 선택합니다. |
+| LaTeX (SyncTeX) | PDF를 ⇧⌘을 누른 채 클릭할 때 [LaTeX 소스](latex.md)를 여는 편집기를 선택합니다. |
 | Ignored Search Patterns | [Smart Search가 건너뛰는](search.md#ignore-clutter-in-the-text) 텍스트를 나열합니다. |
 | Digital Stamp | [스탬프](stamps.md)를 만들거나 변경하거나 삭제합니다. |
 | Sync reading positions with iCloud | [페이지, 확대/축소, 앵커](reading-positions.md)와 [최근 검색](search.md)을 다른 Mac에서도 유지합니다. |

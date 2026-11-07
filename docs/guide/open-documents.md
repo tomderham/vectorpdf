@@ -26,7 +26,7 @@ VectorPDF recognizes files in iCloud Drive, Google Drive, Dropbox, OneDrive and 
 
 ## When a file changes
 
-VectorPDF watches each open file. If another app changes the file, the document reloads by itself. This is useful if you're generating a PDF from LaTeX or another tool and want to keep it open.
+VectorPDF watches each open file. If another app changes the file, the document reloads by itself. This is useful if you're generating a PDF from LaTeX or another tool and want to keep it open. A reload keeps your place, zoom, rotation and page layout, and waits for a file that's still being written. For LaTeX, see also [Go between LaTeX source and the PDF](latex.md).
 
 If you have unsaved changes, VectorPDF asks whether to **Reload from Disk**, which loses your changes, or **Keep My Changes**.
 

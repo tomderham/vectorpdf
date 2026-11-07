@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "MuPDFBridge", targets: ["MuPDFBridge"]),
         .library(name: "PDFEngine", targets: ["PDFEngine"]),
         .executable(name: "VectorPDF", targets: ["VectorPDF"]),
+        .executable(name: "displayline", targets: ["displayline"]),
     ],
     targets: [
         // Vendored, self-contained MuPDF build (see Vendor/README.md)
@@ -31,18 +32,36 @@ let package = Package(
                 .headerSearchPath("include")
             ]
         ),
+        // The official SyncTeX parser, vendored (see Sources/SyncTeX/README.md)
+        .target(
+            name: "SyncTeX",
+            cSettings: [
+                .define("SYNCTEX_USE_LOCAL_HEADER"),
+                .unsafeFlags(["-w"])
+            ],
+            linkerSettings: [.linkedLibrary("z")]
+        ),
         .target(
             name: "PDFEngine",
-            dependencies: ["MuPDFBridge"],
+            dependencies: ["MuPDFBridge", "SyncTeX", "SyncTeXLink"],
             swiftSettings: macOS27SDK
         ),
         .executableTarget(
             name: "VectorPDF",
-            dependencies: ["PDFEngine"]
+            dependencies: ["PDFEngine", "SyncTeXLink"]
+        ),
+        // Skim-compatible forward-search tool that editors run (bundled in Contents/Helpers)
+        .executableTarget(
+            name: "displayline",
+            dependencies: ["SyncTeXLink"]
+        ),
+        // The forward-search URL, shared by displayline and the app
+        .target(
+            name: "SyncTeXLink"
         ),
         .testTarget(
             name: "PDFEngineTests",
-            dependencies: ["PDFEngine"],
+            dependencies: ["PDFEngine", "SyncTeXLink"],
             swiftSettings: macOS27SDK
         )
     ]

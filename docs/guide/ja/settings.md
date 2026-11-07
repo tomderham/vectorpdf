@@ -1,5 +1,5 @@
 <!-- keywords: 設定, 環境設定, オプション, アップデート, アップデートを確認, ブラウザ, 作成者, 注釈の作成者, ストレージ, ディスク容量, 消去, データを削除, アンインストール, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 95e6c661738e -->
+<!-- source: 91c5b0e9ab3d -->
 
 # 設定
 
@@ -12,6 +12,7 @@ VectorPDF > Settings を選択するか、⌘, を押します。
 | AI Synthesis Engine | macOS 27 で、[Agent の回答を作成するもの](agent-engines.md)を選択します。 |
 | PDF Color | [ページの見た目](pdf-colors.md)を Follow System、Light、Dark、Sepia から設定します。 |
 | Open Links In | Web リンクを開くブラウザを選択します。 |
+| LaTeX (SyncTeX) | PDF を ⇧⌘ を押しながらクリックしたときに[LaTeX ソース](latex.md)を開くエディタを選択します。 |
 | Ignored Search Patterns | [Smart Search が読み飛ばす](search.md#ignore-clutter-in-the-text)テキストを一覧表示します。 |
 | Digital Stamp | [スタンプ](stamps.md)を作成、変更、削除します。 |
 | Sync reading positions with iCloud | [ページ、表示倍率、アンカー](reading-positions.md)と[最近の検索](search.md)をほかの Mac でも利用できるようにします。 |

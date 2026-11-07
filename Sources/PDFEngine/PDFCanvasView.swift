@@ -76,6 +76,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var currentShapePath: [CGPoint] = []
     /// An annotation chosen in the Comments sidebar, outlined for a moment so it can be found.
     var revealedAnnotationOutline: (pageIndex: Int, rect: CGRect)?
+    /// The line a SyncTeX forward search found, highlighted for a moment (see `showSyncTeXReveal`).
+    var syncTeXHighlight: (pageIndex: Int, rects: [CGRect], shownAt: Date)?
+    var syncTeXHighlightTimer: Timer?
     /// Pictures of annotations from the file being edited, as the document draws them, by object
     /// number, with the revision and scale each was drawn for.
     var fileAnnotationPictures: [Int: (revision: Int, scale: CGFloat, image: CGImage, bounds: CGRect)] = [:]
@@ -337,6 +340,15 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] reveal in
                 self?.showRevealedAnnotation(reveal)
+            }
+            .store(in: &cancellables)
+
+        viewModel.$syncTeXReveal
+            .compactMap { $0 }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] reveal in
+                self?.showSyncTeXReveal(reveal)
             }
             .store(in: &cancellables)
 

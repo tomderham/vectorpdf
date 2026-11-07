@@ -30,9 +30,11 @@ fi
 
 echo "Assembling $APP_BUNDLE..."
 rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
+mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources" "$APP_BUNDLE/Contents/Helpers"
 
 cp "$BUILT_BINARY" "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME"
+# SyncTeX forward search for LaTeX editors (Skim's displayline arguments)
+cp ".build/$CONFIG/displayline" "$APP_BUNDLE/Contents/Helpers/displayline"
 cp Resources/AppIcon/AppIcon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp Resources/AppIcon/DocumentIcon.icns "$APP_BUNDLE/Contents/Resources/DocumentIcon.icns"
 cp "Resources/VectorPDF Tour.pdf" "$APP_BUNDLE/Contents/Resources/"
@@ -79,6 +81,20 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <string>15.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <!-- SyncTeX forward search: Contents/Helpers/displayline sends vectorpdf://synctex?... -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>$BUNDLE_ID.synctex</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>vectorpdf</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+    </array>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -243,6 +259,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 PLIST
 
 echo "Signing (ad-hoc with entitlements)..."
+codesign --force -s - "$APP_BUNDLE/Contents/Helpers/displayline"
 codesign --force --deep --entitlements Resources/VectorPDF.entitlements -s - "$APP_BUNDLE"
 
 echo "Done: $(pwd)/$APP_BUNDLE"

@@ -1,5 +1,5 @@
 <!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, 作者, 注释作者, 存储空间, 磁盘空间, 清除, 移除数据, 删除数据, 卸载, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 95e6c661738e -->
+<!-- source: 91c5b0e9ab3d -->
 
 # 设置
 
@@ -12,6 +12,7 @@
 | AI Synthesis Engine | 在 macOS 27 上，选择[由什么撰写 Agent 的回答](agent-engines.md)。 |
 | PDF Color | 设置[页面的外观](pdf-colors.md)：Follow System、Light、Dark 或 Sepia。 |
 | Open Links In | 选择用于打开网页链接的浏览器。 |
+| LaTeX (SyncTeX) | 选择按住 ⇧⌘ 点按 PDF 时用来打开 [LaTeX 源代码](latex.md)的编辑器。 |
 | Ignored Search Patterns | 列出 [Smart Search 要跳过的文本](search.md#ignore-clutter-in-the-text)。 |
 | Digital Stamp | 创建、更改或删除你的[图章](stamps.md)。 |
 | Sync reading positions with iCloud | 在你的其他 Mac 上保留你的[页面、缩放比例、锚点](reading-positions.md)和[最近搜索](search.md)。 |

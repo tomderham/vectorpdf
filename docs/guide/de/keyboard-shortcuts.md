@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # Tastaturkurzbefehle
 
@@ -76,6 +76,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | --- | --- |
 | Vorschau eines Links anzeigen | ⌘ darüber gedrückt halten oder kräftig klicken |
 | Link in einem neuen Fenster öffnen | Bei gedrückter ⌘-Taste klicken |
+| LaTeX-Quelltext einer Stelle im PDF öffnen | Bei gedrückten ⇧⌘-Tasten klicken, in einem PDF mit [SyncTeX-Datei](latex.md) |
 | Ein Wort auswählen | Doppelklicken |
 | Eine Zeile auswählen | Dreimal klicken |
 | Einen Bereich auswählen | Bei gedrückter ⌥-Taste ziehen |

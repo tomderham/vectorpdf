@@ -26,6 +26,14 @@ extension PDFCanvasView {
     public override func menu(for event: NSEvent) -> NSMenu? {
         let point = convert(event.locationInWindow, from: nil)
         self.lastContextMenuLocation = point
+        // A document TeX built with SyncTeX on offers its source, at the top of the menu.
+        let showInEditorItem = makeShowInEditorItem(at: point)
+        func withShowInEditor(_ menu: NSMenu) -> NSMenu {
+            guard let showInEditorItem else { return menu }
+            menu.insertItem(showInEditorItem, at: 0)
+            if menu.items.count > 1 { menu.insertItem(NSMenuItem.separator(), at: 1) }
+            return menu
+        }
 
         // An active selection takes priority over a coincidental cross-reference link at the same
         // point.
@@ -35,7 +43,7 @@ extension PDFCanvasView {
                 reference.sourceRect = sel.result.boundingRect
                 insertCrossDocReferenceItems(into: menu, reference: reference, pageIndex: sel.pageIndex)
             }
-            return menu
+            return withShowInEditor(menu)
         }
 
         // Right-clicking a cross-reference link (with no active selection) offers anchor & open actions.
@@ -157,9 +165,9 @@ extension PDFCanvasView {
             }
 
             menu.addItem(makeOpenInNewWindowItem(target: target))
-            return menu
+            return withShowInEditor(menu)
         }
-        return nil
+        return showInEditorItem == nil ? nil : withShowInEditor(NSMenu(title: "Page"))
     }
 
     private func makeCommentsItem(representing target: (pageIndex: Int, objectNumber: Int)) -> NSMenuItem {

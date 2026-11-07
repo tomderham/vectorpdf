@@ -462,6 +462,21 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         trackedViewModels.lazy.compactMap(\.viewModel).first { $0.currentWindow === window }
     }
 
+    /// A document tab showing the file at `path` (symlinks and `..` resolved), preferring the
+    /// front-most; compare panes and transient windows don't count.
+    public func viewModel(showingFileAt path: String) -> PDFViewerViewModel? {
+        let wanted = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+        let matching = trackedViewModels.compactMap(\.viewModel).filter { viewModel in
+            guard !viewModel.isComparePane, !viewModel.isTransientWindow, viewModel.currentWindow != nil,
+                  let filePath = viewModel.document?.filePath else { return false }
+            return URL(fileURLWithPath: filePath).resolvingSymlinksInPath().standardizedFileURL.path == wanted
+        }
+        let order = NSApp.orderedWindows
+        return matching.min { a, b in
+            (order.firstIndex { $0 === a.currentWindow } ?? .max) < (order.firstIndex { $0 === b.currentWindow } ?? .max)
+        }
+    }
+
     /// View models of every tab in `viewModel`'s window tab group, in tab order. Just
     /// `[viewModel]` when it isn't tabbed (or has no window yet).
     public func tabGroupViewModels(of viewModel: PDFViewerViewModel) -> [PDFViewerViewModel] {
@@ -667,6 +682,11 @@ public struct AppSettingsView: View {
                     Text(browser.name).tag(browser.id)
                 }
             }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            LaTeXSettingsView()
 
             Divider()
                 .padding(.vertical, 8)

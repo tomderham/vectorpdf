@@ -20,6 +20,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 - [Change PDF colors](pdf-colors.md)
 - [Select, copy and look up text](select-text.md)
 - [Compare two documents](compare-documents.md)
+- [Go between LaTeX source and the PDF](latex.md)
 
 ## Search
 

@@ -1,5 +1,5 @@
 <!-- keywords: impostazioni, preferenze, opzioni, aggiornamenti, aggiornamento, verifica aggiornamenti, browser, autore, autore annotazioni, spazio, spazio su disco, cancellare, rimuovere dati, eliminare dati, disinstallare, settings, preferences, options, updates, update, check for updates, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 95e6c661738e -->
+<!-- source: 91c5b0e9ab3d -->
 
 # Impostazioni
 
@@ -12,6 +12,7 @@ Scegli VectorPDF > Settings oppure premi ⌘,.
 | AI Synthesis Engine | Sceglie [cosa scrive le risposte dell'Agent](agent-engines.md), su macOS 27. |
 | PDF Color | Imposta [l'aspetto delle pagine](pdf-colors.md): Follow System, Light, Dark o Sepia. |
 | Open Links In | Sceglie il browser per i link web. |
+| LaTeX (SyncTeX) | Sceglie l'editor che apre il [sorgente LaTeX](latex.md) quando fai clic su un PDF tenendo premuti ⇧⌘. |
 | Ignored Search Patterns | Elenca il testo che [Smart Search ignora](search.md#ignore-clutter-in-the-text). |
 | Digital Stamp | Crea, modifica o elimina il tuo [timbro](stamps.md). |
 | Sync reading positions with iCloud | Mantiene [pagina, zoom, ancore](reading-positions.md) e [ricerche recenti](search.md) sugli altri tuoi Mac. |

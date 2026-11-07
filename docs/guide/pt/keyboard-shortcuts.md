@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 62bd385b039a -->
+<!-- source: d2c10869a1ac -->
 
 # Atalhos de teclado
 
@@ -76,6 +76,7 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | --- | --- |
 | Pré-visualizar um link | Mantenha ⌘ pressionada sobre ele ou use o clique forte |
 | Abrir um link em uma nova janela | Clique com ⌘ pressionada |
+| Abrir o código LaTeX de um ponto do PDF | Clique com ⇧⌘ pressionadas, em um PDF com um [arquivo SyncTeX](latex.md) |
 | Selecionar uma palavra | Clique duas vezes |
 | Selecionar uma linha | Clique três vezes |
 | Selecionar uma área | Arraste com ⌥ pressionada |

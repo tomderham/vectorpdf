@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # Kontextmenüs
 
@@ -23,6 +23,8 @@ Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befeh
 | Eine andere Stelle auf der Seite | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Wenn du mit der rechten Maustaste auf einen Verweis im Text klickst und zugehörige Dokumente in anderen Tabs geöffnet sind, enthält das Menü außerdem Befehle, um [zu ihm zu gehen oder ihn zu finden](cross-document-references.md).
+
+In einem PDF, das aus LaTeX mit eingeschaltetem SyncTeX erstellt wurde, beginnt jedes Menü im Dokument mit **Show in Editor**. Damit öffnest du die [Quelltextzeile](latex.md) zur angeklickten Stelle.
 
 In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung außerdem **Layer**, um sie auf eine andere Ebene oder auf keine zu verschieben.
 

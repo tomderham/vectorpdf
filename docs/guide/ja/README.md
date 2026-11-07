@@ -1,4 +1,4 @@
-<!-- source: 656a91c48947 -->
+<!-- source: 2d2679324bf8 -->
 
 # VectorPDF ユーザガイド
 
@@ -24,6 +24,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 - [PDF の色を変更する](pdf-colors.md)
 - [テキストの選択、コピー、調べる](select-text.md)
 - [2つの書類を比較する](compare-documents.md)
+- [LaTeX ソースと PDF の間を移動する](latex.md)
 
 ## 検索
 

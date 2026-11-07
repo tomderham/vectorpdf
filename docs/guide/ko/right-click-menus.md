@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # 오른쪽 클릭 메뉴
 
@@ -23,6 +23,8 @@
 | 페이지의 기타 위치 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 일반 텍스트 참조를 오른쪽 클릭했을 때 다른 탭에 관련 문서가 열려 있으면 메뉴에 [참조 대상으로 이동하거나 찾는](cross-document-references.md) 명령도 표시됩니다.
+
+SyncTeX를 켜고 LaTeX로 만든 PDF에서는 문서 안의 모든 메뉴가 **Show in Editor**로 시작하며, 클릭한 위치의 [소스 줄](latex.md)을 엽니다.
 
 [레이어](layers.md)가 있는 문서에서는 주석의 메뉴에 **Layer**도 있어, 다른 레이어로 옮기거나 어떤 레이어에도 두지 않을 수 있습니다.
 

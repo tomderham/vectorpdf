@@ -476,6 +476,11 @@ typedef struct {
 int mupdf_document_get_metadata(fz_context *ctx, fz_document *doc, mupdf_document_metadata *out_meta, const char **out_error);
 int mupdf_document_get_permissions(fz_context *ctx, fz_document *doc, mupdf_document_permissions *out_perms, const char **out_error);
 int mupdf_page_get_boxes(fz_context *ctx, fz_document *doc, int pageno, mupdf_page_boxes *out_boxes, const char **out_error);
+// The page's MediaBox, and the matrix from PDF user space (origin bottom-left) to MuPDF page space
+// (top-left of the CropBox, rotated by /Rotate), as fz_bound_page reports it. SyncTeX positions are
+// measured from the MediaBox's top-left, so this maps them onto the page whatever its boxes and
+// rotation. Fails for documents that aren't PDFs.
+int mupdf_page_get_user_space_transform(fz_context *ctx, fz_document *doc, int pageno, fz_rect *out_mediabox, fz_matrix *out_ctm, const char **out_error);
 int mupdf_document_get_fonts(fz_context *ctx, fz_document *doc, mupdf_font_list *out_fonts, const char **out_error);
 void mupdf_free_font_list(fz_context *ctx, mupdf_font_list *fonts);
 

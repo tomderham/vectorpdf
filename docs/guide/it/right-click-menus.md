@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 0ebee28196fa -->
+<!-- source: 228b2ab5f5c3 -->
 
 # Menu di scelta rapida
 
@@ -23,6 +23,8 @@ Fai clic con il tasto destro, oppure fai clic tenendo premuto il tasto Control, 
 | Qualsiasi altro punto della pagina | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 
 Se fai clic con il tasto destro su un riferimento in testo semplice e in altri pannelli sono aperti documenti correlati, il menu include anche i comandi per [raggiungerlo o trovarlo](cross-document-references.md).
+
+In un PDF creato da LaTeX con SyncTeX attivo, ogni menu del documento inizia con **Show in Editor**, che apre la [riga del sorgente](latex.md) del punto in cui hai fatto clic.
 
 In un documento con [livelli](layers.md), il menu di un'annotazione contiene anche **Layer**, per spostarla su un altro livello o su nessuno.
 

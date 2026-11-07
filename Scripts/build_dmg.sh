@@ -54,6 +54,7 @@ if [ -n "$PROVISIONING_PROFILE" ]; then
 fi
 
 echo "=== 1b. Signing $APP_NAME with Developer ID and hardened runtime ==="
+codesign --force --options runtime --timestamp -s "$SIGNING_IDENTITY" "${APP_NAME}.app/Contents/Helpers/displayline"
 codesign --force --deep --options runtime --timestamp --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
 codesign -d --entitlements - "${APP_NAME}.app"
 

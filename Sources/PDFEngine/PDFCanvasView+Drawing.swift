@@ -533,6 +533,21 @@ extension PDFCanvasView {
                 }
             }
 
+            // 2.55 The line a SyncTeX forward search found, fading out
+            if let highlight = syncTeXHighlight, highlight.pageIndex == pageIdx {
+                let opacity = Self.syncTeXHighlightOpacity(at: Date().timeIntervalSince(highlight.shownAt))
+                if opacity > 0 {
+                    for rect in highlight.rects {
+                        let path = highlightPath(for: PDFQuad(rect: rect.insetBy(dx: -2, dy: -1.5)), minSize: CGSize(width: 6, height: 8), pFrame: pFrame, pBounds: pBounds)
+                        NSColor.systemRed.withAlphaComponent(0.22 * opacity).setFill()
+                        path.fill()
+                        NSColor.systemRed.withAlphaComponent(0.8 * opacity).setStroke()
+                        path.lineWidth = 1.5
+                        path.stroke()
+                    }
+                }
+            }
+
             // 2.6 Live Drawing Stroke in Progress
             if currentDrawingPageIndex == pageIdx && !currentDrawingPoints.isEmpty {
                 viewModel.selectedAnnotationColor.nsColor.setStroke()

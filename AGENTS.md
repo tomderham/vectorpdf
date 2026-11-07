@@ -36,6 +36,7 @@
    - Headless test execution: Alerts (such as `NSAlert.runModal()`) must be guarded by checking `ProcessInfo` test runner environment variables to prevent headless test hangs.
    - After changing MuPDF, the bridge, or how documents are used across threads, run the concurrency stress test: `VECTORPDF_STRESS_TESTS=1 swift test --filter ConcurrencyStress`.
    - After changing search or text extraction, compare times with `VECTORPDF_BENCHMARKS=1 swift test --filter SearchBenchmark` (`VECTORPDF_SEARCH_WORKERS=1` for the serial baseline).
+   - After changing SyncTeX (`Sources/SyncTeX`, `SyncTeXIndex`), run `VECTORPDF_TEX_TESTS=1 swift test --filter RealSyncTeX`. It compiles a paper with pdfLaTeX, so it needs TeX (MacTeX or BasicTeX) in `/Library/TeX/texbin`.
    - Always run tests and verify zero regressions before committing.
 
 5. **User Guide:**
