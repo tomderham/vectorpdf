@@ -327,6 +327,60 @@ private func paragraphs(_ elements: [PDFLayoutElement]) -> [(text: String, bbox:
         #expect(ReferenceExtractor.references(in: ReferenceExtractor.blockText(block(lines)).0).first?.identifier == "4")
     }
 
+    /// A single-spaced bulleted list copies one item to a line: closely spaced lines join only
+    /// where a line wraps, not before a bullet or after a short line.
+    @Test func bulletedListCopiesOneItemPerLine() {
+        let lines = [
+            line("Tasks for the release:", x: 72, y: 100),
+            line("• Update the guide for every changed menu item and", x: 72, y: 112),
+            line("shortcut", x: 82, y: 124),
+            line("◦ Translations", x: 92, y: 136),
+            line("◦ Context menus", x: 92, y: 148),
+            line("• Run the tests", x: 72, y: 160),
+            line("Then tag the build and upload the disk image for the", x: 72, y: 172),
+            line("website.", x: 72, y: 184),
+        ]
+        // The bullet as its own span, as many PDFs write it, before the item's text.
+        let separateBullet = [line("\u{F0B7}", x: 72, y: 196), line("Ship it", x: 82, y: 196)]
+        let selected = SpatialTextSelector().selectText(
+            on: page([block(lines), block(separateBullet)]),
+            from: CGPoint(x: 72, y: 106), to: CGPoint(x: 82 + 7 * 5, y: 202))
+        #expect(selected.text == """
+            Tasks for the release:
+            • Update the guide for every changed menu item and shortcut
+            ◦ Translations
+            ◦ Context menus
+            • Run the tests
+            Then tag the build and upload the disk image for the website.
+            \u{F0B7} Ship it
+            """)
+    }
+
+    /// IEEE drafts mark list items with an em dash that MuPDF reads as its own hairline-thin
+    /// line beside the item. Each item still copies to its own line, while a clause number that
+    /// a full line wraps onto ("see" / "37.7.5") is part of the sentence, not a numbered item.
+    @Test func emDashListItemsCopyOneItemPerLine() {
+        func dash(y: CGFloat) -> TextLine {
+            let rect = CGRect(x: 72, y: y + 5.8, width: 10, height: 0.4)
+            return TextLine(bbox: rect, characters: [TextCharacter(char: "—", quad: PDFQuad(rect: rect),
+                                                                   origin: CGPoint(x: 72, y: y + 10), size: 10)])
+        }
+        let lines = [
+            line("The RA field is set as follows:", x: 72, y: 100),
+            dash(y: 112), line("For a Trigger frame that solicits a response (see", x: 86, y: 112),
+            line("37.7.5 (Initial Control frame)), the RA field is set", x: 86, y: 124),
+            line("to the address of that STA", x: 86, y: 136),
+            dash(y: 148), line("Otherwise it is the broadcast address", x: 86, y: 148),
+        ]
+        let selected = SpatialTextSelector().selectText(
+            on: page([block(lines)]), from: CGPoint(x: 72, y: 106), to: CGPoint(x: 86 + 37 * 5, y: 154))
+        #expect(selected.text == """
+            The RA field is set as follows:
+            — For a Trigger frame that solicits a response (see 37.7.5 (Initial Control frame)), the RA field is set to the address of that STA
+            — Otherwise it is the broadcast address
+            """)
+    }
+
     /// Plain-text export leaves out running headers and page numbers, as Word export does.
     @Test func plainTextExportDropsRunningHeaders() throws {
         let doc = try PDFDocumentCore(filePath: Fixture.url("federal-register-2024-00301.pdf").path)

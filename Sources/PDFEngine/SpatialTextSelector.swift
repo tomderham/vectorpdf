@@ -156,6 +156,9 @@ public final class SpatialTextSelector: Sendable {
         let blockMaxX: CGFloat
         /// Where the line sits when it is inside a ruled table.
         let cell: TableCell?
+        /// Width of the slice's first word: if it would have fitted at the end of the line
+        /// before, that line ended there on purpose (a list item, the end of a paragraph).
+        let firstWordWidth: CGFloat
     }
 
     private struct TableCell: Equatable {
@@ -193,8 +196,17 @@ public final class SpatialTextSelector: Sendable {
         // Assemble line text with inter-word spacing
         let sliceText = Self.text(of: sliceChars)
 
+        let firstWord = sliceChars.drop(while: { $0.char == " " })
+        var wordEnd = firstWord.startIndex
+        while wordEnd + 1 < firstWord.endIndex, firstWord[wordEnd + 1].char != " ",
+              !firstWord[wordEnd].hasWordGap(before: firstWord[wordEnd + 1]) {
+            wordEnd += 1
+        }
+        let firstWordWidth = wordEnd < firstWord.endIndex
+            ? firstWord[wordEnd].boundingRect.maxX - firstWord[firstWord.startIndex].boundingRect.minX : 0
+
         return SelectedSlice(quad: lineQuad, lineBBox: line.bbox, sliceBBox: lineQuad.boundingRect,
-                             text: sliceText, blockMaxX: blockMaxX, cell: cell)
+                             text: sliceText, blockMaxX: blockMaxX, cell: cell, firstWordWidth: firstWordWidth)
     }
 
     /// The ruled-table cell containing `rect`'s centre, if any.
@@ -377,7 +389,16 @@ public final class SpatialTextSelector: Sendable {
             let avgH = (slice.lineBBox.height + next.lineBBox.height) / 2.0
             let reachesRightEdge = slice.lineBBox.maxX >= slice.blockMaxX - slice.lineBBox.height * 1.5
             let isUsualSpacing = usualGap.map { vGap <= $0 * 1.25 + 1 } ?? false
-            if vGap > avgH * 0.75 && !(isUsualSpacing && reachesRightEdge) {
+            // Closely spaced lines still end where a list item or paragraph does: before a list
+            // marker, or where the next line's first word would have fitted on this one. After a
+            // full line only a bullet or dash starts an item: a number or letter there is a
+            // wrapped reference ("see" / "37.7.5 (Initial…)") or an initial ("J. Smith").
+            let rightEdge = max(slice.blockMaxX, next.blockMaxX)
+            let wouldHaveFitted = rightEdge - slice.lineBBox.maxX > next.firstWordWidth + slice.lineBBox.height * 0.5
+            let nextFirst = next.text.trimmingCharacters(in: .whitespaces).first
+            let startsListItem = PDFLayoutEngine.isListMarker(next.text)
+                && (!reachesRightEdge || nextFirst.map { !$0.isLetter && !$0.isNumber && $0 != "(" } ?? false)
+            if (vGap > avgH * 0.75 && !(isUsualSpacing && reachesRightEdge)) || startsListItem || wouldHaveFitted {
                 selectedText.append("\n")
             } else {
                 switch LineJoin(slice.text, next.text) {

@@ -598,7 +598,7 @@ public final class PDFLayoutEngine: Sendable {
         for r in detectedRows {
             let hasMultiCols = r.cells.count >= 2
             let firstCellText = r.cells.first?.text.trimmingCharacters(in: .whitespaces) ?? ""
-            let notList = !isListMarker(firstCellText)
+            let notList = !Self.isListMarker(firstCellText)
             let avgLen = r.cells.map { $0.text.count }.reduce(0, +) / max(1, r.cells.count)
             let isShortData = avgLen < 50
 
@@ -667,7 +667,7 @@ public final class PDFLayoutEngine: Sendable {
         }
 
         // If cell 0 is a list numbering marker or dot leaders, return full line intact
-        if cells.count >= 2 && isListMarker(cells[0].text) {
+        if cells.count >= 2 && Self.isListMarker(cells[0].text) {
             return [(bbox: line.bbox, runs: line.runs, text: line.text)]
         }
         if line.text.contains("....") || line.text.contains("····") || line.text.contains("…") {
@@ -832,7 +832,7 @@ public final class PDFLayoutEngine: Sendable {
 
                 let isPrevHeading = prevSize >= (baseFontSize * 1.25)
                 let isCurrHeading = currSize >= (baseFontSize * 1.25)
-                let isListStart = isListMarker(line.text.trimmingCharacters(in: .whitespaces))
+                let isListStart = Self.isListMarker(line.text.trimmingCharacters(in: .whitespaces))
                 let isPrevToC = isToCEntry(prev.text)
 
                 // Sentence break heuristic: prev line ended with [.!?], stops well short of its
@@ -967,17 +967,23 @@ public final class PDFLayoutEngine: Sendable {
         return t.range(of: #"\.{3,}\s*(\d+|[ivxlcdmIVXLCDM]+)$"#, options: .regularExpression) != nil
     }
 
-    private func isListMarker(_ text: String) -> Bool {
+    /// Bullet glyphs that start a list item, with or without a space after them. Symbol and
+    /// Wingdings bullets come through as private-use characters (U+F0B7, U+F0A7, U+F0D8).
+    static let bulletGlyphs: Set<Character> = [
+        "•", "◦", "●", "○", "▪", "▫", "■", "□", "‣", "∙", "⁃", "➢", "➤", "►", "▸", "✓", "✔",
+        "\u{F0B7}", "\u{F0A7}", "\u{F0D8}", "\u{F0FC}", "\u{F076}",
+    ]
+
+    /// Whether `text` is, or starts with, a list item's marker: a bullet, a dash, or a number or
+    /// letter such as "1.", "(a)" or "iv." — but not an abbreviation such as "Dr." or "Fig.".
+    static func isListMarker(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
-        guard !t.isEmpty else { return false }
+        guard let first = t.first else { return false }
 
-        // Standalone bullets: •, -, –, —, *, o
-        if t == "•" || t == "-" || t == "–" || t == "—" || t == "*" || t == "o" || t == "▪" || t == "▫" {
-            return true
-        }
+        if bulletGlyphs.contains(first) { return true }
 
-        // Bullet at start of line: "• ", "— ", "– ", "- ", "* "
-        if t.hasPrefix("• ") || t.hasPrefix("— ") || t.hasPrefix("– ") || t.hasPrefix("- ") || t.hasPrefix("* ") {
+        // Dashes, asterisks and Wingdings' "o" are bullets only on their own or before a space.
+        if ["-", "–", "—", "*", "o"].contains(first) && (t.count == 1 || t.dropFirst().first?.isWhitespace == true) {
             return true
         }
 
