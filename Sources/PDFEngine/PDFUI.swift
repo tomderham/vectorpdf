@@ -912,6 +912,7 @@ public struct PDFViewerMainView: View {
                                         documentIdentity: "\(doc.filePath)#\(viewModel.thumbnailVersion)",
                                         searchQuery: tocSearchQuery,
                                         currentPage: viewModel.currentPageIndex,
+                                        readingSection: viewModel.readingSection,
                                         viewModel: viewModel
                                     ) { node in
                                         viewModel.jumpToOutlineEntry(node)

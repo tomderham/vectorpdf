@@ -25,6 +25,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     let documentIdentity: String
     let searchQuery: String
     let currentPage: Int
+    /// The section under the reading line, which is followed in preference to the page alone.
+    let readingSection: PDFViewerViewModel.ReadingSection?
     let viewModel: PDFViewerViewModel?
     let onSelect: (PDFOutlineNode) -> Void
 
@@ -33,6 +35,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         documentIdentity: String,
         searchQuery: String = "",
         currentPage: Int = 0,
+        readingSection: PDFViewerViewModel.ReadingSection? = nil,
         viewModel: PDFViewerViewModel? = nil,
         onSelect: @escaping (PDFOutlineNode) -> Void
     ) {
@@ -40,6 +43,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         self.documentIdentity = documentIdentity
         self.searchQuery = searchQuery
         self.currentPage = currentPage
+        self.readingSection = readingSection
         self.viewModel = viewModel
         self.onSelect = onSelect
     }
@@ -94,7 +98,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             outline: outline,
             documentIdentity: documentIdentity,
             searchQuery: searchQuery,
-            currentPage: currentPage
+            currentPage: currentPage,
+            readingSection: readingSection
         )
 
         return scrollView
@@ -107,7 +112,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             outline: outline,
             documentIdentity: documentIdentity,
             searchQuery: searchQuery,
-            currentPage: currentPage
+            currentPage: currentPage,
+            readingSection: readingSection
         )
     }
 
@@ -123,6 +129,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         private var lastDocumentIdentity: String?
         private var lastSearchQuery: String?
         private var currentPage: Int = 0
+        private var readingSection: PDFViewerViewModel.ReadingSection?
         private var currentVisibleActiveWrapper: OutlineItemWrapper?
         private var selectedNodeId: UUID?
         private var selectedNodePage: Int?
@@ -133,10 +140,11 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             self.onSelect = onSelect
         }
 
-        func updateState(outline: [PDFOutlineNode], documentIdentity: String, searchQuery: String, currentPage: Int) {
+        func updateState(outline: [PDFOutlineNode], documentIdentity: String, searchQuery: String, currentPage: Int, readingSection: PDFViewerViewModel.ReadingSection? = nil) {
             let documentChanged = (documentIdentity != self.lastDocumentIdentity)
             let searchChanged = (searchQuery != self.lastSearchQuery)
             let pageChanged = (currentPage != self.currentPage)
+            let sectionChanged = (readingSection != self.readingSection)
 
             if pageChanged {
                 if let selPage = selectedNodePage, currentPage != selPage {
@@ -151,6 +159,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             self.lastDocumentIdentity = documentIdentity
             self.lastSearchQuery = searchQuery
             self.currentPage = currentPage
+            self.readingSection = readingSection
             self.rawOutline = outline
 
             if documentChanged {
@@ -171,7 +180,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                     self.searchWorkItem = workItem
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: workItem)
                 }
-            } else if pageChanged {
+            } else if pageChanged || sectionChanged {
                 refreshActiveIndicators(scrollToVisible: true)
             }
         }
@@ -214,6 +223,11 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             let activeId: UUID?
             if let selId = selectedNodeId, selectedNodePage == currentPage {
                 activeId = selId
+            } else if let reading = readingSection, reading.page == currentPage {
+                // Where on the page matters: a section starting partway down one page and ending
+                // before the next section heading on the following page is never the first entry
+                // on either page.
+                activeId = reading.nodeId
             } else {
                 activeId = PDFOutlineNode.findActiveNodeId(in: rawOutline, for: currentPage)
             }

@@ -41,6 +41,30 @@ public final class PDFViewerViewModel: ObservableObject {
             }
         }
     }
+    /// The outline entry whose section holds the reading line (the place on screen the current
+    /// page is taken from), and the page that line is on. The ToC highlights it while that page is
+    /// current; it's published only when the section changes, not on every scroll.
+    public struct ReadingSection: Equatable, Sendable {
+        public let page: Int
+        public let nodeId: UUID
+    }
+    @Published public private(set) var readingSection: ReadingSection?
+
+    /// Records where the reading line is: `y` is in page space (y down) on `page`.
+    func updateReadingLine(page: Int, y: CGFloat) {
+        guard let sections = document?.outlineSections, !sections.isEmpty,
+              let section = sections.section(page: page, y: y) else {
+            if readingSection != nil { readingSection = nil }
+            return
+        }
+        let new = ReadingSection(page: page, nodeId: section.nodeId)
+        if new != readingSection { readingSection = new }
+    }
+
+    func clearReadingLine() {
+        if readingSection != nil { readingSection = nil }
+    }
+
     @Published public var zoomScale: CGFloat = 1.0
     @Published public var displayScale: CGFloat = 1.0
     @Published public var isSidebarVisible: Bool = true

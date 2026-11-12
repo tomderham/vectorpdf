@@ -537,21 +537,37 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         @objc func clipViewBoundsDidChange(_ notification: Notification) {
             // Before the guard: a programmatic scroll shows new parts of a page too.
             canvasView?.scheduleDetailRenders()
-            guard !isProgrammaticScroll, viewModel.document != nil, let scrollView = self.scrollView else { return }
-            
+            guard viewModel.document != nil, let scrollView = self.scrollView else { return }
+
             let clipView = scrollView.contentView
-            viewModel.currentViewportSize = clipView.bounds.size
             let currentScrollY = max(0, clipView.bounds.origin.y - 16)
             let unscaledY = currentScrollY / viewModel.effectiveZoom
-            
+
             // Rapid O(log N) binary search for active page
             let activePage = viewModel.effectivePageIndex(atYOffset: unscaledY + 80)
+            // Also after a programmatic scroll (a ToC or search jump), which sets the page itself.
+            updateReadingLine(onPage: activePage, canvasY: 16 + (unscaledY + 80) * viewModel.effectiveZoom)
+            guard !isProgrammaticScroll else { return }
+            viewModel.currentViewportSize = clipView.bounds.size
             if activePage != viewModel.currentPageIndex {
                 lastNavigatedPage = activePage
                 viewModel.currentPageIndex = activePage
                 viewModel.pruneCaches(around: activePage)
             }
             canvasView?.syncFormControls()
+        }
+
+        /// Tells the view model which section is under the reading line, at canvas height
+        /// `canvasY` on page `page`. Outline entries point at places on an upright page, so a
+        /// rotated view leaves the ToC to follow the page alone.
+        private func updateReadingLine(onPage page: Int, canvasY: CGFloat) {
+            guard viewModel.viewRotationDegrees == 0,
+                  let geometry = canvasView?.pageGeometry(for: page) else {
+                viewModel.clearReadingLine()
+                return
+            }
+            let point = geometry.pagePoint(forCanvasPoint: CGPoint(x: geometry.frame.midX, y: canvasY))
+            viewModel.updateReadingLine(page: page, y: point.y)
         }
     }
 }

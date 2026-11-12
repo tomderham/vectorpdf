@@ -59,6 +59,23 @@ struct OutlineSectionTests {
         #expect(sections.section(page: 3, y: 580)?.title == "Loads")
     }
 
+    /// A subsection starting low on one page and ending just before the next one's heading on the
+    /// following page is never the first entry on either page, so following the page alone
+    /// skipped it (37.16.9 in 802.11bn D2.1); following the reading line finds it on both.
+    @Test func readingLineFindsASectionThatIsNeverFirstOnAPage() {
+        let eight = PDFOutlineNode(title: "37.16.8", targetPage: 10, targetY: 200)
+        let nine = PDFOutlineNode(title: "37.16.9", targetPage: 10, targetY: 600)
+        let ten = PDFOutlineNode(title: "37.16.10", targetPage: 11, targetY: 500)
+        let outline = [PDFOutlineNode(title: "37.16", targetPage: 9, targetY: 100, children: [eight, nine, ten])]
+        #expect(PDFOutlineNode.findActiveNodeId(in: outline, for: 10) == eight.id)
+        #expect(PDFOutlineNode.findActiveNodeId(in: outline, for: 11) == ten.id)
+
+        let sections = OutlineSections(outline: outline)
+        #expect(sections.section(page: 10, y: 700)?.nodeId == nine.id)
+        #expect(sections.section(page: 11, y: 80)?.nodeId == nine.id)
+        #expect(sections.section(page: 11, y: 520)?.nodeId == ten.id)
+    }
+
     @Test func nothingBeforeTheFirstEntry() {
         let sections = OutlineSections(outline: [PDFOutlineNode(title: "Late", targetPage: 2, targetY: 300)])
         #expect(sections.section(page: 1, y: 500) == nil)

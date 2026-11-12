@@ -16,6 +16,7 @@
 //
 
 import CoreGraphics
+import Foundation
 
 /// Where each outline entry starts, so a place on a page can be told which section it's in:
 /// the last entry starting at or before it. Entries are taken by where they point, not their
@@ -24,6 +25,8 @@ public struct OutlineSections: Sendable {
     public struct Section: Sendable, Hashable {
         /// Identifies the section among the document's entries.
         public let index: Int
+        /// The outline entry the section starts at.
+        public let nodeId: UUID
         /// Titles from the top-level entry down to this one.
         public let path: [String]
         public var title: String { path.last ?? "" }
@@ -33,6 +36,7 @@ public struct OutlineSections: Sendable {
         let page: Int
         /// -infinity for an entry naming only its page, which then starts at the top.
         let y: CGFloat
+        let nodeId: UUID
         let path: [String]
     }
 
@@ -49,7 +53,7 @@ public struct OutlineSections: Sendable {
             for node in nodes {
                 let path = parents + [node.title]
                 if let page = node.targetPage {
-                    collected.append((collected.count, Start(page: page, y: node.targetY ?? -.infinity, path: path)))
+                    collected.append((collected.count, Start(page: page, y: node.targetY ?? -.infinity, nodeId: node.id, path: path)))
                 }
                 visit(node.children, parents: path)
             }
@@ -84,6 +88,6 @@ public struct OutlineSections: Sendable {
             }
         }
         guard low > 0 else { return nil }
-        return Section(index: low - 1, path: starts[low - 1].path)
+        return Section(index: low - 1, nodeId: starts[low - 1].nodeId, path: starts[low - 1].path)
     }
 }
