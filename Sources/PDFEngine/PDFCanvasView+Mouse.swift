@@ -341,6 +341,7 @@ extension PDFCanvasView {
         if event.clickCount == 2 {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
                 viewModel.selectWord(at: pagePoint, pageIndex: pageIdx)
+                viewModel.selectionAnchor = (pageIndex: pageIdx, point: pagePoint)
                 isDraggingSelection = false
                 needsDisplay = true
                 return
@@ -348,10 +349,26 @@ extension PDFCanvasView {
         } else if event.clickCount >= 3 {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
                 viewModel.selectLine(at: pagePoint, pageIndex: pageIdx)
+                viewModel.selectionAnchor = (pageIndex: pageIdx, point: pagePoint)
                 isDraggingSelection = false
                 needsDisplay = true
                 return
             }
+        }
+
+        // ⇧-click extends the selection from where it started to here, across pages too, and
+        // dragging on from there keeps extending it.
+        if event.modifierFlags.contains(.shift), !event.modifierFlags.contains(.option),
+           let anchor = viewModel.selectionAnchor, viewModel.activeSelection != nil,
+           let anchorGeometry = pageGeometry(for: anchor.pageIndex),
+           let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+            viewModel.handleCrossPageDragSelect(pageA: anchor.pageIndex, pointA: anchor.point, pageB: pageIdx, pointB: pagePoint)
+            dragStartCanvasPoint = anchorGeometry.canvasPoint(forPagePoint: anchor.point)
+            activeDragPage = anchor.pageIndex
+            isDraggingSelection = true
+            hasDraggedPastThreshold = true
+            needsDisplay = true
+            return
         }
 
         // Check clickable links / cross-references
@@ -373,6 +390,7 @@ extension PDFCanvasView {
             isDraggingSelection = true
             hasDraggedPastThreshold = false
             viewModel.clearSelection()
+            viewModel.selectionAnchor = (pageIndex: pageIdx, point: pageGeometry(for: pageIdx)?.pagePoint(forCanvasPoint: point) ?? point)
             needsDisplay = true
         }
     }
@@ -382,6 +400,7 @@ extension PDFCanvasView {
         if continueGuideDrag(event) {
             return
         }
+        updateAutoscroll(for: event)
         if currentMeasurePage != nil {
             let point = convert(event.locationInWindow, from: nil)
             if let (pageIdx, _, rawPagePoint) = pageInfo(at: point), pageIdx == currentMeasurePage {
@@ -512,7 +531,7 @@ extension PDFCanvasView {
 
         // Text selection can span across page boundaries; marquee selection is constrained to a single page.
         if mode == .readingOrder,
-           let (currentPageIdx, _, currentPagePoint) = pageInfo(at: currentCanvas),
+           let (currentPageIdx, currentPagePoint) = nearestPageInfo(at: currentCanvas),
            currentPageIdx != dragPageIdx {
             viewModel.handleCrossPageDragSelect(pageA: dragPageIdx, pointA: startPagePoint, pageB: currentPageIdx, pointB: currentPagePoint)
             needsDisplay = true
@@ -531,6 +550,7 @@ extension PDFCanvasView {
     }
     
     public override func mouseUp(with event: NSEvent) {
+        stopAutoscroll()
         if endGuideDrag(event) {
             return
         }

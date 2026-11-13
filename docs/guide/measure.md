@@ -33,7 +33,7 @@ Press Escape, or click the selected tool, to put the measurement tool down, then
 | Move a dimension line nearer or further from what it measures | Drag its label, or drag the dimension line once it's away from the points. |
 | Change its color | Choose a color with the color button in the Measurement toolbar. |
 
-The value is worked out again as you drag. Choose Edit > Undo to put a measurement back as it was. Measurements already saved in the PDF can be changed too.
+The value is worked out again as you drag. Drag past the edge of the window to scroll, for a measurement longer than the view. Choose Edit > Undo to put a measurement back as it was. Measurements already saved in the PDF can be changed too.
 
 To select an area, click its edge: clicking inside it selects the text there.
 

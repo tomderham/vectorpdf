@@ -52,6 +52,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var isDraggingSelection: Bool = false
     var hasDraggedPastThreshold: Bool = false
     var activeDragPage: Int?
+    /// Scrolls while a drag is held past the edge of the view (PDFCanvasView+Autoscroll).
+    var autoscrollTimer: Timer?
     var lastContextMenuLocation: CGPoint = .zero
     
     // Freehand drawing in-progress state
@@ -541,6 +543,25 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             return (idx, geometry.frame, geometry.pagePoint(forCanvasPoint: canvasPoint))
         }
         return nil
+    }
+
+    /// The page under a canvas point or, beside or between pages, the nearest one, with the point
+    /// moved onto its edge: a selection dragged off the side of a page or into the gap keeps going.
+    func nearestPageInfo(at canvasPoint: CGPoint) -> (pageIndex: Int, pagePoint: CGPoint)? {
+        if let hit = pageInfo(at: canvasPoint) { return (hit.pageIndex, hit.pagePoint) }
+        guard let doc = viewModel.document, doc.pageCount > 0 else { return nil }
+        let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.effectiveZoom)
+        let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+        var nearest: (index: Int, point: CGPoint, distance: CGFloat)?
+        for idx in [pageIdx - 1, pageIdx, pageIdx + 1] where idx >= 0 && idx < doc.pageCount {
+            guard let frame = pageGeometry(for: idx)?.frame else { continue }
+            let onPage = CGPoint(x: min(max(canvasPoint.x, frame.minX), frame.maxX),
+                                 y: min(max(canvasPoint.y, frame.minY), frame.maxY))
+            let distance = hypot(onPage.x - canvasPoint.x, onPage.y - canvasPoint.y)
+            if nearest == nil || distance < nearest!.distance { nearest = (idx, onPage, distance) }
+        }
+        guard let nearest, let geometry = pageGeometry(for: nearest.index) else { return nil }
+        return (nearest.index, geometry.pagePoint(forCanvasPoint: nearest.point))
     }
 
     /// Finds the internal cross-reference/link at a canvas point, if any. Internal links only

@@ -1,10 +1,11 @@
-<!-- keywords: select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
+<!-- keywords: select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, extend, shift-click, several pages, scroll while selecting -->
 
 # Select, copy and look up text
 
 ## Select text
 
-- **Drag** across the text. Selections follow the reading order, so they keep to one column of a multi-column layout and skip margin line numbers. They can run across pages.
+- **Drag** across the text. Selections follow the reading order, so they keep to one column of a multi-column layout and skip margin line numbers. They can run across pages: drag past the top or bottom of the window and the document scrolls, faster the further past you go.
+- **Hold ⇧ and click** to extend the selection from where it started to where you click, on any page. Click at the start, scroll to the end, then ⇧-click there. You can keep dragging after ⇧-clicking.
 - **Double-click** to select a word, or **triple-click** to select a line.
 - **Hold ⌥ and drag** to select a rectangular area, such as a figure or table.
 

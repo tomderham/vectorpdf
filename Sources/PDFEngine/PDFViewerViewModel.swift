@@ -321,6 +321,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var activeSelection: (pageIndex: Int, result: SelectionResult)? {
         didSet { updateSelectionReadout() }
     }
+    /// Where the text selection started (page space), which ⇧-click extends it from.
+    var selectionAnchor: (pageIndex: Int, point: CGPoint)?
     /// Additional page selections when a selection spans across page boundaries.
     @Published public var additionalSelectionPages: [PageSelectionResult] = [] {
         didSet { updateSelectionReadout() }

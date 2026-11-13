@@ -253,5 +253,6 @@ extension PDFViewerViewModel {
     public func clearSelection() {
         self.activeSelection = nil
         self.additionalSelectionPages = []
+        self.selectionAnchor = nil
     }
 }

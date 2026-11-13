@@ -84,6 +84,8 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Select a word | Double-click |
 | Select a line | Triple-click |
 | Select an area | ⌥-drag |
+| Extend the selection | ⇧-click |
+| Scroll while selecting or drawing | Drag past the edge of the window |
 | Open an annotation's comments | Double-click it, except a text box or callout |
 | Zoom | Pinch |
 
