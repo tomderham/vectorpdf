@@ -1002,6 +1002,29 @@ public struct PDFViewerMainView: View {
                             .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
                             .cornerRadius(6)
                             .padding(.horizontal, 8)
+                        } else if viewModel.canSaveRecognizedText {
+                            HStack(spacing: 6) {
+                                Image(systemName: "text.viewfinder")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(viewModel.ocrResults.count == 1 ? "Text recognized on 1 page" : "Text recognized on \(viewModel.ocrResults.count) pages")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Save in PDF") {
+                                    Task {
+                                        await viewModel.saveWithRecognizedText()
+                                    }
+                                }
+                                .buttonStyle(.borderless)
+                                .font(.caption.weight(.medium))
+                                .help("Save the document with the recognized text in it, so other apps can search and select it (File > Save with Recognized Text)")
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                            .cornerRadius(6)
+                            .padding(.horizontal, 8)
                         }
                         let hasQuery = !viewModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         let shouldShowCount = !viewModel.searchResults.isEmpty || (hasQuery && !viewModel.isSearching && !viewModel.isRunningOCR)

@@ -108,6 +108,8 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     /// Whether the active document has layers annotations can go on, for Edit > Rename and
     /// Delete Layer.
     @Published public var hasActiveLayers: Bool = false
+    /// Whether the active document is a PDF with scanned pages, for File > Save with Recognized Text.
+    @Published public var canSaveActiveRecognizedText: Bool = false
     @Published public var isSpeaking: Bool = false
     /// Published live anchors list of the active document, updating SwiftUI Commands immediately.
     @Published public var activeAnchors: [SnapshotTarget] = []
@@ -429,6 +431,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
             isActiveDocumentEdited = false
             hasActiveSelection = false
             hasActiveLayers = false
+            canSaveActiveRecognizedText = false
             PDFViewerViewModel.active = nil
             docCancellable = nil
             selCancellable = nil
@@ -472,6 +475,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                 if self.hasActiveLayers != hasLayers {
                     self.hasActiveLayers = hasLayers
                 }
+                if self.canSaveActiveRecognizedText != vm.canSaveRecognizedText {
+                    self.canSaveActiveRecognizedText = vm.canSaveRecognizedText
+                }
             }
     }
 
@@ -490,6 +496,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.activeAnchors = activeViewModel?.activeSnapshots ?? []
         self.hasActiveSelection = (activeViewModel?.activeSelection != nil)
         self.hasActiveLayers = !(activeViewModel?.annotationLayers.isEmpty ?? true)
+        self.canSaveActiveRecognizedText = activeViewModel?.canSaveRecognizedText ?? false
     }
 
     // MARK: - Document View Model Registry

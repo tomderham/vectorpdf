@@ -563,6 +563,17 @@ int mupdf_page_get_boxes(fz_context *ctx, fz_document *doc, int pageno, mupdf_pa
 // measured from the MediaBox's top-left, so this maps them onto the page whatever its boxes and
 // rotation. Fails for documents that aren't PDFs.
 int mupdf_page_get_user_space_transform(fz_context *ctx, fz_document *doc, int pageno, fz_rect *out_mediabox, fz_matrix *out_ctm, const char **out_error);
+
+// Recognized (OCR) text for a scanned page (OCRTextLayer.c). Corners are in page (top-down) space,
+// as fz_bound_page reports it; text is UTF-8.
+typedef struct {
+    const char *text;
+    float ulx, uly, urx, ury, llx, lly, lrx, lry;
+} mupdf_ocr_word;
+// Writes `words` into the page as invisible text (render mode 3), each stretched over its box, so
+// other apps can search, select and copy it. The text's font is added to the document on the first
+// call: pass *font_num as 0, then the number it's set to for the document's other pages.
+int mupdf_pdf_add_ocr_text(fz_context *ctx, fz_document *doc, int pageno, const mupdf_ocr_word *words, int count, int *font_num, const char **out_error);
 int mupdf_document_get_fonts(fz_context *ctx, fz_document *doc, mupdf_font_list *out_fonts, const char **out_error);
 void mupdf_free_font_list(fz_context *ctx, mupdf_font_list *fonts);
 

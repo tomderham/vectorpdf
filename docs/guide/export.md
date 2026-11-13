@@ -1,8 +1,8 @@
-<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, annotations summary, CSV, Markdown, PDF -->
+<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, annotations summary, CSV, Markdown, searchable PDF, OCR, PDF -->
 
 # Export to other formats
 
-To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF or Optimized PDF. The annotations summary and measurements have their own commands.
+To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF or Searchable PDF. The annotations summary and measurements have their own commands.
 
 ## Plain text
 
@@ -36,6 +36,10 @@ Saves a smaller copy of the PDF, including any changes you haven't saved. The do
 - **Convert text to outlines:** draws every letter as a shape, so the document looks the same on plotters, cutters and print systems that don't have its fonts. Text in the copy can't be selected, searched or copied.
 
 How much smaller the copy is depends on the document. Scans and photos shrink the most when you reduce their images.
+
+## Searchable PDF
+
+Saves a copy of a scanned PDF, including any changes you haven't saved, with the text recognized on its scanned pages saved in it as an invisible layer, so other apps can search, select and copy it. It's available for documents with scanned pages. See [Save the recognized text in the PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).
 
 ## Annotations summary
 

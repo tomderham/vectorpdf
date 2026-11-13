@@ -24,4 +24,4 @@ Choose File > Share to use a macOS sharing service, or File > Show in Finder (â‡
 
 ## What isn't saved in the PDF
 
-Some things stay with VectorPDF and don't travel with the file: [anchors](anchors.md), your [reading position](reading-positions.md), the view rotation, and text from [OCR](scanned-pages.md).
+Some things stay with VectorPDF and don't travel with the file: [anchors](anchors.md), your [reading position](reading-positions.md), the view rotation, and text from [OCR](scanned-pages.md), unless you [save it in the PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).

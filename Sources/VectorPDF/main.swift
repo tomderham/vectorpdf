@@ -409,6 +409,11 @@ struct VectorPDF: App {
             .keyboardShortcut("s", modifiers: [.command, .option])
             .disabled(!canEditDocument)
 
+            Button("Save with Recognized Text") {
+                Task { await resolvedViewModel?.saveWithRecognizedText() }
+            }
+            .disabled(!canEditDocument || !coordinator.canSaveActiveRecognizedText)
+
             Button("Revert to Saved") {
                 Task { await resolvedViewModel?.revertToSaved() }
             }
@@ -443,6 +448,10 @@ struct VectorPDF: App {
                     resolvedViewModel?.saveDocumentOptimizedAs()
                 }
                 .disabled(!canEditDocument)
+                Button("Searchable PDF (.pdf)...") {
+                    resolvedViewModel?.exportSearchablePDF()
+                }
+                .disabled(!canEditDocument || !coordinator.canSaveActiveRecognizedText)
             }
             .disabled(!hasDocument)
 

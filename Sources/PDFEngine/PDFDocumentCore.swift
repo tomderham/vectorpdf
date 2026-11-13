@@ -1830,6 +1830,89 @@ public final class PDFDocumentCore: @unchecked Sendable {
     /// Saves a smaller copy of the document, unsaved edits included, leaving this one as it is.
     /// Slow on a large document, so call it off the main thread: the document is only locked
     /// while its edits are copied out.
+    /// Saves the document, unsaved edits included, with `results` written into their pages as
+    /// invisible text, so other apps can search, select and copy it. Pages that have text of their
+    /// own are left alone. Works on a copy, so this document is unchanged; returns how many pages
+    /// were given text.
+    @discardableResult
+    public func saveWithRecognizedText(to path: String, results: [PDFOCRPageResult]) throws -> Int {
+        let tempSourceURL = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-ocr-\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: tempSourceURL) }
+        do {
+            lock.lock()
+            defer { lock.unlock() }
+            var errorMsg: UnsafePointer<CChar>?
+            guard mupdf_pdf_save(ctx, doc, tempSourceURL.path, &errorMsg) == 0 else {
+                throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to prepare a copy to add text to")
+            }
+        }
+        let copy = try PDFDocumentCore(filePath: tempSourceURL.path, password: openedPassword)
+        let written = try copy.addRecognizedText(results)
+        try copy.performCoordinatedSave(to: URL(fileURLWithPath: path), isSameFile: path == filePath) { targetTempPath in
+            var errorMsg: UnsafePointer<CChar>?
+            guard mupdf_pdf_save(copy.ctx, copy.doc, targetTempPath, &errorMsg) == 0 else {
+                throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to save the PDF with its recognized text")
+            }
+        }
+        return written
+    }
+
+    /// Writes `results` into this document's pages as invisible text (see `saveWithRecognizedText`).
+    func addRecognizedText(_ results: [PDFOCRPageResult]) throws -> Int {
+        guard isPDF else { throw PDFError.operationFailed("Only PDFs can have recognized text saved in them") }
+        let pages = results.filter { $0.pageIndex >= 0 && $0.pageIndex < pageCount && !$0.lines.isEmpty && isScannedPage(pageIndex: $0.pageIndex) }
+        lock.lock()
+        defer { lock.unlock() }
+        var fontNumber: Int32 = 0
+        var written = 0
+        for page in pages.sorted(by: { $0.pageIndex < $1.pageIndex }) {
+            let pieces = Self.recognizedWords(of: page)
+            guard !pieces.isEmpty else { continue }
+            let texts = pieces.map { strdup($0.text) }
+            defer { texts.forEach { free($0) } }
+            var words = zip(pieces, texts).map { piece, text in
+                let q = piece.quad
+                return mupdf_ocr_word(
+                    text: UnsafePointer(text),
+                    ulx: Float(q.ul.x), uly: Float(q.ul.y), urx: Float(q.ur.x), ury: Float(q.ur.y),
+                    llx: Float(q.ll.x), lly: Float(q.ll.y), lrx: Float(q.lr.x), lry: Float(q.lr.y)
+                )
+            }
+            var errorMsg: UnsafePointer<CChar>?
+            let ret = words.withUnsafeMutableBufferPointer { buffer in
+                mupdf_pdf_add_ocr_text(ctx, doc, Int32(page.pageIndex), buffer.baseAddress, Int32(buffer.count), &fontNumber, &errorMsg)
+            }
+            guard ret == 0 else {
+                throw PDFError.operationFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to add recognized text to page \(page.pageIndex + 1)")
+            }
+            written += 1
+        }
+        return written
+    }
+
+    /// Each recognized word with where it was seen, or a whole line where Vision didn't place its
+    /// words. A word is followed by a space reaching to the next word's start: Vision's words are
+    /// too close together for readers to tell there's a space between them.
+    static func recognizedWords(of page: PDFOCRPageResult) -> [(text: String, quad: PDFQuad)] {
+        page.lines.flatMap { line -> [(text: String, quad: PDFQuad)] in
+            let words = line.text.split(whereSeparator: \.isWhitespace).map(String.init)
+            let quads = line.wordQuads
+            guard !words.isEmpty, words.count == quads.count else { return [(text: line.text, quad: line.quad)] }
+            return words.indices.map { i in
+                guard i + 1 < words.count else { return (text: words[i], quad: quads[i]) }
+                let word = quads[i], next = quads[i + 1]
+                let along = CGVector(dx: word.lr.x - word.ll.x, dy: word.lr.y - word.ll.y)
+                let toNext = CGVector(dx: next.ll.x - word.ll.x, dy: next.ll.y - word.ll.y)
+                let wordLength = hypot(along.dx, along.dy)
+                // Only when the next word starts after this one ends, along the line.
+                guard wordLength > 0, (along.dx * toNext.dx + along.dy * toNext.dy) / wordLength > wordLength else {
+                    return (text: words[i], quad: word)
+                }
+                return (text: words[i] + " ", quad: PDFQuad(ul: word.ul, ur: next.ul, ll: word.ll, lr: next.ll))
+            }
+        }
+    }
+
     public func saveOptimized(to path: String, options: OptimizeOptions) throws {
         let tempSourceURL = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-optimize-\(UUID().uuidString).pdf")
         defer { try? FileManager.default.removeItem(at: tempSourceURL) }

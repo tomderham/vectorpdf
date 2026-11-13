@@ -144,13 +144,29 @@ public actor PDFOCREngine {
 
     public init() {}
 
+    /// The languages to recognize: those of the Mac's preferred languages Vision can read, in
+    /// order, or English when it can read none of them.
+    public static let recognitionLanguages: [String] = {
+        let supported = (try? VNRecognizeTextRequest().supportedRecognitionLanguages()) ?? []
+        var chosen: [String] = []
+        for preferred in Locale.preferredLanguages {
+            let code = Locale(identifier: preferred).language.languageCode
+            let match = supported.first { $0 == preferred }
+                ?? supported.first { preferred.hasPrefix($0 + "-") }
+                // Chinese differs by script (zh-Hans, zh-Hant), which the prefix match covers.
+                ?? supported.first { code != "zh" && Locale(identifier: $0).language.languageCode == code }
+            if let match, !chosen.contains(match) { chosen.append(match) }
+        }
+        return chosen.isEmpty ? ["en-US"] : chosen
+    }()
+
     /// Performs on-device text recognition on a rendered page image, mapping Vision's normalized
     /// coordinates to the page's native point bounds.
     public func recognizeText(
         in image: CGImage,
         pageIndex: Int,
         pageBounds: CGRect,
-        languages: [String] = ["en-US"]
+        languages: [String] = PDFOCREngine.recognitionLanguages
     ) async throws -> PDFOCRPageResult {
         // Read results directly from the synchronous Vision request.
         let request = VNRecognizeTextRequest()
