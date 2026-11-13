@@ -25,16 +25,11 @@ struct LaTeXSettingsView: View {
     @State private var isShowingSetup = false
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("LaTeX (SyncTeX)")
-                Text(LaTeXEditor.preset(id: editorID).map { "Source editor: \($0.name)" } ?? "Off")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        LabeledContent {
             Button("Set Up…") { isShowingSetup = true }
-                .controlSize(.small)
+        } label: {
+            Text("SyncTeX")
+            Text(LaTeXEditor.preset(id: editorID).map { "Source editor: \($0.name)" } ?? "Off")
         }
         .sheet(isPresented: $isShowingSetup) {
             LaTeXSetupView()

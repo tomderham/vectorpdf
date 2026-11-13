@@ -8,7 +8,7 @@ A stamp is an image, such as your signature or initials, that you can place on a
 
 ## Create your stamp
 
-1. Choose VectorPDF > Settings, then click Create Stamp under Digital Stamp. You can also just choose the Stamp tool in the Markup toolbar, and VectorPDF asks you to create one.
+1. Choose VectorPDF > Settings, click General, then click Create Stamp next to Digital Stamp. You can also just choose the Stamp tool in the Markup toolbar, and VectorPDF asks you to create one.
 2. Choose how to make it:
    - **Draw:** sign with your trackpad or mouse.
    - **Type:** enter your name or initials, and choose a font.

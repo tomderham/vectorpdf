@@ -681,210 +681,28 @@ private struct SettingsWindowAccessor: NSViewRepresentable {
     }
 }
 
-/// The app's Settings window (⌘,).
+/// The app's Settings window (⌘,): a pane per tab, each a grouped form so labels, controls and
+/// explanations get room of their own.
 public struct AppSettingsView: View {
-    @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
-    @ObservedObject private var updater = GitHubUpdater.shared
-    @ObservedObject private var signatureStore = SignatureStore.shared
-    @ObservedObject private var readingState = ReadingStateManager.shared
-    @State private var isShowingSignatureEditor = false
-    @State private var isShowingIgnoredPatterns = false
-    @AppStorage(PDFViewerViewModel.annotationAuthorDefaultsKey) private var annotationAuthor = ""
+    @AppStorage("settingsSelectedPane") private var selectedPane = "general"
 
     public init() {}
 
     public var body: some View {
-        Form {
-            TextField("Annotation Author", text: $annotationAuthor, prompt: Text(NSFullUserName()))
-                .padding(.bottom, 12)
-
-            Toggle("Use Agent (macOS 26 or above)", isOn: $coordinator.showAgentTab)
-                .padding(.bottom, 12)
-
-            Toggle("List form fields, links and destinations in the sidebar", isOn: $coordinator.showsDocumentStructureInSidebar)
-            Text("In the Document tab, with layers and attachments. The tab then also appears for documents that have any of these.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 12)
-
-#if VECTORPDF_MACOS27_SDK
-            if #available(macOS 27.0, *), coordinator.showAgentTab {
-                Picker("AI Synthesis Engine", selection: $coordinator.agentSynthesisPreference) {
-                    ForEach(coordinator.availableSynthesisPreferences, id: \.self) { pref in
-                        Text(pref.displayName).tag(pref)
-                    }
-                }
-                .pickerStyle(.menu)
-
-                switch coordinator.agentSynthesisPreference {
-                case .onlineModel:
-                    OnlineModelSettingsView()
-                case .privateCloudCompute:
-                    Text("Your questions and the passages used to answer them are sent to Apple's Private Cloud Compute. If it can't answer, VectorPDF answers on-device.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 8)
-                case .onDevice:
-                    EmptyView()
-                }
-            }
-#endif
-
-            Divider()
-                .padding(.vertical, 8)
-
-            // Independent of system UI theme.
-            Picker("PDF Color", selection: $coordinator.pdfColorAppearance) {
-                ForEach(PDFColorAppearance.allCases, id: \.self) { appearance in
-                    Text(appearance.displayName).tag(appearance)
-                }
-            }
-
-            Divider()
-                .padding(.vertical, 8)
-
-            Picker("Open Links In", selection: $coordinator.preferredBrowserBundleID) {
-                ForEach(coordinator.installedBrowsers) { browser in
-                    Text(browser.name).tag(browser.id)
-                }
-            }
-
-            Divider()
-                .padding(.vertical, 8)
-
-            LaTeXSettingsView()
-
-            Divider()
-                .padding(.vertical, 8)
-
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Ignored Search Patterns")
-                    Text(coordinator.ignoredSearchPatterns.isEmpty
-                         ? "None"
-                         : "\(coordinator.enabledIgnoredSearchPatterns.count) of \(coordinator.ignoredSearchPatterns.count) on")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Edit…") { isShowingIgnoredPatterns = true }
-                    .controlSize(.small)
-            }
-            .sheet(isPresented: $isShowingIgnoredPatterns) {
-                IgnoredSearchPatternsView()
-            }
-
-            Divider()
-                .padding(.vertical, 8)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Digital Stamp")
-                    .font(.subheadline.bold())
-
-                if let data = signatureStore.savedSignatureData, let img = NSImage(data: data) {
-                    HStack(spacing: 12) {
-                        Image(nsImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 140, height: 48)
-                            .padding(4)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                            )
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Button {
-                                isShowingSignatureEditor = true
-                            } label: {
-                                Text("Modify Stamp…")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .controlSize(.small)
-                            .frame(width: 115)
-
-                            Button(role: .destructive) {
-                                signatureStore.clear()
-                            } label: {
-                                Text("Delete Stamp")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .controlSize(.small)
-                            .frame(width: 115)
-                        }
-                    }
-                } else {
-                    HStack {
-                        Text("No stamp saved.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Button("Create Stamp…") {
-                            isShowingSignatureEditor = true
-                        }
-                        .controlSize(.small)
-                    }
-                }
-            }
-            .sheet(isPresented: $isShowingSignatureEditor) {
-                SignatureCaptureView { image in
-                    isShowingSignatureEditor = false
-                    if let image = image, let data = image.pdfStampPNGData {
-                        signatureStore.save(data: data)
-                    }
-                }
-            }
-
-            Divider()
-                .padding(.vertical, 8)
-
-            Toggle("Sync reading positions with iCloud", isOn: Binding(
-                get: { readingState.isCloudSyncEnabled },
-                set: { readingState.setCloudSyncEnabled($0) }
-            ))
-            Text("Last page, zoom, anchors, and recent searches, through your own iCloud account. Documents are not uploaded.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 8)
-
-            Divider()
-                .padding(.vertical, 8)
-
-            StorageSettingsView()
-
-            Divider()
-                .padding(.vertical, 8)
-
-            Toggle("Automatically check for updates", isOn: $updater.automaticUpdateChecks)
-                .padding(.bottom, 6)
-
-            HStack {
-                if let lastCheck = updater.lastUpdateCheckDate {
-                    Text("Last checked: \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Last checked: Never")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button("Check Now") {
-                    updater.checkForUpdates(isManualCheck: true)
-                }
-                .disabled(updater.isChecking || updater.isDownloading)
-            }
+        TabView(selection: $selectedPane) {
+            GeneralSettingsPane()
+                .tabItem { Label("General", systemImage: "gearshape") }
+                .tag("general")
+            AgentSettingsPane()
+                .tabItem { Label("Agent", systemImage: "sparkles") }
+                .tag("agent")
+            AdvancedSettingsPane()
+                .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
+                .tag("advanced")
+            DataSettingsPane()
+                .tabItem { Label("Data", systemImage: "externaldrive") }
+                .tag("data")
         }
-        .padding(20)
-        .frame(width: 420)
         .background(
             SettingsWindowAccessor { window in
                 SettingsModalManager.shared.configure(window: window)
@@ -896,8 +714,227 @@ public struct AppSettingsView: View {
     }
 }
 
-/// Settings > Storage: how much space VectorPDF's data takes, and ways to clear it.
-struct StorageSettingsView: View {
+/// Every pane is the same width; the window takes each pane's height when its tab is chosen.
+private extension View {
+    func settingsPane(height: CGFloat) -> some View {
+        formStyle(.grouped)
+            .frame(width: 500, height: height)
+    }
+}
+
+/// A label with a line of secondary text under it, as System Settings shows.
+private struct SettingsLabel: View {
+    let title: String
+    let detail: String?
+
+    init(_ title: String, detail: String?) {
+        self.title = title
+        self.detail = detail
+    }
+
+    var body: some View {
+        Text(title)
+        if let detail {
+            Text(detail)
+        }
+    }
+}
+
+/// Settings > General: annotations, how documents look, updates.
+struct GeneralSettingsPane: View {
+    @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
+    @ObservedObject private var updater = GitHubUpdater.shared
+    @ObservedObject private var signatureStore = SignatureStore.shared
+    @State private var isShowingSignatureEditor = false
+    @AppStorage(PDFViewerViewModel.annotationAuthorDefaultsKey) private var annotationAuthor = ""
+
+    var body: some View {
+        Form {
+            Section("Annotations") {
+                TextField("Annotation Author", text: $annotationAuthor, prompt: Text(NSFullUserName()))
+                stampRow
+            }
+
+            Section {
+                // Independent of system UI theme.
+                Picker("PDF Color", selection: $coordinator.pdfColorAppearance) {
+                    ForEach(PDFColorAppearance.allCases, id: \.self) { appearance in
+                        Text(appearance.displayName).tag(appearance)
+                    }
+                }
+                Picker("Open Links In", selection: $coordinator.preferredBrowserBundleID) {
+                    ForEach(coordinator.installedBrowsers) { browser in
+                        Text(browser.name).tag(browser.id)
+                    }
+                }
+                Toggle(isOn: $coordinator.showsDocumentStructureInSidebar) {
+                    SettingsLabel(
+                        "List form fields, links and destinations in the sidebar",
+                        detail: "In the Document tab, with layers and attachments. The tab then also appears for documents that have any of these."
+                    )
+                }
+            } header: {
+                Text("Viewing")
+            }
+
+            Section("Updates") {
+                Toggle("Automatically check for updates", isOn: $updater.automaticUpdateChecks)
+                LabeledContent {
+                    Button("Check Now") {
+                        updater.checkForUpdates(isManualCheck: true)
+                    }
+                    .disabled(updater.isChecking || updater.isDownloading)
+                } label: {
+                    SettingsLabel(
+                        "Check for Updates",
+                        detail: "Last checked: " + (updater.lastUpdateCheckDate?.formatted(date: .abbreviated, time: .shortened) ?? "Never")
+                    )
+                }
+            }
+        }
+        .settingsPane(height: 500)
+        .sheet(isPresented: $isShowingSignatureEditor) {
+            SignatureCaptureView { image in
+                isShowingSignatureEditor = false
+                if let image = image, let data = image.pdfStampPNGData {
+                    signatureStore.save(data: data)
+                }
+            }
+        }
+    }
+
+    private var stampRow: some View {
+        LabeledContent {
+            if let data = signatureStore.savedSignatureData, let img = NSImage(data: data) {
+                HStack(spacing: 10) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 40)
+                        .padding(4)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        )
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Button("Modify…") { isShowingSignatureEditor = true }
+                        Button("Delete", role: .destructive) { signatureStore.clear() }
+                    }
+                    .controlSize(.small)
+                }
+            } else {
+                Button("Create Stamp…") { isShowingSignatureEditor = true }
+            }
+        } label: {
+            SettingsLabel(
+                "Digital Stamp",
+                detail: signatureStore.savedSignatureData == nil ? "No stamp saved." : nil
+            )
+        }
+    }
+}
+
+/// Settings > Agent: whether the Agent tab is shown, and what writes its answers.
+struct AgentSettingsPane: View {
+    @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle(isOn: $coordinator.showAgentTab) {
+                    SettingsLabel("Use Agent", detail: "Adds the Ask About This Document tab to the sidebar. Needs macOS 26 or later.")
+                }
+            }
+
+#if VECTORPDF_MACOS27_SDK
+            if #available(macOS 27.0, *), coordinator.showAgentTab {
+                Section {
+                    Picker("AI Synthesis Engine", selection: $coordinator.agentSynthesisPreference) {
+                        ForEach(coordinator.availableSynthesisPreferences, id: \.self) { pref in
+                            Text(pref.displayName).tag(pref)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    if coordinator.agentSynthesisPreference == .onlineModel {
+                        OnlineModelSettingsView()
+                    }
+                } footer: {
+                    switch coordinator.agentSynthesisPreference {
+                    case .onlineModel:
+                        Text("Your questions and the passages used to answer them are sent to \(coordinator.onlineModelService.displayName) with your key, and billed to your account. If it can't answer, VectorPDF answers on-device.")
+                            .settingsFooter()
+                    case .privateCloudCompute:
+                        Text("Your questions and the passages used to answer them are sent to Apple's Private Cloud Compute. If it can't answer, VectorPDF answers on-device.")
+                            .settingsFooter()
+                    case .onDevice:
+                        Text("Answers are written on this Mac. Nothing is sent anywhere.")
+                            .settingsFooter()
+                    }
+                }
+            }
+#endif
+        }
+        .settingsPane(height: agentPaneHeight)
+    }
+
+    private var agentPaneHeight: CGFloat {
+#if VECTORPDF_MACOS27_SDK
+        if #available(macOS 27.0, *), coordinator.showAgentTab {
+            return coordinator.agentSynthesisPreference == .onlineModel ? 410 : 220
+        }
+#endif
+        return 140
+    }
+}
+
+extension Text {
+    /// Explanatory text under a section, wrapping rather than being cut off.
+    func settingsFooter() -> some View {
+        font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Settings > Advanced: Smart Search's ignored patterns, and LaTeX.
+struct AdvancedSettingsPane: View {
+    @ObservedObject private var coordinator = PDFViewerAppCoordinator.shared
+    @State private var isShowingIgnoredPatterns = false
+
+    var body: some View {
+        Form {
+            Section("Search") {
+                LabeledContent {
+                    Button("Edit…") { isShowingIgnoredPatterns = true }
+                } label: {
+                    SettingsLabel(
+                        "Ignored Search Patterns",
+                        detail: coordinator.ignoredSearchPatterns.isEmpty
+                            ? "None"
+                            : "\(coordinator.enabledIgnoredSearchPatterns.count) of \(coordinator.ignoredSearchPatterns.count) on"
+                    )
+                }
+            }
+
+            Section("LaTeX") {
+                LaTeXSettingsView()
+            }
+        }
+        .settingsPane(height: 230)
+        .sheet(isPresented: $isShowingIgnoredPatterns) {
+            IgnoredSearchPatternsView()
+        }
+    }
+}
+
+/// Settings > Data: iCloud sync, how much space VectorPDF's data takes, and ways to clear it.
+struct DataSettingsPane: View {
+    @ObservedObject private var readingState = ReadingStateManager.shared
     @State private var usage: StoredData.Usage?
     @State private var confirming: Confirmation?
     @State private var blockedMessage: String?
@@ -916,44 +953,64 @@ struct StorageSettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Storage")
-                .font(.headline)
+        Form {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { readingState.isCloudSyncEnabled },
+                    set: { readingState.setCloudSyncEnabled($0) }
+                )) {
+                    SettingsLabel(
+                        "Sync reading positions with iCloud",
+                        detail: "Last page, zoom, anchors, and recent searches, through your own iCloud account. Documents are not uploaded."
+                    )
+                }
+            }
 
-            row("Agent indexes", detail: usage.map { size($0.agentIndexBytes) }) {
-                Button("Clear") {
-                    Task {
-                        await StoredData.clearAgentIndexes()
-                        await refresh()
+            Section {
+                row("Agent indexes", detail: usage.map { size($0.agentIndexBytes) }) {
+                    Button("Clear") {
+                        Task {
+                            await StoredData.clearAgentIndexes()
+                            await refresh()
+                        }
                     }
+                    .disabled((usage?.agentIndexBytes ?? 0) == 0)
                 }
-                .disabled((usage?.agentIndexBytes ?? 0) == 0)
+                row("Reading history", detail: usage.map {
+                    let docs = $0.documentCount == 1 ? "1 document" : "\($0.documentCount) documents"
+                    return "\(docs), \(size($0.thumbnailBytes)) of anchor thumbnails"
+                }) {
+                    Button("Clear…") { confirming = .readingHistory }
+                        .disabled(usage.map { $0.documentCount == 0 && $0.thumbnailBytes == 0 } ?? true)
+                }
+                row("Temporary files", detail: usage.map { size($0.temporaryBytes) }) {
+                    EmptyView()
+                }
+            } header: {
+                Text("Storage")
+            } footer: {
+                Text("Agent indexes let the Agent tab answer without reading a document again. Temporary files left by a crash are deleted the next time VectorPDF opens.")
+                    .settingsFooter()
             }
-            row("Reading history", detail: usage.map {
-                let docs = $0.documentCount == 1 ? "1 document" : "\($0.documentCount) documents"
-                return "\(docs), \(size($0.thumbnailBytes)) of anchor thumbnails"
-            }) {
-                Button("Clear…") { confirming = .readingHistory }
-                    .disabled(usage.map { $0.documentCount == 0 && $0.thumbnailBytes == 0 } ?? true)
-            }
-            row("Temporary files", detail: usage.map { size($0.temporaryBytes) }) {
-                EmptyView()
-            }
-            Text("Agent indexes let the Agent tab answer without reading a document again. Temporary files left by a crash are deleted the next time VectorPDF opens.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
 
-            Button("Remove All VectorPDF Data…") {
-                if let blocker = StoredData.removeAllBlocker {
-                    blockedMessage = blocker
-                } else {
-                    confirming = .removeAll
+            Section {
+                LabeledContent {
+                    Button("Remove All…") {
+                        if let blocker = StoredData.removeAllBlocker {
+                            blockedMessage = blocker
+                        } else {
+                            confirming = .removeAll
+                        }
+                    }
+                } label: {
+                    SettingsLabel(
+                        "Remove All VectorPDF Data",
+                        detail: "Also removes your settings, then quits. Your documents aren't touched."
+                    )
                 }
             }
-            .padding(.top, 4)
         }
-        .padding(.bottom, 8)
+        .settingsPane(height: 460)
         .task { await refresh() }
         .alert(item: $confirming) { which in
             switch which {
@@ -989,16 +1046,10 @@ struct StorageSettingsView: View {
     }
 
     private func row<Action: View>(_ title: String, detail: String?, @ViewBuilder action: () -> Action) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                Text(detail ?? "Calculating…")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        LabeledContent {
             action()
-                .controlSize(.small)
+        } label: {
+            SettingsLabel(title, detail: detail ?? "Calculating…")
         }
     }
 }

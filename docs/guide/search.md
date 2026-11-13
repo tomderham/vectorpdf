@@ -41,7 +41,7 @@ Click the options button beside the search field:
 
 Some documents put markers in the middle of sentences, such as citation numbers, which stops a phrase from being found. Smart Search can look past them.
 
-1. Choose VectorPDF > Settings.
+1. Choose VectorPDF > Settings, then click Advanced.
 2. Next to Ignored Search Patterns, click Edit.
 3. Add one of the ready-made patterns, or your own regular expression, and turn it on.
 

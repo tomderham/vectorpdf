@@ -2,7 +2,7 @@
 
 # Choose how the Agent answers
 
-The search for relevant passages always happens on your Mac. You can choose what writes the answer in VectorPDF > Settings > AI Synthesis Engine. This setting needs macOS 27.
+The search for relevant passages always happens on your Mac. You can choose what writes the answer in VectorPDF > Settings > Agent > AI Synthesis Engine. This setting needs macOS 27.
 
 | Engine | How it works | What leaves your Mac |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Private Cloud Compute appears only in copies of VectorPDF that are signed for it
 
 ## Use an online model
 
-1. In Settings, set AI Synthesis Engine to Online Model.
+1. In Settings, click Agent, then set AI Synthesis Engine to Online Model.
 2. Choose a service: OpenAI, Google Gemini or OpenRouter.
 3. Enter your API key. There's a link to get one from each service. The key is stored in your login keychain.
 4. Choose a model.

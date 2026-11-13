@@ -188,7 +188,8 @@ public enum OnlineModelCatalog {
     }
 }
 
-/// Settings for the online model engine: service, API key, and model.
+/// Settings for the online model engine: service, API key, and model. Rows of the Agent
+/// pane's engine section, which says in its footer where questions are sent.
 struct OnlineModelSettingsView: View {
     private enum ModelList: Equatable {
         case needsKey, loading, loaded([String]), failed(String)
@@ -210,9 +211,20 @@ struct OnlineModelSettingsView: View {
         }
         .pickerStyle(.menu)
 
-        SecureField("API Key", text: $apiKey)
+        SecureField("API Key", text: $apiKey, prompt: Text("Paste your key"))
             .onChange(of: apiKey) { _, newValue in
                 APIKeyStore.setKey(newValue, for: service)
+            }
+            .task(id: service) {
+                modelCheck = ""
+                apiKey = APIKeyStore.key(for: service) ?? ""
+            }
+            .task(id: "\(service.rawValue)|\(apiKey)") {
+                await loadModels(for: service)
+            }
+            .onChange(of: model) { _, newModel in
+                checkTask?.cancel()
+                checkTask = Task { await check(newModel, for: service) }
             }
         Link("Get a \(service.displayName) API key", destination: service.keyPageURL)
             .font(.caption)
@@ -240,20 +252,6 @@ struct OnlineModelSettingsView: View {
         if !modelCheck.isEmpty {
             caption(modelCheck)
         }
-
-        caption("Your questions and the passages used to answer them are sent to \(service.displayName) with your key, and billed to your account. If it can't answer, VectorPDF answers on-device.")
-            .padding(.bottom, 8)
-            .task(id: service) {
-                modelCheck = ""
-                apiKey = APIKeyStore.key(for: service) ?? ""
-            }
-            .task(id: "\(service.rawValue)|\(apiKey)") {
-                await loadModels(for: service)
-            }
-            .onChange(of: model) { _, newModel in
-                checkTask?.cancel()
-                checkTask = Task { await check(newModel, for: service) }
-            }
     }
 
     private func caption(_ text: String) -> some View {

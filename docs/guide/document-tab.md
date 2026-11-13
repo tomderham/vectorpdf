@@ -10,7 +10,7 @@ The Document tab (a box) at the top of the sidebar lists what a document holds b
 - **Links:** every link, with the text it's on and where it goes.
 - **Destinations:** the named places in the document that links can point to.
 
-Form Fields, Links and Destinations are listed only when you turn on **List form fields, links and destinations in the sidebar** in VectorPDF > Settings. Most documents have links, so otherwise the tab would appear for nearly every one.
+Form Fields, Links and Destinations are listed only when you turn on **List form fields, links and destinations in the sidebar** in VectorPDF > Settings > General. Most documents have links, so otherwise the tab would appear for nearly every one.
 
 The menu offers only what the document has, and the tab appears only when it has at least one of these.
 

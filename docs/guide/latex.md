@@ -8,7 +8,7 @@ SyncTeX works with a PDF that has its SyncTeX file beside it, named after the PD
 
 ## Choose your editor
 
-1. Choose VectorPDF > Settings, then click **Set Up…** next to LaTeX (SyncTeX).
+1. Choose VectorPDF > Settings, click Advanced, then click **Set Up…** next to SyncTeX.
 2. Choose your editor from Source Editor: Visual Studio Code, VSCodium, Cursor, Zed, Sublime Text, BBEdit, TextMate, MacVim, Emacs or TeXstudio.
 3. If your editor isn't listed, choose Other, and enter the command that opens a file at a line. Write `%file` for the file and `%line` for the line, such as `myeditor +%line %file`.
 
