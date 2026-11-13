@@ -532,6 +532,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                   let filePath = viewModel.document?.filePath else { return false }
             return URL(fileURLWithPath: filePath).resolvingSymlinksInPath().standardizedFileURL.path == wanted
         }
+        guard matching.count > 1 else { return matching.first }
         let order = NSApp.orderedWindows
         return matching.min { a, b in
             (order.firstIndex { $0 === a.currentWindow } ?? .max) < (order.firstIndex { $0 === b.currentWindow } ?? .max)

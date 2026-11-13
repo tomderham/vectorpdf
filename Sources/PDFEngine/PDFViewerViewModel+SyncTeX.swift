@@ -193,30 +193,7 @@ extension PDFViewerAppCoordinator {
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), !isDirectory.boolValue,
               SyncTeXFile.find(forPDF: path) != nil else { return }
 
-        let target: PDFViewerViewModel
-        if let open = self.viewModel(showingFileAt: path) {
-            target = open
-            if let window = open.currentWindow {
-                if let group = window.tabGroup, group.selectedWindow !== window {
-                    group.selectedWindow = window
-                }
-                if request.inBackground { window.orderFront(nil) } else { window.makeKeyAndOrderFront(nil) }
-            }
-        } else {
-            let window = DocumentWindowing.openDocumentHandlingEmptyStart(url: URL(fileURLWithPath: path))
-            if request.inBackground { window.orderFront(nil) }
-            // Wait for the new tab's view model to load the file.
-            var found: PDFViewerViewModel?
-            for _ in 0..<200 {
-                if let candidate = self.viewModel(showingFileAt: path), !candidate.isLoadingDocument {
-                    found = candidate
-                    break
-                }
-                try? await Task.sleep(nanoseconds: 50_000_000)
-            }
-            guard let found else { return }
-            target = found
-        }
+        guard let target = await showDocument(atPath: path, inBackground: request.inBackground) else { return }
         if !request.inBackground { NSApp.activate(ignoringOtherApps: true) }
         await target.showSyncTeXLocation(source: request.sourcePath, line: request.line, column: request.column, reloading: request.reloads)
     }

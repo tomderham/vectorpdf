@@ -40,6 +40,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 - [Tabs and windows](tabs-and-windows.md)
 - [Favorites and Tab Groups](favorites-and-tab-groups.md)
 - [Reading positions, iCloud and Handoff](reading-positions.md)
+- [Use VectorPDF with Shortcuts and Siri](shortcuts-and-siri.md)
 
 ## Mark up and sign
 

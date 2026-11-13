@@ -7,7 +7,7 @@ VectorPDF has no accounts, analytics, telemetry or crash reporting. Your documen
 ## What uses the network
 
 - **Update checks:** VectorPDF asks GitHub for the latest version about once a day, or when you choose Check for Updates. The request has no information about you or your documents. You can turn this off in [Settings](settings.md).
-- **The Agent:** nothing leaves your Mac with the On-Device engine. [Private Cloud Compute and online models](agent-engines.md) send your question and passages from the document, and only when you ask a question. Setting up an online model also uses your key to list its models and send a short test.
+- **The Agent:** nothing leaves your Mac with the On-Device engine. [Private Cloud Compute and online models](agent-engines.md) send your question and passages from the document, and only when you ask a question. Setting up an online model also uses your key to list its models and send a short test. Asking through [Shortcuts or Siri](shortcuts-and-siri.md) sends the same, and the answer goes to Shortcuts or Siri.
 - **iCloud:** your reading state is kept in your own iCloud account: where the file is, the last page and zoom, your anchors' names, excerpts and pages, and your recent searches. Documents, their full text and anchor thumbnails aren't uploaded.
 - **Links you click** open in your browser.
 - **Apple services:** Translation, Look Up, speech and OCR are provided by macOS and may download language files from Apple. Handoff shares the document and page you're reading with your other devices.

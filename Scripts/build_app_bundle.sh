@@ -39,6 +39,52 @@ cp Resources/AppIcon/AppIcon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp Resources/AppIcon/DocumentIcon.icns "$APP_BUNDLE/Contents/Resources/DocumentIcon.icns"
 cp "Resources/VectorPDF Tour.pdf" "$APP_BUNDLE/Contents/Resources/"
 
+# Shortcuts, Spotlight and Siri find the app's actions (Sources/VectorPDF/AppIntents.swift) in
+# Contents/Resources/Metadata.appintents, which Xcode makes for its own app targets but swift build
+# doesn't. Make it from the compiler's constant values the same way, with Xcode's processor.
+echo "Extracting App Intents metadata..."
+CONFIG_DIR="$(tr '[:lower:]' '[:upper:]' <<< "${CONFIG:0:1}")${CONFIG:1}"
+ARCH="$(uname -m)"
+OBJECTS=".build/out/Intermediates.noindex/$APP_NAME.build/$CONFIG_DIR/$EXECUTABLE_NAME-p.build/Objects-normal/$ARCH"
+PROCESSOR="$(xcrun --find appintentsmetadataprocessor 2>/dev/null || true)"
+if [ -z "$PROCESSOR" ]; then
+    echo "warning: appintentsmetadataprocessor not found (needs Xcode, not just the Command Line Tools); the app will have no Shortcuts actions" >&2
+else
+    if [ ! -f "$OBJECTS/$EXECUTABLE_NAME.SwiftFileList" ] || ! ls "$OBJECTS"/*.swiftconstvalues >/dev/null 2>&1; then
+        echo "error: no Swift constant values in $OBJECTS for App Intents (did swift build's layout change?)" >&2
+        exit 1
+    fi
+    INTENTS_WORK="$(mktemp -d)"
+    ls "$PWD/$OBJECTS"/*.swiftconstvalues > "$INTENTS_WORK/constvalues.list"
+    : > "$INTENTS_WORK/none.list"
+    TOOLCHAIN_DIR="$(cd "$(dirname "$PROCESSOR")/../.." && pwd)"
+    XCODE_BUILD="$(xcodebuild -version 2>/dev/null | awk '/Build version/ { print $3 }')"
+    "$PROCESSOR" \
+        --toolchain-dir "$TOOLCHAIN_DIR" \
+        --module-name "$EXECUTABLE_NAME" \
+        --sdk-root "$(xcrun --show-sdk-path --sdk macosx)" \
+        --xcode-version "$XCODE_BUILD" \
+        --platform-family macOS \
+        --deployment-target 15.0 \
+        --bundle-identifier "$BUNDLE_ID" \
+        --output "$APP_BUNDLE/Contents/Resources" \
+        --target-triple "$ARCH-apple-macos15.0" \
+        --binary-file "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME" \
+        --dependency-file "$INTENTS_WORK/dependencies.dat" \
+        --stringsdata-file "$INTENTS_WORK/ExtractedAppShortcutsMetadata.stringsdata" \
+        --source-file-list "$OBJECTS/$EXECUTABLE_NAME.SwiftFileList" \
+        --metadata-file-list "$INTENTS_WORK/none.list" \
+        --static-metadata-file-list "$INTENTS_WORK/none.list" \
+        --swift-const-vals-list "$INTENTS_WORK/constvalues.list" \
+        --force --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization \
+        2>&1 | grep -v "^[0-9-]* [0-9:.]* appintentsmetadataprocessor\[" || true
+    rm -rf "$INTENTS_WORK"
+    if [ ! -f "$APP_BUNDLE/Contents/Resources/Metadata.appintents/extract.actionsdata" ]; then
+        echo "error: App Intents metadata wasn't made" >&2
+        exit 1
+    fi
+fi
+
 echo "Building the help book..."
 HELP_BOOK_ID="$BUNDLE_ID.help"
 python3 Scripts/build_help.py --guide docs/guide --resources "$APP_BUNDLE/Contents/Resources" \
