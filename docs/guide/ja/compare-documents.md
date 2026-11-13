@@ -1,5 +1,5 @@
 <!-- keywords: 比較, 差分, 違い, 改訂, 改訂版, バージョン, 変更, 並べて表示, 同期スクロール, 番号の振り直し, ページ番号, 相互参照, 目次, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
-<!-- source: 84d22a753af8 -->
+<!-- source: c1fddb1d0121 -->
 
 # 2つの書類を比較する
 
@@ -14,6 +14,8 @@ Compare Documents では、1つの書類の2つの版を並べて表示し、変
 書類のタイトル、またはツールバーの何もない部分を右クリックし、Compare With から書類を選択することもできます。手前の書類と選んだ書類が比較されます。
 
 比較は新しいタブで開き、左に元の書類、右に改訂版が表示されます。このタブではどちらも読み出し専用です。編集するには、その書類を専用のタブで開きます。
+
+両方の書類のテキストを読み込んでいる間は、Changes タブの上部に読み込みの進み具合が表示されます。数千ページある書類では、数秒かかります。
 
 ## 変更を確認する
 

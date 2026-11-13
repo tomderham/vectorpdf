@@ -14,6 +14,8 @@ You can also right-click the document's title, or an empty part of the toolbar, 
 
 The comparison opens in a new tab, with the original on the left and the revision on the right. Both are read-only there. To edit one, open it in its own tab.
 
+While the text of both documents is read, the top of the Changes tab shows how much has been read. For documents thousands of pages long, this takes several seconds.
+
 ## Read the changes
 
 - Words removed from the original are highlighted in red, on the left.

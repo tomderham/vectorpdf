@@ -88,6 +88,9 @@ public final class DocumentCompareSession: ObservableObject {
     public let revised: PDFViewerViewModel
     @Published public private(set) var status: Status = .opening
     @Published public private(set) var comparison: DocumentComparison?
+    /// While comparing, the share of the documents' pages read so far; nil once they're read
+    /// (or were already) and the comparison of their text runs.
+    @Published public private(set) var readFraction: Double?
     /// Index into the comparison's changes of the one chosen with Next or Previous Change.
     @Published public private(set) var currentChange: Int?
     @Published public var options = CompareOptions(ignoresRenumbering: true) {
@@ -247,12 +250,15 @@ public final class DocumentCompareSession: ObservableObject {
         let options = self.options
         // The comparison on show, of the same texts, which Ignore Renumbering can start from.
         let previous = texts != nil ? comparison : nil
-        let sources = [(originalDoc.filePath, original.currentDocumentPassword, original.ocrResults),
-                       (revisedDoc.filePath, revised.currentDocumentPassword, revised.ocrResults)]
+        let sources = [ComparedText.Source(filePath: originalDoc.filePath, password: original.currentDocumentPassword, ocrPages: original.ocrResults),
+                       ComparedText.Source(filePath: revisedDoc.filePath, password: revised.currentDocumentPassword, ocrPages: revised.ocrResults)]
+        let progress = texts == nil ? CompareProgress(documents: 2) : nil
+        readFraction = nil
+        if let progress { showProgress(progress, generation: generation) }
         Task.detached(priority: .userInitiated) { [weak self] in
             let result: Result<(ComparedText, ComparedText, DocumentComparison)?, Error> = Result {
                 let read = try texts ?? {
-                    let both = try sources.map { try ComparedText.load(filePath: $0.0, password: $0.1, ocrPages: $0.2, isCancelled: { flag.isCancelled }) }
+                    let both = try ComparedText.load(sources, progress: progress, isCancelled: { flag.isCancelled })
                     guard let a = both[0], let b = both[1] else { return nil }
                     return (a, b)
                 }()
@@ -261,6 +267,7 @@ public final class DocumentCompareSession: ObservableObject {
             }
             await MainActor.run {
                 guard let self, generation == self.comparisonGeneration else { return }
+                self.readFraction = nil
                 switch result {
                 case .success(let value?):
                     self.texts = (value.0, value.1)
@@ -270,6 +277,23 @@ public final class DocumentCompareSession: ObservableObject {
                 case .failure(let error):
                     self.status = .failed(error.localizedDescription)
                 }
+            }
+        }
+    }
+
+    /// While the documents' text is read: how far it's got, every fifth of a second.
+    private func showProgress(_ progress: CompareProgress, generation: Int) {
+        Task { [weak self] in
+            while true {
+                try? await Task.sleep(for: .milliseconds(200))
+                guard let self, generation == self.comparisonGeneration, self.status == .comparing else { return }
+                guard let fraction = progress.fraction else { continue }
+                if fraction >= 1 {
+                    // Read: comparing now.
+                    self.readFraction = nil
+                    return
+                }
+                self.readFraction = fraction
             }
         }
     }
@@ -673,7 +697,14 @@ struct CompareChangesSidebar: View {
         case .opening, .comparing:
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
-                Text(session.status == .opening ? "Opening…" : "Comparing…")
+                if session.status == .opening {
+                    Text("Opening…")
+                } else if let fraction = session.readFraction {
+                    Text("Reading text… \(Int(fraction * 100))%")
+                        .monospacedDigit()
+                } else {
+                    Text("Comparing…")
+                }
             }
             .font(.callout)
             .foregroundStyle(.secondary)

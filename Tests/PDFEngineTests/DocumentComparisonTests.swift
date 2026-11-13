@@ -584,6 +584,33 @@ private func linkedText(_ pages: [[String]], links: [LineLink]) -> ComparedText 
         writePagesPDF(at: url, pages: paginate(clauses(0..<80)))
         #expect(try ComparedText.load(filePath: url.path, isCancelled: { true }) == nil)
     }
+
+    /// Both documents read at once give what each read alone does, and the pages read add up.
+    @Test func readsBothAtOnce() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (originalURL, revisedURL) = writeRevisions(in: dir)
+        let progress = CompareProgress(documents: 2)
+        #expect(progress.fraction == nil)
+        let both = try ComparedText.load([ComparedText.Source(filePath: originalURL.path), ComparedText.Source(filePath: revisedURL.path)], progress: progress)
+        let original = try #require(both[0]), revised = try #require(both[1])
+        let alone = try #require(try ComparedText.load(filePath: revisedURL.path))
+        #expect(revised.words == alone.words)
+        #expect(original.words == (try #require(try ComparedText.load(filePath: originalURL.path))).words)
+        #expect(progress.fraction == 1)
+        #expect(try ComparedText.load([ComparedText.Source(filePath: originalURL.path)], isCancelled: { true }).allSatisfy { $0 == nil })
+    }
+
+    /// A document that can't be read stops the comparison with its error.
+    @Test func readingBothThrowsWhenOneFails() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (originalURL, _) = writeRevisions(in: dir)
+        let missing = dir.appendingPathComponent("missing.pdf")
+        #expect(throws: (any Error).self) {
+            try ComparedText.load([ComparedText.Source(filePath: originalURL.path), ComparedText.Source(filePath: missing.path)])
+        }
+    }
 }
 
 /// Two revisions of a 300-clause document: the revision adds 100 clauses after clause 40, so

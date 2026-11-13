@@ -99,8 +99,9 @@ struct SearchBenchmarkTests {
         #expect(output.write(to: revisedURL))
 
         let start = Date()
-        let original = try #require(try ComparedText.load(filePath: originalURL.path))
-        let revised = try #require(try ComparedText.load(filePath: revisedURL.path))
+        // Both at once, as Compare Documents reads them.
+        let both = try ComparedText.load([ComparedText.Source(filePath: originalURL.path), ComparedText.Source(filePath: revisedURL.path)])
+        let original = try #require(both[0]), revised = try #require(both[1])
         let loaded = Date()
         let comparison = DocumentComparison(original: original, revised: revised)
         let done = Date()
@@ -120,8 +121,8 @@ struct SearchBenchmarkTests {
         let originalPath = try #require(environment["VECTORPDF_COMPARE_ORIGINAL"])
         let revisedPath = try #require(environment["VECTORPDF_COMPARE_REVISED"])
         let start = Date()
-        let original = try #require(try ComparedText.load(filePath: originalPath))
-        let revised = try #require(try ComparedText.load(filePath: revisedPath))
+        let both = try ComparedText.load([ComparedText.Source(filePath: originalPath), ComparedText.Source(filePath: revisedPath)])
+        let original = try #require(both[0]), revised = try #require(both[1])
         print(String(format: "CompareBenchmark: %d and %d pages, %d and %d words, %d and %d links: read in %.0f ms",
                      original.pageCount, revised.pageCount, original.words.count, revised.words.count,
                      original.links.count, revised.links.count, Date().timeIntervalSince(start) * 1000))

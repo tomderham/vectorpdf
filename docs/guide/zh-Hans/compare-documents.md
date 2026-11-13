@@ -1,5 +1,5 @@
 <!-- keywords: 比较, 对比, 差异, 修订, 修订版, 版本, 更改, 并排, 同步滚动, 重新编号, 页码, 交叉引用, 目录, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
-<!-- source: 84d22a753af8 -->
+<!-- source: c1fddb1d0121 -->
 
 # 比较两份文稿
 
@@ -14,6 +14,8 @@ Compare Documents 会并排显示一份文稿的两个版本，并在两边高�
 你也可以右键点按文稿标题或工具栏的空白部分，然后从 Compare With 中选取一份文稿。这会将前面的文稿与你选取的文稿进行比较。
 
 比较会在新标签页中打开，左侧是原始文稿，右侧是修订版。两者在其中都是只读的。若要编辑其中一份，请在它自己的标签页中打开。
+
+读取两份文稿的文本时，Changes 标签页顶部会显示已读取的进度。对于数千页的文稿，这需要几秒钟。
 
 ## 查看更改
 

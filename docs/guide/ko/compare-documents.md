@@ -1,5 +1,5 @@
 <!-- keywords: 비교, 차이, 차이점, 개정, 개정판, 버전, 변경 사항, 나란히 보기, 동기화 스크롤, 번호 재지정, 페이지 번호, 상호 참조, 목차, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
-<!-- source: 84d22a753af8 -->
+<!-- source: c1fddb1d0121 -->
 
 # 두 문서 비교하기
 
@@ -14,6 +14,8 @@ Compare Documents는 한 문서의 두 버전을 나란히 보여 주며, 바뀐
 문서 제목이나 도구 막대의 빈 부분을 오른쪽 클릭하고 Compare With에서 문서를 선택할 수도 있습니다. 그러면 앞에 있는 문서와 선택한 문서가 비교됩니다.
 
 비교는 새 탭에서 열리며, 왼쪽에 원본, 오른쪽에 개정판이 표시됩니다. 이 탭에서는 둘 다 읽기 전용입니다. 하나를 편집하려면 해당 문서를 별도의 탭에서 엽니다.
+
+두 문서의 텍스트를 읽는 동안 Changes 탭 위쪽에 얼마나 읽었는지 표시됩니다. 수천 페이지 분량의 문서는 몇 초가 걸립니다.
 
 ## 변경 사항 읽기
 

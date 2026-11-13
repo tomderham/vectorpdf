@@ -1175,6 +1175,37 @@ enum TextDiff {
 
 // MARK: - Reading a document's words
 
+/// How far reading documents' text has got, counted as it goes for showing while it does: pages
+/// read of the pages of the documents being read.
+public final class CompareProgress: Sendable {
+    private let documents: Int
+    private let opened = Atomic<Int>(0)
+    private let pageCount = Atomic<Int>(0)
+    private let pagesRead = Atomic<Int>(0)
+
+    /// For reading `documents` documents.
+    public init(documents: Int) {
+        self.documents = documents
+    }
+
+    func add(pages: Int) {
+        pageCount.add(pages, ordering: .relaxed)
+        opened.add(1, ordering: .relaxed)
+    }
+
+    func pageRead() {
+        pagesRead.add(1, ordering: .relaxed)
+    }
+
+    /// The share of the pages read, from 0 to 1; nil until every document is open and its pages
+    /// counted.
+    public var fraction: Double? {
+        guard opened.load(ordering: .relaxed) >= documents else { return nil }
+        let total = pageCount.load(ordering: .relaxed)
+        return total == 0 ? 1 : min(1, Double(pagesRead.load(ordering: .relaxed)) / Double(total))
+    }
+}
+
 extension ComparedText {
     /// A line of a page, with its words.
     struct Line {
@@ -1225,7 +1256,9 @@ extension ComparedText {
             var current = ""
             var rect = CGRect.null
             for character in line.characters {
-                if character.char.isWhitespace {
+                // ASCII first, which is most text: `isWhitespace` looks up Unicode properties.
+                let isSpace = character.char.asciiValue.map { $0 == 0x20 || (0x09...0x0D).contains($0) } ?? character.char.isWhitespace
+                if isSpace {
                     if !current.isEmpty { words.append((current, rect)) }
                     current = ""
                     rect = .null
@@ -1426,16 +1459,20 @@ extension ComparedText {
     }
 
     /// Reads the words of the document at `filePath`, several pages at once on contexts of their
-    /// own (as search does). Pages with OCR text in `ocrPages` use it. Stops early, returning
-    /// nil, if `isCancelled` says so.
-    public static func load(filePath: String, password: String? = nil, ocrPages: [Int: PDFOCRPageResult] = [:], workerCount: Int = PDFSearchActor.defaultWorkerCount, isCancelled: @Sendable () -> Bool = { false }) throws -> ComparedText? {
+    /// own (as search does). Pages with OCR text in `ocrPages` use it. Counts the pages in
+    /// `progress` as it reads them. Stops early, returning nil, if `isCancelled` says so.
+    public static func load(filePath: String, password: String? = nil, ocrPages: [Int: PDFOCRPageResult] = [:], workerCount: Int = PDFSearchActor.defaultWorkerCount, progress: CompareProgress? = nil, isCancelled: @Sendable () -> Bool = { false }) throws -> ComparedText? {
         let first = try SearchResource(filePath: filePath, password: password)
         let pageCount = first.pageCount
+        progress?.add(pages: pageCount)
         let labels = pageLabels(of: first, pageCount: pageCount)
         let pages = Mutex([(bounds: CGRect, lines: [Line])](repeating: (.zero, []), count: pageCount))
         let links = Mutex([[PageLink]](repeating: [], count: pageCount))
         let next = Atomic<Int>(0)
         let workers = Mutex<[SearchResource]>([first])
+        // Where each link goes, shared by the workers: many links go to one place, and finding
+        // a named destination means searching the document's names.
+        let destinations = Mutex<[String: ComparePoint?]>([:])
 
         DispatchQueue.concurrentPerform(iterations: max(1, min(workerCount, pageCount))) { _ in
             let worker: SearchResource
@@ -1446,11 +1483,11 @@ extension ComparedText {
             } else {
                 return
             }
-            var destinations: [String: ComparePoint?] = [:]
             while !isCancelled() {
                 let pageIndex = next.add(1, ordering: .relaxed).oldValue
                 guard pageIndex < pageCount else { break }
-                guard let (page, pageLinks) = structuredPage(pageIndex, of: worker, ocr: ocrPages[pageIndex], destinations: &destinations) else {
+                defer { progress?.pageRead() }
+                guard let (page, pageLinks) = structuredPage(pageIndex, of: worker, ocr: ocrPages[pageIndex], destinations: destinations) else {
                     continue
                 }
                 var lines = lines(of: page)
@@ -1463,10 +1500,48 @@ extension ComparedText {
         return ComparedText(pages: pages.withLock { $0 }, links: links.withLock { $0 }, labels: labels)
     }
 
+    /// A document to read the words of.
+    public struct Source: Sendable {
+        public let filePath: String
+        public let password: String?
+        /// OCR text for pages with none of their own.
+        public let ocrPages: [Int: PDFOCRPageResult]
+
+        public init(filePath: String, password: String? = nil, ocrPages: [Int: PDFOCRPageResult] = [:]) {
+            self.filePath = filePath
+            self.password = password
+            self.ocrPages = ocrPages
+        }
+    }
+
+    /// Reads the words of several documents at once (those compared), each with its share of the
+    /// workers one would have: each document's reading ends on one thread, which reading the
+    /// others overlaps. A failure to read one stops the others, and is what's thrown. Nil for
+    /// each, if `isCancelled` says so.
+    public static func load(_ sources: [Source], progress: CompareProgress? = nil, isCancelled: @Sendable @escaping () -> Bool = { false }) throws -> [ComparedText?] {
+        // Two thirds each for two: as fast as all of them each, with fewer contexts open.
+        let workers = max(1, (PDFSearchActor.defaultWorkerCount * 2 + 2) / 3)
+        let failed = Atomic<Bool>(false)
+        let results = Mutex<[Result<ComparedText?, Error>]>(Array(repeating: .success(nil), count: sources.count))
+        DispatchQueue.concurrentPerform(iterations: sources.count) { index in
+            let source = sources[index]
+            let result = Result {
+                try load(filePath: source.filePath, password: source.password, ocrPages: source.ocrPages, workerCount: workers, progress: progress,
+                         isCancelled: { isCancelled() || failed.load(ordering: .relaxed) })
+            }
+            if case .failure = result { failed.store(true, ordering: .relaxed) }
+            results.withLock { $0[index] = result }
+        }
+        // The error that stopped the others, not their stopping.
+        let all = results.withLock { $0 }
+        for case .failure(let error) in all { throw error }
+        return try all.map { try $0.get() }
+    }
+
     /// Page `pageIndex`'s text, from the worker's copy of the document, or its OCR result if it
     /// has no text of its own, and its links to other places in the document. `destinations`
-    /// keeps where each link the worker has seen goes, as many links go to one place.
-    private static func structuredPage(_ pageIndex: Int, of worker: SearchResource, ocr: PDFOCRPageResult?, destinations: inout [String: ComparePoint?]) -> (StructuredPage, [PageLink])? {
+    /// keeps where each link seen so far goes.
+    private static func structuredPage(_ pageIndex: Int, of worker: SearchResource, ocr: PDFOCRPageResult?, destinations: borrowing Mutex<[String: ComparePoint?]>) -> (StructuredPage, [PageLink])? {
         let ctx = worker.ctx
         var pagePtr: FZPage?
         guard mupdf_page_load(ctx, worker.doc, Int32(pageIndex), &pagePtr, nil) == 0, let page = pagePtr else { return nil }
@@ -1474,8 +1549,13 @@ extension ComparedText {
         var rect = fz_rect()
         mupdf_page_bounds(ctx, page, &rect, nil)
         let bounds = CGRect(x: CGFloat(rect.x0), y: CGFloat(rect.y0), width: CGFloat(rect.x1 - rect.x0), height: CGFloat(rect.y1 - rect.y0))
-        guard let structured = try? StructuredPage.load(from: page, pageIndex: pageIndex, ctx: ctx) else { return nil }
-        let links = internalLinks(on: page, of: worker, destinations: &destinations)
+        // Without a context, as search reads text: no font names, bold or italic for each
+        // character, which a comparison doesn't use.
+        var stextPtr: FZStextPage?
+        guard mupdf_stext_page_load(ctx, page, &stextPtr, nil) == 0, let stext = stextPtr else { return nil }
+        let structured = StructuredPage.load(fromStext: stext, pageIndex: pageIndex, pageBounds: bounds)
+        mupdf_stext_page_drop(ctx, stext)
+        let links = internalLinks(on: page, of: worker, destinations: destinations)
         if let ocr, structured.blocks.allSatisfy({ $0.type != .text || $0.lines.isEmpty }) {
             return (ocr.structuredPage(bounds: bounds), links)
         }
@@ -1497,7 +1577,7 @@ extension ComparedText {
 
     /// The links on `page` to places in its document. MuPDF gives a link to a named destination
     /// as "#nameddest=" and the name.
-    private static func internalLinks(on page: FZPage, of worker: SearchResource, destinations: inout [String: ComparePoint?]) -> [PageLink] {
+    private static func internalLinks(on page: FZPage, of worker: SearchResource, destinations: borrowing Mutex<[String: ComparePoint?]>) -> [PageLink] {
         let ctx = worker.ctx
         var linksPtr: FZLink?
         guard mupdf_links_load(ctx, page, &linksPtr, nil) == 0, let first = linksPtr else { return [] }
@@ -1509,13 +1589,15 @@ extension ComparedText {
             guard let cURI = mupdf_link_uri(link) else { continue }
             let uri = String(cString: cURI)
             let destination: ComparePoint?
-            if let known = destinations[uri] {
+            if let known = destinations.withLock({ $0[uri] }) {
                 destination = known
             } else {
+                // Found outside the lock, so other workers go on; two finding the same one at
+                // once find the same place.
                 var page: Int32 = -1
                 var x: Float = 0, y: Float = 0
                 destination = mupdf_resolve_link_page(ctx, worker.doc, uri, &page, &x, &y) == 0 ? ComparePoint(pageIndex: Int(page), y: CGFloat(y)) : nil
-                destinations[uri] = destination
+                destinations.withLock { $0[uri] = destination }
             }
             guard let destination else { continue }
             let r = mupdf_link_rect(link)

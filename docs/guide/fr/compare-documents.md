@@ -1,5 +1,5 @@
 <!-- keywords: comparer, comparaison, différences, révision, versions, modifications, côte à côte, défilement synchronisé, renumérotation, numéros de page, renvois, table des matières, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
-<!-- source: 84d22a753af8 -->
+<!-- source: c1fddb1d0121 -->
 
 # Comparer deux documents
 
@@ -14,6 +14,8 @@ Compare Documents affiche deux versions d’un document côte à côte, en surli
 Vous pouvez aussi cliquer avec le bouton droit sur le titre du document, ou sur une partie vide de la barre d’outils, et choisir un document dans Compare With. Le document au premier plan est alors comparé à celui que vous choisissez.
 
 La comparaison s’ouvre dans un nouvel onglet, avec l’original à gauche et la révision à droite. Les deux y sont en lecture seule. Pour modifier l’un d’eux, ouvrez-le dans son propre onglet.
+
+Pendant la lecture du texte des deux documents, le haut de l’onglet Changes indique la part déjà lue. Pour des documents de plusieurs milliers de pages, cela prend quelques secondes.
 
 ## Lire les modifications
 

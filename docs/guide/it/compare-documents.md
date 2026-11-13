@@ -1,5 +1,5 @@
 <!-- keywords: confrontare, confronto, differenze, revisione, versioni, modifiche, affiancati, scorrimento sincronizzato, rinumerazione, numeri di pagina, riferimenti incrociati, sommario, compare, comparison, diff, difference, differences, revision, revisions, redline, changes, versions, side by side, synchronized scrolling, scroll together, renumbering, page numbers, cross-references, table of contents -->
-<!-- source: 84d22a753af8 -->
+<!-- source: c1fddb1d0121 -->
 
 # Confrontare due documenti
 
@@ -14,6 +14,8 @@ Compare Documents mostra due versioni di un documento affiancate, evidenziando i
 Puoi anche fare clic con il pulsante destro sul titolo del documento, o su una parte vuota della barra degli strumenti, e scegliere un documento in Compare With. In questo modo il documento in primo piano viene confrontato con quello che scegli.
 
 Il confronto si apre in una nuova scheda, con l’originale a sinistra e la revisione a destra. Lì entrambi sono di sola lettura. Per modificarne uno, aprilo in una scheda a sé.
+
+Mentre viene letto il testo di entrambi i documenti, la parte superiore della scheda Changes mostra quanto è stato letto. Per documenti di migliaia di pagine, ci vogliono alcuni secondi.
 
 ## Leggere le modifiche
 
