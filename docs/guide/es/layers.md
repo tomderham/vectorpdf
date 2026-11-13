@@ -1,11 +1,11 @@
 <!-- keywords: capas, capa, contenido opcional, CAD, planos, dibujos, mostrar, ocultar, visibilidad, marcados, anotaciones, nueva capa, cambiar nombre de capa, eliminar capa, configuración de capas, configuraciones, estados de capa, trazado, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
-<!-- source: 4525c1273cca -->
+<!-- source: 2395c1338d37 -->
 
 # Mostrar y ocultar capas
 
 Los planos exportados desde programas de CAD y diseño suelen tener cada parte de una hoja en su propia capa: muros, electricidad, fontanería, cotas, nubes de revisión. Puedes mostrar u ocultar cada una.
 
-La pestaña Layers aparece en la parte superior de la barra lateral solo cuando el documento tiene capas. Para dar a un documento su primera capa, consulta [Añadir, renombrar y eliminar capas](#add-rename-and-delete-layers).
+Las capas están en la pestaña Document (una caja) de la parte superior de la barra lateral, que aparece cuando el documento tiene capas u otras cosas que la pestaña muestra. Si la pestaña muestra otra cosa, elige **Layers** en el menú de su parte superior. Para dar a un documento su primera capa, consulta [Añadir, renombrar y eliminar capas](#add-rename-and-delete-layers).
 
 - **Mostrar u ocultar una capa:** haz clic en su casilla. La página se vuelve a dibujar al instante.
 - **Elegir una de un grupo:** algunos documentos agrupan capas para que solo se muestre una a la vez, como los idiomas o las escalas de una hoja. Estas tienen botones redondos; al elegir una se ocultan las demás.
@@ -16,7 +16,7 @@ Las capas que ocultas también se omiten al [imprimir](print.md), [seleccionar t
 
 ## Elegir una configuración de capas
 
-Algunos documentos traen más de una forma de mostrar sus capas, como una para trazar, una para cada especialidad o una para cada idioma. En ellos, la parte superior de la pestaña Layers muestra la configuración en uso en lugar del número de capas. Es **Default** hasta que eliges otra, salvo que el documento le dé nombre a la suya por omisión.
+Algunos documentos ofrecen más de una forma de mostrar sus capas, como una para trazar, una para cada oficio o una para cada idioma. En ellos, la parte superior de la lista de capas muestra la configuración en uso, en lugar del número de capas. Es **Default** hasta que eliges otra, salvo que el documento dé nombre a la suya predeterminada.
 
 Haz clic en ella y elige una configuración. Sus capas se muestran y se ocultan como indica, y se listan como las lista.
 
@@ -26,7 +26,7 @@ Si después muestras u ocultas una capa, aparece **(Changed)** tras el nombre de
 
 Las anotaciones también pueden ir en una capa, de modo que se muestran y ocultan con ella. Otras apps que leen capas, como Acrobat y Bluebeam, las muestran y ocultan del mismo modo.
 
-- **Elegir dónde van las anotaciones nuevas:** en la [barra de herramientas Markup](draw-and-notes.md) o la [barra de herramientas Measurement](measure.md), haz clic en el menú de capas (indica **No Layer** hasta que elijas una) y elige una capa. Todo lo que crees a partir de entonces irá en ella, hasta que elijas otra capa o **No Layer**. También puedes hacer clic con el botón derecho en una capa de la pestaña Layers y elegir **Put New Annotations Here**. La capa donde van las anotaciones nuevas tiene un lápiz al lado.
+- **Elegir dónde van las anotaciones nuevas:** en la [barra de herramientas Markup](draw-and-notes.md) o la [barra de herramientas Measurement](measure.md), haz clic en el menú de capas (indica **No Layer** hasta que eliges una) y elige una capa. Todo lo que crees a partir de entonces irá en ella, hasta que elijas otra capa o **No Layer**. También puedes hacer clic con el botón derecho en una capa de la pestaña Document y elegir **Put New Annotations Here**. La capa donde van las anotaciones nuevas tiene un lápiz al lado.
 - **Mover una anotación a otra capa:** haz clic en ella con el botón derecho y elige **Layer** y luego una capa, o **None** para quitarla de cualquier capa.
 - **Añadir una capa propia:** consulta [Añadir, renombrar y eliminar capas](#add-rename-and-delete-layers).
 
@@ -40,7 +40,7 @@ Si eliges una capa oculta para las anotaciones nuevas, se muestra, para que lo q
 
 Los revisores suelen poner sus marcados en capas propias, como una por oficio o por ronda de revisión, incluso en planos que llegaron sin capas. Cada uno de estos comandos cambia el documento, y Undo lo revierte.
 
-- **Añadir una capa:** elige Edit > New Layer… y ponle un nombre. Funciona en cualquier PDF, así que es como un documento obtiene su primera capa; después aparecen la pestaña Layers y los menús de capas. Las anotaciones nuevas van en la capa nueva. En un documento que ya tiene capas, también puedes hacer clic en **+** en la parte superior de la pestaña Layers, o elegir **New Layer…** en el menú de capas.
+- **Añadir una capa:** elige Edit > New Layer… y ponle un nombre. Funciona en cualquier PDF, así que es como un documento obtiene su primera capa; entonces aparecen las capas en la pestaña Document y los menús de capas. Las anotaciones nuevas van en la capa nueva. En un documento que ya tiene capas, también puedes hacer clic en **+** encima de la lista de capas o elegir **New Layer…** en el menú de capas.
 - **Renombrar una capa:** elige Edit > Rename Layer…, elige la capa y escribe su nuevo nombre.
 - **Eliminar una capa:** elige Edit > Delete Layer… y luego la capa. Sus anotaciones se quedan en la página, sin capa. Solo se pueden eliminar las capas que contienen únicamente anotaciones: eliminar una en la que está el propio plano dejaría esa parte del plano siempre visible, así que esas no aparecen en la lista.
 
@@ -50,4 +50,4 @@ Las capas que añades, renombras o eliminas se guardan con el documento, igual q
 
 Ni las capas que se muestran ni la configuración que elegiste se guardan con el documento. La próxima vez que lo abras, sus capas se mostrarán como lo indique el propio documento, y cualquier persona a la que se lo envíes verá lo mismo.
 
-> **Nota:** Un documento de una o dos páginas con capas se abre en la pestaña Layers, salvo que hayas ocultado la barra lateral para él. Usa el botón de la barra lateral en la barra de herramientas para mostrarla.
+> **Nota:** Un documento de una o dos páginas con capas se abre mostrando sus capas en la pestaña Document, salvo que hayas ocultado la barra lateral para él. Usa el botón de la barra lateral de la barra de herramientas para mostrarla.

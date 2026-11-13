@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # Raccourcis clavier
 
@@ -55,6 +55,11 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Show or Hide Markup Toolbar | ⇧⌘A |
 | Show or Hide Measurement Toolbar | ⇧⌘M |
 | Show or Hide Redact Toolbar | ⌥⌘R |
+| Show or Hide Status Bar | ⌘/ |
+| Show or Hide Inspector | ⌃⌘I |
+| Show or Hide Navigator | ⌃⌘N |
+| Show or Hide Rulers | ⌘R |
+| Show or Hide Grid | ⌘' |
 
 ## Recherche et texte
 

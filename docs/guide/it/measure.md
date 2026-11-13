@@ -1,5 +1,5 @@
 <!-- keywords: misurare, misura, misurazione, misurazioni, lunghezza, distanza, quota, perimetro, area, angolo, orto, aggancio, measure, measurement, measurements, length, distance, dimension, perimeter, angle, ortho, snap, snapping, modificare, spostare, maniglia, scostamento, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # Misurare lunghezze, aree e angoli
 
@@ -20,6 +20,8 @@ Per misurare con precisione, ingrandisci prima la vista. Premendo Escape annulli
 
 - **Ortho Lock** mantiene le linee a 0°, 45° e 90°. Tieni premuto ⇧ per invertirlo per una sola linea: per misurare con qualsiasi angolo quando è attivo, o per mantenere dritta una linea quando è disattivo.
 - **Vertex Magnetic Snapping** aggancia il puntatore agli angoli e alle estremità nel disegno.
+- **Guide e griglia:** con View > Rulers and Grid > Snap to Guides and Grid attivo, i punti si agganciano alle guide trascinate dai righelli e alla griglia mentre è visibile. Consulta [Righelli, barra di stato e Inspector](rulers-and-inspector.md).
+- **La barra di stato** (View > Show Status Bar) mostra di una misurazione, mentre la disegni, più di quanto mostri la sua etichetta: il suo angolo e quanto si estende in orizzontale e in verticale, oppure il perimetro di un’area fino a quel momento.
 
 ## Modificare una misurazione
 

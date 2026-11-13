@@ -1,4 +1,4 @@
-<!-- source: 2d2679324bf8 -->
+<!-- source: 2f847880be93 -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -21,6 +21,8 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 - [Gliederung und Miniaturen](outline-and-thumbnails.md)
 - [Ebenen ein- und ausblenden](layers.md)
 - [An ein PDF angehängte Dateien](attachments.md)
+- [Formularfelder, Signaturen, Links und Ziele](document-tab.md)
+- [Lineale, Statusleiste und Inspector](rulers-and-inspector.md)
 - [PDF-Farben ändern](pdf-colors.md)
 - [Text auswählen, kopieren und nachschlagen](select-text.md)
 - [Zwei Dokumente vergleichen](compare-documents.md)

@@ -1,5 +1,5 @@
 <!-- keywords: 設定, 環境設定, オプション, アップデート, アップデートを確認, ブラウザ, 作成者, 注釈の作成者, ストレージ, ディスク容量, 消去, データを削除, アンインストール, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 91c5b0e9ab3d -->
+<!-- source: a000abd3bb28 -->
 
 # 設定
 
@@ -9,6 +9,7 @@ VectorPDF > Settings を選択するか、⌘, を押します。
 | --- | --- |
 | Annotation Author | 注釈と返信に保存される名前です。空の場合は、Mac のユーザ名が使用されます。 |
 | Use Agent | macOS 26 以降で、サイドバーに [Ask About This Document](agent.md) タブを表示します。 |
+| List form fields, links and destinations in the sidebar | 書類の[フォームフィールド、署名、リンク、名前付き移動先](document-tab.md)を Document タブに追加します。オンにすると、それらのいずれかがある書類でも Document タブが表示されます。オンにするまではオフです。 |
 | AI Synthesis Engine | macOS 27 で、[Agent の回答を作成するもの](agent-engines.md)を選択します。 |
 | PDF Color | [ページの見た目](pdf-colors.md)を Follow System、Light、Dark、Sepia から設定します。 |
 | Open Links In | Web リンクを開くブラウザを選択します。 |

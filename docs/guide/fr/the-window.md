@@ -1,6 +1,5 @@
-<!-- keywords: fenêtre, barre d’outils, barres d’outils, barre latérale, onglets, écran de démarrage, indicateur de page, commandes, pièces jointes, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: eaf69c8e8bdb -->
-
+<!-- keywords: fenêtre, barre d’outils, barres d’outils, barre latérale, onglets, écran de démarrage, indicateur de page, commandes, pièces jointes, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barre d’état, Inspector, status bar -->
+<!-- source: fdb75158a744 -->
 # La fenêtre de VectorPDF
 
 Chaque fenêtre de VectorPDF comporte une barre d’outils, une barre latérale et le document lui-même. Une fenêtre peut contenir plusieurs documents sous forme d’[onglets](tabs-and-windows.md).
@@ -26,12 +25,11 @@ Les onglets en haut de la barre latérale permettent de basculer entre :
 - **Outline & Thumbnails :** la [table des matières ou une vignette de chaque page](outline-and-thumbnails.md).
 - **Search :** les [résultats pour le document actif](search.md).
 - **Anchors :** [les endroits que vous avez enregistrés](anchors.md).
-- **Layers :** [afficher ou masquer les calques du document](layers.md). Cet onglet n’apparaît que si le document contient des calques.
-- **Attachments :** [les fichiers joints au PDF](attachments.md). Cet onglet n’apparaît que si le document contient des pièces jointes.
+- **Document :** ce que le document contient en plus de ses pages : ses [calques](layers.md), ses [pièces jointes](attachments.md) et, si vous les activez dans les réglages, ses [champs de formulaire, signatures, liens et destinations](document-tab.md). Choisissez ce qui s’affiche dans le menu en haut de l’onglet. Cet onglet n’apparaît que si le document en contient au moins un.
 - **Comments :** [toutes les annotations, avec leurs réponses et leur statut](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document :** [l’Agent](agent.md). Cet onglet apparaît sous macOS 26 ou version ultérieure, sauf si vous avez désactivé [Use Agent](settings.md) dans Settings.
 
-Utilisez le bouton de barre latérale dans la barre d’outils pour afficher ou masquer la barre latérale. VectorPDF mémorise, pour chaque document, si vous l’avez affichée ou masquée. La première fois que vous ouvrez un document, la barre latérale s’affiche, sauf si le document ne compte qu’une ou deux pages et rien pour la barre latérale : ni table des matières, ni calques, ni annotations, ni pièces jointes. Un document court avec des pièces jointes, des annotations ou des calques s’ouvre sur l’onglet correspondant.
+Utilisez le bouton de la barre latérale dans la barre d’outils pour afficher ou masquer la barre latérale. VectorPDF mémorise, pour chaque document, si vous l’avez affichée ou masquée. La première fois que vous ouvrez un document, la barre latérale s’affiche, sauf si le document n’a qu’une ou deux pages et rien pour la barre latérale : ni table des matières, ni calques, annotations ou pièces jointes. Un document court contenant des pièces jointes ou des calques s’ouvre sur l’onglet Document qui les affiche, et un document contenant des annotations sur l’onglet Comments.
 
 ## Barres d’outils supplémentaires
 
@@ -40,6 +38,8 @@ Trois barres d’outils apparaissent sous la barre d’outils principale lorsque
 - **Markup** (⇧⌘A) contient les [outils d’annotation](text-markup.md).
 - **Measurement** (⇧⌘M) contient les [outils de mesure](measure.md).
 - **Redact** (⌥⌘R) contient les [outils de caviardage](redact.md).
+
+Le menu View peut aussi afficher une barre d’état sous la page, des règles, une grille, l’Inspector à côté de la page et un navigateur dans le coin. Voir [Règles, barre d’état et Inspector](rulers-and-inspector.md).
 
 ## Menus du clic droit
 

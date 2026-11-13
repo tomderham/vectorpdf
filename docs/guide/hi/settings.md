@@ -1,5 +1,5 @@
 <!-- keywords: सेटिंग्ज़, प्राथमिकताएँ, विकल्प, अपडेट, अपडेट जाँचें, ब्राउज़र, लेखक, ऐनोटेशन लेखक, स्टोरेज, डिस्क स्थान, साफ़ करें, डेटा हटाएँ, अनइंस्टॉल, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 91c5b0e9ab3d -->
+<!-- source: a000abd3bb28 -->
 
 # सेटिंग्ज़
 
@@ -9,6 +9,7 @@ VectorPDF > Settings चुनें, या ⌘, दबाएँ।
 | --- | --- |
 | Annotation Author | वह नाम जो आपके ऐनोटेशन और जवाबों के साथ सहेजा जाता है। खाली होने पर VectorPDF आपके Mac उपयोगकर्ता नाम का उपयोग करता है। |
 | Use Agent | macOS 26 या उसके बाद के संस्करण पर साइडबार में [Ask About This Document](agent.md) टैब दिखाती है। |
+| List form fields, links and destinations in the sidebar | किसी दस्तावेज़ के [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और नाम वाले गंतव्य](document-tab.md) Document टैब में जोड़ता है; तब यह टैब उन दस्तावेज़ों के लिए भी दिखता है जिनमें इनमें से कुछ भी हो। जब तक आप इसे चालू नहीं करते, यह बंद रहता है। |
 | AI Synthesis Engine | macOS 27 पर चुनती है कि [Agent के जवाब कौन लिखेगा](agent-engines.md)। |
 | PDF Color | सेट करती है कि [पेज कैसे दिखें](pdf-colors.md): Follow System, Light, Dark या Sepia। |
 | Open Links In | वेब लिंक के लिए ब्राउज़र चुनती है। |

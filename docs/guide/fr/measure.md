@@ -1,5 +1,5 @@
 <!-- keywords: mesurer, mesure, mesures, longueur, cote, périmètre, surface, aire, orthogonal, magnétisme, accrochage, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, modifier, déplacer, poignée, décalage, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # Mesurer des longueurs, des surfaces et des angles
 
@@ -20,6 +20,8 @@ Pour plus de précision, zoomez avant de mesurer. Appuyez sur Escape pour annule
 
 - **Ortho Lock** maintient les lignes à 0°, 45° et 90°. Maintenez la touche ⇧ enfoncée pour l’inverser le temps d’une ligne : pour mesurer selon n’importe quel angle lorsqu’il est activé, ou pour garder une ligne droite lorsqu’il est désactivé.
 - **Vertex Magnetic Snapping** aimante le pointeur aux angles et aux extrémités du plan.
+- **Repères et grille :** lorsque View > Rulers and Grid > Snap to Guides and Grid est activé, les points s’aimantent aux repères que vous avez tirés des règles, et à la grille tant qu’elle est affichée. Voir [Règles, barre d’état et Inspector](rulers-and-inspector.md).
+- **La barre d’état** (View > Show Status Bar) affiche davantage d’informations sur une mesure pendant que vous la tracez que son étiquette : son angle et sa distance à l’horizontale et à la verticale, ou le périmètre d’une surface jusqu’ici.
 
 ## Modifier une mesure
 

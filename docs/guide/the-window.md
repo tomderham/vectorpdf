@@ -1,4 +1,4 @@
-<!-- keywords: window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
+<!-- keywords: window, toolbar, toolbars, sidebar, tabs, status bar, Inspector, start screen, interface, page indicator, controls, attachments -->
 
 # The VectorPDF window
 
@@ -25,12 +25,11 @@ The tabs at the top of the sidebar switch between:
 - **Outline & Thumbnails:** the [table of contents, or a thumbnail of each page](outline-and-thumbnails.md).
 - **Search:** [results for the current document](search.md).
 - **Anchors:** [the places you've saved](anchors.md).
-- **Layers:** [show or hide the document's layers](layers.md). This tab appears only when the document has layers.
-- **Attachments:** [files attached to the PDF](attachments.md). This tab appears only when the document has attachments.
+- **Document:** what the document holds besides its pages: its [layers](layers.md), [attachments](attachments.md), and, if you turn them on in Settings, its [form fields, signatures, links and destinations](document-tab.md). Choose which from the menu at the top of the tab. This tab appears only when the document has at least one of these.
 - **Comments:** [every annotation, with its replies and status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [the Agent](agent.md). This tab appears on macOS 26 or later, unless you've turned off [Use Agent](settings.md) in Settings.
 
-Use the sidebar button in the toolbar to show or hide the sidebar. VectorPDF remembers whether you showed or hid it for each document. The first time you open a document, the sidebar shows unless the document has only one or two pages and nothing for the sidebar: no outline, layers, annotations or attachments. A short document with attachments, annotations or layers opens on that tab.
+Use the sidebar button in the toolbar to show or hide the sidebar. VectorPDF remembers whether you showed or hid it for each document. The first time you open a document, the sidebar shows unless the document has only one or two pages and nothing for the sidebar: no outline, layers, annotations or attachments. A short document with attachments or layers opens on the Document tab showing them, and one with annotations on the Comments tab.
 
 ## Extra toolbars
 
@@ -39,6 +38,8 @@ Three toolbars appear below the main toolbar when you need them. Choose them fro
 - **Markup** (⇧⌘A) has the [annotation tools](text-markup.md).
 - **Measurement** (⇧⌘M) has the [measuring tools](measure.md).
 - **Redact** (⌥⌘R) has the [redaction tools](redact.md).
+
+The View menu can also show a status bar under the page, rulers, a grid, the Inspector beside the page and a navigator in the corner. See [Rulers, the status bar and the Inspector](rulers-and-inspector.md).
 
 ## Right-click menus
 

@@ -17,6 +17,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 /// Lightweight AppKit bridge to attach NSWindow reference to views and enable native window tabbing.
 ///
@@ -149,6 +150,10 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         context.coordinator.scrollView = scrollView
         context.coordinator.canvasView = canvasView
         viewModel.hostScrollView = scrollView
+        viewModel.viewportReadout.centerOn = { [weak coordinator = context.coordinator] page, point in
+            coordinator?.center(onPage: page, at: point)
+        }
+        context.coordinator.installRulers(in: scrollView)
         
         return scrollView
     }
@@ -177,6 +182,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastAnnotationRevealToken: Int = -1
         private var lastSyncTeXRevealToken: Int = -1
         private var lastOutlineJumpToken: Int = -1
+        private var rulerCancellable: AnyCancellable?
         
         // Pinch-to-zoom tracking
         var isPinching: Bool = false
@@ -198,6 +204,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         }
         
         func update(viewModel: PDFViewerViewModel, scrollView: NSScrollView) {
+            defer { updateVisiblePageRect(page: viewModel.currentPageIndex) }
             self.viewModel = viewModel
             guard let doc = viewModel.document, let canvasView = self.canvasView else {
                 if lastDocumentPath != nil {
@@ -547,6 +554,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let activePage = viewModel.effectivePageIndex(atYOffset: unscaledY + 80)
             // Also after a programmatic scroll (a ToC or search jump), which sets the page itself.
             updateReadingLine(onPage: activePage, canvasY: 16 + (unscaledY + 80) * viewModel.effectiveZoom)
+            updateVisiblePageRect(page: activePage)
             guard !isProgrammaticScroll else { return }
             viewModel.currentViewportSize = clipView.bounds.size
             if activePage != viewModel.currentPageIndex {
@@ -555,6 +563,48 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 viewModel.pruneCaches(around: activePage)
             }
             canvasView?.syncFormControls()
+        }
+
+        /// Tells the navigator which part of `page` is in view, while it shows.
+        func updateVisiblePageRect(page: Int) {
+            guard PDFViewerAppCoordinator.shared.showsNavigator,
+                  let scrollView, let geometry = canvasView?.pageGeometry(for: page) else { return }
+            let visible = scrollView.contentView.bounds.intersection(geometry.frame)
+            guard !visible.isNull, !visible.isEmpty else {
+                viewModel.viewportReadout.setVisible(nil)
+                return
+            }
+            viewModel.viewportReadout.setVisible(VisiblePageRect(pageIndex: page, rect: geometry.pageRect(forCanvasRect: visible)))
+        }
+
+        /// Scrolls so that `pagePoint` on `page` is in the middle of the view (the navigator).
+        func center(onPage page: Int, at pagePoint: CGPoint) {
+            guard let scrollView, let canvasView, let geometry = canvasView.pageGeometry(for: page) else { return }
+            let clipView = scrollView.contentView
+            let target = geometry.canvasPoint(forPagePoint: pagePoint)
+            let size = clipView.bounds.size
+            let origin = CGPoint(
+                x: min(max(0, target.x - size.width / 2), max(0, canvasView.bounds.width - size.width)),
+                y: min(max(0, target.y - size.height / 2), max(0, canvasView.bounds.height - size.height))
+            )
+            clipView.scroll(to: origin)
+            scrollView.reflectScrolledClipView(clipView)
+        }
+
+        /// Gives the scroll view its rulers, shown while View > Show Rulers is on.
+        func installRulers(in scrollView: NSScrollView) {
+            guard let canvasView else { return }
+            let horizontal = PageRulerView(scrollView: scrollView, orientation: .horizontalRuler, canvas: canvasView)
+            let vertical = PageRulerView(scrollView: scrollView, orientation: .verticalRuler, canvas: canvasView)
+            scrollView.horizontalRulerView = horizontal
+            scrollView.verticalRulerView = vertical
+            scrollView.hasHorizontalRuler = true
+            scrollView.hasVerticalRuler = true
+            scrollView.rulersVisible = PDFViewerAppCoordinator.shared.showsRulers
+            rulerCancellable = PDFViewerAppCoordinator.shared.$showsRulers
+                .removeDuplicates()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak scrollView] shows in scrollView?.rulersVisible = shows }
         }
 
         /// Tells the view model which section is under the reading line, at canvas height

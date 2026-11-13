@@ -1,5 +1,5 @@
 <!-- keywords: 测量, 长度, 距离, 尺寸, 周长, 面积, 角度, 正交, 吸附, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 编辑, 更改, 移动, 控制点, 偏移, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # 测量长度、面积和角度
 
@@ -20,6 +20,8 @@
 
 - **Ortho Lock** 使线条保持在 0°、45° 和 90°。按住 ⇧ 可针对单条线切换它：开启时可以任意角度测量，关闭时可以让线条保持笔直。
 - **Vertex Magnetic Snapping** 使指针吸附到图纸中的角和端点。
+- **参考线和网格：**打开 View > Rulers and Grid > Snap to Guides and Grid 后，点会吸附到你从标尺拖出的参考线上，以及网格显示时吸附到网格上。请参阅[标尺、状态栏和 Inspector](rulers-and-inspector.md)。
+- **状态栏**（View > Show Status Bar）会在你绘制测量时显示比其标签更多的信息：它的角度、在水平和垂直方向上延伸的距离，或者面积到目前为止的周长。
 
 ## 更改测量结果
 

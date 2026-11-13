@@ -1,5 +1,5 @@
 <!-- keywords: キーボード, ショートカット, キー, ホットキー, ジェスチャ, トラックパッド, マウス, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # キーボードショートカット
 
@@ -55,6 +55,11 @@
 | Markup Toolbar の表示/非表示 | ⇧⌘A |
 | Measurement Toolbar の表示/非表示 | ⇧⌘M |
 | Redact Toolbar の表示/非表示 | ⌥⌘R |
+| Status Bar の表示/非表示 | ⌘/ |
+| Inspector の表示/非表示 | ⌃⌘I |
+| Navigator の表示/非表示 | ⌃⌘N |
+| Rulers の表示/非表示 | ⌘R |
+| Grid の表示/非表示 | ⌘' |
 
 ## 検索とテキスト
 

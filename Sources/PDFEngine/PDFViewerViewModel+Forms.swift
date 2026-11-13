@@ -80,6 +80,7 @@ extension PDFViewerViewModel {
             isDocumentEdited = true
             currentWindow?.isDocumentEdited = true
             NotificationCenter.default.post(name: .formWidgetDidChange, object: nil)
+            refreshFormFieldValues()
         } catch {
             print("Failed to set form widget value: \(error)")
         }
@@ -100,6 +101,7 @@ extension PDFViewerViewModel {
             isDocumentEdited = true
             currentWindow?.isDocumentEdited = true
             NotificationCenter.default.post(name: .formWidgetDidChange, object: nil)
+            refreshFormFieldValues()
         } catch {
             print("Failed to reset form: \(error)")
         }

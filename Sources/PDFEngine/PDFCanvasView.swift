@@ -87,10 +87,21 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var commentsPopover: NSPopover?
     var commentsPopoverDelegate: CommentsPopoverDelegate?
 
+    /// A guide being dragged out from a ruler, or moved, drawn where it would go.
+    var guidePreview: (pageIndex: Int, guide: PageGuide)?
+    /// The guide being moved on the page.
+    var activeGuideDrag: (pageIndex: Int, id: UUID)?
+
     // Engineering measurement drafting in-progress state
-    var currentMeasurePage: Int?
-    var currentMeasurePoints: [CGPoint] = []
-    var currentMeasureCandidatePoint: CGPoint?
+    var currentMeasurePage: Int? {
+        didSet { updateMeasurementReadout() }
+    }
+    var currentMeasurePoints: [CGPoint] = [] {
+        didSet { updateMeasurementReadout() }
+    }
+    var currentMeasureCandidatePoint: CGPoint? {
+        didSet { updateMeasurementReadout() }
+    }
     var isSnappedOrtho: Bool = false
     var isSnappedVertex: Bool = false
     var currentSnappedGuideOrigin: CGPoint?
@@ -119,7 +130,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         /// A length's dimension line, moved sideways nearer to or further from what it measures.
         case measurementLeader
     }
-    var selectedAnnotation: (id: UUID, pageIndex: Int)?
+    var selectedAnnotation: (id: UUID, pageIndex: Int)? {
+        didSet {
+            let inspected = selectedAnnotation.map { InspectedAnnotation(id: $0.id, pageIndex: $0.pageIndex) }
+            if viewModel.inspectedAnnotation != inspected { viewModel.inspectedAnnotation = inspected }
+        }
+    }
     var activeAnnotationDrag: (
         id: UUID,
         pageIndex: Int,
@@ -340,6 +356,36 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] reveal in
                 self?.showRevealedAnnotation(reveal)
+            }
+            .store(in: &cancellables)
+
+        viewModel.$pageGuides
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.needsDisplay = true }
+            .store(in: &cancellables)
+        Publishers.Merge3(
+            PDFViewerAppCoordinator.shared.$showsGrid.map { _ in () },
+            PDFViewerAppCoordinator.shared.$gridSpacing.map { _ in () },
+            PDFViewerAppCoordinator.shared.$showsRulers.map { _ in () }
+        )
+            .dropFirst(3)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.needsDisplay = true }
+            .store(in: &cancellables)
+
+        viewModel.$inspectedContent
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.needsDisplay = true }
+            .store(in: &cancellables)
+
+        viewModel.$annotationGeometryEdit
+            .compactMap { $0 }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] edit in
+                self?.applyInspectorEdit(edit)
             }
             .store(in: &cancellables)
 

@@ -1,6 +1,5 @@
-<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments -->
-<!-- source: eaf69c8e8bdb -->
-
+<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments, ステータスバー, Inspector, status bar -->
+<!-- source: fdb75158a744 -->
 # VectorPDF のウインドウ
 
 VectorPDF の各ウインドウには、ツールバー、サイドバー、書類本体があります。1 つのウインドウに複数の書類を[タブ](tabs-and-windows.md)として開くこともできます。
@@ -26,12 +25,11 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 - **Outline & Thumbnails:** [目次、または各ページのサムネール](outline-and-thumbnails.md)。
 - **Search:** [現在の書類の検索結果](search.md)。
 - **Anchors:** [保存した場所](anchors.md)。
-- **Layers:** [書類のレイヤーを表示または非表示にする](layers.md)。このタブは、書類にレイヤーがある場合にのみ表示されます。
-- **Attachments:** [PDF に添付されたファイル](attachments.md)。このタブは、書類に添付ファイルがある場合にのみ表示されます。
+- **Document:** 書類のページ以外の内容です。[レイヤー](layers.md)、[添付ファイル](attachments.md)、および設定でオンにした場合は[フォームフィールド、署名、リンク、移動先](document-tab.md)。何を表示するかはタブ上部のメニューから選択します。このタブは、書類にこれらのいずれかがある場合にのみ表示されます。
 - **Comments:** [すべての注釈と、その返信およびステータス](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document:** [Agent](agent.md)。このタブは macOS 26 以降で表示されます。ただし、Settings で [Use Agent](settings.md) をオフにした場合は表示されません。
 
-サイドバーを表示または非表示にするには、ツールバーのサイドバーボタンを使用します。VectorPDF は、書類ごとにサイドバーを表示したか非表示にしたかを記憶します。書類を初めて開くとサイドバーが表示されます。ただし、1 ページまたは 2 ページだけの書類で、アウトライン、レイヤー、注釈、添付ファイルなどサイドバーに表示するものがない場合は表示されません。添付ファイル、注釈、またはレイヤーのある短い書類は、そのタブが開いた状態で表示されます。
+ツールバーのサイドバーボタンを使って、サイドバーを表示または非表示にします。VectorPDF は、書類ごとにサイドバーを表示したか非表示にしたかを記憶します。書類を初めて開くと、書類が 1 ページまたは 2 ページだけで、サイドバーに表示するもの（アウトライン、レイヤー、注釈、添付ファイル）がない場合を除き、サイドバーが表示されます。添付ファイルやレイヤーのある短い書類はそれらを表示した Document タブで開き、注釈のある短い書類は Comments タブで開きます。
 
 ## 追加のツールバー
 
@@ -40,6 +38,8 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 - **Markup** (⇧⌘A) には[注釈ツール](text-markup.md)があります。
 - **Measurement** (⇧⌘M) には[測定ツール](measure.md)があります。
 - **Redact** (⌥⌘R) には[墨消しツール](redact.md)があります。
+
+View メニューでは、ページの下のステータスバー、ルーラー、グリッド、ページ横の Inspector、隅のナビゲータも表示できます。[ルーラー、ステータスバー、Inspector](rulers-and-inspector.md)を参照してください。
 
 ## 右クリックメニュー
 

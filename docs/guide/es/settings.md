@@ -1,5 +1,5 @@
 <!-- keywords: ajustes, configuración, preferencias, opciones, actualizaciones, actualización, buscar actualizaciones, navegador, autor, autor de anotaciones, almacenamiento, espacio en disco, borrar, eliminar datos, desinstalar, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 91c5b0e9ab3d -->
+<!-- source: a000abd3bb28 -->
 
 # Ajustes
 
@@ -9,6 +9,7 @@ Elige VectorPDF > Settings o pulsa ⌘,.
 | --- | --- |
 | Annotation Author | El nombre que se guarda en tus anotaciones y respuestas. Si está vacío, VectorPDF usa tu nombre de usuario del Mac. |
 | Use Agent | Muestra la pestaña [Ask About This Document](agent.md) en la barra lateral, en macOS 26 o posterior. |
+| List form fields, links and destinations in the sidebar | Añade los [campos de formulario, firmas, enlaces y destinos con nombre](document-tab.md) de un documento a la pestaña Document, que entonces también aparece en los documentos que tienen alguno de ellos. Desactivado hasta que lo activas. |
 | AI Synthesis Engine | Elige [qué redacta las respuestas del Agent](agent-engines.md), en macOS 27. |
 | PDF Color | Define [el aspecto de las páginas](pdf-colors.md): Follow System, Light, Dark o Sepia. |
 | Open Links In | Elige el navegador para los enlaces web. |

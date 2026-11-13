@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # Abbreviazioni da tastiera
 
@@ -55,6 +55,11 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Show or Hide Markup Toolbar | ⇧⌘A |
 | Show or Hide Measurement Toolbar | ⇧⌘M |
 | Show or Hide Redact Toolbar | ⌥⌘R |
+| Show or Hide Status Bar | ⌘/ |
+| Show or Hide Inspector | ⌃⌘I |
+| Show or Hide Navigator | ⌃⌘N |
+| Show or Hide Rulers | ⌘R |
+| Show or Hide Grid | ⌘' |
 
 ## Ricerca e testo
 

@@ -1,4 +1,4 @@
-<!-- source: 2d2679324bf8 -->
+<!-- source: 2f847880be93 -->
 
 # VectorPDF उपयोगकर्ता गाइड
 
@@ -21,6 +21,8 @@ VectorPDF तकनीकी शोध-पत्रों, विनिर्द
 - [आउटलाइन और थंबनेल](outline-and-thumbnails.md)
 - [लेयर दिखाएँ और छिपाएँ](layers.md)
 - [PDF से जुड़ी फ़ाइलें](attachments.md)
+- [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और गंतव्य](document-tab.md)
+- [रूलर, स्टेटस बार और Inspector](rulers-and-inspector.md)
 - [PDF के रंग बदलें](pdf-colors.md)
 - [टेक्स्ट चुनें, कॉपी करें और उसका अर्थ देखें](select-text.md)
 - [दो दस्तावेज़ों की तुलना करें](compare-documents.md)

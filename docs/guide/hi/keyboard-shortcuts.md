@@ -1,5 +1,5 @@
 <!-- keywords: कीबोर्ड, शॉर्टकट, कुंजियाँ, हॉट की, जेस्चर, ट्रैकपैड, माउस, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # कीबोर्ड शॉर्टकट
 
@@ -55,6 +55,11 @@
 | Show या Hide Markup Toolbar | ⇧⌘A |
 | Show या Hide Measurement Toolbar | ⇧⌘M |
 | Show या Hide Redact Toolbar | ⌥⌘R |
+| Show या Hide Status Bar | ⌘/ |
+| Show या Hide Inspector | ⌃⌘I |
+| Show या Hide Navigator | ⌃⌘N |
+| Show या Hide Rulers | ⌘R |
+| Show या Hide Grid | ⌘' |
 
 ## खोज और टेक्स्ट
 

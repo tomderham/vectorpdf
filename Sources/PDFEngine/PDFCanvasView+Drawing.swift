@@ -533,6 +533,23 @@ extension PDFCanvasView {
                 }
             }
 
+            // 2.51 The grid and the guides
+            drawGridAndGuides(onPage: pageIdx)
+
+            // 2.52 What the Inspector shows, from the last click: the glyph and image there
+            if let inspected = viewModel.inspectedContent, inspected.pageIndex == pageIdx {
+                for rect in [inspected.text?.rect, inspected.image?.rect].compactMap({ $0 }) {
+                    let a = canvasPoint(for: CGPoint(x: rect.minX, y: rect.minY), pFrame: pFrame, pBounds: pBounds)
+                    let b = canvasPoint(for: CGPoint(x: rect.maxX, y: rect.maxY), pFrame: pFrame, pBounds: pBounds)
+                    let box = NSRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y)).insetBy(dx: -1.5, dy: -1.5)
+                    let outline = NSBezierPath(rect: box)
+                    outline.lineWidth = 1.5
+                    outline.setLineDash([4, 3], count: 2, phase: 0)
+                    NSColor.controlAccentColor.setStroke()
+                    outline.stroke()
+                }
+            }
+
             // 2.55 The line a SyncTeX forward search found, fading out
             if let highlight = syncTeXHighlight, highlight.pageIndex == pageIdx {
                 let opacity = Self.syncTeXHighlightOpacity(at: Date().timeIntervalSince(highlight.shownAt))

@@ -419,6 +419,88 @@ int mupdf_page_get_choice_options(fz_context *ctx, fz_document *doc, int pageno,
                                   char ***out_options, int *out_count, const char **out_error);
 void mupdf_free_choice_options(fz_context *ctx, char **options, int count);
 
+// The Document tab's lists (DocumentContents.c)
+// Whether the PDF has form fields (a non-empty /AcroForm /Fields); 0 for other formats.
+int mupdf_pdf_has_form_fields(fz_context *ctx, fz_document *doc);
+// Whether any page has a link annotation, read from the page objects without loading pages.
+int mupdf_pdf_has_links(fz_context *ctx, fz_document *doc);
+typedef struct {
+    int page;
+    /* enum pdf_widget_type */
+    int type;
+    /* page (top-down) coordinates */
+    float x0, y0, x1, y1;
+    int flags;
+    int object_number;
+    /* Fully qualified, as in "address.city". */
+    char name[256];
+    /* The field's /TU, shown to people in place of its name; empty if it has none. */
+    char label[256];
+    /* Empty for a signature field. */
+    char value[512];
+    /* Signature fields only. */
+    int is_signed;
+    /* 1 if the file was saved again after it was signed, 0 if not, -1 if it can't be told. */
+    int changed_since_signing;
+    /* The /P of a certifying signature's DocMDP (1 no changes, 2 form filling and signing,
+       3 also annotations); 0 for a signature that doesn't certify the document. */
+    int certification;
+    /* Seconds since 1970, or -1 if the signature doesn't say. */
+    int64_t signed_time;
+    char signer[256];
+    char reason[256];
+    char location[256];
+} mupdf_form_field;
+// Lists up to `capacity` of the page's widgets (one per widget, so a group of radio buttons is
+// several) into `out`, and returns how many there are; -1 on error.
+int mupdf_page_list_form_fields(fz_context *ctx, fz_document *doc, int pageno, mupdf_form_field *out, int capacity);
+typedef struct {
+    char name[256];
+    /* -1 if it doesn't resolve to a page; x, y in page (top-down) coordinates. */
+    int page;
+    float x, y;
+} mupdf_named_dest;
+// Lists up to `capacity` of the document's named destinations (its /Dests name tree, then the
+// PDF 1.1 /Dests dictionary) into `out`. Returns how many it found: with `out` NULL, a count that
+// may be too high (names in both aren't told apart), for sizing `out`.
+int mupdf_pdf_list_named_dests(fz_context *ctx, fz_document *doc, mupdf_named_dest *out, int capacity);
+
+// The Inspector (ContentInspector.c): what the page's contents draw at a point, on top. Rects and
+// coordinates are page (top-down) space; colours are converted to RGB, 0 to 1.
+typedef struct {
+    int has_text;
+    char font_name[128];
+    float font_size;
+    /* The font isn't in the file and another is drawn in its place. */
+    int font_is_substitute;
+    int text_unicode;  /* -1 if unknown */
+    int text_stroked;
+    float text_rgb[3];
+    float text_alpha;
+    char text_colorspace[64];
+    float text_x0, text_y0, text_x1, text_y1;
+
+    int has_image;
+    int image_width, image_height, image_bpc;
+    int image_is_mask;
+    char image_colorspace[64];
+    float image_dpi_x, image_dpi_y;
+    float image_x0, image_y0, image_x1, image_y1;
+
+    int has_path;
+    int path_stroked, path_filled;
+    /* In points as drawn; -1 for a path that's only filled. */
+    float stroke_width;
+    float stroke_rgb[3], fill_rgb[3];
+    float path_alpha;
+    char path_colorspace[64];
+    float path_x0, path_y0, path_x1, path_y1;
+} mupdf_content_at_point;
+int mupdf_page_inspect_point(fz_context *ctx, fz_document *doc, int pageno, float x, float y, float tolerance,
+                             mupdf_content_at_point *out, const char **out_error);
+// The annotation's /CA, 0 transparent to 1 solid; -1 if it isn't on the page.
+int mupdf_pdf_annot_opacity(fz_context *ctx, fz_document *doc, int pageno, int objnum, float *out_opacity);
+
 // Document Metadata, Encryption & Security Permissions
 typedef struct {
     char format[64];

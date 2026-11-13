@@ -1,5 +1,5 @@
 <!-- keywords: medir, medida, medição, medições, comprimento, distância, dimensão, perímetro, área, ângulo, orto, encaixe, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, alterar, mover, alça, deslocamento, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # Medir comprimentos, áreas e ângulos
 
@@ -20,6 +20,8 @@ Aumente o zoom antes de medir para ter mais precisão. Pressionar Escape cancela
 
 - **Ortho Lock** mantém as linhas em 0°, 45° e 90°. Mantenha ⇧ pressionada para invertê-lo em uma única linha: para medir em qualquer ângulo enquanto ele está ativado, ou para manter uma linha reta enquanto está desativado.
 - **Vertex Magnetic Snapping** encaixa o cursor em cantos e extremidades do desenho.
+- **Guias e grade:** com View > Rulers and Grid > Snap to Guides and Grid ativado, os pontos se encaixam nas guias que você arrastou das réguas e na grade enquanto ela estiver visível. Consulte [Réguas, barra de status e Inspector](rulers-and-inspector.md).
+- **A barra de status** (View > Show Status Bar) mostra mais de uma medição enquanto você a desenha do que o seu rótulo: o ângulo e quanto ela avança na horizontal e na vertical, ou o perímetro de uma área até o momento.
 
 ## Alterar uma medição
 

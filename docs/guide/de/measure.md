@@ -1,5 +1,5 @@
 <!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # Längen, Flächen und Winkel messen
 
@@ -20,6 +20,8 @@ Zoome für mehr Genauigkeit in die Zeichnung, bevor du misst. Mit der Escape-Tas
 
 - **Ortho Lock** hält Linien bei 0°, 45° und 90°. Halte ⇧ gedrückt, um es für eine Linie umzuschalten: So misst du bei eingeschaltetem „Ortho Lock“ in jedem Winkel oder hältst bei ausgeschaltetem eine Linie gerade.
 - **Vertex Magnetic Snapping** lässt den Zeiger an Ecken und Endpunkten in der Zeichnung einrasten.
+- **Hilfslinien und Raster:** Wenn View > Rulers and Grid > Snap to Guides and Grid eingeschaltet ist, rasten Punkte an Hilfslinien ein, die du aus den Linealen gezogen hast, und am Raster, solange es eingeblendet ist. Siehe [Lineale, Statusleiste und Inspector](rulers-and-inspector.md).
+- **Die Statusleiste** (View > Show Status Bar) zeigt beim Zeichnen mehr von einer Messung als ihre Beschriftung: ihren Winkel und wie weit sie nach rechts und nach unten reicht, oder den bisherigen Umfang einer Fläche.
 
 ## Eine Messung ändern
 

@@ -1,9 +1,9 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # Menus du clic droit
 
-Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, pour voir les commandes liées à ce qui se trouve sous le pointeur. Le menu affiché dépend de l’endroit où vous cliquez.
+Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, pour afficher les commandes concernant ce qui se trouve sous le pointeur. Le menu affiché dépend de l’endroit où vous cliquez. Partout sur une page, le menu se termine par Inspect, qui ouvre l’[Inspector](rulers-and-inspector.md#the-inspector) sur ce qui y est dessiné.
 
 ## Dans le document
 
@@ -37,8 +37,11 @@ Dans un document avec des [calques](layers.md), le menu d’une annotation propo
 | Un résultat de recherche | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Une ancre | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Une annotation dans l’onglet Comments | Show on Page, Comments…, Delete |
-| Un calque dans l’onglet Layers | Put New Annotations Here, ou Stop Putting New Annotations Here. Voir [Afficher et masquer les calques](layers.md). |
-| Une pièce jointe dans l’onglet Attachments | Quick Look, Open, Save As…, et Show on Page pour un fichier joint à une page. Voir [Fichiers joints à un PDF](attachments.md). |
+| Un calque dans l’onglet Document | Put New Annotations Here, ou Stop Putting New Annotations Here. Voir [Afficher et masquer les calques](layers.md). |
+| Une pièce jointe dans l’onglet Document | Quick Look, Open, Save As…, et Show on Page pour un fichier joint à une page. Voir [Fichiers joints à un PDF](attachments.md). |
+| Un champ de formulaire dans l’onglet Document | Show on Page, Copy Name, Copy Value. Voir [Champs de formulaire, signatures, liens et destinations](document-tab.md). |
+| Un lien dans l’onglet Document | Show on Page, Go to Destination ou Open Link, et Copy Address pour un lien web |
+| Une destination dans l’onglet Document | Copy Name |
 
 ## Dans la fenêtre
 

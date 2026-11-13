@@ -1,9 +1,9 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # Menu di scelta rapida
 
-Fai clic con il tasto destro, oppure fai clic tenendo premuto il tasto Control, per vedere i comandi relativi all'elemento sotto il puntatore. Il menu visualizzato dipende dal punto in cui fai clic.
+Fai clic con il tasto destro, o fai clic tenendo premuto Ctrl, per vedere i comandi per ciò che si trova sotto il puntatore. Il menu che ottieni dipende da dove fai clic. In qualsiasi punto di una pagina, il menu termina con Inspect, che apre l’[Inspector](rulers-and-inspector.md#the-inspector) su ciò che è disegnato lì.
 
 ## Nel documento
 
@@ -37,8 +37,11 @@ In un documento con [livelli](layers.md), il menu di un'annotazione contiene anc
 | Un risultato di ricerca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancoraggio | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Un'annotazione nel pannello Comments | Show on Page, Comments…, Delete |
-| Un livello nel pannello Layers | Put New Annotations Here oppure Stop Putting New Annotations Here. Consulta [Mostrare e nascondere i livelli](layers.md). |
-| Un allegato nel pannello Attachments | Quick Look, Open, Save As… e, per un file allegato a una pagina, Show on Page. Consulta [File allegati a un PDF](attachments.md). |
+| Un livello nel pannello Document | Put New Annotations Here oppure Stop Putting New Annotations Here. Consulta [Mostrare e nascondere i livelli](layers.md). |
+| Un allegato nel pannello Document | Quick Look, Open, Save As… e, per un file allegato a una pagina, Show on Page. Consulta [File allegati a un PDF](attachments.md). |
+| Un campo modulo nel pannello Document | Show on Page, Copy Name, Copy Value. Consulta [Campi modulo, firme, link e destinazioni](document-tab.md). |
+| Un link nel pannello Document | Show on Page, Go to Destination oppure Open Link e, per un link web, Copy Address |
+| Una destinazione nel pannello Document | Copy Name |
 
 ## Nella finestra
 

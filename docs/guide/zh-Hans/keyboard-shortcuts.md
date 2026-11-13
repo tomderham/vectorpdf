@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # 键盘快捷键
 
@@ -55,6 +55,11 @@
 | Show or Hide Markup Toolbar | ⇧⌘A |
 | Show or Hide Measurement Toolbar | ⇧⌘M |
 | Show or Hide Redact Toolbar | ⌥⌘R |
+| Show or Hide Status Bar | ⌘/ |
+| Show or Hide Inspector | ⌃⌘I |
+| Show or Hide Navigator | ⌃⌘N |
+| Show or Hide Rulers | ⌘R |
+| Show or Hide Grid | ⌘' |
 
 ## 搜索和文本
 

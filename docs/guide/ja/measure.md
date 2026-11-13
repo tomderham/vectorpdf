@@ -1,5 +1,5 @@
 <!-- keywords: 測定, 計測, 長さ, 距離, 寸法, 周長, 面積, 角度, 直交, スナップ, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 編集, 変更, 移動, ハンドル, オフセット, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # 長さ、面積、角度を測定する
 
@@ -20,6 +20,8 @@
 
 - **Ortho Lock** は、線を 0°、45°、90° に保ちます。⇧ を押し続けると、1 本の線に対してだけ切り替わります。オンのときは任意の角度で測定でき、オフのときは線をまっすぐに保てます。
 - **Vertex Magnetic Snapping** は、ポインタを図面内の角や端点に吸着させます。
+- **ガイドとグリッド:** View > Rulers and Grid > Snap to Guides and Grid がオンのときは、ルーラーから引き出したガイドと、表示中のグリッドに点が吸着します。[ルーラー、ステータスバー、Inspector](rulers-and-inspector.md)を参照してください。
+- **ステータスバー**（View > Show Status Bar）には、描画中の計測についてラベルより多くの情報が表示されます。角度と横方向・縦方向の距離、または面積のそれまでの周長です。
 
 ## 測定値を変更する
 

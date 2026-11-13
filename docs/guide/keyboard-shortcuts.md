@@ -54,6 +54,11 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Show or Hide Markup Toolbar | ⇧⌘A |
 | Show or Hide Measurement Toolbar | ⇧⌘M |
 | Show or Hide Redact Toolbar | ⌥⌘R |
+| Show or Hide Status Bar | ⌘/ |
+| Show or Hide Inspector | ⌃⌘I |
+| Show or Hide Navigator | ⌃⌘N |
+| Show or Hide Rulers | ⌘R |
+| Show or Hide Grid | ⌘' |
 
 ## Search and text
 

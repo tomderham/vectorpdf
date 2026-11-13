@@ -1,5 +1,5 @@
 <!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, 作者, 注释作者, 存储空间, 磁盘空间, 清除, 移除数据, 删除数据, 卸载, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall -->
-<!-- source: 91c5b0e9ab3d -->
+<!-- source: a000abd3bb28 -->
 
 # 设置
 
@@ -9,6 +9,7 @@
 | --- | --- |
 | Annotation Author | 随注释和回复一起存储的名字。如果留空，VectorPDF 会使用你的 Mac 用户名。 |
 | Use Agent | 在 macOS 26 或更高版本上，在边栏中显示 [Ask About This Document](agent.md) 标签页。 |
+| List form fields, links and destinations in the sidebar | 将文稿的[表单栏位、签名、链接和命名目标](document-tab.md)添加到 Document 标签页；这样，带有其中任何一种的文稿也会显示该标签页。在你打开之前处于关闭状态。 |
 | AI Synthesis Engine | 在 macOS 27 上，选择[由什么撰写 Agent 的回答](agent-engines.md)。 |
 | PDF Color | 设置[页面的外观](pdf-colors.md)：Follow System、Light、Dark 或 Sepia。 |
 | Open Links In | 选择用于打开网页链接的浏览器。 |

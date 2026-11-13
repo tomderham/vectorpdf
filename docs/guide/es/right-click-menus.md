@@ -1,9 +1,9 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # Menús de clic derecho
 
-Haz clic con el botón derecho, o haz clic con la tecla Control pulsada, para ver los comandos correspondientes a lo que hay bajo el puntero. El menú que aparece depende de dónde hagas clic.
+Haz clic con el botón derecho, o con la tecla Control pulsada, para ver comandos para lo que hay bajo el puntero. El menú que aparece depende de dónde hagas clic. En cualquier punto de una página, el menú termina con Inspect, que abre el [Inspector](rulers-and-inspector.md#the-inspector) con lo que está dibujado allí.
 
 ## En el documento
 
@@ -37,8 +37,11 @@ En un documento con [capas](layers.md), el menú de una anotación también tien
 | Un resultado de búsqueda | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancla | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Una anotación en la pestaña Comments | Show on Page, Comments…, Delete |
-| Una capa en la pestaña Layers | Put New Annotations Here o Stop Putting New Annotations Here. Consulta [Mostrar y ocultar capas](layers.md). |
-| Un adjunto en la pestaña Attachments | Quick Look, Open, Save As… y, para un archivo adjunto a una página, Show on Page. Consulta [Archivos adjuntos a un PDF](attachments.md). |
+| Una capa en la pestaña Document | Put New Annotations Here o Stop Putting New Annotations Here. Consulta [Mostrar y ocultar capas](layers.md). |
+| Un archivo adjunto en la pestaña Document | Quick Look, Open, Save As… y, para un archivo adjunto a una página, Show on Page. Consulta [Archivos adjuntos a un PDF](attachments.md). |
+| Un campo de formulario en la pestaña Document | Show on Page, Copy Name, Copy Value. Consulta [Campos de formulario, firmas, enlaces y destinos](document-tab.md). |
+| Un enlace en la pestaña Document | Show on Page, Go to Destination u Open Link y, para un enlace web, Copy Address |
+| Un destino en la pestaña Document | Copy Name |
 
 ## En la ventana
 

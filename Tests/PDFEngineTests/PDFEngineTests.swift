@@ -5224,7 +5224,6 @@ func createFormSamplePDF(at fileURL: URL) {
         await vm.loadDocument(from: pdfURL.path)
         await Task.yield()
 
-        let titlebarHeight = window.frame.height - window.contentLayoutRect.height
         #expect(vm.effectiveTitlebarHeight >= 52.0)
 
         // Verify the segmented control is positioned below the titlebar

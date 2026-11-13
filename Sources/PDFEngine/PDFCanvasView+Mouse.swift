@@ -43,6 +43,16 @@ extension PDFCanvasView {
             return
         }
 
+        // A guide on the page is picked up to move it, or to drag it off the page to remove it.
+        if beginGuideDrag(at: point) {
+            return
+        }
+
+        // With the Inspector open, a click in Select mode shows what the page draws there.
+        if viewModel.isInspectorVisible, viewModel.canvasMode == .select, let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+            viewModel.inspectContent(pageIndex: pageIdx, at: pagePoint)
+        }
+
         // In redact mode: capture start point for draft redaction box
         if viewModel.canvasMode == .redact {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -368,6 +378,10 @@ extension PDFCanvasView {
     }
     
     public override func mouseDragged(with event: NSEvent) {
+        updatePointerReadout(event)
+        if continueGuideDrag(event) {
+            return
+        }
         if currentMeasurePage != nil {
             let point = convert(event.locationInWindow, from: nil)
             if let (pageIdx, _, rawPagePoint) = pageInfo(at: point), pageIdx == currentMeasurePage {
@@ -517,86 +531,12 @@ extension PDFCanvasView {
     }
     
     public override func mouseUp(with event: NSEvent) {
+        if endGuideDrag(event) {
+            return
+        }
         if let drag = activeAnnotationDrag {
             activeAnnotationDrag = nil
-            let dx = drag.currentDelta.width
-            let dy = drag.currentDelta.height
-            let dist = hypot(dx, dy)
-            if dist > 0.5, drag.initialAnnotation.isMeasurement {
-                let edited = editedMeasurement(drag.initialAnnotation, part: drag.part, delta: drag.currentDelta)
-                if let updated = viewModel.replaceMeasurement(drag.initialAnnotation, with: edited) {
-                    selectedAnnotation = (id: updated.id, pageIndex: drag.pageIndex)
-                }
-            } else if dist > 2.0, drag.initialAnnotation.isFromFile {
-                commitFileAnnotationDrag(drag.initialAnnotation, part: drag.part, delta: drag.currentDelta)
-            } else if dist > 2.0 {
-                let orig = drag.initialAnnotation
-                let pIdx = drag.pageIndex
-                viewModel.beginReplacingAnnotation(orig)
-                defer { viewModel.finishReplacingAnnotation() }
-
-                if orig.type == .callout {
-                    var targetPt = orig.targetPoint ?? CGPoint(x: (orig.rect?.minX ?? 50) - 30, y: orig.rect?.midY ?? 50)
-                    var kneePt = orig.kneePoint ?? CGPoint(x: (orig.rect?.minX ?? 50) - 10, y: orig.rect?.midY ?? 50)
-                    var rect = orig.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22)
-
-                    switch drag.part {
-                    case .calloutTargetPoint:
-                        targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
-                    case .calloutKneePoint:
-                        kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
-                    case .calloutTextBox:
-                        rect = rect.offsetBy(dx: dx, dy: dy)
-                        kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
-                    case .resizeTopLeft, .resizeTopRight, .resizeBottomLeft, .resizeBottomRight:
-                        rect = updatedRect(from: rect, part: drag.part, delta: drag.currentDelta)
-                    case .entireAnnotation:
-                        targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
-                        kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
-                        rect = rect.offsetBy(dx: dx, dy: dy)
-                    case .lineStart, .lineEnd, .measurementPoint, .measurementLeader:
-                        break
-                    }
-
-                    if let updated = viewModel.addCalloutAnnotation(
-                        pageIndex: pIdx,
-                        targetPoint: targetPt,
-                        kneePoint: kneePt,
-                        textBoxRect: rect,
-                        text: orig.text,
-                        fontSize: orig.fontSize ?? viewModel.selectedFontSize,
-                        color: orig.color,
-                        lineEnding: orig.lineEnding ?? .closedArrow
-                    ) {
-                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                    }
-                } else if orig.type == .line {
-                    if let updated = viewModel.addRestyledShape(orig, ends: updatedLineEnds(of: orig, part: drag.part, delta: drag.currentDelta)) {
-                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                    }
-                } else if orig.type == .note || orig.isShape {
-                    let rect = updatedRect(from: orig.rect ?? .zero, part: drag.part, delta: drag.currentDelta)
-                    if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
-                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                    }
-                } else if orig.type == .freeText {
-                    let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22), part: drag.part, delta: drag.currentDelta)
-                    if let updated = viewModel.addFreeTextAnnotation(
-                        pageIndex: pIdx,
-                        rect: rect,
-                        text: orig.text,
-                        fontSize: orig.fontSize ?? viewModel.selectedFontSize,
-                        color: orig.color
-                    ) {
-                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                    }
-                } else if orig.type == .stamp {
-                    let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 140, height: 50), part: drag.part, delta: drag.currentDelta)
-                    if let data = orig.stampImageData, let updated = viewModel.addStampAnnotation(pageIndex: pIdx, rect: rect, imageData: data, color: orig.color) {
-                        selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                    }
-                }
-            }
+            commitAnnotationEdit(drag.initialAnnotation, pageIndex: drag.pageIndex, part: drag.part, delta: drag.currentDelta)
             needsDisplay = true
             return
         }
@@ -793,6 +733,11 @@ extension PDFCanvasView {
     }
     
     public override func mouseMoved(with event: NSEvent) {
+        updatePointerReadout(event)
+        if viewModel.canvasMode == .select, guide(at: convert(event.locationInWindow, from: nil)) != nil {
+            NSCursor.openHand.set()
+            return
+        }
         updateLinkPeek(modifierFlags: event.modifierFlags)
         if viewModel.canvasMode == .draw || viewModel.canvasMode == .eraser {
             if hoveredLink != nil {
@@ -909,6 +854,7 @@ extension PDFCanvasView {
     
     public override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        updatePointerReadout(nil)
         linkPeek.dismiss()
         if currentHoverCanvasPoint != nil {
             currentHoverCanvasPoint = nil
@@ -919,5 +865,89 @@ extension PDFCanvasView {
             needsDisplay = true
         }
         NSCursor.arrow.set()
+    }
+}
+
+extension PDFCanvasView {
+    /// Moves, resizes or reshapes an annotation as a drag of `part` by `delta` (in page
+    /// coordinates) does, for a drag that ended and for an edit in the Inspector. Moves shorter
+    /// than `minimumDistance` are taken as a click and change nothing.
+    func commitAnnotationEdit(_ orig: PDFAnnotation, pageIndex pIdx: Int, part: DraggingAnnotationPart, delta: CGSize, minimumDistance: (measurement: CGFloat, other: CGFloat) = (0.5, 2.0)) {
+        let dx = delta.width
+        let dy = delta.height
+        let dist = hypot(dx, dy)
+        if dist > minimumDistance.measurement, orig.isMeasurement {
+            let edited = editedMeasurement(orig, part: part, delta: delta)
+            if let updated = viewModel.replaceMeasurement(orig, with: edited) {
+                selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+            }
+        } else if dist > minimumDistance.other, orig.isFromFile {
+            commitFileAnnotationDrag(orig, part: part, delta: delta)
+        } else if dist > minimumDistance.other {
+            viewModel.beginReplacingAnnotation(orig)
+            defer { viewModel.finishReplacingAnnotation() }
+
+            if orig.type == .callout {
+                var targetPt = orig.targetPoint ?? CGPoint(x: (orig.rect?.minX ?? 50) - 30, y: orig.rect?.midY ?? 50)
+                var kneePt = orig.kneePoint ?? CGPoint(x: (orig.rect?.minX ?? 50) - 10, y: orig.rect?.midY ?? 50)
+                var rect = orig.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22)
+
+                switch part {
+                case .calloutTargetPoint:
+                    targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
+                case .calloutKneePoint:
+                    kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
+                case .calloutTextBox:
+                    rect = rect.offsetBy(dx: dx, dy: dy)
+                    kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
+                case .resizeTopLeft, .resizeTopRight, .resizeBottomLeft, .resizeBottomRight:
+                    rect = updatedRect(from: rect, part: part, delta: delta)
+                case .entireAnnotation:
+                    targetPt = CGPoint(x: targetPt.x + dx, y: targetPt.y + dy)
+                    kneePt = CGPoint(x: kneePt.x + dx, y: kneePt.y + dy)
+                    rect = rect.offsetBy(dx: dx, dy: dy)
+                case .lineStart, .lineEnd, .measurementPoint, .measurementLeader:
+                    break
+                }
+
+                if let updated = viewModel.addCalloutAnnotation(
+                    pageIndex: pIdx,
+                    targetPoint: targetPt,
+                    kneePoint: kneePt,
+                    textBoxRect: rect,
+                    text: orig.text,
+                    fontSize: orig.fontSize ?? viewModel.selectedFontSize,
+                    color: orig.color,
+                    lineEnding: orig.lineEnding ?? .closedArrow
+                ) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if orig.type == .line {
+                if let updated = viewModel.addRestyledShape(orig, ends: updatedLineEnds(of: orig, part: part, delta: delta)) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if orig.type == .note || orig.isShape {
+                let rect = updatedRect(from: orig.rect ?? .zero, part: part, delta: delta)
+                if let updated = viewModel.addRestyled(orig, rect: rect, color: orig.color) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if orig.type == .freeText {
+                let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 80, height: 22), part: part, delta: delta)
+                if let updated = viewModel.addFreeTextAnnotation(
+                    pageIndex: pIdx,
+                    rect: rect,
+                    text: orig.text,
+                    fontSize: orig.fontSize ?? viewModel.selectedFontSize,
+                    color: orig.color
+                ) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if orig.type == .stamp {
+                let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 140, height: 50), part: part, delta: delta)
+                if let data = orig.stampImageData, let updated = viewModel.addStampAnnotation(pageIndex: pIdx, rect: rect, imageData: data, color: orig.color) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            }
+        }
     }
 }

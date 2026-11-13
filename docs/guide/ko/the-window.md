@@ -1,6 +1,5 @@
-<!-- keywords: 윈도우, 창, 도구 막대, 툴바, 사이드바, 탭, 시작 화면, 인터페이스, 페이지 표시기, 컨트롤, 첨부 파일, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: eaf69c8e8bdb -->
-
+<!-- keywords: 윈도우, 창, 도구 막대, 툴바, 사이드바, 탭, 시작 화면, 인터페이스, 페이지 표시기, 컨트롤, 첨부 파일, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 상태 막대, Inspector, status bar -->
+<!-- source: fdb75158a744 -->
 # VectorPDF 윈도우
 
 각 VectorPDF 윈도우는 도구 막대, 사이드바, 문서로 이루어져 있습니다. 윈도우 하나에 여러 문서를 [탭](tabs-and-windows.md)으로 열어 둘 수 있습니다.
@@ -26,12 +25,11 @@
 - **Outline & Thumbnails:** [목차 또는 각 페이지의 축소판](outline-and-thumbnails.md).
 - **Search:** [현재 문서의 검색 결과](search.md).
 - **Anchors:** [저장한 위치](anchors.md).
-- **Layers:** [문서의 레이어 보기 또는 가리기](layers.md). 이 탭은 문서에 레이어가 있을 때만 나타납니다.
-- **Attachments:** [PDF에 첨부된 파일](attachments.md). 이 탭은 문서에 첨부 파일이 있을 때만 나타납니다.
+- **Document:** 문서의 페이지 외에 담긴 내용으로, [레이어](layers.md), [첨부 파일](attachments.md) 및 설정에서 켠 경우 [양식 필드, 서명, 링크 및 대상](document-tab.md)입니다. 탭 상단의 메뉴에서 무엇을 볼지 선택합니다. 이 탭은 문서에 이 중 하나 이상이 있을 때만 나타납니다.
 - **Comments:** [모든 주석과 그 답글 및 상태](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [Agent](agent.md). 이 탭은 macOS 26 이상에서 나타나며, Settings에서 [Use Agent](settings.md)를 끈 경우에는 나타나지 않습니다.
 
-사이드바를 표시하거나 숨기려면 도구 막대의 사이드바 버튼을 사용합니다. VectorPDF는 문서마다 사이드바를 표시했는지 숨겼는지 기억합니다. 문서를 처음 열면 사이드바가 표시됩니다. 단, 문서가 한두 페이지뿐이고 개요, 레이어, 주석, 첨부 파일처럼 사이드바에 표시할 것이 없으면 표시되지 않습니다. 첨부 파일, 주석 또는 레이어가 있는 짧은 문서는 해당 탭이 열린 상태로 열립니다.
+도구 막대의 사이드바 버튼을 사용하여 사이드바를 보거나 가립니다. VectorPDF는 문서마다 사이드바를 보았는지 가렸는지 기억합니다. 문서를 처음 열 때는 문서가 한두 페이지뿐이고 사이드바에 표시할 것(개요, 레이어, 주석, 첨부 파일)이 없는 경우를 제외하면 사이드바가 표시됩니다. 첨부 파일이나 레이어가 있는 짧은 문서는 그것이 보이는 Document 탭으로 열리고, 주석이 있는 짧은 문서는 Comments 탭으로 열립니다.
 
 ## 추가 도구 막대
 
@@ -40,6 +38,8 @@
 - **Markup** (⇧⌘A)에는 [주석 도구](text-markup.md)가 있습니다.
 - **Measurement** (⇧⌘M)에는 [측정 도구](measure.md)가 있습니다.
 - **Redact** (⌥⌘R)에는 [가림 처리 도구](redact.md)가 있습니다.
+
+View 메뉴에서는 페이지 아래의 상태 막대, 눈금자, 격자, 페이지 옆의 Inspector, 모서리의 탐색기도 표시할 수 있습니다. [눈금자, 상태 막대 및 Inspector](rulers-and-inspector.md)를 참고하십시오.
 
 ## 오른쪽 클릭 메뉴
 

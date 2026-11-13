@@ -1,9 +1,9 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # 右键菜单
 
-右键点按或按住 Control 键点按，可查看适用于指针下方内容的命令。出现的菜单取决于你点按的位置。
+右键点按或按住 Control 键点按，可以查看适用于指针下方内容的命令。出现的菜单取决于你点按的位置。在页面上的任何位置，菜单最后都有 Inspect，它会在 [Inspector](rulers-and-inspector.md#the-inspector) 中打开该处绘制的内容。
 
 ## 在文稿中
 
@@ -37,8 +37,11 @@
 | 搜索结果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 锚点 | Open in New Window 或 Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments 标签页中的注释 | Show on Page、Comments…、Delete |
-| Layers 标签页中的图层 | Put New Annotations Here 或 Stop Putting New Annotations Here。请参阅[显示和隐藏图层](layers.md)。 |
-| Attachments 标签页中的附件 | Quick Look、Open、Save As…，对于附加到页面的文件还有 Show on Page。请参阅[附加到 PDF 的文件](attachments.md)。 |
+| Document 标签页中的图层 | Put New Annotations Here 或 Stop Putting New Annotations Here。请参阅[显示和隐藏图层](layers.md)。 |
+| Document 标签页中的附件 | Quick Look、Open、Save As…，以及附加到页面的文件的 Show on Page。请参阅[附加到 PDF 的文件](attachments.md)。 |
+| Document 标签页中的表单栏位 | Show on Page、Copy Name、Copy Value。请参阅[表单栏位、签名、链接和目标](document-tab.md)。 |
+| Document 标签页中的链接 | Show on Page、Go to Destination 或 Open Link，以及网页链接的 Copy Address |
+| Document 标签页中的目标 | Copy Name |
 
 ## 在窗口中
 

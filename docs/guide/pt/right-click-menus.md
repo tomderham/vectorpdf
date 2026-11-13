@@ -1,9 +1,9 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # Menus do botão direito
 
-Clique com o botão direito, ou clique com a tecla Control pressionada, para ver os comandos relacionados ao que está sob o cursor. O menu que aparece depende de onde você clica.
+Clique com o botão direito, ou com a tecla Control pressionada, para ver comandos para o que está sob o cursor. O menu que aparece depende de onde você clica. Em qualquer ponto de uma página, o menu termina com Inspect, que abre o [Inspector](rulers-and-inspector.md#the-inspector) no que está desenhado ali.
 
 ## No documento
 
@@ -37,8 +37,11 @@ Em um documento com [camadas](layers.md), o menu de uma anotação também tem *
 | Um resultado de busca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Uma âncora | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Uma anotação na aba Comments | Show on Page, Comments…, Delete |
-| Uma camada na aba Layers | Put New Annotations Here ou Stop Putting New Annotations Here. Consulte [Mostrar e ocultar camadas](layers.md). |
-| Um anexo na aba Attachments | Quick Look, Open, Save As… e, para um arquivo anexado a uma página, Show on Page. Consulte [Arquivos anexados a um PDF](attachments.md). |
+| Uma camada na aba Document | Put New Annotations Here ou Stop Putting New Annotations Here. Consulte [Mostrar e ocultar camadas](layers.md). |
+| Um anexo na aba Document | Quick Look, Open, Save As… e, para um arquivo anexado a uma página, Show on Page. Consulte [Arquivos anexados a um PDF](attachments.md). |
+| Um campo de formulário na aba Document | Show on Page, Copy Name, Copy Value. Consulte [Campos de formulário, assinaturas, links e destinos](document-tab.md). |
+| Um link na aba Document | Show on Page, Go to Destination ou Open Link e, para um link da web, Copy Address |
+| Um destino na aba Document | Copy Name |
 
 ## Na janela
 

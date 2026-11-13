@@ -1,4 +1,4 @@
-<!-- source: 2d2679324bf8 -->
+<!-- source: 2f847880be93 -->
 
 # VectorPDF 사용 설명서
 
@@ -21,6 +21,8 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 - [개요 및 축소판](outline-and-thumbnails.md)
 - [레이어 보기 및 가리기](layers.md)
 - [PDF에 첨부된 파일](attachments.md)
+- [양식 필드, 서명, 링크 및 대상](document-tab.md)
+- [눈금자, 상태 막대 및 Inspector](rulers-and-inspector.md)
 - [PDF 색상 변경하기](pdf-colors.md)
 - [텍스트 선택, 복사 및 찾아보기](select-text.md)
 - [두 문서 비교하기](compare-documents.md)

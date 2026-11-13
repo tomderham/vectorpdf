@@ -1,9 +1,9 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # Kontextmenüs
 
-Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befehle für das Objekt unter dem Zeiger zu sehen. Welches Menü angezeigt wird, hängt davon ab, wohin du klickst.
+Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befehle für das Objekt unter dem Zeiger zu sehen. Welches Menü angezeigt wird, hängt davon ab, wohin du klickst. Überall auf einer Seite endet das Menü mit „Inspect“, das den [Inspector](rulers-and-inspector.md#the-inspector) für das öffnet, was dort gezeichnet ist.
 
 ## Im Dokument
 
@@ -37,8 +37,11 @@ In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung au�
 | Ein Suchergebnis | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Ein Anker | Open in New Window oder Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Eine Anmerkung im Tab „Comments“ | „Show on Page“, „Comments…“, „Delete“ |
-| Eine Ebene im Tab „Layers“ | „Put New Annotations Here“ oder „Stop Putting New Annotations Here“. Siehe [Ebenen ein- und ausblenden](layers.md). |
-| Ein Anhang im Tab „Attachments“ | „Quick Look“, „Open“, „Save As…“ und bei einer an eine Seite angehängten Datei „Show on Page“. Siehe [An ein PDF angehängte Dateien](attachments.md). |
+| Eine Ebene im Tab „Document“ | „Put New Annotations Here“ oder „Stop Putting New Annotations Here“. Siehe [Ebenen ein- und ausblenden](layers.md). |
+| Ein Anhang im Tab „Document“ | „Quick Look“, „Open“, „Save As…“ und bei einer an eine Seite angehängten Datei „Show on Page“. Siehe [An ein PDF angehängte Dateien](attachments.md). |
+| Ein Formularfeld im Tab „Document“ | „Show on Page“, „Copy Name“, „Copy Value“. Siehe [Formularfelder, Signaturen, Links und Ziele](document-tab.md). |
+| Ein Link im Tab „Document“ | „Show on Page“, „Go to Destination“ oder „Open Link“ und bei einem Weblink „Copy Address“ |
+| Ein Ziel im Tab „Document“ | „Copy Name“ |
 
 ## Im Fenster
 

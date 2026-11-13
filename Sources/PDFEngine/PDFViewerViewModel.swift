@@ -318,9 +318,15 @@ public final class PDFViewerViewModel: ObservableObject {
     // Page Metadata
     @Published public var pageLinks: [Int: [SnapshotTarget]] = [:]
     @Published public var pageStructuredData: [Int: StructuredPage] = [:]
-    @Published public var activeSelection: (pageIndex: Int, result: SelectionResult)?
+    @Published public var activeSelection: (pageIndex: Int, result: SelectionResult)? {
+        didSet { updateSelectionReadout() }
+    }
     /// Additional page selections when a selection spans across page boundaries.
-    @Published public var additionalSelectionPages: [PageSelectionResult] = []
+    @Published public var additionalSelectionPages: [PageSelectionResult] = [] {
+        didSet { updateSelectionReadout() }
+    }
+    /// The pointer's position and a measurement's figures, for the status bar.
+    public let canvasReadout = CanvasReadout()
     @Published public var selectionMode: SelectionMode = .readingOrder
     
     // Form Widgets & Editing State
@@ -384,6 +390,51 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var layers: [PDFLayer] = []
     /// The document's embedded files, for the Attachments tab, which shows only when there are some.
     @Published public internal(set) var attachments: [PDFAttachment] = []
+    /// Whether the document has form fields, links or named destinations, for the Document tab.
+    @Published public internal(set) var documentContentsSummary = DocumentContentsSummary()
+    /// The part of the Document tab shown.
+    @Published public var documentSidebarSection: DocumentSidebarSection = .layers
+    /// The Document tab's lists, read when first shown; nil until then, or after the document
+    /// changed in a way that may change them.
+    @Published public internal(set) var formFieldEntries: [PDFFormFieldEntry]? {
+        didSet { documentListsRevision &+= 1 }
+    }
+    @Published public internal(set) var documentLinks: [PDFDocumentLink]? {
+        didSet { documentListsRevision &+= 1 }
+    }
+    @Published public internal(set) var namedDestinations: [PDFNamedDestination]? {
+        didSet { documentListsRevision &+= 1 }
+    }
+    /// Changes with any of those lists, so their tables know to read them again without
+    /// comparing tens of thousands of entries.
+    var documentListsRevision = 0
+    /// How far through the pages the list of links has been read, 0 to 1, while it's read.
+    @Published public internal(set) var documentLinksProgress: Double?
+    var documentContentsTasks: [DocumentSidebarSection: Task<Void, Never>] = [:]
+    /// A copy of the file the Document tab's lists are read from (see `contentsReader`).
+    var documentContentsReader: PDFDocumentCore?
+    /// Pages whose links' text has been asked for.
+    var linkTextPages: Set<Int> = []
+    /// The text under each link read so far, by link id: kept apart from `documentLinks`, so
+    /// that reading it redraws the rows on screen rather than the whole list.
+    @Published public internal(set) var documentLinkTexts: [String: String] = [:]
+    /// The Inspector beside the page (View > Show Inspector), for this window.
+    @Published public var isInspectorVisible = false {
+        didSet {
+            if !isInspectorVisible { inspectedContent = nil }
+        }
+    }
+    /// What the page draws where it was last clicked, while the Inspector shows.
+    @Published public internal(set) var inspectedContent: PageContentInspection?
+    /// The annotation selected on the page, for the Inspector.
+    @Published public internal(set) var inspectedAnnotation: InspectedAnnotation?
+    /// The last change to an annotation's place or size made in the Inspector.
+    @Published public internal(set) var annotationGeometryEdit: AnnotationGeometryEdit?
+    var inspectionTask: Task<Void, Never>?
+    /// Guides dragged out from the rulers, by page.
+    @Published public internal(set) var pageGuides: [Int: [PageGuide]] = [:]
+    /// The part of the page in view, for the navigator; kept apart so scrolling redraws only it.
+    public let viewportReadout = ViewportReadout()
     /// Bumped when layers are shown or hidden, so pictures drawn before that are thrown away.
     var layerGeneration = 0
     /// Whether each layer is shown, by object number, for annotations on them.
@@ -467,7 +518,10 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var thumbnailImages: [Int: NSImage] = [:]
     /// Changed whenever pages are edited, which can take attachments on them with them.
     @Published public var thumbnailVersion: UUID = UUID() {
-        didSet { refreshAttachments() }
+        didSet {
+            refreshAttachments()
+            refreshDocumentContents()
+        }
     }
     @Published public var selectedThumbnailPageIndices: Set<Int> = [0]
     @Published public var draggedThumbnailPageIndex: Int? = nil
@@ -816,8 +870,9 @@ public final class PDFViewerViewModel: ObservableObject {
             let keptLayout = (rotation: viewRotationDegrees, isTwoPage: isTwoPageMode,
                               sidebarBeforeTwoPage: sidebarVisibleBeforeTwoPage, isSidebarVisible: isSidebarVisible)
             let modified = Self.modificationDate(ofFileAt: actualPath)
-            let doc = try await Task.detached(priority: .userInitiated) {
-                try PDFDocumentCore(filePath: actualPath, password: password)
+            let (doc, contentsSummary) = try await Task.detached(priority: .userInitiated) {
+                let doc = try PDFDocumentCore(filePath: actualPath, password: password)
+                return (doc, doc.contentsSummary())
             }.value
             self.loadedFileModificationDate = modified
             self.syncTeXIndex = nil
@@ -830,6 +885,10 @@ public final class PDFViewerViewModel: ObservableObject {
             self.document = doc
             self.layers = doc.layers()
             self.attachments = doc.attachments()
+            self.resetDocumentContents(summary: contentsSummary)
+            self.inspectedContent = nil
+            self.inspectedAnnotation = nil
+            if !isReload { self.pageGuides = [:] }
             self.layerVisibility = doc.layerVisibility()
             self.layerConfigurations = doc.layerConfigurations()
             self.layerConfiguration = doc.layerConfiguration

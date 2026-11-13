@@ -316,6 +316,12 @@ extension PDFCanvasView {
             }
         }
 
+        // 1.5 Guides, and the grid while it shows
+        if let snappedToGuide = viewModel.snapToGuidesAndGrid(candidate, onPage: pageIndex) {
+            isSnappedVertex = true
+            return snappedToGuide
+        }
+
         // 2. Ortho / 45° snapping constraint: Ortho Lock, which holding Shift switches for as long
         // as it's held (as in CAD apps), to free one line while it's on or keep one straight.
         let isShiftHeld = modifierFlags.contains(.shift)

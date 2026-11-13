@@ -1,4 +1,4 @@
-<!-- source: 2d2679324bf8 -->
+<!-- source: 2f847880be93 -->
 
 # VectorPDF 使用手册
 
@@ -21,6 +21,8 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 - [大纲和缩略图](outline-and-thumbnails.md)
 - [显示和隐藏图层](layers.md)
 - [附加到 PDF 的文件](attachments.md)
+- [表单栏位、签名、链接和目标](document-tab.md)
+- [标尺、状态栏和 Inspector](rulers-and-inspector.md)
 - [更改 PDF 颜色](pdf-colors.md)
 - [选择、拷贝和查询文本](select-text.md)
 - [比较两份文稿](compare-documents.md)

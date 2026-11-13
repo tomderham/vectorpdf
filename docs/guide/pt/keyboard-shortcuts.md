@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # Atalhos de teclado
 
@@ -55,6 +55,11 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Show or Hide Markup Toolbar | ⇧⌘A |
 | Show or Hide Measurement Toolbar | ⇧⌘M |
 | Show or Hide Redact Toolbar | ⌥⌘R |
+| Show or Hide Status Bar | ⌘/ |
+| Show or Hide Inspector | ⌃⌘I |
+| Show or Hide Navigator | ⌃⌘N |
+| Show or Hide Rulers | ⌘R |
+| Show or Hide Grid | ⌘' |
 
 ## Busca e texto
 

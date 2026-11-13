@@ -161,6 +161,66 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         return OnlineModelConfiguration(service: service, model: model, apiKey: key)
     }
 
+    // MARK: Aids for working on the page: status bar, rulers, guides, grid and navigator
+
+    /// The strip under the page with the pointer's position, the page's size and the figures of
+    /// a measurement being drawn. Off unless chosen, so reading stays uncluttered.
+    @Published public var showsStatusBar = false {
+        didSet { UserDefaults.standard.set(showsStatusBar, forKey: Self.showsStatusBarKey) }
+    }
+    /// The units of the status bar, rulers, grid and Inspector.
+    @Published public var readoutUnit: ReadoutUnit = Locale.current.measurementSystem == .us ? .inches : .millimeters {
+        didSet { UserDefaults.standard.set(readoutUnit.rawValue, forKey: Self.readoutUnitKey) }
+    }
+    @Published public var showsRulers = false {
+        didSet { UserDefaults.standard.set(showsRulers, forKey: Self.showsRulersKey) }
+    }
+    @Published public var showsGrid = false {
+        didSet { UserDefaults.standard.set(showsGrid, forKey: Self.showsGridKey) }
+    }
+    /// Points between the grid's lines.
+    @Published public var gridSpacing: Double = Locale.current.measurementSystem == .us ? 36 : 72 / 25.4 * 10 {
+        didSet { UserDefaults.standard.set(gridSpacing, forKey: Self.gridSpacingKey) }
+    }
+    /// Whether measuring and drawing snap to guides, and to the grid while it shows.
+    @Published public var snapsToGuidesAndGrid = true {
+        didSet { UserDefaults.standard.set(snapsToGuidesAndGrid, forKey: Self.snapsToGuidesAndGridKey) }
+    }
+    /// The miniature of the page with the part on screen, for finding your way at high zoom.
+    @Published public var showsNavigator = false {
+        didSet { UserDefaults.standard.set(showsNavigator, forKey: Self.showsNavigatorKey) }
+    }
+    /// Whether the sidebar's Document tab lists form fields, links and named destinations.
+    /// Off by default: most documents have links, and a form being filled in doesn't need its
+    /// fields listed, so the tab would appear for nearly everything.
+    @Published public var showsDocumentStructureInSidebar = false {
+        didSet { UserDefaults.standard.set(showsDocumentStructureInSidebar, forKey: Self.showsDocumentStructureKey) }
+    }
+    private static let showsDocumentStructureKey = "com.thomasderham.vectorpdf.showsDocumentStructureInSidebar"
+    private static let showsStatusBarKey = "com.thomasderham.vectorpdf.showsStatusBar"
+    private static let readoutUnitKey = "com.thomasderham.vectorpdf.readoutUnit"
+    private static let showsRulersKey = "com.thomasderham.vectorpdf.showsRulers"
+    private static let showsGridKey = "com.thomasderham.vectorpdf.showsGrid"
+    private static let gridSpacingKey = "com.thomasderham.vectorpdf.gridSpacing"
+    private static let snapsToGuidesAndGridKey = "com.thomasderham.vectorpdf.snapsToGuidesAndGrid"
+    private static let showsNavigatorKey = "com.thomasderham.vectorpdf.showsNavigator"
+
+    private func restoreWorkingAids() {
+        let defaults = UserDefaults.standard
+        func bool(_ key: String) -> Bool? { defaults.object(forKey: key) == nil ? nil : defaults.bool(forKey: key) }
+        if let value = bool(Self.showsStatusBarKey) { showsStatusBar = value }
+        if let raw = defaults.string(forKey: Self.readoutUnitKey), let unit = ReadoutUnit(rawValue: raw) { readoutUnit = unit }
+        if let value = bool(Self.showsRulersKey) { showsRulers = value }
+        if let value = bool(Self.showsGridKey) { showsGrid = value }
+        if defaults.object(forKey: Self.gridSpacingKey) != nil {
+            let spacing = defaults.double(forKey: Self.gridSpacingKey)
+            if spacing.isFinite, spacing >= 1, spacing <= 2000 { gridSpacing = spacing }
+        }
+        if let value = bool(Self.snapsToGuidesAndGridKey) { snapsToGuidesAndGrid = value }
+        if let value = bool(Self.showsNavigatorKey) { showsNavigator = value }
+        if let value = bool(Self.showsDocumentStructureKey) { showsDocumentStructureInSidebar = value }
+    }
+
     /// Defines how 100% scale is interpreted. Defaults to .physical ("Size on screen equals size on printout", matching Preview).
     @Published public var scaleMode: PDFScaleMode = .physical {
         didSet {
@@ -307,6 +367,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         if let browser = UserDefaults.standard.string(forKey: Self.preferredBrowserKey) {
             preferredBrowserBundleID = browser
         }
+        restoreWorkingAids()
         speechCancellable = PDFSpeechCoordinator.shared.$isSpeaking
             .receive(on: DispatchQueue.main)
             .sink { [weak self] speaking in
@@ -638,6 +699,13 @@ public struct AppSettingsView: View {
                 .padding(.bottom, 12)
 
             Toggle("Use Agent (macOS 26 or above)", isOn: $coordinator.showAgentTab)
+                .padding(.bottom, 12)
+
+            Toggle("List form fields, links and destinations in the sidebar", isOn: $coordinator.showsDocumentStructureInSidebar)
+            Text("In the Document tab, with layers and attachments. The tab then also appears for documents that have any of these.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 12)
 
 #if VECTORPDF_MACOS27_SDK

@@ -274,16 +274,23 @@ final class AttachmentsNSTableView: NSTableView {
         super.keyDown(with: event)
     }
 
-    override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool { coordinator != nil }
+    // Quick Look calls these on the main thread.
+    override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool {
+        MainActor.assumeIsolated { coordinator != nil }
+    }
 
     override func beginPreviewPanelControl(_ panel: QLPreviewPanel!) {
-        panel.dataSource = coordinator
-        panel.delegate = coordinator
+        MainActor.assumeIsolated {
+            panel?.dataSource = coordinator
+            panel?.delegate = coordinator
+        }
     }
 
     override func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
-        panel.dataSource = nil
-        panel.delegate = nil
+        MainActor.assumeIsolated {
+            panel?.dataSource = nil
+            panel?.delegate = nil
+        }
     }
 }
 

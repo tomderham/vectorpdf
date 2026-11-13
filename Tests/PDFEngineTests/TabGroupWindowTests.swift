@@ -13,7 +13,7 @@ struct TabGroupWindowTests {
     }
 
     /// Whether `window` closes, unlike `isVisible`, which is also false for a tab in the background.
-    private final class CloseWatcher {
+    private final class CloseWatcher: @unchecked Sendable {
         private(set) var closed = false
         private var token: NSObjectProtocol?
 

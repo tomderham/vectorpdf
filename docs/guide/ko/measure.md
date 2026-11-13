@@ -1,5 +1,5 @@
 <!-- keywords: 측정, 길이, 거리, 치수, 둘레, 면적, 각도, 직교, 스냅, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 편집, 변경, 이동, 핸들, 오프셋, edit, change, move, reshape, handle, offset -->
-<!-- source: ce12181269d9 -->
+<!-- source: 6784021f46a2 -->
 
 # 길이, 면적 및 각도 측정하기
 
@@ -20,6 +20,8 @@
 
 - **Ortho Lock**은 선을 0°, 45°, 90°로 유지합니다. 선 하나에 대해 반대로 전환하려면 ⇧ 키를 길게 누릅니다. 켜져 있을 때는 어떤 각도로든 측정할 수 있고, 꺼져 있을 때는 선을 곧게 유지할 수 있습니다.
 - **Vertex Magnetic Snapping**은 포인터를 도면의 모서리와 끝점에 맞춥니다.
+- **안내선과 격자:** View > Rulers and Grid > Snap to Guides and Grid가 켜져 있으면 점이 눈금자에서 끌어온 안내선과, 격자가 표시되어 있는 동안에는 격자에 맞춰집니다. [눈금자, 상태 막대 및 Inspector](rulers-and-inspector.md)를 참고하십시오.
+- **상태 막대**(View > Show Status Bar)는 그리는 중인 측정에 대해 레이블보다 많은 정보를 보여 줍니다. 각도와 가로 및 세로로 얼마나 뻗어 있는지, 또는 지금까지의 면적 둘레입니다.
 
 ## 측정 변경하기
 

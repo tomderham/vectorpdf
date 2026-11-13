@@ -286,6 +286,21 @@ public struct PDFViewerMainView: View {
                         .padding(.bottom, 16)
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if appCoordinator.showsNavigator && viewModel.document != nil {
+                    PageNavigatorView(viewModel: viewModel)
+                        .padding(16)
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if appCoordinator.showsStatusBar && viewModel.document != nil {
+                    StatusBarView(viewModel: viewModel)
+                }
+            }
+            .inspector(isPresented: $viewModel.isInspectorVisible) {
+                InspectorView(viewModel: viewModel)
+                    .inspectorColumnWidth(min: 220, ideal: 260, max: 380)
+            }
             .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
             .toolbarBackground(.visible, for: .windowToolbar)
     }
@@ -760,17 +775,11 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(2)
                             .help("Anchors")
-                        if !viewModel.layers.isEmpty {
-                            Image(systemName: "square.3.layers.3d")
+                        if !viewModel.documentSidebarSections.isEmpty {
+                            Image(systemName: "shippingbox")
                                 .imageScale(.medium)
                                 .tag(5)
-                                .help("Layers")
-                        }
-                        if !viewModel.attachments.isEmpty {
-                            Image(systemName: "paperclip")
-                                .imageScale(.medium)
-                                .tag(6)
-                                .help("Attachments")
+                                .help(documentTabTooltip)
                         }
                         if viewModel.hasAnnotationThreads {
                             Image(systemName: "text.bubble")
@@ -795,8 +804,7 @@ public struct PDFViewerMainView: View {
                         "Outline & Thumbnails",
                         "Search Document (Cmd+F)",
                         "Anchors"
-                    ] + (viewModel.layers.isEmpty ? [] : ["Layers"])
-                      + (viewModel.attachments.isEmpty ? [] : ["Attachments"])
+                    ] + (viewModel.documentSidebarSections.isEmpty ? [] : [documentTabTooltip])
                       + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
                       + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
@@ -816,15 +824,9 @@ public struct PDFViewerMainView: View {
                             selectedSidebarTab = 0
                         }
                     }
-                    .onChange(of: viewModel.attachments.isEmpty) { _, noAttachments in
-                        // Another document opened, without attachments.
-                        if noAttachments && selectedSidebarTab == 6 {
-                            selectedSidebarTab = 0
-                        }
-                    }
-                    .onChange(of: viewModel.layers.isEmpty) { _, noLayers in
-                        // Another document opened, without layers.
-                        if noLayers && selectedSidebarTab == 5 {
+                    .onChange(of: viewModel.documentSidebarSections.isEmpty) { _, isEmpty in
+                        // Another document opened, with none of what the Document tab shows.
+                        if isEmpty && selectedSidebarTab == 5 {
                             selectedSidebarTab = 0
                         }
                     }
@@ -1240,9 +1242,7 @@ public struct PDFViewerMainView: View {
                 } else if selectedSidebarTab == 7, let session = viewModel.compareSession {
                     CompareChangesSidebar(session: session)
                 } else if selectedSidebarTab == 5 {
-                    LayersSidebarView(viewModel: viewModel)
-                } else if selectedSidebarTab == 6 {
-                    AttachmentsSidebarView(viewModel: viewModel)
+                    DocumentSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 4 {
                     AnnotationsSidebarView(viewModel: viewModel)
                 } else if selectedSidebarTab == 3 {
@@ -1497,6 +1497,12 @@ public struct PDFViewerMainView: View {
         .navigationTitle(viewModel.compareSession != nil ? viewModel.documentTitle : "")
     }
 
+    /// The Document tab's tooltip, naming what it holds for this document.
+    private var documentTabTooltip: String {
+        let titles = viewModel.documentSidebarSections.map(\.title)
+        return "Document: " + ListFormatter.localizedString(byJoining: titles)
+    }
+
     /// Shows or hides the sidebar as the view model decided when the document opened, on the tab
     /// it chose (see PDFViewerViewModel.sidebarOpening).
     private func showSidebarForOpenedDocument() {
@@ -1510,9 +1516,13 @@ public struct PDFViewerMainView: View {
         sidebarVisibility = viewModel.isSidebarVisible ? .all : .detailOnly
         switch viewModel.sidebarOpeningTab {
         case .contents: selectedSidebarTab = 0
-        case .layers: selectedSidebarTab = 5
+        case .layers:
+            viewModel.documentSidebarSection = .layers
+            selectedSidebarTab = 5
         case .comments: selectedSidebarTab = 4
-        case .attachments: selectedSidebarTab = 6
+        case .attachments:
+            viewModel.documentSidebarSection = .attachments
+            selectedSidebarTab = 5
         }
     }
 

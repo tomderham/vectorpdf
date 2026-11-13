@@ -41,14 +41,14 @@ extension PDFCanvasView {
 
     /// How far beyond the visible area to render, as a fraction of its size each side, so small
     /// scrolls stay sharp.
-    static let detailOverscan: CGFloat = 0.25
+    nonisolated static let detailOverscan: CGFloat = 0.25
     /// Pixels a detail's margin may grow it to; the visible part itself is always rendered.
-    static let maxDetailPixels: CGFloat = 16_000_000
+    nonisolated static let maxDetailPixels: CGFloat = 16_000_000
     static let detailRenderDelay: Duration = .milliseconds(120)
 
     /// The page rect (page points) to render in detail for this view of a page, or nil if none of
     /// the page is visible.
-    static func detailRect(visible: NSRect, geometry: PageGeometry, backingScale: CGFloat) -> CGRect? {
+    nonisolated static func detailRect(visible: NSRect, geometry: PageGeometry, backingScale: CGFloat) -> CGRect? {
         let pageFrame = geometry.frame
         guard visible.intersects(pageFrame), geometry.zoom > 0 else { return nil }
         let pixels = visible.width * visible.height * backingScale * backingScale

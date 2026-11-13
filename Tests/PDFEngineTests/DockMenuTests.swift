@@ -119,7 +119,7 @@ import Testing
     }
 
     @Test(.showsWindows) func listsWindowOpenedFromFinder() {
-        let (tabbed, single, cleanup) = makeWindows()
+        let (_, _, cleanup) = makeWindows()
         defer { cleanup() }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("dock_menu_finder_\(UUID().uuidString).pdf")
         createSamplePDF(at: url)

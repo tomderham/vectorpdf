@@ -720,6 +720,59 @@ struct VectorPDF: App {
 
             Divider()
 
+            Button(coordinator.showsStatusBar ? "Hide Status Bar" : "Show Status Bar") {
+                coordinator.showsStatusBar.toggle()
+            }
+            .keyboardShortcut("/", modifiers: .command)
+
+            Button(coordinator.showsNavigator ? "Hide Navigator" : "Show Navigator") {
+                coordinator.showsNavigator.toggle()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .control])
+
+            Menu("Rulers and Grid") {
+                Button(coordinator.showsRulers ? "Hide Rulers" : "Show Rulers") {
+                    coordinator.showsRulers.toggle()
+                }
+                .keyboardShortcut("r", modifiers: .command)
+
+                Button(coordinator.showsGrid ? "Hide Grid" : "Show Grid") {
+                    coordinator.showsGrid.toggle()
+                }
+                .keyboardShortcut("'", modifiers: .command)
+
+                Toggle("Snap to Guides and Grid", isOn: $coordinator.snapsToGuidesAndGrid)
+
+                Divider()
+
+                Picker("Grid Spacing", selection: $coordinator.gridSpacing) {
+                    ForEach(GridSpacingChoice.choices(for: coordinator.readoutUnit), id: \.points) { choice in
+                        Text(choice.title).tag(choice.points)
+                    }
+                }
+
+                Picker("Units", selection: $coordinator.readoutUnit) {
+                    ForEach(ReadoutUnit.allCases, id: \.self) { unit in
+                        Text(unit.displayName).tag(unit)
+                    }
+                }
+
+                Divider()
+
+                Button("Clear Guides") {
+                    resolvedViewModel?.clearGuides()
+                }
+                .disabled(resolvedViewModel?.pageGuides.isEmpty ?? true)
+            }
+
+            Button((resolvedViewModel?.isInspectorVisible ?? false) ? "Hide Inspector" : "Show Inspector") {
+                resolvedViewModel?.toggleInspector()
+            }
+            .keyboardShortcut("i", modifiers: [.command, .control])
+            .disabled(!hasDocument)
+
+            Divider()
+
             Button("Zoom In") {
                 resolvedViewModel?.zoomIn()
             }

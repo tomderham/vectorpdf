@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: d2c10869a1ac -->
+<!-- source: 498dfab80a41 -->
 
 # Tastaturkurzbefehle
 
@@ -55,6 +55,11 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Show oder Hide Markup Toolbar | ⇧⌘A |
 | Show oder Hide Measurement Toolbar | ⇧⌘M |
 | Show oder Hide Redact Toolbar | ⌥⌘R |
+| Show oder Hide Status Bar | ⌘/ |
+| Show oder Hide Inspector | ⌃⌘I |
+| Show oder Hide Navigator | ⌃⌘N |
+| Show oder Hide Rulers | ⌘R |
+| Show oder Hide Grid | ⌘' |
 
 ## Suche und Text
 

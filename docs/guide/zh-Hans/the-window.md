@@ -1,6 +1,5 @@
-<!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, 附件, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: eaf69c8e8bdb -->
-
+<!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, 附件, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 状态栏, Inspector, status bar -->
+<!-- source: fdb75158a744 -->
 # VectorPDF 窗口
 
 每个 VectorPDF 窗口都包含工具栏、边栏和文稿本身。一个窗口可以将多份文稿作为[标签页](tabs-and-windows.md)保存。
@@ -26,12 +25,11 @@
 - **Outline & Thumbnails：** [目录，或每一页的缩略图](outline-and-thumbnails.md)。
 - **Search：** [当前文稿的结果](search.md)。
 - **Anchors：** [你保存的位置](anchors.md)。
-- **Layers：** [显示或隐藏文稿的图层](layers.md)。只有当文稿带有图层时，才会出现这个标签页。
-- **Attachments：** [附加到 PDF 的文件](attachments.md)。只有当文稿带有附件时，才会出现这个标签页。
+- **Document：**文稿除页面之外包含的内容：它的[图层](layers.md)、[附件](attachments.md)，以及（如果你在设置中打开）它的[表单栏位、签名、链接和目标](document-tab.md)。从标签页顶部的菜单中选择要显示的内容。只有当文稿至少包含其中一种时，这个标签页才会出现。
 - **Comments：** [所有注释及其回复和状态](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document：** [Agent](agent.md)。此标签页在 macOS 26 或更高版本上显示，除非你在 Settings 中关闭了 [Use Agent](settings.md)。
 
-使用工具栏中的边栏按钮可显示或隐藏边栏。VectorPDF 会为每个文稿记住你是显示还是隐藏了边栏。首次打开文稿时会显示边栏，除非文稿只有一两页，且没有边栏可显示的内容：没有目录、图层、注释或附件。带有附件、注释或图层的短文稿会在相应标签页中打开。
+使用工具栏中的边栏按钮可显示或隐藏边栏。VectorPDF 会记住你为每份文稿显示还是隐藏了边栏。首次打开文稿时，边栏会显示，除非文稿只有一两页，且没有任何可在边栏中显示的内容：没有大纲、图层、注释或附件。带有附件或图层的短文稿打开时会显示 Document 标签页中的这些内容，带有注释的则显示 Comments 标签页。
 
 ## 附加工具栏
 
@@ -40,6 +38,8 @@
 - **Markup** (⇧⌘A) 包含[注释工具](text-markup.md)。
 - **Measurement** (⇧⌘M) 包含[测量工具](measure.md)。
 - **Redact** (⌥⌘R) 包含[涂黑工具](redact.md)。
+
+View 菜单还可以显示页面下方的状态栏、标尺、网格、页面旁边的 Inspector 以及角落里的导航器。请参阅[标尺、状态栏和 Inspector](rulers-and-inspector.md)。
 
 ## 右键菜单
 

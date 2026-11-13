@@ -8,6 +8,7 @@ Choose VectorPDF > Settings, or press ⌘,.
 | --- | --- |
 | Annotation Author | The name saved on your annotations and replies. If it's empty, VectorPDF uses your Mac user name. |
 | Use Agent | Shows the [Ask About This Document](agent.md) tab in the sidebar, on macOS 26 or later. |
+| List form fields, links and destinations in the sidebar | Adds a document's [form fields, signatures, links and named destinations](document-tab.md) to the Document tab, which then also appears for documents that have any of them. Off unless you turn it on. |
 | AI Synthesis Engine | Chooses [what writes the Agent's answers](agent-engines.md), on macOS 27. |
 | PDF Color | Sets [how pages look](pdf-colors.md): Follow System, Light, Dark or Sepia. |
 | Open Links In | Chooses the browser for web links. |

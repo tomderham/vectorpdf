@@ -1,11 +1,11 @@
 <!-- keywords: livelli, livello, contenuto facoltativo, CAD, disegni tecnici, mostrare, nascondere, visibilità, annotazioni, nuovo livello, rinominare livello, eliminare livello, configurazione dei livelli, configurazioni, stati dei livelli, stampa plotter, layers, layer, optional content, OCG, AutoCAD, Revit, show, hide, visibility, markups, annotations, new layer, rename layer, delete layer, layer configuration, configurations, layer states, plot -->
-<!-- source: 4525c1273cca -->
+<!-- source: 2395c1338d37 -->
 
 # Mostrare e nascondere i livelli
 
 I disegni esportati dai programmi CAD e di progettazione spesso mettono ogni parte di una tavola su un livello proprio: muri, impianto elettrico, idraulico, quote, nuvole di revisione. Puoi mostrarli o nasconderli uno per uno.
 
-Il pannello Layers compare in cima alla barra laterale solo quando il documento ha livelli. Per dare a un documento il suo primo livello, consulta [Aggiungere, rinominare ed eliminare i livelli](#add-rename-and-delete-layers).
+I livelli si trovano nel pannello Document (una scatola) in cima alla barra laterale, che compare quando il documento ha livelli o altri elementi che il pannello elenca. Se il pannello mostra altro, scegli **Layers** dal menu in cima. Per dare a un documento il suo primo livello, consulta [Aggiungere, rinominare ed eliminare i livelli](#add-rename-and-delete-layers).
 
 - **Mostrare o nascondere un livello:** fai clic sulla sua casella. La pagina viene ridisegnata subito.
 - **Scegliere uno di un gruppo:** alcuni documenti raggruppano i livelli in modo che se ne veda uno solo alla volta, come le lingue o le scale di una tavola. Questi hanno pulsanti rotondi; sceglierne uno nasconde gli altri.
@@ -16,7 +16,7 @@ I livelli che nascondi vengono esclusi anche quando [stampi](print.md), [selezio
 
 ## Scegliere una configurazione dei livelli
 
-Alcuni documenti offrono più di un modo per mostrare i livelli, ad esempio uno per la stampa su plotter, uno per ogni disciplina o uno per ogni lingua. In questi documenti, la parte superiore della scheda Layers mostra la configurazione in uso al posto del numero di livelli. È **Default** finché non ne scegli un'altra, a meno che il documento non dia un nome alla sua configurazione predefinita.
+Alcuni documenti offrono più modi di mostrare i propri livelli, ad esempio uno per la stampa su plotter, uno per ogni categoria di lavori o uno per ogni lingua. In questi, la parte superiore dell’elenco dei livelli mostra la configurazione in uso al posto del numero di livelli. È **Default** finché non ne scegli un’altra, a meno che il documento non dia un nome alla propria configurazione predefinita.
 
 Fai clic su di essa, quindi scegli una configurazione. I suoi livelli vengono mostrati e nascosti come indica, ed elencati come li elenca.
 
@@ -26,7 +26,7 @@ Se poi mostri o nascondi un livello, dopo il nome della configurazione compare *
 
 Anche le annotazioni possono stare su un livello, così vengono mostrate e nascoste con esso. Le altre app che leggono i livelli, come Acrobat e Bluebeam, le mostrano e nascondono allo stesso modo.
 
-- **Scegliere dove vanno le nuove annotazioni:** nella [barra degli strumenti Markup](draw-and-notes.md) o nella [barra degli strumenti Measurement](measure.md), fai clic sul menu dei livelli (indica **No Layer** finché non ne scegli uno) e scegli un livello. Tutto ciò che crei da quel momento va su quel livello, finché non scegli un altro livello o **No Layer**. Puoi anche fare clic con il pulsante destro su un livello nel pannello Layers e scegliere **Put New Annotations Here**. Il livello delle nuove annotazioni ha una matita accanto.
+- **Scegliere dove vanno le nuove annotazioni:** nella [barra degli strumenti Markup](draw-and-notes.md) o nella [barra degli strumenti Measurement](measure.md), fai clic sul menu dei livelli (indica **No Layer** finché non ne scegli uno) e scegli un livello. Tutto ciò che crei da quel momento va su quel livello, finché non scegli un altro livello o **No Layer**. Puoi anche fare clic con il tasto destro su un livello nel pannello Document e scegliere **Put New Annotations Here**. Il livello su cui vanno le nuove annotazioni ha accanto una matita.
 - **Spostare un'annotazione su un altro livello:** fai clic con il pulsante destro su di essa e scegli **Layer**, quindi un livello, oppure **None** per toglierla da qualsiasi livello.
 - **Aggiungere un livello tuo:** consulta [Aggiungere, rinominare ed eliminare i livelli](#add-rename-and-delete-layers).
 
@@ -40,7 +40,7 @@ Se scegli un livello nascosto per le nuove annotazioni, viene mostrato, così ci
 
 I revisori spesso mettono le proprie annotazioni su livelli propri, ad esempio uno per categoria di lavori o per giro di revisione, anche su disegni arrivati senza livelli. Ognuno di questi comandi modifica il documento e Undo lo annulla.
 
-- **Aggiungere un livello:** scegli Edit > New Layer…, poi dagli un nome. Funziona in qualsiasi PDF, quindi è così che un documento ottiene il suo primo livello; compaiono poi il pannello Layers e i menu dei livelli. Le nuove annotazioni vanno sul nuovo livello. In un documento che ha già livelli, puoi anche fare clic su **+** in cima al pannello Layers o scegliere **New Layer…** dal menu dei livelli.
+- **Aggiungere un livello:** scegli Edit > New Layer…, poi dagli un nome. Funziona in qualsiasi PDF, quindi è così che un documento ottiene il suo primo livello; a quel punto compaiono i livelli nel pannello Document e i menu dei livelli. Le nuove annotazioni vanno sul nuovo livello. In un documento che ha già livelli, puoi anche fare clic su **+** sopra l’elenco dei livelli oppure scegliere **New Layer…** dal menu dei livelli.
 - **Rinominare un livello:** scegli Edit > Rename Layer…, scegli il livello, poi digita il nuovo nome.
 - **Eliminare un livello:** scegli Edit > Delete Layer…, poi il livello. Le sue annotazioni restano sulla pagina, senza livello. Si possono eliminare solo i livelli che contengono soltanto annotazioni: eliminare un livello su cui si trova il disegno stesso lascerebbe quella parte del disegno sempre visibile, quindi quei livelli non sono elencati.
 
@@ -50,4 +50,4 @@ I livelli che aggiungi, rinomini o elimini vengono salvati con il documento, cos
 
 Quali livelli sono mostrati e quale configurazione hai scelto non vengono salvati con il documento. La prossima volta che lo apri, i suoi livelli vengono mostrati come stabilisce il documento stesso, e chiunque lo riceva da te vede lo stesso.
 
-> **Nota:** Un documento di una o due pagine con livelli si apre sul pannello Layers, a meno che tu non abbia nascosto la barra laterale per quel documento. Usa il pulsante della barra laterale nella barra degli strumenti per mostrarla.
+> **Nota:** Un documento di una o due pagine con livelli si apre sui suoi livelli nel pannello Document, a meno che tu non abbia nascosto la barra laterale per quel documento. Usa il pulsante della barra laterale nella barra degli strumenti per mostrarla.

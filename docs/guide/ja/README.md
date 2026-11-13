@@ -1,4 +1,4 @@
-<!-- source: 2d2679324bf8 -->
+<!-- source: 2f847880be93 -->
 
 # VectorPDF ユーザガイド
 
@@ -21,6 +21,8 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 - [アウトラインとサムネール](outline-and-thumbnails.md)
 - [レイヤーの表示と非表示](layers.md)
 - [PDF に添付されたファイル](attachments.md)
+- [フォームフィールド、署名、リンク、移動先](document-tab.md)
+- [ルーラー、ステータスバー、Inspector](rulers-and-inspector.md)
 - [PDF の色を変更する](pdf-colors.md)
 - [テキストの選択、コピー、調べる](select-text.md)
 - [2つの書類を比較する](compare-documents.md)

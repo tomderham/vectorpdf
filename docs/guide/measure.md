@@ -19,6 +19,8 @@ Zoom in for accuracy before you measure. Pressing Escape cancels a measurement i
 
 - **Ortho Lock** keeps lines at 0°, 45° and 90°. Hold ⇧ to switch it for one line: to measure at any angle while it's on, or to keep a line straight while it's off.
 - **Vertex Magnetic Snapping** snaps the pointer to corners and endpoints in the drawing.
+- **Guides and the grid:** with View > Rulers and Grid > Snap to Guides and Grid on, points snap to guides you've dragged out from the rulers, and to the grid while it shows. See [Rulers, the status bar and the Inspector](rulers-and-inspector.md).
+- **The status bar** (View > Show Status Bar) shows more of a measurement as you draw it than its label: its angle and how far it runs across and down, or an area's perimeter so far.
 
 ## Change a measurement
 

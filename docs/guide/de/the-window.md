@@ -1,6 +1,5 @@
-<!-- keywords: Fenster, Symbolleiste, Symbolleisten, Seitenleiste, Tabs, Start-Bildschirm, Oberfläche, Seitenanzeige, Bedienelemente, Anhänge, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments -->
-<!-- source: eaf69c8e8bdb -->
-
+<!-- keywords: Fenster, Symbolleiste, Symbolleisten, Seitenleiste, Tabs, Start-Bildschirm, Oberfläche, Seitenanzeige, Bedienelemente, Anhänge, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, Statusleiste, Inspector, status bar -->
+<!-- source: fdb75158a744 -->
 # Das VectorPDF-Fenster
 
 Jedes VectorPDF-Fenster hat eine Symbolleiste, eine Seitenleiste und das Dokument selbst. Ein Fenster kann mehrere Dokumente als [Tabs](tabs-and-windows.md) enthalten.
@@ -26,12 +25,11 @@ Mit den Tabs oben in der Seitenleiste wechselst du zwischen:
 - **Outline & Thumbnails:** das [Inhaltsverzeichnis oder eine Miniatur jeder Seite](outline-and-thumbnails.md).
 - **Search:** [Ergebnisse für das aktuelle Dokument](search.md).
 - **Anchors:** [die Stellen, die du gespeichert hast](anchors.md).
-- **Layers:** [die Ebenen des Dokuments ein- oder ausblenden](layers.md). Dieser Tab erscheint nur, wenn das Dokument Ebenen hat.
-- **Attachments:** [an das PDF angehängte Dateien](attachments.md). Dieser Tab erscheint nur, wenn das Dokument Anhänge hat.
+- **Document:** was das Dokument außer seinen Seiten enthält: seine [Ebenen](layers.md), [Anhänge](attachments.md) und, wenn du sie in den Einstellungen einschaltest, seine [Formularfelder, Signaturen, Links und Ziele](document-tab.md). Wähle im Menü oben im Tab, was angezeigt wird. Dieser Tab erscheint nur, wenn das Dokument mindestens eines davon hat.
 - **Comments:** [alle Anmerkungen mit ihren Antworten und ihrem Status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [der Agent](agent.md). Dieser Tab wird unter macOS 26 oder neuer angezeigt, sofern du [Use Agent](settings.md) in Settings nicht deaktiviert hast.
 
-Mit der Seitenleistentaste in der Symbolleiste kannst du die Seitenleiste ein- oder ausblenden. VectorPDF merkt sich für jedes Dokument, ob du sie ein- oder ausgeblendet hast. Wenn du ein Dokument zum ersten Mal öffnest, wird die Seitenleiste eingeblendet, außer das Dokument hat nur eine oder zwei Seiten und nichts für die Seitenleiste: kein Inhaltsverzeichnis, keine Ebenen, Anmerkungen oder Anhänge. Ein kurzes Dokument mit Anhängen, Anmerkungen oder Ebenen wird mit dem passenden Tab geöffnet.
+Mit der Seitenleistentaste in der Symbolleiste kannst du die Seitenleiste ein- oder ausblenden. VectorPDF merkt sich für jedes Dokument, ob du sie ein- oder ausgeblendet hast. Wenn du ein Dokument zum ersten Mal öffnest, wird die Seitenleiste eingeblendet, außer das Dokument hat nur eine oder zwei Seiten und nichts für die Seitenleiste: kein Inhaltsverzeichnis, keine Ebenen, Anmerkungen oder Anhänge. Ein kurzes Dokument mit Anhängen oder Ebenen wird mit dem Tab „Document“ geöffnet, der sie zeigt, eines mit Anmerkungen mit dem Tab „Comments“.
 
 ## Weitere Symbolleisten
 
@@ -40,6 +38,8 @@ Drei Symbolleisten werden bei Bedarf unter der Hauptsymbolleiste angezeigt. Du k
 - **Markup** (⇧⌘A) enthält die [Anmerkungswerkzeuge](text-markup.md).
 - **Measurement** (⇧⌘M) enthält die [Messwerkzeuge](measure.md).
 - **Redact** (⌥⌘R) enthält die [Schwärzungswerkzeuge](redact.md).
+
+Über das Menü „View“ kannst du außerdem eine Statusleiste unter der Seite, Lineale, ein Raster, den Inspector neben der Seite und einen Navigator in der Ecke einblenden. Siehe [Lineale, Statusleiste und Inspector](rulers-and-inspector.md).
 
 ## Kontextmenüs
 

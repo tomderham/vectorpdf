@@ -1,9 +1,9 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # राइट-क्लिक मेनू
 
-पॉइंटर के नीचे मौजूद चीज़ के कमांड देखने के लिए राइट-क्लिक या कंट्रोल-क्लिक करें। कौन-सा मेनू दिखेगा, यह इस पर निर्भर करता है कि आप कहाँ क्लिक करते हैं।
+पॉइंटर के नीचे मौजूद चीज़ के कमांड देखने के लिए राइट-क्लिक करें, या Control दबाकर क्लिक करें। आपको कौन-सा मेनू मिलेगा, यह इस पर निर्भर करता है कि आप कहाँ क्लिक करते हैं। पेज पर कहीं भी, मेनू के अंत में Inspect होता है, जो वहाँ बनी चीज़ के लिए [Inspector](rulers-and-inspector.md#the-inspector) खोलता है।
 
 ## दस्तावेज़ में
 
@@ -37,8 +37,11 @@ SyncTeX चालू करके LaTeX से बने PDF में, दस�
 | खोज परिणाम | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | ऐंकर | Open in New Window या Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments टैब में कोई ऐनोटेशन | Show on Page, Comments…, Delete |
-| Layers टैब में कोई लेयर | Put New Annotations Here, या Stop Putting New Annotations Here। देखें [लेयर दिखाएँ और छिपाएँ](layers.md)। |
-| Attachments टैब में कोई अटैचमेंट | Quick Look, Open, Save As…, और किसी पेज से जुड़ी फ़ाइल के लिए Show on Page। [PDF से जुड़ी फ़ाइलें](attachments.md) देखें। |
+| Document टैब में कोई लेयर | Put New Annotations Here, या Stop Putting New Annotations Here। देखें [लेयर दिखाएँ और छिपाएँ](layers.md)। |
+| Document टैब में कोई अटैचमेंट | Quick Look, Open, Save As…, और किसी पेज से जुड़ी फ़ाइल के लिए Show on Page। देखें [PDF से जुड़ी फ़ाइलें](attachments.md)। |
+| Document टैब में कोई फ़ॉर्म फ़ील्ड | Show on Page, Copy Name, Copy Value। देखें [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और गंतव्य](document-tab.md)। |
+| Document टैब में कोई लिंक | Show on Page, Go to Destination या Open Link, और वेब लिंक के लिए Copy Address |
+| Document टैब में कोई गंतव्य | Copy Name |
 
 ## विंडो में
 

@@ -2,7 +2,7 @@
 
 # Right-click menus
 
-Right-click, or Control-click, to see commands for what's under the pointer. The menu you get depends on where you click.
+Right-click, or Control-click, to see commands for what's under the pointer. The menu you get depends on where you click. Anywhere on a page, the menu ends with Inspect, which opens the [Inspector](rulers-and-inspector.md#the-inspector) on what's drawn there.
 
 ## In the document
 
@@ -36,8 +36,11 @@ In a document with [layers](layers.md), the menu for an annotation also has **La
 | A search result | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | An annotation in the Comments tab | Show on Page, Comments…, Delete |
-| A layer in the Layers tab | Put New Annotations Here, or Stop Putting New Annotations Here. See [Show and hide layers](layers.md). |
-| An attachment in the Attachments tab | Quick Look, Open, Save As…, and Show on Page for a file attached to a page. See [Files attached to a PDF](attachments.md). |
+| A layer in the Document tab | Put New Annotations Here, or Stop Putting New Annotations Here. See [Show and hide layers](layers.md). |
+| An attachment in the Document tab | Quick Look, Open, Save As…, and Show on Page for a file attached to a page. See [Files attached to a PDF](attachments.md). |
+| A form field in the Document tab | Show on Page, Copy Name, Copy Value. See [Form fields, signatures, links and destinations](document-tab.md). |
+| A link in the Document tab | Show on Page, Go to Destination or Open Link, and Copy Address for a web link |
+| A destination in the Document tab | Copy Name |
 
 ## In the window
 

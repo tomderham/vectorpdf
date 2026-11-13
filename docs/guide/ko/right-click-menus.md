@@ -1,9 +1,9 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # 오른쪽 클릭 메뉴
 
-오른쪽 클릭하거나 Control-클릭하면 포인터 아래에 있는 항목에 대한 명령이 표시됩니다. 클릭하는 위치에 따라 표시되는 메뉴가 달라집니다.
+오른쪽 클릭하거나 Control 키를 누른 채 클릭하면 포인터 아래에 있는 항목에 대한 명령을 볼 수 있습니다. 나타나는 메뉴는 클릭한 위치에 따라 다릅니다. 페이지의 어느 곳에서나 메뉴 끝에는 Inspect가 있으며, 이를 선택하면 그곳에 그려진 내용에 대한 [Inspector](rulers-and-inspector.md#the-inspector)가 열립니다.
 
 ## 문서에서
 
@@ -37,8 +37,11 @@ SyncTeX를 켜고 LaTeX로 만든 PDF에서는 문서 안의 모든 메뉴가 **
 | 검색 결과 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | 앵커 | Open in New Window 또는 Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments 탭의 주석 | Show on Page, Comments…, Delete |
-| Layers 탭의 레이어 | Put New Annotations Here 또는 Stop Putting New Annotations Here. [레이어 보기 및 가리기](layers.md)를 참고하십시오. |
-| Attachments 탭의 첨부 파일 | Quick Look, Open, Save As… 및 페이지에 첨부된 파일의 경우 Show on Page. [PDF에 첨부된 파일](attachments.md)을 참고합니다. |
+| Document 탭의 레이어 | Put New Annotations Here 또는 Stop Putting New Annotations Here. [레이어 보기 및 가리기](layers.md)를 참고하십시오. |
+| Document 탭의 첨부 파일 | Quick Look, Open, Save As… 및 페이지에 첨부된 파일의 경우 Show on Page. [PDF에 첨부된 파일](attachments.md)을 참고하십시오. |
+| Document 탭의 양식 필드 | Show on Page, Copy Name, Copy Value. [양식 필드, 서명, 링크 및 대상](document-tab.md)을 참고하십시오. |
+| Document 탭의 링크 | Show on Page, Go to Destination 또는 Open Link 및 웹 링크의 경우 Copy Address |
+| Document 탭의 대상 | Copy Name |
 
 ## 윈도우에서
 

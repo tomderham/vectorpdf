@@ -1,9 +1,9 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 228b2ab5f5c3 -->
+<!-- source: 40e9f892a893 -->
 
 # 右クリックメニュー
 
-右クリックするか、Control キーを押しながらクリックすると、ポインタの下にある項目のコマンドが表示されます。表示されるメニューは、クリックする場所によって異なります。
+右クリックするか、Control キーを押しながらクリックすると、ポインタの下にあるものに対するコマンドが表示されます。表示されるメニューは、クリックした場所によって異なります。ページ上のどこでも、メニューの最後に Inspect があり、そこに描かれているものを [Inspector](rulers-and-inspector.md#the-inspector) で開きます。
 
 ## 書類内
 
@@ -37,8 +37,11 @@ SyncTeX を有効にして LaTeX で作成した PDF では、書類内のすべ
 | 検索結果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | アンカー | Open in New Window または Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments タブの注釈 | Show on Page、Comments…、Delete |
-| Layers タブのレイヤー | Put New Annotations Here または Stop Putting New Annotations Here。[レイヤーの表示と非表示](layers.md)を参照してください。 |
-| Attachments タブの添付ファイル | Quick Look、Open、Save As…、およびページに添付されたファイルの場合は Show on Page。[PDF に添付されたファイル](attachments.md)を参照してください。 |
+| Document タブのレイヤー | Put New Annotations Here または Stop Putting New Annotations Here。[レイヤーの表示と非表示](layers.md)を参照してください。 |
+| Document タブの添付ファイル | Quick Look、Open、Save As…、およびページに添付されたファイルの場合は Show on Page。[PDF に添付されたファイル](attachments.md)を参照してください。 |
+| Document タブのフォームフィールド | Show on Page、Copy Name、Copy Value。[フォームフィールド、署名、リンク、移動先](document-tab.md)を参照してください。 |
+| Document タブのリンク | Show on Page、Go to Destination または Open Link、および Web リンクの場合は Copy Address |
+| Document タブの移動先 | Copy Name |
 
 ## ウインドウ内
 

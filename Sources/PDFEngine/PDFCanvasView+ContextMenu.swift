@@ -28,7 +28,18 @@ extension PDFCanvasView {
         self.lastContextMenuLocation = point
         // A document TeX built with SyncTeX on offers its source, at the top of the menu.
         let showInEditorItem = makeShowInEditorItem(at: point)
+        // Inspect, at the bottom of the menu, wherever on a page.
+        let inspectItem: NSMenuItem? = pageInfo(at: point).map { _ in
+            let item = NSMenuItem(title: "Inspect", action: #selector(inspectAction(_:)), keyEquivalent: "")
+            item.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
+            item.target = self
+            return item
+        }
         func withShowInEditor(_ menu: NSMenu) -> NSMenu {
+            if let inspectItem {
+                if menu.numberOfItems > 0 { menu.addItem(.separator()) }
+                menu.addItem(inspectItem)
+            }
             guard let showInEditorItem else { return menu }
             menu.insertItem(showInEditorItem, at: 0)
             if menu.items.count > 1 { menu.insertItem(NSMenuItem.separator(), at: 1) }
@@ -167,7 +178,7 @@ extension PDFCanvasView {
             menu.addItem(makeOpenInNewWindowItem(target: target))
             return withShowInEditor(menu)
         }
-        return showInEditorItem == nil ? nil : withShowInEditor(NSMenu(title: "Page"))
+        return showInEditorItem == nil && inspectItem == nil ? nil : withShowInEditor(NSMenu(title: "Page"))
     }
 
     private func makeCommentsItem(representing target: (pageIndex: Int, objectNumber: Int)) -> NSMenuItem {
@@ -429,6 +440,13 @@ extension PDFCanvasView {
         menu.addItem(openWindowItem)
 
         return menu
+    }
+
+    /// Opens the Inspector on what was right-clicked: the page's content there.
+    @objc private func inspectAction(_ sender: NSMenuItem) {
+        guard let (pageIdx, _, pagePoint) = pageInfo(at: lastContextMenuLocation) else { return }
+        viewModel.isInspectorVisible = true
+        viewModel.inspectContent(pageIndex: pageIdx, at: pagePoint)
     }
 
     @objc private func lookUpSelectionAction(_ sender: NSMenuItem) {
