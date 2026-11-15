@@ -1,5 +1,5 @@
 <!-- keywords: misurare, misura, misurazione, misurazioni, lunghezza, distanza, quota, perimetro, area, angolo, orto, aggancio, measure, measurement, measurements, length, distance, dimension, perimeter, angle, ortho, snap, snapping, modificare, spostare, maniglia, scostamento, edit, change, move, reshape, handle, offset -->
-<!-- source: 6784021f46a2 -->
+<!-- source: 3104d2e23c51 -->
 
 # Misurare lunghezze, aree e angoli
 
@@ -34,7 +34,7 @@ Premi Escape, o fai clic sullo strumento selezionato, per posare lo strumento di
 | Avvicinare o allontanare una linea di quota da ciò che misura | Trascina la sua etichetta oppure, una volta staccata dai punti, la linea di quota stessa. |
 | Cambiarne il colore | Scegli un colore con il pulsante del colore nella barra degli strumenti Measurement. |
 
-Il valore viene ricalcolato mentre trascini. Scegli Edit > Undo per riportare una misurazione com'era. Puoi modificare anche le misurazioni già salvate nel PDF.
+Il valore viene ricalcolato mentre trascini. Trascina oltre il bordo della finestra per scorrere, se la misurazione è più lunga della vista. Scegli Edit > Undo per riportare una misurazione com'era. Puoi modificare anche le misurazioni già salvate nel PDF.
 
 Per selezionare un'area, fai clic sul suo bordo: un clic al suo interno seleziona il testo che si trova lì.
 

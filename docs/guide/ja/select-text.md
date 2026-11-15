@@ -1,11 +1,12 @@
-<!-- keywords: 選択, コピー, テキスト, スクリーンショット, 画像, 調べる, 辞書, 意味, 翻訳, 読み上げ, 音声, 領域, 投げ縄, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: 56c5298b2bce -->
+<!-- keywords: 選択, コピー, テキスト, スクリーンショット, 画像, 調べる, 辞書, 意味, 翻訳, 読み上げ, 音声, 領域, 投げ縄, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, 広げる, Shift クリック, 複数ページ, 選択中のスクロール, extend, shift-click, several pages, scroll while selecting -->
+<!-- source: 43e554563f4f -->
 
 # テキストの選択、コピー、調べる
 
 ## テキストを選択する
 
-- テキストの上を**ドラッグ**します。選択範囲は読む順序に従うため、段組みでは 1 つの段に収まり、余白の行番号は飛ばされます。ページをまたいで選択することもできます。
+- テキストの上を**ドラッグ**します。選択範囲は読む順序に従うため、段組みでは 1 つの段に収まり、余白の行番号は飛ばされます。ページをまたいで選択することもできます。ウインドウの上端または下端を越えてドラッグすると書類がスクロールし、遠くまでドラッグするほど速くなります。
+- **⇧ を押しながらクリック**すると、選択範囲が開始位置からクリックした位置まで、どのページでも広がります。開始位置をクリックし、最後までスクロールしてから、そこで ⇧ を押しながらクリックします。⇧ を押しながらクリックした後も、そのままドラッグを続けられます。
 - **ダブルクリック**すると単語を、**トリプルクリック**すると行を選択できます。
 - **⌥ を押しながらドラッグ**すると、図や表などの四角い領域を選択できます。
 

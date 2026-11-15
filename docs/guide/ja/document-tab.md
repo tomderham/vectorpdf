@@ -1,5 +1,5 @@
 <!-- keywords: Document タブ, フォームフィールド, フィールド, 署名, 署名済み, デジタル署名, 証明, リンク, ハイパーリンク, URL, Web リンク, 名前付き移動先, 移動先, 内容, サイドバー, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # フォームフィールド、署名、リンク、移動先
 
@@ -11,7 +11,7 @@
 - **Links:** すべてのリンクと、リンクが付いているテキスト、リンク先。
 - **Destinations:** リンクから参照できる、書類内の名前付きの場所。
 
-Form Fields、Links、Destinations は、VectorPDF > Settings で **List form fields, links and destinations in the sidebar** をオンにした場合にのみ表示されます。ほとんどの書類にはリンクがあるため、そうしないとほぼすべての書類でタブが表示されてしまいます。
+Form Fields、Links、Destinations は、VectorPDF > Settings > General で **List form fields, links and destinations in the sidebar** をオンにした場合にのみ表示されます。ほとんどの書類にはリンクがあるため、そうしないとほぼすべての書類でタブが表示されてしまいます。
 
 メニューには書類にあるものだけが表示され、タブは書類にこれらのいずれかがある場合にのみ表示されます。
 

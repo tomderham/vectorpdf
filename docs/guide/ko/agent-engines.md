@@ -1,9 +1,9 @@
 <!-- keywords: 에이전트, 인공지능, 엔진, 기기 내, 온라인 모델, API 키, Agent, AI, engine, on-device, Private Cloud Compute, online model, API key, OpenAI, Gemini, OpenRouter -->
-<!-- source: dbbd02de21b5 -->
+<!-- source: 8e36d75499d6 -->
 
 # Agent의 답변 방식 선택하기
 
-관련 구절 검색은 항상 Mac에서 이루어집니다. 답변을 작성하는 주체는 VectorPDF > Settings > AI Synthesis Engine에서 선택할 수 있습니다. 이 설정에는 macOS 27이 필요합니다.
+관련 구절 검색은 항상 Mac에서 이루어집니다. 답변을 작성하는 주체는 VectorPDF > Settings > Agent > AI Synthesis Engine에서 선택할 수 있습니다. 이 설정에는 macOS 27이 필요합니다.
 
 | 엔진 | 작동 방식 | Mac 밖으로 전송되는 항목 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Private Cloud Compute는 이를 위해 서명된 VectorPDF 사본에서만 나�
 
 ## 온라인 모델 사용하기
 
-1. Settings에서 AI Synthesis Engine을 Online Model로 설정합니다.
+1. Settings에서 Agent를 클릭한 다음 AI Synthesis Engine을 Online Model로 설정합니다.
 2. OpenAI, Google Gemini 또는 OpenRouter 중에서 서비스를 선택합니다.
 3. API 키를 입력합니다. 각 서비스에서 키를 받을 수 있는 링크가 제공됩니다. 키는 로그인 키체인에 저장됩니다.
 4. 모델을 선택합니다.

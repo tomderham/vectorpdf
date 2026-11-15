@@ -1,5 +1,5 @@
 <!-- keywords: Tab Document, Formularfelder, Felder, Signaturen, signiert, digitale Signatur, zertifiziert, Links, Hyperlinks, URLs, Weblinks, benannte Ziele, Ziele, Inhalt, Seitenleiste, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # Formularfelder, Signaturen, Links und Ziele
 
@@ -11,7 +11,7 @@ Der Tab „Document“ (eine Schachtel) oben in der Seitenleiste listet auf, was
 - **Links:** alle Links mit dem Text, auf dem sie liegen, und ihrem Ziel.
 - **Destinations:** die benannten Stellen im Dokument, auf die Links verweisen können.
 
-„Form Fields“, „Links“ und „Destinations“ werden nur aufgelistet, wenn du unter VectorPDF > Settings **List form fields, links and destinations in the sidebar** einschaltest. Die meisten Dokumente enthalten Links, sonst würde der Tab also bei fast jedem erscheinen.
+„Form Fields“, „Links“ und „Destinations“ werden nur aufgelistet, wenn du unter VectorPDF > Settings > General **List form fields, links and destinations in the sidebar** einschaltest. Die meisten Dokumente enthalten Links, sonst würde der Tab also bei fast jedem erscheinen.
 
 Das Menü bietet nur an, was das Dokument hat, und der Tab erscheint nur, wenn es mindestens eines davon hat.
 

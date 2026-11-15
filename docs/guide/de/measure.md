@@ -1,5 +1,5 @@
 <!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset -->
-<!-- source: 6784021f46a2 -->
+<!-- source: 3104d2e23c51 -->
 
 # Längen, Flächen und Winkel messen
 
@@ -34,7 +34,7 @@ Drücke die Escape-Taste oder klicke auf das ausgewählte Werkzeug, um das Messw
 | Eine Maßlinie näher an das Gemessene oder weiter davon weg rücken | Ziehe ihre Beschriftung oder, sobald sie von den Punkten abgerückt ist, die Maßlinie selbst. |
 | Ihre Farbe ändern | Wähle mit der Farbtaste in der Symbolleiste „Measurement“ eine Farbe. |
 
-Der Wert wird beim Ziehen neu berechnet. Wähle Edit > Undo, um eine Messung wieder so herzustellen, wie sie war. Auch Messungen, die bereits im PDF gesichert sind, lassen sich ändern.
+Der Wert wird beim Ziehen neu berechnet. Ziehe über den Fensterrand hinaus, um zu scrollen, wenn eine Messung länger als die Ansicht ist. Wähle Edit > Undo, um eine Messung wieder so herzustellen, wie sie war. Auch Messungen, die bereits im PDF gesichert sind, lassen sich ändern.
 
 Um eine Fläche auszuwählen, klicke auf ihren Rand: Ein Klick in die Fläche wählt den Text dort aus.
 

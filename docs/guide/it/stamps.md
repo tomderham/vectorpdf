@@ -1,5 +1,5 @@
 <!-- keywords: timbro, timbri, firma, firme, firmare, iniziali, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # Timbri e firme
 
@@ -9,7 +9,7 @@ Un timbro è un'immagine, come la tua firma o le tue iniziali, che puoi inserire
 
 ## Creare il timbro
 
-1. Scegli VectorPDF > Settings, quindi fai clic su Create Stamp in Digital Stamp. Puoi anche scegliere semplicemente lo strumento Stamp nella barra degli strumenti Markup, e VectorPDF ti chiederà di crearne uno.
+1. Scegli VectorPDF > Settings, fai clic su General, quindi su Create Stamp accanto a Digital Stamp. Puoi anche scegliere semplicemente lo strumento Stamp nella barra degli strumenti Markup, e VectorPDF ti chiederà di crearne uno.
 2. Scegli come crearlo:
    - **Draw:** firma con il trackpad o il mouse.
    - **Type:** inserisci il tuo nome o le tue iniziali e scegli un font.

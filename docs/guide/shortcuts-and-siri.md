@@ -25,7 +25,7 @@ If the VectorPDF actions don't appear, open VectorPDF once, then quit and reopen
 
 ## Ask Siri
 
-You can say or type these to Siri. Siri asks for anything else it needs, such as your question:
+You can say or type these to Siri. Siri asks for anything else it needs, such as your question. The phrases are in English, as VectorPDF isn't translated yet, so they work when Siri's language is English:
 
 - "Ask VectorPDF about this document"
 - "Search this document in VectorPDF"

@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -44,6 +44,7 @@ VectorPDF ist ein schneller PDF-Reader f√ºr Fachartikel, Spezifikationen, Vertr√
 - [Tabs und Fenster](tabs-and-windows.md)
 - [Favoriten und Tabgruppen](favorites-and-tab-groups.md)
 - [Lesepositionen, iCloud und Handoff](reading-positions.md)
+- [VectorPDF mit Kurzbefehlen und Siri verwenden](shortcuts-and-siri.md)
 
 ## Markieren und signieren
 

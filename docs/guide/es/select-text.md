@@ -1,11 +1,12 @@
-<!-- keywords: seleccionar, selección, copiar, texto, captura de pantalla, imagen, consultar, diccionario, definir, traducir, traducción, hablar, voz, leer en voz alta, área, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: 56c5298b2bce -->
+<!-- keywords: seleccionar, selección, copiar, texto, captura de pantalla, imagen, consultar, diccionario, definir, traducir, traducción, hablar, voz, leer en voz alta, área, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, ampliar, clic con Mayúsculas, varias páginas, desplazarse al seleccionar, extend, shift-click, several pages, scroll while selecting -->
+<!-- source: 43e554563f4f -->
 
 # Seleccionar, copiar y consultar texto
 
 ## Seleccionar texto
 
-- **Arrastra** sobre el texto. Las selecciones siguen el orden de lectura, por lo que se mantienen en una sola columna en los diseños de varias columnas y omiten los números de línea del margen. Pueden abarcar varias páginas.
+- **Arrastra** sobre el texto. Las selecciones siguen el orden de lectura, por lo que se mantienen en una sola columna en los diseños de varias columnas y omiten los números de línea del margen. Pueden abarcar varias páginas: arrastra más allá del borde superior o inferior de la ventana y el documento se desplaza, más rápido cuanto más te alejas.
+- **Mantén pulsada ⇧ y haz clic** para ampliar la selección desde donde empezó hasta donde haces clic, en cualquier página. Haz clic al principio, desplázate hasta el final y haz clic con ⇧ allí. Después de hacer clic con ⇧ puedes seguir arrastrando.
 - Haz **doble clic** para seleccionar una palabra o **triple clic** para seleccionar una línea.
 - **Mantén pulsada la tecla ⌥ y arrastra** para seleccionar un área rectangular, como una figura o una tabla.
 

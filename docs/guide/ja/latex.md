@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, 順方向検索, 逆方向検索, ソース, ソースコード, エディタ, ソースへ移動, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: a865c846e0d7 -->
+<!-- source: ce9849c21b67 -->
 
 # LaTeX ソースと PDF の間を移動する
 
@@ -9,7 +9,7 @@ SyncTeX は、PDF と同じ名前の SyncTeX ファイルがその横にある P
 
 ## エディタを選択する
 
-1. VectorPDF > Settings を選択し、LaTeX (SyncTeX) の横にある Set Up… をクリックします。
+1. VectorPDF > Settings を選択し、Advanced をクリックしてから、SyncTeX の横にある Set Up… をクリックします。
 2. Source Editor からエディタを選択します：Visual Studio Code、VSCodium、Cursor、Zed、Sublime Text、BBEdit、TextMate、MacVim、Emacs、TeXstudio。
 3. 使っているエディタが一覧にない場合は、Other を選択し、ファイルを特定の行で開くコマンドを入力します。ファイルには `%file`、行には `%line` と書きます（例：`myeditor +%line %file`）。
 

@@ -1,5 +1,5 @@
 <!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # Salvar suas alterações
 
@@ -25,4 +25,4 @@ Escolha File > Share para usar um serviço de compartilhamento do macOS, ou File
 
 ## O que não é salvo no PDF
 
-Alguns itens ficam no VectorPDF e não acompanham o arquivo: as [âncoras](anchors.md), sua [posição de leitura](reading-positions.md), a rotação da visualização e o texto reconhecido por [OCR](scanned-pages.md).
+Alguns itens ficam no VectorPDF e não acompanham o arquivo: as [âncoras](anchors.md), sua [posição de leitura](reading-positions.md), a rotação da visualização e o texto reconhecido por [OCR](scanned-pages.md), a menos que você o [salve no PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).

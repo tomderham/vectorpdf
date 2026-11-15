@@ -1,5 +1,5 @@
 <!-- keywords: Datenschutz, Daten, Netzwerk, Telemetrie, Analysedaten, Sicherheit, letzte Suchen, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 936fa61fbdbf -->
+<!-- source: 464311d898b1 -->
 
 # Datenschutz
 
@@ -8,7 +8,7 @@ VectorPDF hat keine Accounts, keine Analysefunktionen, keine Telemetrie und kein
 ## Was das Netzwerk verwendet
 
 - **Suche nach Updates:** VectorPDF fragt etwa einmal am Tag oder wenn du „Check for Updates“ wählst bei GitHub nach der neuesten Version. Die Anfrage enthält keine Informationen über dich oder deine Dokumente. Du kannst das in [Settings](settings.md) deaktivieren.
-- **Agent:** Mit der Engine „On-Device“ verlässt nichts deinen Mac. [Private Cloud Compute und Online-Modelle](agent-engines.md) senden deine Frage und Textstellen aus dem Dokument, und das nur, wenn du eine Frage stellst. Beim Einrichten eines Online-Modells wird dein Schlüssel außerdem verwendet, um die Modelle aufzulisten und einen kurzen Test zu senden.
+- **Agent:** Mit der Engine „On-Device“ verlässt nichts deinen Mac. [Private Cloud Compute und Online-Modelle](agent-engines.md) senden deine Frage und Textstellen aus dem Dokument, und das nur, wenn du eine Frage stellst. Beim Einrichten eines Online-Modells wird dein Schlüssel außerdem verwendet, um die Modelle aufzulisten und einen kurzen Test zu senden. Eine Frage über [Kurzbefehle oder Siri](shortcuts-and-siri.md) sendet dasselbe, und die Antwort geht an Kurzbefehle oder Siri.
 - **iCloud:** Dein Lesestatus wird in deinem eigenen iCloud-Account aufbewahrt: wo sich die Datei befindet, die letzte Seite und Zoomstufe sowie Namen, Textauszüge und Seiten deiner Anker. Dokumente, ihr vollständiger Text und Miniaturen von Ankern werden nicht hochgeladen. Auch deine letzten Suchen werden dort gespeichert.
 - **Links, auf die du klickst,** werden in deinem Browser geöffnet.
 - **Apple-Dienste:** Übersetzen, Nachschlagen, Sprachausgabe und OCR werden von macOS bereitgestellt und laden möglicherweise Sprachdateien von Apple. Handoff teilt das Dokument und die Seite, die du gerade liest, mit deinen anderen Geräten.

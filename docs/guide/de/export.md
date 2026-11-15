@@ -1,9 +1,9 @@
-<!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, durchsuchbares PDF, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # In andere Formate exportieren
 
-Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF oder Optimized PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
+Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF oder Searchable PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
 
 ## Plain Text
 
@@ -37,6 +37,10 @@ Sichert eine kleinere Kopie des PDF, einschließlich aller Änderungen, die du n
 - **Convert text to outlines:** Zeichnet jeden Buchstaben als Form, sodass das Dokument auf Plottern, Schneidegeräten und Drucksystemen, die seine Schriften nicht haben, gleich aussieht. Text in der Kopie kann nicht ausgewählt, durchsucht oder kopiert werden.
 
 Wie viel kleiner die Kopie wird, hängt vom Dokument ab. Scans und Fotos schrumpfen am stärksten, wenn du ihre Bilder verkleinerst.
+
+## Searchable PDF
+
+Sichert eine Kopie eines gescannten PDFs, einschließlich aller ungesicherten Änderungen, in der der auf den gescannten Seiten erkannte Text als unsichtbare Ebene gesichert ist, sodass andere Apps ihn durchsuchen, auswählen und kopieren können. Verfügbar für Dokumente mit gescannten Seiten. Siehe [Erkannten Text im PDF sichern](scanned-pages.md#save-the-recognized-text-in-the-pdf).
 
 ## Anmerkungsübersicht
 

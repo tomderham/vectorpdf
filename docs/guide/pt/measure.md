@@ -1,5 +1,5 @@
 <!-- keywords: medir, medida, medição, medições, comprimento, distância, dimensão, perímetro, área, ângulo, orto, encaixe, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, alterar, mover, alça, deslocamento, edit, change, move, reshape, handle, offset -->
-<!-- source: 6784021f46a2 -->
+<!-- source: 3104d2e23c51 -->
 
 # Medir comprimentos, áreas e ângulos
 
@@ -34,7 +34,7 @@ Pressione Escape, ou clique na ferramenta selecionada, para largar a ferramenta 
 | Aproximar ou afastar uma linha de cota do que ela mede | Arraste o rótulo dela ou, depois que ela estiver afastada dos pontos, a própria linha de cota. |
 | Alterar a cor | Escolha uma cor com o botão de cor na barra de ferramentas Measurement. |
 
-O valor é calculado de novo enquanto você arrasta. Escolha Edit > Undo para deixar uma medição como estava. Medições já salvas no PDF também podem ser alteradas.
+O valor é calculado de novo enquanto você arrasta. Arraste além da borda da janela para rolar, se a medição for maior que a visualização. Escolha Edit > Undo para deixar uma medição como estava. Medições já salvas no PDF também podem ser alteradas.
 
 Para selecionar uma área, clique na borda dela: clicar dentro dela seleciona o texto que está ali.
 

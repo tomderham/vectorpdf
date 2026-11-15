@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # Manuale utente di VectorPDF
 
@@ -44,6 +44,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 - [Pannelli e finestre](tabs-and-windows.md)
 - [Preferiti e gruppi di pannelli](favorites-and-tab-groups.md)
 - [Posizioni di lettura, iCloud e Handoff](reading-positions.md)
+- [Usare VectorPDF con Comandi Rapidi e Siri](shortcuts-and-siri.md)
 
 ## Annotare e firmare
 

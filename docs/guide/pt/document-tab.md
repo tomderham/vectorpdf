@@ -1,5 +1,5 @@
 <!-- keywords: aba Document, campos de formulário, campos, assinaturas, assinado, assinatura digital, certificado, links, hiperlinks, URLs, links da web, destinos nomeados, destinos, conteúdo, barra lateral, document tab, form fields, fields, signatures, signed, digital signature, certified, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # Campos de formulário, assinaturas, links e destinos
 
@@ -11,7 +11,7 @@ A aba Document (uma caixa), na parte superior da barra lateral, lista o que um d
 - **Links:** cada link, com o texto em que está e para onde leva.
 - **Destinations:** os lugares nomeados do documento para onde os links podem apontar.
 
-Form Fields, Links e Destinations só são listados quando você ativa **List form fields, links and destinations in the sidebar** em VectorPDF > Settings. A maioria dos documentos tem links, então, caso contrário, a aba apareceria em quase todos.
+Form Fields, Links e Destinations só são listados quando você ativa **List form fields, links and destinations in the sidebar** em VectorPDF > Settings > General. A maioria dos documentos tem links, então, caso contrário, a aba apareceria em quase todos.
 
 O menu oferece apenas o que o documento tem, e a aba só aparece quando ele tem pelo menos um deles.
 

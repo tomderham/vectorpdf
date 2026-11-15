@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, 정방향 검색, 역방향 검색, 소스, 소스 코드, 편집기, 소스로 이동, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: a865c846e0d7 -->
+<!-- source: ce9849c21b67 -->
 
 # LaTeX 소스와 PDF 간에 이동하기
 
@@ -9,7 +9,7 @@ SyncTeX는 PDF와 같은 이름의 SyncTeX 파일이 옆에 있는 PDF에서 작
 
 ## 편집기 선택하기
 
-1. VectorPDF > Settings를 선택한 다음, LaTeX (SyncTeX) 옆의 Set Up…을 클릭합니다.
+1. VectorPDF > Settings를 선택하고 Advanced를 클릭한 다음, SyncTeX 옆의 Set Up…을 클릭합니다.
 2. Source Editor에서 편집기를 선택합니다: Visual Studio Code, VSCodium, Cursor, Zed, Sublime Text, BBEdit, TextMate, MacVim, Emacs, TeXstudio.
 3. 편집기가 목록에 없으면 Other를 선택하고 파일을 특정 줄에서 여는 명령을 입력합니다. 파일은 `%file`, 줄은 `%line`으로 씁니다(예: `myeditor +%line %file`).
 

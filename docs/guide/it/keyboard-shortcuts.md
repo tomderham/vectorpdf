@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 498dfab80a41 -->
+<!-- source: 002054758a02 -->
 
 # Abbreviazioni da tastiera
 
@@ -85,6 +85,8 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Selezionare una parola | Doppio clic |
 | Selezionare una riga | Triplo clic |
 | Selezionare un'area | Trascina tenendo premuto ⌥ |
+| Estendere la selezione | Fai clic tenendo premuto ⇧ |
+| Scorrere mentre selezioni o disegni | Trascina oltre il bordo della finestra |
 | Aprire i commenti di un'annotazione | Fare doppio clic su di essa, tranne che su una casella di testo o un richiamo |
 | Zoom | Pizzica |
 

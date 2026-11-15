@@ -1,11 +1,12 @@
-<!-- keywords: selezionare, selezione, copiare, testo, istantanea, schermata, immagine, consultare, dizionario, definizione, tradurre, traduzione, pronunciare, sintesi vocale, leggere ad alta voce, area, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, lasso -->
-<!-- source: 56c5298b2bce -->
+<!-- keywords: selezionare, selezione, copiare, testo, istantanea, schermata, immagine, consultare, dizionario, definizione, tradurre, traduzione, pronunciare, sintesi vocale, leggere ad alta voce, area, lazo, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, lasso, estendere, clic con Maiuscole, più pagine, scorrere durante la selezione, extend, shift-click, several pages, scroll while selecting -->
+<!-- source: 43e554563f4f -->
 
 # Selezionare, copiare e consultare il testo
 
 ## Selezionare il testo
 
-- **Trascina** sul testo. Le selezioni seguono l'ordine di lettura, quindi restano in una sola colonna di un layout a più colonne e saltano i numeri di riga a margine. Possono estendersi su più pagine.
+- **Trascina** sul testo. Le selezioni seguono l'ordine di lettura, quindi restano in una sola colonna di un layout a più colonne e saltano i numeri di riga a margine. Possono estendersi su più pagine: trascina oltre il bordo superiore o inferiore della finestra e il documento scorre, tanto più velocemente quanto più ti allontani.
+- **Tieni premuto ⇧ e fai clic** per estendere la selezione da dove è iniziata fino al punto in cui fai clic, su qualsiasi pagina. Fai clic all'inizio, scorri fino alla fine, poi fai clic lì tenendo premuto ⇧. Dopo il clic puoi continuare a trascinare.
 - **Fai doppio clic** per selezionare una parola o **triplo clic** per selezionare una riga.
 - **Tieni premuto ⌥ e trascina** per selezionare un'area rettangolare, ad esempio una figura o una tabella.
 

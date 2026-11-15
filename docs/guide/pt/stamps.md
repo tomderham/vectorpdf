@@ -1,5 +1,5 @@
 <!-- keywords: carimbo, carimbos, assinatura, assinaturas, assinar, iniciais, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # Carimbos e assinaturas
 
@@ -9,7 +9,7 @@ Um carimbo é uma imagem, como sua assinatura ou iniciais, que você pode coloca
 
 ## Criar seu carimbo
 
-1. Escolha VectorPDF > Settings e clique em Create Stamp em Digital Stamp. Você também pode simplesmente escolher a ferramenta Stamp na barra de ferramentas Markup, e o VectorPDF pedirá que você crie um.
+1. Escolha VectorPDF > Settings, clique em General e depois em Create Stamp ao lado de Digital Stamp. Você também pode simplesmente escolher a ferramenta Stamp na barra de ferramentas Markup, e o VectorPDF pedirá que você crie um.
 2. Escolha como criá-lo:
    - **Draw:** assine com o trackpad ou o mouse.
    - **Type:** digite seu nome ou iniciais e escolha uma fonte.

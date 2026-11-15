@@ -1,5 +1,5 @@
 <!-- keywords: 测量, 长度, 距离, 尺寸, 周长, 面积, 角度, 正交, 吸附, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 编辑, 更改, 移动, 控制点, 偏移, edit, change, move, reshape, handle, offset -->
-<!-- source: 6784021f46a2 -->
+<!-- source: 3104d2e23c51 -->
 
 # 测量长度、面积和角度
 
@@ -34,7 +34,7 @@
 | 让尺寸线靠近或远离所测量的对象 | 拖移它的标签；尺寸线离开各点后，也可以直接拖移尺寸线。 |
 | 更改颜色 | 使用 Measurement 工具栏中的颜色按钮选取颜色。 |
 
-拖移时会重新计算数值。选取 Edit > Undo 可将测量结果恢复原样。已存储在 PDF 中的测量结果也可以更改。
+拖移时会重新计算数值。如果测量比视图更长，请拖移到窗口边缘以外来滚动。选取 Edit > Undo 可将测量结果恢复原样。已存储在 PDF 中的测量结果也可以更改。
 
 若要选择面积，请点按它的边缘：点按其内部会选择那里的文本。
 

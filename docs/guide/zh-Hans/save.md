@@ -1,5 +1,5 @@
 <!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # 存储更改
 
@@ -25,4 +25,4 @@
 
 ## 哪些内容不会存储在 PDF 中
 
-某些内容保留在 VectorPDF 中，不会随文件一起移动：[锚点](anchors.md)、你的[阅读位置](reading-positions.md)、视图旋转以及 [OCR](scanned-pages.md) 识别出的文本。
+某些内容保留在 VectorPDF 中，不会随文件一起移动：[锚点](anchors.md)、你的[阅读位置](reading-positions.md)、视图旋转以及 [OCR](scanned-pages.md) 识别出的文本，除非你将其[存储到 PDF 中](scanned-pages.md#save-the-recognized-text-in-the-pdf)。

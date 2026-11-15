@@ -1,5 +1,5 @@
 <!-- keywords: スタンプ, 署名, サイン, イニシャル, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # スタンプと署名
 
@@ -9,7 +9,7 @@
 
 ## スタンプを作成する
 
-1. VectorPDF > Settings を選択してから、Digital Stamp の Create Stamp をクリックします。Markup ツールバーの Stamp ツールを選択するだけでも、スタンプの作成を求められます。
+1. VectorPDF > Settings を選択し、General をクリックしてから、Digital Stamp の横にある Create Stamp をクリックします。Markup ツールバーの Stamp ツールを選択するだけでも、スタンプの作成を求められます。
 2. 作成方法を選択します:
    - **Draw:** トラックパッドまたはマウスで署名します。
    - **Type:** 名前またはイニシャルを入力して、フォントを選択します。

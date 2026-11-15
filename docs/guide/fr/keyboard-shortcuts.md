@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 498dfab80a41 -->
+<!-- source: 002054758a02 -->
 
 # Raccourcis clavier
 
@@ -85,6 +85,8 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Sélectionner un mot | Double-clic |
 | Sélectionner une ligne | Triple-clic |
 | Sélectionner une zone | ⌥-glisser |
+| Étendre la sélection | ⇧-clic |
+| Faire défiler pendant une sélection ou un dessin | Faire glisser au-delà du bord de la fenêtre |
 | Ouvrir les commentaires d’une annotation | Double-cliquer dessus, sauf sur une zone de texte ou une bulle |
 | Zoomer | Pincer |
 

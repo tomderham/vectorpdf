@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 498dfab80a41 -->
+<!-- source: 002054758a02 -->
 
 # Tastaturkurzbefehle
 
@@ -85,6 +85,8 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Ein Wort auswählen | Doppelklicken |
 | Eine Zeile auswählen | Dreimal klicken |
 | Einen Bereich auswählen | Bei gedrückter ⌥-Taste ziehen |
+| Auswahl erweitern | Bei gedrückter ⇧-Taste klicken |
+| Beim Auswählen oder Zeichnen scrollen | Über den Fensterrand hinaus ziehen |
 | Kommentare einer Anmerkung öffnen | Doppelklicken, außer bei einem Textfeld oder einer Legende |
 | Zoomen | Zwei Finger zusammen- oder auseinanderziehen |
 

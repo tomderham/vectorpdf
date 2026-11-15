@@ -1,5 +1,5 @@
 <!-- keywords: Document 标签页, 表单栏位, 栏位, 签名, 已签名, 数字签名, 认证, 链接, 超链接, URL, 网页链接, 命名目标, 目标, 内容, 边栏, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # 表单栏位、签名、链接和目标
 
@@ -11,7 +11,7 @@
 - **Links：**每个链接，以及它所在的文本和指向的位置。
 - **Destinations：**文稿中可供链接指向的命名位置。
 
-只有在 VectorPDF > Settings 中打开 **List form fields, links and destinations in the sidebar** 后，才会列出 Form Fields、Links 和 Destinations。大多数文稿都带有链接，否则几乎每份文稿都会出现这个标签页。
+只有在 VectorPDF > Settings > General 中打开 **List form fields, links and destinations in the sidebar** 后，才会列出 Form Fields、Links 和 Destinations。大多数文稿都带有链接，否则几乎每份文稿都会出现这个标签页。
 
 菜单只提供文稿中有的内容，而且只有当文稿至少包含其中一种时，这个标签页才会出现。
 

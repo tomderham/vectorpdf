@@ -1,5 +1,5 @@
 <!-- keywords: tampon, tampons, signer, initiales, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # Tampons et signatures
 
@@ -9,7 +9,7 @@ Un tampon est une image, par exemple votre signature ou vos initiales, que vous 
 
 ## Créer votre tampon
 
-1. Choisissez VectorPDF > Settings, puis cliquez sur Create Stamp sous Digital Stamp. Vous pouvez aussi choisir directement l’outil Stamp dans la barre d’outils Markup : VectorPDF vous propose alors d’en créer un.
+1. Choisissez VectorPDF > Settings, cliquez sur General, puis sur Create Stamp à côté de Digital Stamp. Vous pouvez aussi choisir directement l’outil Stamp dans la barre d’outils Markup : VectorPDF vous propose alors d’en créer un.
 2. Choisissez comment le créer :
    - **Draw :** signez avec votre trackpad ou votre souris.
    - **Type :** saisissez votre nom ou vos initiales et choisissez une police.

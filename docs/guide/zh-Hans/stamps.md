@@ -1,5 +1,5 @@
 <!-- keywords: 图章, 签名, 签署, 姓名首字母, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # 图章和签名
 
@@ -9,7 +9,7 @@
 
 ## 创建图章
 
-1. 选取 VectorPDF > Settings，然后点按 Digital Stamp 下的 Create Stamp。你也可以直接选取 Markup 工具栏中的 Stamp 工具，VectorPDF 会要求你创建一个图章。
+1. 选取 VectorPDF > Settings，点按 General，然后点按 Digital Stamp 旁边的 Create Stamp。你也可以直接选取 Markup 工具栏中的 Stamp 工具，VectorPDF 会要求你创建一个图章。
 2. 选取创建方式：
    - **Draw：** 使用触控板或鼠标签名。
    - **Type：** 输入你的姓名或姓名首字母，然后选取字体。

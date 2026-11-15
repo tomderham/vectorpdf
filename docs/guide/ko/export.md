@@ -1,9 +1,9 @@
-<!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, 최적화, 파일 크기 줄이기, 압축, 작게, 이미지, 서체, 윤곽선, 텍스트를 윤곽선으로, 플로터, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, 최적화, 파일 크기 줄이기, 압축, 작게, 이미지, 서체, 윤곽선, 텍스트를 윤곽선으로, 플로터, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 검색 가능한 PDF, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # 다른 포맷으로 내보내기
 
-문서 전체를 내보내려면 File > Export Document As를 선택한 다음 Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF 또는 Optimized PDF를 선택합니다. 주석 요약과 측정에는 각각 별도의 명령이 있습니다.
+문서 전체를 내보내려면 File > Export Document As를 선택한 다음 Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF 또는 Searchable PDF를 선택합니다. 주석 요약과 측정에는 각각 별도의 명령이 있습니다.
 
 ## 일반 텍스트(Plain Text)
 
@@ -37,6 +37,10 @@ Word 및 다른 앱에서 편집할 수 있는 `.docx` 파일을 저장합니다
 - **Convert text to outlines:** 모든 글자를 도형으로 그려서, 문서의 서체가 없는 플로터, 커터, 인쇄 시스템에서도 문서가 똑같이 보이게 합니다. 사본의 텍스트는 선택, 검색 또는 복사할 수 없습니다.
 
 사본이 얼마나 작아지는지는 문서에 따라 다릅니다. 이미지를 줄이면 스캔과 사진이 가장 많이 작아집니다.
+
+## 검색 가능한 PDF(Searchable PDF)
+
+스캔한 PDF의 사본을 저장하지 않은 변경 사항까지 포함하여 저장하며, 스캔한 페이지에서 인식된 텍스트를 보이지 않는 레이어로 사본에 저장하므로 다른 앱에서 검색, 선택 및 복사할 수 있습니다. 스캔한 페이지가 있는 문서에서 사용할 수 있습니다. [인식된 텍스트를 PDF에 저장하기](scanned-pages.md#save-the-recognized-text-in-the-pdf)를 참고하십시오.
 
 ## 주석 요약
 

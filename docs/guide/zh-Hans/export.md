@@ -1,9 +1,9 @@
-<!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, 优化, 减小文件大小, 压缩, 更小, 图像, 字体, 轮廓, 文本转轮廓, 绘图仪, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, 优化, 减小文件大小, 压缩, 更小, 图像, 字体, 轮廓, 文本转轮廓, 绘图仪, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 可搜索的 PDF, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # 导出为其他格式
 
-若要导出整个文稿，请选取 File > Export Document As，然后选取 Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF 或 Optimized PDF。注释摘要和测量结果有各自的命令。
+若要导出整个文稿，请选取 File > Export Document As，然后选取 Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、Optimized PDF 或 Searchable PDF。注释摘要和测量结果有各自的命令。
 
 ## 纯文本（Plain Text）
 
@@ -37,6 +37,10 @@
 - **Convert text to outlines:** 将每个字母绘制为形状，使文稿在没有其字体的绘图仪、切割机和打印系统上看起来一样。副本中的文本无法被选择、搜索或拷贝。
 
 副本能缩小多少取决于文稿。降低图像分辨率时，扫描件和照片缩小得最多。
+
+## 可搜索的 PDF（Searchable PDF）
+
+存储扫描 PDF 的副本（包括你尚未存储的更改），并将在其扫描页面上识别出的文本作为不可见图层存储在副本中，这样其他 App 就可以搜索、选择和拷贝这些文本。此选项适用于带有扫描页面的文稿。请参阅[将识别出的文本存储到 PDF 中](scanned-pages.md#save-the-recognized-text-in-the-pdf)。
 
 ## 注释摘要
 

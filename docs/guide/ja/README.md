@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # VectorPDF ユーザガイド
 
@@ -44,6 +44,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 - [タブとウインドウ](tabs-and-windows.md)
 - [お気に入りとタブグループ](favorites-and-tab-groups.md)
 - [読書位置、iCloud、Handoff](reading-positions.md)
+- [ショートカットと Siri で VectorPDF を使う](shortcuts-and-siri.md)
 
 ## マークアップと署名
 

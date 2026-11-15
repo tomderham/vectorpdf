@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, ricerca diretta, ricerca inversa, sorgente, codice sorgente, editor, vai al sorgente, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: a865c846e0d7 -->
+<!-- source: ce9849c21b67 -->
 
 # Passare dal sorgente LaTeX al PDF
 
@@ -9,7 +9,7 @@ SyncTeX funziona con un PDF che ha accanto il suo file SyncTeX, con lo stesso no
 
 ## Scegliere l'editor
 
-1. Scegli VectorPDF > Settings, poi fai clic su Set Up… accanto a LaTeX (SyncTeX).
+1. Scegli VectorPDF > Settings, fai clic su Advanced, poi su Set Up… accanto a SyncTeX.
 2. Scegli il tuo editor in Source Editor: Visual Studio Code, VSCodium, Cursor, Zed, Sublime Text, BBEdit, TextMate, MacVim, Emacs o TeXstudio.
 3. Se il tuo editor non è nell'elenco, scegli Other e inserisci il comando che apre un file a una riga. Scrivi `%file` per il file e `%line` per la riga, ad esempio `myeditor +%line %file`.
 

@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # VectorPDF उपयोगकर्ता गाइड
 
@@ -44,6 +44,7 @@ VectorPDF तकनीकी शोध-पत्रों, विनिर्द
 - [टैब और विंडो](tabs-and-windows.md)
 - [पसंदीदा और टैब समूह](favorites-and-tab-groups.md)
 - [पढ़ने की स्थिति, iCloud और Handoff](reading-positions.md)
+- [शॉर्टकट्स और Siri के साथ VectorPDF का उपयोग करें](shortcuts-and-siri.md)
 
 ## मार्कअप करें और हस्ताक्षर करें
 

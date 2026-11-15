@@ -1,5 +1,5 @@
 <!-- keywords: Document 탭, 양식 필드, 필드, 서명, 서명됨, 디지털 서명, 인증, 링크, 하이퍼링크, URL, 웹 링크, 이름 있는 대상, 대상, 내용, 사이드바, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # 양식 필드, 서명, 링크 및 대상
 
@@ -11,7 +11,7 @@
 - **Links:** 모든 링크와 링크가 걸린 텍스트, 링크가 가리키는 곳.
 - **Destinations:** 링크가 가리킬 수 있는 문서 안의 이름 있는 위치.
 
-Form Fields, Links, Destinations는 VectorPDF > Settings에서 **List form fields, links and destinations in the sidebar**를 켠 경우에만 나열됩니다. 대부분의 문서에는 링크가 있으므로, 그렇지 않으면 거의 모든 문서에서 탭이 나타나게 됩니다.
+Form Fields, Links, Destinations는 VectorPDF > Settings > General에서 **List form fields, links and destinations in the sidebar**를 켠 경우에만 나열됩니다. 대부분의 문서에는 링크가 있으므로, 그렇지 않으면 거의 모든 문서에서 탭이 나타나게 됩니다.
 
 메뉴에는 문서에 있는 항목만 표시되며, 탭은 문서에 이 중 하나 이상이 있을 때만 나타납니다.
 

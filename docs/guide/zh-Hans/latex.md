@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, 正向搜索, 反向搜索, 源代码, 源文件, 编辑器, 跳转到源代码, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: a865c846e0d7 -->
+<!-- source: ce9849c21b67 -->
 
 # 在 LaTeX 源代码和 PDF 之间跳转
 
@@ -9,7 +9,7 @@ SyncTeX 适用于旁边有同名 SyncTeX 文件的 PDF：`paper.pdf` 和 `paper.
 
 ## 选择编辑器
 
-1. 选取 VectorPDF > Settings，然后点按 LaTeX (SyncTeX) 旁边的 Set Up…。
+1. 选取 VectorPDF > Settings，点按 Advanced，然后点按 SyncTeX 旁边的 Set Up…。
 2. 在 Source Editor 中选择你的编辑器：Visual Studio Code、VSCodium、Cursor、Zed、Sublime Text、BBEdit、TextMate、MacVim、Emacs 或 TeXstudio。
 3. 如果你的编辑器不在列表中，请选择 Other，然后输入在某一行打开文件的命令。用 `%file` 表示文件，用 `%line` 表示行，例如 `myeditor +%line %file`。
 

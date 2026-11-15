@@ -1,9 +1,9 @@
-<!-- keywords: exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, otimizar, otimizado, reduzir tamanho, comprimir, menor, imagens, fontes, contornos, texto em contornos, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, otimizar, otimizado, reduzir tamanho, comprimir, menor, imagens, fontes, contornos, texto em contornos, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF pesquisável, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # Exportar para outros formatos
 
-Para exportar um documento inteiro, escolha File > Export Document As e escolha Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF ou Optimized PDF. O resumo de anotações e as medições têm comandos próprios.
+Para exportar um documento inteiro, escolha File > Export Document As e escolha Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF ou Searchable PDF. O resumo de anotações e as medições têm comandos próprios.
 
 ## Plain Text
 
@@ -37,6 +37,10 @@ Salva uma cópia menor do PDF, incluindo as alterações que você ainda não sa
 - **Convert text to outlines:** desenha cada letra como uma forma, para que o documento tenha a mesma aparência em plotters, plotters de recorte e sistemas de impressão que não têm suas fontes. O texto da cópia não pode ser selecionado, pesquisado nem copiado.
 
 O quanto a cópia fica menor depende do documento. Digitalizações e fotos são as que mais diminuem quando você reduz as imagens.
+
+## Searchable PDF
+
+Salva uma cópia de um PDF digitalizado, incluindo as alterações ainda não salvas, com o texto reconhecido nas páginas digitalizadas salvo como uma camada invisível, para que outros apps possam buscá-lo, selecioná-lo e copiá-lo. Está disponível para documentos com páginas digitalizadas. Consulte [Salvar o texto reconhecido no PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).
 
 ## Resumo de anotações
 

@@ -1,9 +1,9 @@
 <!-- keywords: Agent, AI, 人工智能, 引擎, 模型, 在线模型, API 密钥, 隐私, 回答, AI Synthesis Engine, On-Device, Private Cloud Compute, Online Model, OpenAI, Gemini, OpenRouter, API key, model -->
-<!-- source: dbbd02de21b5 -->
+<!-- source: 8e36d75499d6 -->
 
 # 选择 Agent 的回答方式
 
-相关段落的搜索始终在你的 Mac 上进行。你可以在 VectorPDF > Settings > AI Synthesis Engine 中选择由什么来撰写回答。此设置需要 macOS 27。
+相关段落的搜索始终在你的 Mac 上进行。你可以在 VectorPDF > Settings > Agent > AI Synthesis Engine 中选择由什么来撰写回答。此设置需要 macOS 27。
 
 | 引擎 | 工作方式 | 哪些内容会离开你的 Mac |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 
 ## 使用在线模型
 
-1. 在 Settings 中，将 AI Synthesis Engine 设为 Online Model。
+1. 在 Settings 中点按 Agent，然后将 AI Synthesis Engine 设为 Online Model。
 2. 选取一项服务：OpenAI、Google Gemini 或 OpenRouter。
 3. 输入你的 API 密钥。每项服务都提供了获取密钥的链接。密钥存储在你的登录钥匙串中。
 4. 选取一个模型。

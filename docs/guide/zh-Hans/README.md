@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # VectorPDF 使用手册
 
@@ -44,6 +44,7 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 - [标签页和窗口](tabs-and-windows.md)
 - [个人收藏和标签页组](favorites-and-tab-groups.md)
 - [阅读位置、iCloud 和接力](reading-positions.md)
+- [通过快捷指令和 Siri 使用 VectorPDF](shortcuts-and-siri.md)
 
 ## 标记和签名
 

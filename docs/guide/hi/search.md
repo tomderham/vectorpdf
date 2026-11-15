@@ -1,5 +1,5 @@
 <!-- keywords: खोजें, ढूँढें, अगला ढूँढें, केस मिलाएँ, पूरा शब्द, स्मार्ट खोज, अनदेखे पैटर्न, रेगुलर एक्सप्रेशन, टैग, हाल की खोजें, खोज इतिहास, सेक्शन, आउटलाइन, विषय-सूची, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # दस्तावेज़ में खोजें
 
@@ -42,7 +42,7 @@ VectorPDF सबसे नज़दीकी परिणाम पर जात
 
 कुछ दस्तावेज़ों में वाक्यों के बीच उद्धरण संख्याओं जैसे चिह्न होते हैं, जिनके कारण कोई वाक्यांश नहीं मिल पाता। Smart Search उन्हें अनदेखा कर सकता है।
 
-1. VectorPDF > Settings चुनें।
+1. VectorPDF > Settings चुनें, फिर Advanced पर क्लिक करें।
 2. Ignored Search Patterns के बगल में Edit पर क्लिक करें।
 3. तैयार पैटर्न में से कोई एक या अपना रेगुलर एक्सप्रेशन जोड़ें, और उसे चालू करें।
 

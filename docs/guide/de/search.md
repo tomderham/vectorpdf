@@ -1,5 +1,5 @@
 <!-- keywords: suchen, finden, weitersuchen, Groß-/Kleinschreibung, ganzes Wort, intelligente Suche, ignorierte Muster, regulärer Ausdruck, Tags, Suchverlauf, letzte Suchen, Abschnitt, Gliederung, Inhaltsverzeichnis, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # Ein Dokument durchsuchen
 
@@ -42,7 +42,7 @@ Klicke auf die Optionstaste neben dem Suchfeld:
 
 Manche Dokumente enthalten mitten im Satz Markierungen wie Quellenangaben als Nummern, sodass eine Wortfolge nicht gefunden wird. Smart Search kann diese Markierungen überspringen.
 
-1. Wähle VectorPDF > Settings.
+1. Wähle VectorPDF > Settings und klicke dann auf „Advanced“.
 2. Klicke neben „Ignored Search Patterns“ auf „Edit“.
 3. Füge eines der vorgefertigten Muster oder deinen eigenen regulären Ausdruck hinzu und aktiviere es.
 

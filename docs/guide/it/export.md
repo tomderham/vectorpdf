@@ -1,9 +1,9 @@
-<!-- keywords: esportare, esportazione, convertire, testo semplice, testo, appiattire, appiattito, riepilogo annotazioni, ottimizzare, ottimizzato, ridurre dimensioni, comprimere, più leggero, immagini, font, contorni, testo in contorni, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: esportare, esportazione, convertire, testo semplice, testo, appiattire, appiattito, riepilogo annotazioni, ottimizzare, ottimizzato, ridurre dimensioni, comprimere, più leggero, immagini, font, contorni, testo in contorni, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF ricercabile, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # Esportare in altri formati
 
-Per esportare un intero documento, scegli File > Export Document As, quindi scegli Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF o Optimized PDF. Il riepilogo delle annotazioni e le misurazioni hanno comandi propri.
+Per esportare un intero documento, scegli File > Export Document As, quindi scegli Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF o Searchable PDF. Il riepilogo delle annotazioni e le misurazioni hanno comandi propri.
 
 ## Plain Text
 
@@ -37,6 +37,10 @@ Salva una copia più leggera del PDF, comprese le modifiche che non hai ancora s
 - **Convert text to outlines:** disegna ogni lettera come una forma, così il documento appare uguale su plotter, plotter da taglio e sistemi di stampa che non dispongono dei suoi font. Il testo della copia non può essere selezionato, cercato né copiato.
 
 Quanto si riduce la copia dipende dal documento. Scansioni e foto si riducono di più quando ne riduci le immagini.
+
+## Searchable PDF
+
+Salva una copia di un PDF scansionato, comprese le modifiche non salvate, in cui il testo riconosciuto nelle pagine scansionate è salvato come livello invisibile, così altre app possono cercarlo, selezionarlo e copiarlo. È disponibile per i documenti con pagine scansionate. Consulta [Salvare il testo riconosciuto nel PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).
 
 ## Riepilogo delle annotazioni
 

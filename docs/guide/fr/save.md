@@ -1,5 +1,5 @@
 <!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, revenir, dernière version enregistrée, recharger, annuler les modifications, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # Enregistrer vos modifications
 
@@ -25,4 +25,4 @@ Choisissez File > Share pour utiliser un service de partage de macOS, ou File > 
 
 ## Ce qui n’est pas enregistré dans le PDF
 
-Certains éléments restent dans VectorPDF et ne voyagent pas avec le fichier : les [ancres](anchors.md), votre [position de lecture](reading-positions.md), la rotation de la présentation et le texte issu de l’[OCR](scanned-pages.md).
+Certains éléments restent dans VectorPDF et ne voyagent pas avec le fichier : les [ancres](anchors.md), votre [position de lecture](reading-positions.md), la rotation de la présentation et le texte issu de l’[OCR](scanned-pages.md), sauf si vous l’[enregistrez dans le PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).

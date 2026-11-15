@@ -1,5 +1,5 @@
 <!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # 변경 사항 저장하기
 
@@ -25,4 +25,4 @@ macOS 공유 서비스를 사용하려면 File > Share를 선택하고, 파일�
 
 ## PDF에 저장되지 않는 항목
 
-[앵커](anchors.md), [읽던 위치](reading-positions.md), 보기 회전, [OCR](scanned-pages.md) 텍스트는 VectorPDF에 남아 있으며 파일과 함께 이동하지 않습니다.
+[앵커](anchors.md), [읽던 위치](reading-positions.md), 보기 회전, [OCR](scanned-pages.md) 텍스트는 VectorPDF에 남아 있으며 파일과 함께 이동하지 않습니다. 단, OCR 텍스트는 [PDF에 저장](scanned-pages.md#save-the-recognized-text-in-the-pdf)할 수 있습니다.

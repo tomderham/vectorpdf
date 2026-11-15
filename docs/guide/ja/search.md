@@ -1,5 +1,5 @@
 <!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, セクション, アウトライン, 目次, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # 書類を検索する
 
@@ -42,7 +42,7 @@ VectorPDF は最も近い結果に移動します。書類の検索履歴を消�
 
 書類によっては、引用番号などの記号が文の途中に入っていて、語句が見つからないことがあります。Smart Search では、こうした記号を読み飛ばすことができます。
 
-1. VectorPDF > Settings を選択します。
+1. VectorPDF > Settings を選択してから、Advanced をクリックします。
 2. Ignored Search Patterns の横にある Edit をクリックします。
 3. 用意されているパターンか独自の正規表現を追加して、オンにします。
 

@@ -1,5 +1,5 @@
 <!-- keywords: सहेजें, इस रूप में सहेजें, बिना सहेजे, साझा करें, Finder में दिखाएँ, बदलाव, पिछली सहेजी गई स्थिति, वापस लाएँ, फिर से लोड करें, बदलाव रद्द करें, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # अपने बदलाव सहेजें
 
@@ -25,4 +25,4 @@ macOS की साझा करने की सेवा का उपयो�
 
 ## PDF में क्या सहेजा नहीं जाता
 
-कुछ चीज़ें VectorPDF के पास ही रहती हैं और फ़ाइल के साथ नहीं जातीं: [ऐंकर](anchors.md), आपकी [पढ़ने की स्थिति](reading-positions.md), दृश्य का घुमाव, और [OCR](scanned-pages.md) से मिला टेक्स्ट।
+कुछ चीज़ें VectorPDF के पास ही रहती हैं और फ़ाइल के साथ नहीं जातीं: [ऐंकर](anchors.md), आपकी [पढ़ने की स्थिति](reading-positions.md), दृश्य का घुमाव, और [OCR](scanned-pages.md) से मिला टेक्स्ट, जब तक आप उसे [PDF में सहेज](scanned-pages.md#save-the-recognized-text-in-the-pdf) नहीं लेते।

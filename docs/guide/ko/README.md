@@ -1,4 +1,4 @@
-<!-- source: 2f847880be93 -->
+<!-- source: d455c4b21f65 -->
 
 # VectorPDF 사용 설명서
 
@@ -44,6 +44,7 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 - [탭과 윈도우](tabs-and-windows.md)
 - [즐겨찾기와 탭 그룹](favorites-and-tab-groups.md)
 - [읽던 위치, iCloud 및 Handoff](reading-positions.md)
+- [단축어 및 Siri와 함께 VectorPDF 사용하기](shortcuts-and-siri.md)
 
 ## 마크업 및 서명
 

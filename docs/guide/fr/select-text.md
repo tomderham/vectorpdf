@@ -1,11 +1,12 @@
-<!-- keywords: sélectionner, sélection, copier, texte, capture d’écran, rechercher, dictionnaire, définition, traduire, traduction, énoncer, parole, lecture à voix haute, zone, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: 56c5298b2bce -->
+<!-- keywords: sélectionner, sélection, copier, texte, capture d’écran, rechercher, dictionnaire, définition, traduire, traduction, énoncer, parole, lecture à voix haute, zone, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, étendre, Maj-clic, plusieurs pages, défiler pendant la sélection, extend, shift-click, several pages, scroll while selecting -->
+<!-- source: 43e554563f4f -->
 
 # Sélectionner, copier et consulter du texte
 
 ## Sélectionner du texte
 
-- **Faites glisser** le pointeur sur le texte. Les sélections suivent l’ordre de lecture : elles restent dans une seule colonne d’une mise en page à plusieurs colonnes et ignorent les numéros de ligne en marge. Elles peuvent s’étendre sur plusieurs pages.
+- **Faites glisser** le pointeur sur le texte. Les sélections suivent l’ordre de lecture : elles restent dans une seule colonne d’une mise en page à plusieurs colonnes et ignorent les numéros de ligne en marge. Elles peuvent s’étendre sur plusieurs pages : faites glisser au-delà du haut ou du bas de la fenêtre et le document défile, d’autant plus vite que vous allez loin.
+- **Maintenez ⇧ et cliquez** pour étendre la sélection depuis son début jusqu’à l’endroit où vous cliquez, sur n’importe quelle page. Cliquez au début, faites défiler jusqu’à la fin, puis ⇧-cliquez à cet endroit. Vous pouvez continuer à faire glisser après un ⇧-clic.
 - **Double-cliquez** pour sélectionner un mot, ou **cliquez trois fois** pour sélectionner une ligne.
 - **Maintenez la touche ⌥ enfoncée et faites glisser** pour sélectionner une zone rectangulaire, par exemple une figure ou un tableau.
 

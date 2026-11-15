@@ -1,9 +1,9 @@
-<!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 検索可能な PDF, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # 他のフォーマットに書き出す
 
-書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、または Optimized PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
+書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、Optimized PDF、または Searchable PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
 
 ## Plain Text
 
@@ -37,6 +37,10 @@ PDF のサイズを小さくしたコピーを保存します。まだ保存し�
 - **Convert text to outlines:** すべての文字を図形として描画するため、書類のフォントを持たないプロッタ、カッター、印刷システムでも同じように表示されます。コピーのテキストは選択、検索、コピーできなくなります。
 
 コピーがどれだけ小さくなるかは書類によって異なります。イメージを縮小すると、スキャンや写真が最も小さくなります。
+
+## Searchable PDF
+
+スキャンした PDF のコピーを、保存していない変更も含めて保存します。スキャンページで認識されたテキストが目に見えないレイヤーとしてコピーに保存されるため、ほかのアプリでも検索、選択、コピーができます。スキャンページがある書類で使用できます。[認識されたテキストを PDF に保存する](scanned-pages.md#save-the-recognized-text-in-the-pdf)を参照してください。
 
 ## 注釈の概要
 

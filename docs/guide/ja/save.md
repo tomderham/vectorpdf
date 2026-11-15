@@ -1,5 +1,5 @@
 <!-- keywords: 保存, 別名で保存, 未保存, 共有, 変更, 最後に保存した状態に戻す, 復帰, 再読み込み, 変更を破棄, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # 変更を保存する
 
@@ -25,4 +25,4 @@ macOS の共有サービスを使用するには File > Share を、ファイル
 
 ## PDF に保存されないもの
 
-[アンカー](anchors.md)、[読書位置](reading-positions.md)、表示の回転、[OCR](scanned-pages.md) のテキストは VectorPDF に保持され、ファイルには含まれません。
+[アンカー](anchors.md)、[読書位置](reading-positions.md)、表示の回転、[OCR](scanned-pages.md) のテキストは VectorPDF に保持され、ファイルには含まれません。ただし、OCR のテキストは [PDF に保存](scanned-pages.md#save-the-recognized-text-in-the-pdf)することもできます。

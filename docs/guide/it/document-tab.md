@@ -1,5 +1,5 @@
 <!-- keywords: pannello Document, campi modulo, campi, firme, firmato, firma digitale, certificato, link, collegamenti ipertestuali, URL, link web, destinazioni con nome, destinazioni, contenuto, barra laterale, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # Campi modulo, firme, link e destinazioni
 
@@ -11,7 +11,7 @@ Il pannello Document (una scatola) in cima alla barra laterale elenca ciò che u
 - **Links:** ogni link, con il testo su cui si trova e dove porta.
 - **Destinations:** i punti con nome del documento a cui i link possono puntare.
 
-Form Fields, Links e Destinations vengono elencati solo se attivi **List form fields, links and destinations in the sidebar** in VectorPDF > Settings. Quasi tutti i documenti contengono link, quindi altrimenti il pannello comparirebbe per quasi tutti.
+Form Fields, Links e Destinations vengono elencati solo se attivi **List form fields, links and destinations in the sidebar** in VectorPDF > Settings > General. Quasi tutti i documenti contengono link, quindi altrimenti il pannello comparirebbe per quasi tutti.
 
 Il menu offre solo ciò che il documento contiene, e il pannello compare solo quando ne contiene almeno uno.
 

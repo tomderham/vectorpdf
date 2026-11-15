@@ -1,5 +1,5 @@
 <!-- keywords: pestaña Document, campos de formulario, campos, firmas, firmado, firma digital, certificado, enlaces, hipervínculos, URL, enlaces web, destinos con nombre, destinos, contenido, barra lateral, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # Campos de formulario, firmas, enlaces y destinos
 
@@ -11,7 +11,7 @@ La pestaña Document (una caja) de la parte superior de la barra lateral muestra
 - **Links:** cada enlace, con el texto en el que está y adónde lleva.
 - **Destinations:** los lugares con nombre del documento a los que pueden apuntar los enlaces.
 
-Form Fields, Links y Destinations solo aparecen cuando activas **List form fields, links and destinations in the sidebar** en VectorPDF > Settings. La mayoría de los documentos tienen enlaces, así que, si no, la pestaña aparecería en casi todos.
+Form Fields, Links y Destinations solo aparecen cuando activas **List form fields, links and destinations in the sidebar** en VectorPDF > Settings > General. La mayoría de los documentos tienen enlaces, así que, si no, la pestaña aparecería en casi todos.
 
 El menú solo ofrece lo que tiene el documento, y la pestaña solo aparece cuando tiene al menos uno de ellos.
 

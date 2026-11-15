@@ -1,5 +1,5 @@
 <!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # Guardar los cambios
 
@@ -25,4 +25,4 @@ Elige File > Share para usar un servicio para compartir de macOS, o File > Show 
 
 ## Qué no se guarda en el PDF
 
-Algunas cosas se quedan en VectorPDF y no acompañan al archivo: las [anclas](anchors.md), tu [posición de lectura](reading-positions.md), la rotación de la vista y el texto del [OCR](scanned-pages.md).
+Algunas cosas se quedan en VectorPDF y no acompañan al archivo: las [anclas](anchors.md), tu [posición de lectura](reading-positions.md), la rotación de la vista y el texto del [OCR](scanned-pages.md), a menos que lo [guardes en el PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).

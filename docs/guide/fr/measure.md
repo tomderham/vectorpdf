@@ -1,5 +1,5 @@
 <!-- keywords: mesurer, mesure, mesures, longueur, cote, périmètre, surface, aire, orthogonal, magnétisme, accrochage, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, modifier, déplacer, poignée, décalage, edit, change, move, reshape, handle, offset -->
-<!-- source: 6784021f46a2 -->
+<!-- source: 3104d2e23c51 -->
 
 # Mesurer des longueurs, des surfaces et des angles
 
@@ -34,7 +34,7 @@ Appuyez sur Escape, ou cliquez sur l’outil sélectionné, pour poser l’outil
 | Rapprocher ou éloigner une ligne de cote de ce qu’elle mesure | Faites glisser son libellé, ou la ligne de cote elle-même une fois qu’elle est écartée des points. |
 | Changer sa couleur | Choisissez une couleur avec le bouton de couleur de la barre d’outils Measurement. |
 
-La valeur est recalculée pendant que vous faites glisser. Choisissez Edit > Undo pour rétablir une mesure telle qu’elle était. Les mesures déjà enregistrées dans le PDF peuvent aussi être modifiées.
+La valeur est recalculée pendant que vous faites glisser. Faites glisser au-delà du bord de la fenêtre pour faire défiler, pour une mesure plus longue que la vue. Choisissez Edit > Undo pour rétablir une mesure telle qu’elle était. Les mesures déjà enregistrées dans le PDF peuvent aussi être modifiées.
 
 Pour sélectionner une surface, cliquez sur son bord : un clic à l’intérieur sélectionne le texte qui s’y trouve.
 

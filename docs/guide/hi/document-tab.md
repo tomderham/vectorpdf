@@ -1,5 +1,5 @@
 <!-- keywords: Document टैब, फ़ॉर्म फ़ील्ड, फ़ील्ड, हस्ताक्षर, हस्ताक्षरित, डिजिटल हस्ताक्षर, प्रमाणित, लिंक, हाइपरलिंक, URL, वेब लिंक, नाम वाले गंतव्य, गंतव्य, सामग्री, साइडबार, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और गंतव्य
 
@@ -11,7 +11,7 @@
 - **Links:** हर लिंक, उस टेक्स्ट के साथ जिस पर वह है और वह कहाँ ले जाता है।
 - **Destinations:** दस्तावेज़ की वे नाम वाली जगहें जिन पर लिंक ले जा सकते हैं।
 
-Form Fields, Links और Destinations तभी दिखते हैं जब आप VectorPDF > Settings में **List form fields, links and destinations in the sidebar** चालू करते हैं। ज़्यादातर दस्तावेज़ों में लिंक होते हैं, इसलिए वरना यह टैब लगभग हर दस्तावेज़ के लिए दिखता।
+Form Fields, Links और Destinations तभी दिखते हैं जब आप VectorPDF > Settings > General में **List form fields, links and destinations in the sidebar** चालू करते हैं। ज़्यादातर दस्तावेज़ों में लिंक होते हैं, इसलिए वरना यह टैब लगभग हर दस्तावेज़ के लिए दिखता।
 
 मेनू केवल वही दिखाता है जो दस्तावेज़ में है, और टैब तभी दिखता है जब उसमें इनमें से कम से कम एक चीज़ हो।
 

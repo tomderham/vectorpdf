@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 498dfab80a41 -->
+<!-- source: 002054758a02 -->
 
 # Atalhos de teclado
 
@@ -85,6 +85,8 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Selecionar uma palavra | Clique duas vezes |
 | Selecionar uma linha | Clique três vezes |
 | Selecionar uma área | Arraste com ⌥ pressionada |
+| Ampliar a seleção | Clique com ⇧ pressionada |
+| Rolar ao selecionar ou desenhar | Arraste além da borda da janela |
 | Abrir os comentários de uma anotação | Clicar duas vezes nela, exceto em uma caixa de texto ou texto explicativo |
 | Zoom | Faça o gesto de pinça |
 

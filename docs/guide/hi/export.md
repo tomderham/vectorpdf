@@ -1,9 +1,9 @@
-<!-- keywords: एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, ऑप्टिमाइज़, फ़ाइल का आकार घटाएँ, कंप्रेस, छोटा, इमेज, फ़ॉन्ट, आउटलाइन, टेक्स्ट को आउटलाइन में बदलें, प्लॉटर, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, ऑप्टिमाइज़, फ़ाइल का आकार घटाएँ, कंप्रेस, छोटा, इमेज, फ़ॉन्ट, आउटलाइन, टेक्स्ट को आउटलाइन में बदलें, प्लॉटर, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, खोजने योग्य PDF, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # अन्य फ़ॉर्मैट में एक्सपोर्ट करें
 
-पूरा दस्तावेज़ एक्सपोर्ट करने के लिए, File > Export Document As चुनें, फिर Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF या Optimized PDF चुनें। ऐनोटेशन सारांश और माप के अपने अलग कमांड हैं।
+पूरा दस्तावेज़ एक्सपोर्ट करने के लिए, File > Export Document As चुनें, फिर Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF या Searchable PDF चुनें। ऐनोटेशन सारांश और माप के अपने अलग कमांड हैं।
 
 ## सादा टेक्स्ट
 
@@ -37,6 +37,10 @@ PDF की एक छोटी कॉपी सहेजता है, जिस
 - **Convert text to outlines:** हर अक्षर को एक आकृति के रूप में बनाता है, ताकि दस्तावेज़ उन प्लॉटर, कटर और प्रिंट सिस्टम पर भी वैसा ही दिखे जिनमें उसके फ़ॉन्ट नहीं हैं। कॉपी में टेक्स्ट को चुना, खोजा या कॉपी नहीं किया जा सकता।
 
 कॉपी कितनी छोटी होगी, यह दस्तावेज़ पर निर्भर करता है। इमेज घटाने पर स्कैन और फ़ोटो सबसे ज़्यादा छोटे होते हैं।
+
+## खोजने योग्य PDF
+
+किसी स्कैन किए गए PDF की एक कॉपी सहेजता है, जिसमें आपके बिना सहेजे बदलाव भी शामिल होते हैं, और उसके स्कैन किए गए पेजों पर पहचाना गया टेक्स्ट एक अदृश्य लेयर के रूप में सहेजा जाता है, ताकि दूसरी ऐप्स उसे खोज, चुन और कॉपी कर सकें। यह स्कैन किए गए पेजों वाले दस्तावेज़ों के लिए उपलब्ध है। देखें [पहचाना गया टेक्स्ट PDF में सहेजें](scanned-pages.md#save-the-recognized-text-in-the-pdf)।
 
 ## ऐनोटेशन सारांश
 

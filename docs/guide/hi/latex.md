@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, फ़ॉरवर्ड सर्च, इनवर्स सर्च, सोर्स, सोर्स कोड, एडिटर, सोर्स पर जाएँ, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: a865c846e0d7 -->
+<!-- source: ce9849c21b67 -->
 
 # LaTeX सोर्स और PDF के बीच आना-जाना
 
@@ -9,7 +9,7 @@ SyncTeX उस PDF के साथ काम करता है जिसक�
 
 ## अपना एडिटर चुनें
 
-1. VectorPDF > Settings चुनें, फिर LaTeX (SyncTeX) के बगल में Set Up… पर क्लिक करें।
+1. VectorPDF > Settings चुनें, Advanced पर क्लिक करें, फिर SyncTeX के बगल में Set Up… पर क्लिक करें।
 2. Source Editor में से अपना एडिटर चुनें: Visual Studio Code, VSCodium, Cursor, Zed, Sublime Text, BBEdit, TextMate, MacVim, Emacs या TeXstudio।
 3. अगर आपका एडिटर सूची में नहीं है, तो Other चुनें और वह कमांड डालें जो किसी फ़ाइल को किसी लाइन पर खोलता है। फ़ाइल के लिए `%file` और लाइन के लिए `%line` लिखें, जैसे `myeditor +%line %file`।
 

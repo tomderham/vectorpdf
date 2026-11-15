@@ -1,5 +1,5 @@
 <!-- keywords: 搜索, 查找, 查找下一个, 区分大小写, 全字匹配, 智能搜索, 忽略的模式, 正则表达式, 标签, 最近搜索, 搜索历史, 章节, 大纲, 目录, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # 搜索文稿
 
@@ -42,7 +42,7 @@ VectorPDF 会前往最近的结果。要清除文稿的搜索记录，请从放�
 
 有些文稿在句子中间放置标记（例如引文编号），导致无法找到短语。Smart Search 可以跳过这些标记。
 
-1. 选取 VectorPDF > Settings。
+1. 选取 VectorPDF > Settings，然后点按 Advanced。
 2. 在 Ignored Search Patterns 旁边，点按 Edit。
 3. 添加一个现成的模式或你自己的正则表达式，然后将其打开。
 

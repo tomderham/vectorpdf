@@ -1,5 +1,5 @@
 <!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, 섹션, 개요, 목차, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # 문서 검색하기
 
@@ -42,7 +42,7 @@ VectorPDF는 가장 가까운 결과로 이동합니다. 문서의 검색 기록
 
 일부 문서에는 인용 번호와 같은 표시가 문장 중간에 들어 있어서 구문을 찾지 못하는 경우가 있습니다. Smart Search는 이러한 표시를 건너뛸 수 있습니다.
 
-1. VectorPDF > Settings를 선택합니다.
+1. VectorPDF > Settings를 선택한 다음 Advanced를 클릭합니다.
 2. Ignored Search Patterns 옆의 Edit를 클릭합니다.
 3. 미리 만들어진 패턴을 추가하거나 직접 작성한 정규 표현식을 추가한 다음 켭니다.
 

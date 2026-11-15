@@ -1,5 +1,5 @@
 <!-- keywords: onglet Document, champs de formulaire, champs, signatures, signé, signature numérique, certifié, liens, hyperliens, URL, liens web, destinations nommées, destinations, contenu, barre latérale, document tab, form fields, fields, signed, digital signature, certified, links, hyperlinks, web links, named destinations, contents, sidebar -->
-<!-- source: 614eeae0ab3a -->
+<!-- source: e2c42440bfd7 -->
 
 # Champs de formulaire, signatures, liens et destinations
 
@@ -11,7 +11,7 @@ L’onglet Document (une boîte), en haut de la barre latérale, répertorie ce 
 - **Links :** chaque lien, avec le texte sur lequel il se trouve et l’endroit où il mène.
 - **Destinations :** les emplacements nommés du document vers lesquels des liens peuvent pointer.
 
-Form Fields, Links et Destinations ne sont répertoriés que si vous activez **List form fields, links and destinations in the sidebar** dans VectorPDF > Settings. La plupart des documents contiennent des liens : sans cela, l’onglet apparaîtrait pour presque tous.
+Form Fields, Links et Destinations ne sont répertoriés que si vous activez **List form fields, links and destinations in the sidebar** dans VectorPDF > Settings > General. La plupart des documents contiennent des liens : sans cela, l’onglet apparaîtrait pour presque tous.
 
 Le menu ne propose que ce que contient le document, et l’onglet n’apparaît que si celui-ci en contient au moins un.
 

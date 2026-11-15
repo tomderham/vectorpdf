@@ -1,5 +1,5 @@
 <!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 2c2bdeb1617c -->
+<!-- source: 45889ab73fb0 -->
 
 # Änderungen sichern
 
@@ -25,4 +25,4 @@ Wähle File > Share, um einen macOS-Freigabedienst zu verwenden, oder File > Sho
 
 ## Was nicht im PDF gesichert wird
 
-Einige Dinge bleiben bei VectorPDF und wandern nicht mit der Datei mit: [Anker](anchors.md), deine [Leseposition](reading-positions.md), die Drehung der Ansicht und Text aus der [OCR](scanned-pages.md).
+Einige Dinge bleiben bei VectorPDF und wandern nicht mit der Datei mit: [Anker](anchors.md), deine [Leseposition](reading-positions.md), die Drehung der Ansicht und Text aus der [OCR](scanned-pages.md), sofern du ihn nicht [im PDF sicherst](scanned-pages.md#save-the-recognized-text-in-the-pdf).

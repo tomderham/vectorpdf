@@ -1,11 +1,12 @@
-<!-- keywords: auswählen, Auswahl, kopieren, Text, Bildschirmfoto, Bild, nachschlagen, Wörterbuch, Definition, übersetzen, Übersetzung, sprechen, Sprachausgabe, vorlesen, Bereich, Lasso, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso -->
-<!-- source: 56c5298b2bce -->
+<!-- keywords: auswählen, Auswahl, kopieren, Text, Bildschirmfoto, Bild, nachschlagen, Wörterbuch, Definition, übersetzen, Übersetzung, sprechen, Sprachausgabe, vorlesen, Bereich, Lasso, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, erweitern, Umschalt-Klick, mehrere Seiten, beim Auswählen scrollen, extend, shift-click, several pages, scroll while selecting -->
+<!-- source: 43e554563f4f -->
 
 # Text auswählen, kopieren und nachschlagen
 
 ## Text auswählen
 
-- **Ziehe** über den Text. Auswahlen folgen der Lesereihenfolge. Sie bleiben also in mehrspaltigen Layouts innerhalb einer Spalte und überspringen Zeilennummern am Rand. Sie können sich über mehrere Seiten erstrecken.
+- **Ziehe** über den Text. Auswahlen folgen der Lesereihenfolge. Sie bleiben also in mehrspaltigen Layouts innerhalb einer Spalte und überspringen Zeilennummern am Rand. Sie können sich über mehrere Seiten erstrecken: Ziehe über den oberen oder unteren Fensterrand hinaus, dann scrollt das Dokument, umso schneller, je weiter du ziehst.
+- **Halte ⇧ gedrückt und klicke**, um die Auswahl von ihrem Anfang bis zur Klickstelle zu erweitern, auf jeder Seite. Klicke an den Anfang, scrolle zum Ende und klicke dort bei gedrückter ⇧-Taste. Danach kannst du weiterziehen.
 - **Doppelklicke**, um ein Wort auszuwählen, oder **klicke dreimal**, um eine Zeile auszuwählen.
 - **Halte ⌥ gedrückt und ziehe**, um einen rechteckigen Bereich auszuwählen, zum Beispiel eine Abbildung oder Tabelle.
 

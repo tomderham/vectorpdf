@@ -1,5 +1,5 @@
 <!-- keywords: sello, sellos, firma, firmas, firmar, iniciales, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # Sellos y firmas
 
@@ -9,7 +9,7 @@ Un sello es una imagen, como tu firma o tus iniciales, que puedes colocar en cua
 
 ## Crear tu sello
 
-1. Elige VectorPDF > Settings y haz clic en Create Stamp en Digital Stamp. También puedes elegir directamente la herramienta Stamp en la barra de herramientas Markup, y VectorPDF te pedirá que crees uno.
+1. Elige VectorPDF > Settings, haz clic en General y luego en Create Stamp junto a Digital Stamp. También puedes elegir directamente la herramienta Stamp en la barra de herramientas Markup, y VectorPDF te pedirá que crees uno.
 2. Elige cómo crearlo:
    - **Draw:** firma con el trackpad o el ratón.
    - **Type:** escribe tu nombre o tus iniciales y elige una fuente.

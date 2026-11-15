@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: 498dfab80a41 -->
+<!-- source: 002054758a02 -->
 
 # Atajos de teclado
 
@@ -85,6 +85,8 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | Seleccionar una palabra | Doble clic |
 | Seleccionar una línea | Triple clic |
 | Seleccionar un área | Arrastrar con ⌥ pulsada |
+| Ampliar la selección | Hacer clic con ⇧ pulsada |
+| Desplazarse al seleccionar o dibujar | Arrastrar más allá del borde de la ventana |
 | Abrir los comentarios de una anotación | Hacer doble clic en ella, salvo en un cuadro de texto o una llamada |
 | Zoom | Pellizcar |
 

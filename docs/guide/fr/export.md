@@ -1,9 +1,9 @@
-<!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, optimiser, optimisé, réduire la taille, compresser, plus léger, images, polices, contours, vectoriser le texte, traceur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter -->
-<!-- source: 6d68e3315dc3 -->
+<!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, optimiser, optimisé, réduire la taille, compresser, plus léger, images, polices, contours, vectoriser le texte, traceur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF interrogeable, OCR, searchable PDF -->
+<!-- source: c82d89e33d61 -->
 
 # Exporter vers d’autres formats
 
-Pour exporter un document entier, choisissez File > Export Document As, puis choisissez Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF ou Optimized PDF. Le résumé des annotations et les mesures ont leurs propres commandes.
+Pour exporter un document entier, choisissez File > Export Document As, puis choisissez Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF ou Searchable PDF. Le résumé des annotations et les mesures ont leurs propres commandes.
 
 ## Texte brut
 
@@ -37,6 +37,10 @@ Enregistre une copie plus légère du PDF, y compris les modifications que vous 
 - **Convert text to outlines:** dessine chaque lettre sous forme de tracé, pour que le document ait le même aspect sur les traceurs, les machines de découpe et les systèmes d’impression qui n’ont pas ses polices. Le texte de la copie ne peut plus être sélectionné, recherché ni copié.
 
 Le gain de taille dépend du document. Ce sont les numérisations et les photos qui s’allègent le plus lorsque vous réduisez leurs images.
+
+## PDF interrogeable
+
+Enregistre une copie d’un PDF numérisé, y compris les modifications non enregistrées, dans laquelle le texte reconnu sur ses pages numérisées est enregistré sous forme de calque invisible, pour que d’autres apps puissent le rechercher, le sélectionner et le copier. Disponible pour les documents qui ont des pages numérisées. Consultez [Enregistrer le texte reconnu dans le PDF](scanned-pages.md#save-the-recognized-text-in-the-pdf).
 
 ## Résumé des annotations
 

@@ -1,9 +1,9 @@
 <!-- keywords: Agent, IA, inteligência artificial, mecanismo, no dispositivo, modelo online, chave de API, AI, engine, on-device, Private Cloud Compute, online model, API key, OpenAI, Gemini, OpenRouter -->
-<!-- source: dbbd02de21b5 -->
+<!-- source: 8e36d75499d6 -->
 
 # Escolher como o Agent responde
 
-A busca pelos trechos relevantes sempre acontece no seu Mac. Você pode escolher o que redige a resposta em VectorPDF > Settings > AI Synthesis Engine. Este ajuste requer o macOS 27.
+A busca pelos trechos relevantes sempre acontece no seu Mac. Você pode escolher o que redige a resposta em VectorPDF > Settings > Agent > AI Synthesis Engine. Este ajuste requer o macOS 27.
 
 | Mecanismo | Como funciona | O que sai do seu Mac |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ O Private Cloud Compute aparece somente nas cópias do VectorPDF assinadas para 
 
 ## Usar um modelo online
 
-1. Em Settings, defina AI Synthesis Engine como Online Model.
+1. Em Settings, clique em Agent e defina AI Synthesis Engine como Online Model.
 2. Escolha um serviço: OpenAI, Google Gemini ou OpenRouter.
 3. Digite sua chave de API. Há um link para obter uma em cada serviço. A chave é armazenada no seu chaveiro de início de sessão.
 4. Escolha um modelo.

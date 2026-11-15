@@ -1,5 +1,5 @@
 <!-- keywords: buscar, busca, localizar, localizar próximo, maiúsculas e minúsculas, palavra inteira, busca inteligente, padrões ignorados, expressão regular, etiquetas, pesquisas recentes, histórico de pesquisa, seção, sumário, índice, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 0bf81b258540 -->
+<!-- source: 87f66076cf3e -->
 
 # Buscar em um documento
 
@@ -42,7 +42,7 @@ Clique no botão de opções ao lado do campo de busca:
 
 Alguns documentos colocam marcadores no meio das frases, como números de citação, o que impede que uma expressão seja encontrada. O Smart Search pode ignorá-los.
 
-1. Escolha VectorPDF > Settings.
+1. Escolha VectorPDF > Settings e clique em Advanced.
 2. Ao lado de Ignored Search Patterns, clique em Edit.
 3. Adicione um dos padrões prontos ou sua própria expressão regular e ative-o.
 

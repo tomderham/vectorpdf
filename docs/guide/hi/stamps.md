@@ -1,5 +1,5 @@
 <!-- keywords: स्टैम्प, हस्ताक्षर, हस्ताक्षर करें, आद्याक्षर, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: d4837c28bbd2 -->
+<!-- source: eb4441d846b0 -->
 
 # स्टैम्प और हस्ताक्षर
 
@@ -9,7 +9,7 @@
 
 ## अपना स्टैम्प बनाएँ
 
-1. VectorPDF > Settings चुनें, फिर Digital Stamp के नीचे Create Stamp पर क्लिक करें। आप सीधे Markup टूलबार में Stamp टूल भी चुन सकते हैं, और VectorPDF आपसे एक स्टैम्प बनाने को कहेगा।
+1. VectorPDF > Settings चुनें, General पर क्लिक करें, फिर Digital Stamp के बगल में Create Stamp पर क्लिक करें। आप सीधे Markup टूलबार में Stamp टूल भी चुन सकते हैं, और VectorPDF आपसे एक स्टैम्प बनाने को कहेगा।
 2. चुनें कि इसे कैसे बनाना है:
    - **Draw:** अपने ट्रैकपैड या माउस से हस्ताक्षर करें।
    - **Type:** अपना नाम या आद्याक्षर दर्ज करें, और कोई फ़ॉन्ट चुनें।
