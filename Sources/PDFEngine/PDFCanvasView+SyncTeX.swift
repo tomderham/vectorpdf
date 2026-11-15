@@ -45,7 +45,7 @@ extension PDFCanvasView {
     }
 
     private func advanceSyncTeXHighlight() {
-        guard let highlight = syncTeXHighlight else {
+        guard hasLiveViewModel, let highlight = syncTeXHighlight else {
             syncTeXHighlightTimer?.invalidate()
             syncTeXHighlightTimer = nil
             return

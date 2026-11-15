@@ -162,3 +162,27 @@ private final class ScrollingCanvasFixture {
         canvas.mouseUp(with: fixture.event(.leftMouseUp, at: point, modifiers: .shift))
     }
 }
+
+/// A canvas can outlive its view model briefly, as when a tab closes with a change still queued.
+@MainActor
+@Suite struct CanvasOutlivingItsViewModelTests {
+    @Test func queuedChangesAfterTheViewModelIsGoneDoNothing() async throws {
+        var vm: PDFViewerViewModel? = PDFViewerViewModel()
+        weak var gone = vm
+        let canvas = PDFCanvasView(viewModel: vm!)
+        canvas.frame = NSRect(x: 0, y: 0, width: 400, height: 400)
+        // Each change queues a delivery to the canvas on the main queue…
+        vm!.selectedFontSize += 1
+        vm!.canvasMode = .draw
+        vm!.searchQuery = "queued"
+        // …which runs after the view model is freed.
+        vm = nil
+        #expect(gone == nil, "something else kept the view model; the test needs it freed")
+        try await Task.sleep(nanoseconds: 50_000_000)
+        #expect(!canvas.hasLiveViewModel)
+        canvas.syncFormControls()
+        canvas.layout()
+        canvas.display()
+        #expect(!canvas.autoscroll(towards: CGPoint(x: 0, y: -100)))
+    }
+}

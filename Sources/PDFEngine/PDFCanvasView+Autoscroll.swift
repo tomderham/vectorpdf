@@ -90,7 +90,7 @@ extension PDFCanvasView {
     /// False when there's nothing to do: no drag, or the pointer is inside the view.
     @discardableResult
     func autoscroll(towards locationInWindow: CGPoint) -> Bool {
-        guard let window, hasAutoscrollableDrag, let scrollView = enclosingScrollView,
+        guard let window, hasLiveViewModel, hasAutoscrollableDrag, let scrollView = enclosingScrollView,
               let visible = unobscuredVisibleRect else { return false }
         let step = Self.autoscrollStep(for: convert(locationInWindow, from: nil), visible: visible)
         guard step != .zero else { return false }

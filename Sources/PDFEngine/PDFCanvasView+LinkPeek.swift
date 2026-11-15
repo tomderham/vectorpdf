@@ -309,7 +309,7 @@ extension PDFCanvasView {
         referencePeek.showMessage("Searching other tabs for \(reference.displayText)…", spinning: true, anchor: anchor, parent: window)
         referenceSearchTask = Task { @MainActor [weak self] in
             let candidates = await CrossDocReferenceFinder.candidates(for: reference, in: others)
-            guard !Task.isCancelled, let self, self.referencePeek.isShowing else { return }
+            guard !Task.isCancelled, let self, self.hasLiveViewModel, self.referencePeek.isShowing else { return }
             // The canvas may have scrolled while searching.
             let anchor = self.referenceAnchorRect(payload) ?? anchor
             if candidates.isEmpty {

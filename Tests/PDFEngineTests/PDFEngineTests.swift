@@ -1624,7 +1624,10 @@ func createFormSamplePDF(at fileURL: URL) {
     
     // Load document into view model
     await vm.loadDocument(from: pdfURL.path)
-    
+    // Other tests run on the main actor while it loads, and a click on a canvas in one of them
+    // makes that view model active instead; the coordinator is shared.
+    coordinator.registerActive(vm)
+
     #expect(coordinator.hasActiveDocument == true)
     #expect(coordinator.documentTitle == pdfURL.lastPathComponent)
     #expect(coordinator.canZoomIn == true)

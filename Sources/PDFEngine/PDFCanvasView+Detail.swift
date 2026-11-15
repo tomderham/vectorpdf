@@ -136,10 +136,10 @@ extension PDFCanvasView {
             try? await Task.sleep(for: Self.detailRenderDelay)
             guard !Task.isCancelled else { return }
             for (page, rect) in wanted {
-                guard let self, let base = self.viewModel.renderedPages[page] else { continue }
-                guard let rendered = try? await self.viewModel.renderActor.renderPageDetail(pageIndex: page, rect: rect, scale: scale) else { continue }
+                guard let self, let viewModel = self.liveViewModel, let base = viewModel.renderedPages[page] else { continue }
+                guard let rendered = try? await viewModel.renderActor.renderPageDetail(pageIndex: page, rect: rect, scale: scale) else { continue }
                 // Kept even if a scroll cancelled this task meanwhile, as long as it still fits.
-                if self.viewModel.effectiveZoom == zoom, self.viewModel.renderedPages[page] === base {
+                if viewModel.effectiveZoom == zoom, viewModel.renderedPages[page] === base {
                     let size = NSSize(width: rendered.rect.width * zoom, height: rendered.rect.height * zoom)
                     self.pageDetails[page] = PageDetail(zoom: zoom, base: base, rect: rendered.rect, image: NSImage(cgImage: rendered.image, size: size))
                     if let pFrame = self.pageFrame(for: page) { self.setNeedsDisplay(pFrame) }

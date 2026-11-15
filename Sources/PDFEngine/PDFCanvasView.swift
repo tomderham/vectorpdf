@@ -30,6 +30,12 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     public override var mouseDownCanMoveWindow: Bool { false }
     
     public unowned var viewModel: PDFViewerViewModel
+    /// The same view model, weakly: nil once it's gone. `viewModel` is unowned, and reading it
+    /// then crashes, so anything that runs later (a Combine delivery, a Task, a timer) checks
+    /// this first: the view model can be freed while one is queued, as when a tab closes.
+    private weak var viewModelIfAlive: PDFViewerViewModel?
+    var liveViewModel: PDFViewerViewModel? { viewModelIfAlive }
+    var hasLiveViewModel: Bool { viewModelIfAlive != nil }
     private var cancellables = Set<AnyCancellable>()
     
     // Mouse interaction state
@@ -287,6 +293,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
     public init(viewModel: PDFViewerViewModel) {
         self.viewModel = viewModel
+        self.viewModelIfAlive = viewModel
         super.init(frame: .zero)
         self.wantsLayer = true
         self.layer?.drawsAsynchronously = true
@@ -297,6 +304,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         viewModel.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.needsDisplay = true
                 self?.syncFormControls()
             }
@@ -305,6 +313,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         NotificationCenter.default.publisher(for: .formWidgetDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                guard self?.hasLiveViewModel == true else { return }
                 guard let self else { return }
                 if !self.isActivelyEditingFormControl {
                     self.needsDisplay = true
@@ -317,6 +326,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         PDFViewerAppCoordinator.shared.$pdfColorAppearance
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                guard self?.hasLiveViewModel == true else { return }
                 guard let self else { return }
                 self.themedPageCache.removeAll()
                 self.needsDisplay = true
@@ -330,6 +340,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()   // selecting an annotation re-sets these to its own values
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newSize in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.handleFontSizeChanged(newSize)
             }
             .store(in: &cancellables)
@@ -339,6 +350,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()   // selecting an annotation re-sets these to its own values
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newColor in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.handleAnnotationColorChanged(newColor)
             }
             .store(in: &cancellables)
@@ -348,6 +360,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] width in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.restyleSelectedShape(strokeWidth: width)
             }
             .store(in: &cancellables)
@@ -357,6 +370,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] reveal in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.showRevealedAnnotation(reveal)
             }
             .store(in: &cancellables)
@@ -387,6 +401,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] edit in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.applyInspectorEdit(edit)
             }
             .store(in: &cancellables)
@@ -396,6 +411,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] reveal in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.showSyncTeXReveal(reveal)
             }
             .store(in: &cancellables)
@@ -405,6 +421,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] ending in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.restyleSelectedShape(lineEnding: ending)
             }
             .store(in: &cancellables)
@@ -414,6 +431,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                guard self?.hasLiveViewModel == true else { return }
                 guard let self, let sel = self.selectedAnnotation else { return }
                 if !self.viewModel.shownAnnotations(onPage: sel.pageIndex).contains(where: { $0.id == sel.id }) {
                     self.selectedAnnotation = nil
@@ -427,6 +445,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                guard self?.hasLiveViewModel == true else { return }
                 self?.discardInProgressDrafts()
             }
             .store(in: &cancellables)

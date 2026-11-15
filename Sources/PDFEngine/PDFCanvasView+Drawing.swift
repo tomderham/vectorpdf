@@ -24,7 +24,7 @@ extension PDFCanvasView {
     // MARK: - Direct Quartz 2D Drawing
     
     public override func draw(_ dirtyRect: NSRect) {
-        guard let doc = viewModel.document else {
+        guard hasLiveViewModel, let doc = viewModel.document else {
             NSColor.windowBackgroundColor.setFill()
             dirtyRect.fill()
             return
@@ -116,8 +116,9 @@ extension PDFCanvasView {
             if !viewModel.hasCurrentRender(of: pageIdx) && !viewModel.isLiveZooming {
                 // Render on demand, or again after a zoom; the old bitmap stays meanwhile.
                 Task { @MainActor [weak self] in
-                    await self?.viewModel.renderPage(pageIdx)
-                    self?.viewModel.loadPageMetadata(pageIdx)
+                    guard let viewModel = self?.liveViewModel else { return }
+                    await viewModel.renderPage(pageIdx)
+                    viewModel.loadPageMetadata(pageIdx)
                     self?.setNeedsDisplay(canvasFrame)
                     self?.syncFormControls()
                 }
@@ -127,7 +128,7 @@ extension PDFCanvasView {
             if viewModel.pageFormWidgets[pageIdx] == nil {
                 // Defer loading metadata to avoid mutating published state during draw(_:).
                 Task { @MainActor [weak self] in
-                    self?.viewModel.loadPageMetadata(pageIdx)
+                    self?.liveViewModel?.loadPageMetadata(pageIdx)
                     self?.setNeedsDisplay(canvasFrame)
                 }
             }

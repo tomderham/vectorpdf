@@ -24,6 +24,7 @@ extension PDFCanvasView {
     // MARK: - AcroForm Control Synchronization
     
     public func syncFormControls() {
+        guard hasLiveViewModel else { return }
         // A Compare Documents pane is read-only: its fields show as drawn on the page.
         guard let doc = viewModel.document, !viewModel.isComparePane else {
             for (_, view) in activeFormControls {
