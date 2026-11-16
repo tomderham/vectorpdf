@@ -380,7 +380,7 @@ extension PDFViewerViewModel {
         case .stamp:
             guard let rect = annot.rect, let data = annot.stampImageData else { return nil }
             return addStampAnnotation(pageIndex: page, rect: rect, imageData: data, color: annot.color)
-        case .note, .cloud, .square, .circle, .line:
+        case .note, .cloud, .square, .circle, .line, .polygon, .polyline:
             guard let rect = annot.rect else { return nil }
             return addRestyled(annot, rect: rect, color: annot.color)
         case .other:
@@ -457,7 +457,7 @@ extension PDFViewerViewModel {
         switch annot.type {
         case .note:
             return addNoteAnnotation(pageIndex: annot.pageIndex, at: rect.origin, text: annot.text, color: color)
-        case .square, .circle, .line:
+        case .square, .circle, .line, .polygon, .polyline:
             return addShape(PDFAnnotation(pageIndex: annot.pageIndex, type: annot.type, inkPoints: annot.inkPoints(fittedTo: rect), rect: rect, strokeWidth: annot.strokeWidth, color: color, lineEnding: annot.lineEnding))
         default:
             let intensity = annot.cloudIntensity ?? PDFCloudArcSize.medium.rawValue
@@ -474,7 +474,7 @@ extension PDFViewerViewModel {
         let ends = ends ?? annot.inkPoints
         return addShape(PDFAnnotation(
             pageIndex: annot.pageIndex, type: annot.type, inkPoints: ends,
-            rect: annot.type == .line ? CGRect(enclosing: ends) : annot.rect,
+            rect: annot.type == .line || annot.isPolyShape ? CGRect(enclosing: ends) : annot.rect,
             strokeWidth: strokeWidth ?? annot.strokeWidth, color: annot.color, lineEnding: lineEnding ?? annot.lineEnding
         ))
     }
@@ -494,14 +494,25 @@ extension PDFViewerViewModel {
             return addShape(PDFAnnotation(pageIndex: pageIndex, type: shape == .rectangle ? .square : .circle, rect: rect, strokeWidth: strokeWidth, color: color))
         case .line:
             return addShape(PDFAnnotation(pageIndex: pageIndex, type: .line, inkPoints: [start, end], rect: rect, strokeWidth: strokeWidth, color: color, lineEnding: lineEnding))
+        case .polygon, .polyline:
+            return addPolyShape(pageIndex: pageIndex, closed: shape == .polygon, points: [start, end], strokeWidth: strokeWidth, lineEnding: lineEnding, color: color)
         }
+    }
+
+    /// Adds a polygon through `points`, or a polyline ending in `lineEnding`.
+    @discardableResult
+    public func addPolyShape(pageIndex: Int, closed: Bool, points: [CGPoint], strokeWidth: CGFloat = 2.5, lineEnding: PDFLineEnding = .none, color: AnnotationColor = .red) -> PDFAnnotation? {
+        guard points.count >= (closed ? 3 : 2) else { return nil }
+        return addShape(PDFAnnotation(pageIndex: pageIndex, type: closed ? .polygon : .polyline, inkPoints: points, rect: CGRect(enclosing: points),
+                                      strokeWidth: strokeWidth, color: color, lineEnding: closed ? nil : lineEnding))
     }
 
     /// Writes the rectangle, oval or line `annot` describes to the document.
     private func addShape(_ annot: PDFAnnotation) -> PDFAnnotation? {
         let page = annot.pageIndex
         guard let doc = document, page >= 0, page < doc.pageCount, let rect = annot.rect else { return nil }
-        guard annot.type == .line ? annot.inkPoints.count >= 2 : rect.width > 0 && rect.height > 0 else { return nil }
+        let enoughPoints = annot.type == .polygon ? annot.inkPoints.count >= 3 : annot.inkPoints.count >= 2
+        guard annot.type == .line || annot.isPolyShape ? enoughPoints : rect.width > 0 && rect.height > 0 else { return nil }
         do {
             try doc.addShape(pageIndex: page, type: annot.type, rect: rect, points: annot.inkPoints, strokeWidth: annot.strokeWidth, lineEnding: annot.lineEnding ?? PDFLineEnding.none, red: annot.color.rgb.red, green: annot.color.rgb.green, blue: annot.color.rgb.blue)
             let stored = recordAddedAnnotation(annot)
@@ -594,6 +605,8 @@ extension PDFViewerViewModel {
         case "Circle": type = .circle
         case "Line": type = .line
         case "Polygon" where found.isCloud: type = .cloud
+        case "Polygon" where found.points.count >= 3: type = .polygon
+        case "PolyLine" where found.points.count >= 2: type = .polyline
         case "Text": type = .note
         case "FreeText": type = .freeText
         case "Stamp": type = .stamp
@@ -610,7 +623,7 @@ extension PDFViewerViewModel {
             strokeWidth: found.borderWidth,
             color: found.color ?? .black,
             text: annotationThread(pageIndex: pageIndex, objectNumber: objectNumber)?.root.text ?? "",
-            lineEnding: type == .line ? found.lineEnding ?? PDFLineEnding.none : nil,
+            lineEnding: type == .line || type == .polyline ? found.lineEnding ?? PDFLineEnding.none : nil,
             cloudIntensity: found.isCloud ? 1 : nil
         )
         annot.documentObjectNumber = objectNumber

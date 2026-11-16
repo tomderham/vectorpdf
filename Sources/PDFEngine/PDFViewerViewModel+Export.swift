@@ -83,6 +83,10 @@ extension PDFViewerViewModel {
                     md += "- **[Oval]** *(\(colorName))*\n"
                 case .line:
                     md += "- **[\(annot.lineEnding == PDFLineEnding.none ? "Line" : "Arrow")]** *(\(colorName))*\n"
+                case .polygon:
+                    md += "- **[Polygon]** *(\(colorName))*\n"
+                case .polyline:
+                    md += "- **[Polyline]** *(\(colorName))*\n"
                 case .other:
                     md += "- **[Annotation]** *(\(colorName))*\n"
                 case .measureLength:

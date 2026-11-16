@@ -203,13 +203,22 @@ extension PDFCanvasView {
             path = NSBezierPath()
             path.move(to: ends[0])
             path.line(to: ends[1])
+        case .polygon where ends.count >= 2, .polyline where ends.count >= 2:
+            path = NSBezierPath()
+            path.move(to: ends[0])
+            for point in ends.dropFirst() { path.line(to: point) }
+            if type == .polygon { path.close() }
+            path.lineJoinStyle = .round
         default:
             return
         }
         path.lineWidth = max(strokeWidth * zoom, 1.0)
         color.setStroke()
         path.stroke()
-        if type == .line, let ending, let head = ending.path(tip: ends[1], dx: ends[0].x - ends[1].x, dy: ends[0].y - ends[1].y, scale: max(1, strokeWidth) * zoom) {
+        // A line's, or a polyline's, end: at its last point, pointing along its last segment.
+        let hasHead = type == .line || type == .polyline
+        if hasHead, ends.count >= 2, let ending,
+           let head = ending.path(tip: ends[ends.count - 1], dx: ends[ends.count - 2].x - ends[ends.count - 1].x, dy: ends[ends.count - 2].y - ends[ends.count - 1].y, scale: max(1, strokeWidth) * zoom) {
             head.path.lineWidth = path.lineWidth
             if head.filled {
                 color.setFill()

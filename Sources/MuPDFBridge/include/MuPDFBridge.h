@@ -200,6 +200,10 @@ int mupdf_pdf_add_cloud_polygon_annot(fz_context *ctx, fz_document *doc, int pag
 int mupdf_pdf_add_note_annot(fz_context *ctx, fz_document *doc, int pageno,
                              float x0, float y0, float x1, float y1, const char *text,
                              float r, float g, float b, const char **out_error);
+/* A Polygon (closed) or PolyLine through `vertices` (page space); a polyline ends in line_ending. */
+int mupdf_pdf_add_poly_annot(fz_context *ctx, fz_document *doc, int pageno, int closed,
+                             const fz_point *vertices, int n_vertices, float width, int line_ending,
+                             float r, float g, float b, const char **out_error);
 /* kind: 0 rectangle (Square) and 1 oval (Circle) fill the box (x0, y0)-(x1, y1); 2 is a Line
  * from (x0, y0) to (x1, y1), with line_ending at (x1, y1). */
 int mupdf_pdf_add_shape_annot(fz_context *ctx, fz_document *doc, int pageno, int kind,

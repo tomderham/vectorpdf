@@ -71,6 +71,11 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     var currentRedactionStart: CGPoint?
     var currentRedactionEnd: CGPoint?
 
+    // A polygon or polyline being clicked out: its points so far, and the pointer's.
+    var currentPolyPage: Int?
+    var currentPolyPoints: [CGPoint] = []
+    var currentPolyCandidate: CGPoint?
+
     // Callout drafting in-progress state
     var currentCalloutPage: Int?
     var currentCalloutStart: CGPoint?
@@ -483,6 +488,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
 
     private func discardInProgressDrafts() {
+        currentPolyPage = nil
+        currentPolyPoints = []
+        currentPolyCandidate = nil
         currentMeasurePage = nil
         currentMeasurePoints = []
         currentMeasureCandidatePoint = nil

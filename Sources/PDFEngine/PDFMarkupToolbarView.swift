@@ -257,7 +257,7 @@ public struct PDFMarkupToolbarView: View {
                     LineWidthBox(width: $viewModel.drawStrokeWidth, help: "Line Width (type a width in points, or choose one)")
                 }
 
-                if viewModel.selectedShape == .line {
+                if viewModel.selectedShape == .line || viewModel.selectedShape == .polyline {
                     Picker("Line Ending", selection: $viewModel.selectedShapeLineEnding) {
                         ForEach(PDFLineEnding.allCases, id: \.self) { ending in
                             Text(ending.displayName).tag(ending)
@@ -267,6 +267,13 @@ public struct PDFMarkupToolbarView: View {
                     .controlSize(.small)
                     .frame(width: 110)
                     .help("Line Ending (None for a plain line)")
+                }
+
+                if viewModel.selectedShape == .polygon || viewModel.selectedShape == .polyline {
+                    Text(viewModel.selectedShape == .polygon ? "Click each corner; click the first to close" : "Click each point; double-click to finish")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
             case .redact:

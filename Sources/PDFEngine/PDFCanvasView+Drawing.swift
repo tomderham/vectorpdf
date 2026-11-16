@@ -293,7 +293,7 @@ extension PDFCanvasView {
                             let str = annot.text as NSString
                             str.draw(with: boxRect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attrs)
 
-                        case .note, .cloud, .square, .circle, .line:
+                        case .note, .cloud, .square, .circle, .line, .polygon, .polyline:
                             guard let initialRect = annot.rect else { continue }
                             var rect = initialRect
                             if let drag = activeAnnotationDrag, drag.id == annot.id {
@@ -624,6 +624,24 @@ extension PDFCanvasView {
                     drawShape(.circle, box: box, ends: [], strokeWidth: viewModel.drawStrokeWidth, ending: nil, color: color)
                 case .line:
                     drawShape(.line, box: box, ends: [p1, p2], strokeWidth: viewModel.drawStrokeWidth, ending: viewModel.selectedShapeLineEnding, color: color)
+                case .polygon, .polyline:
+                    break
+                }
+            }
+
+            // A polygon or polyline being clicked out, to where the pointer is.
+            if currentPolyPage == pageIdx, !currentPolyPoints.isEmpty {
+                var points = currentPolyPoints
+                if let candidate = currentPolyCandidate { points.append(candidate) }
+                let ends = points.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
+                let closing = viewModel.selectedShape == .polygon && points.count >= 3
+                drawShape(closing ? .polygon : .polyline, box: .zero, ends: ends, strokeWidth: viewModel.drawStrokeWidth,
+                          ending: viewModel.selectedShape == .polyline ? viewModel.selectedShapeLineEnding : nil,
+                          color: viewModel.selectedAnnotationColor.nsColor)
+                // The corners clicked so far.
+                NSColor.controlAccentColor.setFill()
+                for point in ends.dropLast(currentPolyCandidate == nil ? 0 : 1) {
+                    NSBezierPath(ovalIn: NSRect(x: point.x - 2.5, y: point.y - 2.5, width: 5, height: 5)).fill()
                 }
             }
 

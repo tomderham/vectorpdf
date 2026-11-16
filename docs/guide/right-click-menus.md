@@ -9,7 +9,7 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 | Right-click | Commands |
 | --- | --- |
 | Selected text | Copy Text, Look Up, Translate Selection, Start Speaking or Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| A selected area | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| A selected area | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | A link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | A highlight, underline or strikethrough | Comments…, and the matching Remove command |
 | A text box | Comments…, Edit Text Box, and the delete command |

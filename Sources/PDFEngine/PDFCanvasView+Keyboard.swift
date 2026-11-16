@@ -34,6 +34,10 @@ extension PDFCanvasView {
                 commitCurrentArea()
                 return
             }
+            if currentPolyPage != nil {
+                commitCurrentPolyShape()
+                return
+            }
         }
 
         // Escape key: cancel in-progress measurement
@@ -43,6 +47,10 @@ extension PDFCanvasView {
                 currentMeasurePoints = []
                 currentMeasureCandidatePoint = nil
                 needsDisplay = true
+                return
+            }
+            if currentPolyPage != nil {
+                discardPolyShape()
                 return
             }
         }

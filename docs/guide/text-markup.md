@@ -14,6 +14,10 @@ Select text, then do one of these:
 
 You can also use the buttons in the Markup toolbar, or right-click the selection and choose Highlight, Underline or Strikethrough. Each has a list of colors.
 
+## Highlight an area
+
+To highlight a figure, part of a drawing or a scanned page, where there's no text to select, hold ⌥ and drag across the area, then right-click it and choose Highlight Area, or click the highlight button in the Markup toolbar.
+
 ## Choose a color
 
 Highlights start yellow, and underlines and strikethroughs red. Each keeps its own color, and VectorPDF remembers it. The shortcuts and toolbar buttons use it.

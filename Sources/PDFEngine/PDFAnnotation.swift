@@ -130,6 +130,10 @@ public enum PDFAnnotationType: String, Codable, Sendable {
     case circle
     /// A line or arrow (a Line annotation), from `inkPoints[0]` to `inkPoints[1]`.
     case line
+    /// A closed shape through `inkPoints` (a Polygon annotation).
+    case polygon
+    /// An open path through `inkPoints` (a PolyLine annotation), ending in `lineEnding`.
+    case polyline
     /// An annotation from another app of a kind VectorPDF doesn't make, such as a polygon or a
     /// file attachment. It can be moved as a whole.
     case other
@@ -149,6 +153,10 @@ public enum PDFShapeKind: String, CaseIterable, Sendable {
     case line
     /// A revision cloud around the outline dragged.
     case cloud
+    /// Click each corner; a closed shape.
+    case polygon
+    /// Click each point; an open path, which can end in an arrow.
+    case polyline
 
     public var displayName: String {
         switch self {
@@ -156,6 +164,8 @@ public enum PDFShapeKind: String, CaseIterable, Sendable {
         case .oval: return "Oval"
         case .line: return "Line or Arrow"
         case .cloud: return "Revision Cloud"
+        case .polygon: return "Polygon"
+        case .polyline: return "Polyline"
         }
     }
 
@@ -165,6 +175,8 @@ public enum PDFShapeKind: String, CaseIterable, Sendable {
         case .oval: return "oval"
         case .line: return "arrow.up.right"
         case .cloud: return "cloud"
+        case .polygon: return "pentagon"
+        case .polyline: return "point.bottomleft.forward.to.point.topright.scurvepath"
         }
     }
 
@@ -457,8 +469,11 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     /// A revision cloud, rectangle, oval or line: drawn from `rect`, which moving or resizing
     /// changes. A line's `rect` is the box its ends are corners of.
     public var isShape: Bool {
-        type == .cloud || type == .square || type == .circle || type == .line
+        type == .cloud || type == .square || type == .circle || type == .line || type == .polygon || type == .polyline
     }
+
+    /// A polygon or polyline: drawn through `inkPoints`, clicked one by one.
+    public var isPolyShape: Bool { type == .polygon || type == .polyline }
 
     /// `inkPoints` moved and scaled as `rect` is to become `newRect`, as a line's ends are when
     /// it's dragged.
@@ -494,9 +509,10 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
             // A polygon cloud's arcs bulge past its corners.
             return inkPoints.count >= 3 ? (rect ?? .zero).insetBy(dx: -8, dy: -8) : rect ?? .zero
         }
-        if type == .square || type == .circle || type == .line {
+        if type == .square || type == .circle || type == .line || type == .polygon || type == .polyline {
             // Room for the stroke, and for an arrowhead past the end of a line.
-            let pad = strokeWidth / 2 + (type == .line && lineEnding != nil && lineEnding != PDFLineEnding.none ? 4.5 * max(1, strokeWidth) : 0)
+            let hasEnding = (type == .line || type == .polyline) && lineEnding != nil && lineEnding != PDFLineEnding.none
+            let pad = strokeWidth / 2 + (hasEnding ? 4.5 * max(1, strokeWidth) : 0)
             return (rect ?? .zero).insetBy(dx: -pad, dy: -pad)
         }
         if type == .callout {
@@ -554,6 +570,11 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
         if type == .freeText || type == .stamp || type == .note || type == .other {
             guard let r = rect else { return false }
             return r.insetBy(dx: -tolerance, dy: -tolerance).contains(pagePoint)
+        }
+        if isPolyShape, inkPoints.count >= 2 {
+            // Only the outline, so what it rings can still be selected.
+            let segments = type == .polygon ? inkPoints.indices.map { ($0, ($0 + 1) % inkPoints.count) } : inkPoints.indices.dropLast().map { ($0, $0 + 1) }
+            return segments.contains { distanceToSegment(p: pagePoint, a: inkPoints[$0.0], b: inkPoints[$0.1]) <= tolerance + strokeWidth / 2 + 3 }
         }
         if type == .cloud, inkPoints.count >= 3 {
             // Only the outline, arcs and all.

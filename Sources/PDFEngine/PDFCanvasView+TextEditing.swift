@@ -141,9 +141,9 @@ extension PDFCanvasView {
         guard activeInlineTextField == nil,
               let (targetId, pIdx) = selectedAnnotation,
               let annot = viewModel.pageAnnotations[pIdx]?.first(where: { $0.id == targetId }),
-              annot.type == .square || annot.type == .circle || annot.type == .line || (annot.isFromFile && annot.type == .cloud) else { return }
+              annot.type == .square || annot.type == .circle || annot.type == .line || annot.isPolyShape || (annot.isFromFile && annot.type == .cloud) else { return }
         let widthChanges = strokeWidth.map { $0 != annot.strokeWidth } ?? false
-        let endingChanges = annot.type == .line && (lineEnding.map { $0 != annot.lineEnding } ?? false)
+        let endingChanges = (annot.type == .line || annot.type == .polyline) && (lineEnding.map { $0 != annot.lineEnding } ?? false)
         guard widthChanges || endingChanges else { return }
         if annot.isFromFile {
             viewModel.editFileAnnotation(annot) {

@@ -14,23 +14,27 @@ Choose the pen tool, set the line width, then drag on the page. Choose a width i
 
 ## Draw a shape
 
-1. Choose the Shapes tool, then choose Rectangle, Oval, Line or Arrow, or Revision Cloud.
-2. Set the line width: choose a width in points, or type one. For a line, use the Line Ending menu to choose an arrowhead, such as Open Arrow, Closed Arrow or Diamond, or None for a plain line.
+1. Choose the Shapes tool, then choose Rectangle, Oval, Line or Arrow, Revision Cloud, Polygon or Polyline.
+2. Set the line width: choose a width in points, or type one. For a line or polyline, use the Line Ending menu to choose an arrowhead, such as Open Arrow, Closed Arrow or Diamond, or None for a plain line.
 3. Drag on the page. A rectangle or oval fills the area you drag across. A line runs from where you start to where you stop, with its ending at the end.
 
 Hold ⇧ while you drag to draw a square or circle, or to keep a line at a multiple of 45°.
 
+For a polygon or polyline, click each point instead of dragging. Click the first point again to close a polygon, or double-click or press Return to finish. A polyline stays open and can end in an arrow. Press Escape to throw away one you're drawing. Ortho Lock and snapping from the Measurement toolbar apply to each point.
+
 A revision cloud marks an area that has changed or needs review. Drag around the area, and the cloud follows the outline you draw. A quick drag straight across makes an oval cloud instead.
 
-To select, move or right-click a rectangle, oval or cloud, use its outline, so you can still select the text inside it.
+To select, move or right-click a rectangle, oval, polygon or cloud, use its outline, so you can still select the text inside it.
 
-To change a line after you draw it, drag either end to move just that end, or select it and choose a different line width or line ending in the toolbar. You can also right-click it and choose Line Ending. Select a rectangle or oval and choose a line width to change its width.
+To change a line after you draw it, drag either end to move just that end, or select it and choose a different line width or line ending in the toolbar. You can also right-click it and choose Line Ending. Select a rectangle, oval, polygon or polyline and choose a line width to change its width; for a polyline, you can also change its ending.
 
 ## Add a text box
 
 1. Choose the text box tool, and set a font size from 6 to 32 points.
 2. Click the page where you want the text, then type.
 3. Click outside the box, or press Escape, to finish.
+
+A text box has no border or background: the text sits straight on the page, as with a typewriter. Acrobat and PDF-XChange treat it as typewriter text.
 
 To change the font size later, select the text box or callout, then use the font size slider in the Markup toolbar. It appears there while one is selected.
 

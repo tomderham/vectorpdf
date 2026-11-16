@@ -120,6 +120,8 @@ extension PDFCanvasView {
             case .stamp: removeTitle = "Delete Signature"
             case .note: removeTitle = "Delete Note"
             case .cloud: removeTitle = "Delete Revision Cloud"
+            case .polygon: removeTitle = "Delete Polygon"
+            case .polyline: removeTitle = "Delete Polyline"
             case .other: removeTitle = "Delete Annotation"
             case .square: removeTitle = "Delete Rectangle"
             case .circle: removeTitle = "Delete Oval"
@@ -295,6 +297,14 @@ extension PDFCanvasView {
         let menu = NSMenu(title: "Selection")
 
         if sel.result.mode == .rectangularArea {
+            // A highlight of the area itself, for figures, scans and drawings.
+            if !viewModel.isReadOnlyDocument {
+                let highlightItem = NSMenuItem(title: "Highlight Area", action: #selector(highlightSelection(_:)), keyEquivalent: "")
+                highlightItem.image = NSImage(systemSymbolName: "highlighter", accessibilityDescription: nil)
+                highlightItem.target = self
+                menu.addItem(highlightItem)
+                menu.addItem(.separator())
+            }
             if !sel.result.text.isEmpty {
                 let copyTextItem = NSMenuItem(title: "Copy Extracted Text", action: #selector(copyTextAction(_:)), keyEquivalent: "")
                 copyTextItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)

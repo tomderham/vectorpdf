@@ -313,6 +313,32 @@ extension PDFCanvasView {
             return
         }
 
+        // A polygon or polyline: each click adds a point; a double-click, or for a polygon a
+        // click on its first point, finishes it.
+        if viewModel.canvasMode == .shape, viewModel.selectedShape == .polygon || viewModel.selectedShape == .polyline {
+            if let (pageIdx, _, rawPagePoint) = pageInfo(at: point) {
+                let pagePoint = applySnapping(to: rawPagePoint, fromPoint: currentPolyPage == pageIdx ? currentPolyPoints.last : nil, inPage: pageIdx, modifierFlags: event.modifierFlags)
+                if currentPolyPage != pageIdx {
+                    currentPolyPage = pageIdx
+                    currentPolyPoints = [pagePoint]
+                } else {
+                    // Near the first point as clicked, or as snapping moved the click.
+                    let reach = 8 / max(viewModel.effectiveZoom, 0.01)
+                    let first = currentPolyPoints[0]
+                    let closesPolygon = viewModel.selectedShape == .polygon && currentPolyPoints.count >= 3
+                        && min(hypot(pagePoint.x - first.x, pagePoint.y - first.y), hypot(rawPagePoint.x - first.x, rawPagePoint.y - first.y)) <= reach
+                    if event.clickCount >= 2 || closesPolygon {
+                        commitCurrentPolyShape()
+                        return
+                    }
+                    currentPolyPoints.append(pagePoint)
+                }
+                currentPolyCandidate = pagePoint
+                needsDisplay = true
+            }
+            return
+        }
+
         // In shape mode: start a new shape
         if viewModel.canvasMode == .shape {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
@@ -782,6 +808,14 @@ extension PDFCanvasView {
             NSCursor.crosshair.set()
             needsDisplay = true
             return
+        }
+
+        if let page = currentPolyPage, viewModel.canvasMode == .shape {
+            let point = convert(event.locationInWindow, from: nil)
+            if let (pageIdx, _, rawPagePoint) = pageInfo(at: point), pageIdx == page {
+                currentPolyCandidate = applySnapping(to: rawPagePoint, fromPoint: currentPolyPoints.last, inPage: pageIdx, modifierFlags: event.modifierFlags)
+                needsDisplay = true
+            }
         }
 
         if viewModel.canvasMode.isMeasuring {

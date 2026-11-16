@@ -415,7 +415,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText, .callout, .stamp, .note, .cloud, .square, .circle, .line, .other, .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount: return
+        case .ink, .freeText, .callout, .stamp, .note, .cloud, .square, .circle, .line, .polygon, .polyline, .other, .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -566,6 +566,20 @@ public final class PDFDocumentCore: @unchecked Sendable {
     /// Adds a rectangle or oval filling `rect`, or a line from `points[0]` to `points[1]` ending in
     /// `lineEnding`; `type` is `.square`, `.circle` or `.line`.
     public func addShape(pageIndex: Int, type: PDFAnnotationType, rect: CGRect, points: [CGPoint], strokeWidth: CGFloat, lineEnding: PDFLineEnding, red: Float, green: Float, blue: Float) throws {
+        if type == .polygon || type == .polyline {
+            let vertices = points.map { fz_point(x: Float($0.x), y: Float($0.y)) }
+            lock.lock()
+            defer { lock.unlock() }
+            var errorMsg: UnsafePointer<CChar>?
+            let ret = vertices.withUnsafeBufferPointer { buf in
+                mupdf_pdf_add_poly_annot(ctx, doc, Int32(pageIndex), type == .polygon ? 1 : 0, buf.baseAddress, Int32(buf.count),
+                                         Float(strokeWidth), lineEnding.rawValue, red, green, blue, &errorMsg)
+            }
+            if ret != 0 {
+                throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to add \(type == .polygon ? "polygon" : "polyline")")
+            }
+            return
+        }
         let kind: Int32
         let from: CGPoint
         let to: CGPoint

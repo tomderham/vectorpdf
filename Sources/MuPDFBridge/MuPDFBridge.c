@@ -1164,6 +1164,8 @@ int mupdf_pdf_add_free_text_annot(fz_context *ctx, fz_document *doc, int pageno,
         fz_rect rect = fz_make_rect(min_x, min_y, max_x, max_y);
         float fs = font_size > 0.0f ? font_size : 13.0f;
         annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_FREE_TEXT);
+        // Text straight on the page, with no box: what Acrobat and PDF-XChange call a typewriter.
+        pdf_set_annot_intent(ctx, annot, PDF_ANNOT_IT_FREETEXT_TYPEWRITER);
         pdf_set_annot_rect(ctx, annot, rect);
         pdf_set_annot_border_width(ctx, annot, 0.0f);
         float color[3] = {r, g, b};
@@ -2756,6 +2758,11 @@ int mupdf_pdf_describe_annot(fz_context *ctx, fz_document *doc, int pageno, int 
                 int count = pdf_annot_vertex_count(ctx, annot);
                 out->point_count = count < max_points ? count : max_points;
                 for (int i = 0; i < out->point_count; i++) points[i] = pdf_annot_vertex(ctx, annot, i);
+                if (type == PDF_ANNOT_POLY_LINE) {
+                    enum pdf_line_ending start, end;
+                    pdf_annot_line_ending_styles(ctx, annot, &start, &end);
+                    out->line_ending = end;
+                }
             }
             enum pdf_intent intent = pdf_annot_has_intent(ctx, annot) ? pdf_annot_intent(ctx, annot) : PDF_ANNOT_IT_DEFAULT;
             out->is_measurement = intent == PDF_ANNOT_IT_LINE_DIMENSION || intent == PDF_ANNOT_IT_POLYLINE_DIMENSION
@@ -2904,6 +2911,41 @@ int mupdf_pdf_add_shape_annot(fz_context *ctx, fz_document *doc, int pageno, int
             annot = pdf_create_annot(ctx, ppage, kind == 0 ? PDF_ANNOT_SQUARE : PDF_ANNOT_CIRCLE);
             pdf_set_annot_rect(ctx, annot, fz_make_rect(fminf(x0, x1), fminf(y0, y1), fmaxf(x0, x1), fmaxf(y0, y1)));
         }
+        pdf_set_annot_color(ctx, annot, 3, color);
+        pdf_set_annot_border_width(ctx, annot, width);
+        pdf_update_annot(ctx, annot);
+        pdf_set_annot_resynthesised(ctx, annot);
+    }
+    fz_always(ctx) {
+        pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+/* A polygon (closed) or polyline (open) through `vertices`, page space; a polyline ends in
+ * line_ending at its last vertex. MuPDF draws its appearance from these entries. */
+int mupdf_pdf_add_poly_annot(fz_context *ctx, fz_document *doc, int pageno, int closed,
+                             const fz_point *vertices, int n_vertices, float width, int line_ending,
+                             float r, float g, float b, const char **out_error) {
+    if (!ctx || !doc || !vertices || n_vertices < (closed ? 3 : 2)) return -1;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        annot = pdf_create_annot(ctx, ppage, closed ? PDF_ANNOT_POLYGON : PDF_ANNOT_POLY_LINE);
+        pdf_set_annot_vertices(ctx, annot, n_vertices, vertices);
+        if (!closed)
+            pdf_set_annot_line_ending_styles(ctx, annot, PDF_ANNOT_LE_NONE, (enum pdf_line_ending)line_ending);
+        float color[3] = {r, g, b};
         pdf_set_annot_color(ctx, annot, 3, color);
         pdf_set_annot_border_width(ctx, annot, width);
         pdf_update_annot(ctx, annot);

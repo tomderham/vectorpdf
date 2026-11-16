@@ -365,6 +365,29 @@ extension PDFCanvasView {
         return snapped
     }
 
+    /// Finishes the polygon or polyline being clicked out, if it has enough points.
+    func commitCurrentPolyShape() {
+        guard let page = currentPolyPage else { return }
+        let closed = viewModel.selectedShape == .polygon
+        // A double-click lands twice on its last point.
+        var points = currentPolyPoints
+        while points.count >= 2, hypot(points[points.count - 1].x - points[points.count - 2].x, points[points.count - 1].y - points[points.count - 2].y) < 0.5 {
+            points.removeLast()
+        }
+        if let made = viewModel.addPolyShape(pageIndex: page, closed: closed, points: points, strokeWidth: viewModel.drawStrokeWidth,
+                                             lineEnding: viewModel.selectedShapeLineEnding, color: viewModel.selectedAnnotationColor) {
+            selectedAnnotation = (id: made.id, pageIndex: page)
+        }
+        discardPolyShape()
+    }
+
+    func discardPolyShape() {
+        currentPolyPage = nil
+        currentPolyPoints = []
+        currentPolyCandidate = nil
+        needsDisplay = true
+    }
+
     func commitCurrentPerimeter() {
         guard let pIdx = currentMeasurePage, currentMeasurePoints.count >= 2 else { return }
         var totalDist: Double = 0.0
