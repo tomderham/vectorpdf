@@ -40,7 +40,7 @@ To select an area, click its edge: clicking inside it selects the text there.
 
 ## Change how measurements look
 
-Use the color button and line width box in the Measurement toolbar before you measure. Choose a width in points, or type one, from 0.1 to 72 points. New measurements are gray, 1.5 points wide, until you choose otherwise; the Markup toolbar keeps its own color and width. To change the color or width of a measurement you've already made, select it, then choose a color or width in the Measurement toolbar. The width is saved in the PDF.
+Use the color button and line width box in the Measurement toolbar before you measure. Choose a width in points, or type one, from 0.1 to 72 points. New measurements are gray, 1.5 points wide, until you choose otherwise. VectorPDF remembers what you choose, and the Markup toolbar keeps its own colors and widths. To change the color or width of a measurement you've already made, select it, then choose a color or width in the Measurement toolbar. The width is saved in the PDF.
 
 ## Keep or remove measurements
 

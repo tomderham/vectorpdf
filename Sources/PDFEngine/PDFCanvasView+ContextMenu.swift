@@ -477,17 +477,17 @@ extension PDFCanvasView {
     }
 
     @objc public func highlightSelection(_ sender: Any?) {
-        viewModel.highlightSelection(color: viewModel.selectedAnnotationColor)
+        viewModel.highlightSelection(color: viewModel.toolColor(.highlight))
         needsDisplay = true
     }
 
     @objc public func underlineSelection(_ sender: Any?) {
-        viewModel.underlineSelection(color: viewModel.selectedAnnotationColor)
+        viewModel.underlineSelection(color: viewModel.toolColor(.underline))
         needsDisplay = true
     }
 
     @objc public func strikethroughSelection(_ sender: Any?) {
-        viewModel.strikethroughSelection(color: viewModel.selectedAnnotationColor)
+        viewModel.strikethroughSelection(color: viewModel.toolColor(.strikethrough))
         needsDisplay = true
     }
 
@@ -551,34 +551,37 @@ extension PDFCanvasView {
     }
 
     @objc private func highlightDefaultAction(_ sender: Any) {
-        viewModel.highlightSelection(color: .yellow)
+        viewModel.highlightSelection(color: viewModel.toolColor(.highlight))
         needsDisplay = true
     }
 
     @objc private func highlightWithColorAction(_ sender: NSMenuItem) {
         guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.rememberToolColor(color, for: .highlight)
         viewModel.highlightSelection(color: color)
         needsDisplay = true
     }
 
     @objc private func underlineDefaultAction(_ sender: Any) {
-        viewModel.underlineSelection(color: viewModel.selectedAnnotationColor)
+        viewModel.underlineSelection(color: viewModel.toolColor(.underline))
         needsDisplay = true
     }
 
     @objc private func underlineWithColorAction(_ sender: NSMenuItem) {
         guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.rememberToolColor(color, for: .underline)
         viewModel.underlineSelection(color: color)
         needsDisplay = true
     }
 
     @objc private func strikethroughDefaultAction(_ sender: Any) {
-        viewModel.strikethroughSelection(color: viewModel.selectedAnnotationColor)
+        viewModel.strikethroughSelection(color: viewModel.toolColor(.strikethrough))
         needsDisplay = true
     }
 
     @objc private func strikethroughWithColorAction(_ sender: NSMenuItem) {
         guard let color = sender.representedObject as? AnnotationColor else { return }
+        viewModel.rememberToolColor(color, for: .strikethrough)
         viewModel.strikethroughSelection(color: color)
         needsDisplay = true
     }

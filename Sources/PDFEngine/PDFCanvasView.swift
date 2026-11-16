@@ -464,9 +464,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         viewModel.$canvasMode
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] mode in
                 guard self?.hasLiveViewModel == true else { return }
                 self?.discardInProgressDrafts()
+                // Choosing a tool puts down what was selected, so the toolbar shows the tool's
+                // own color and width for what it makes next. Going back to Text Selection keeps
+                // the selection: placing a stamp or note does that with the new one selected.
+                if mode != .select, self?.selectedAnnotation != nil {
+                    self?.selectedAnnotation = nil
+                    self?.needsDisplay = true
+                }
             }
             .store(in: &cancellables)
     }

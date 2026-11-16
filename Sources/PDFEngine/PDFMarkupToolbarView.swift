@@ -21,6 +21,20 @@ import AppKit
 /// A collapsible macOS-style secondary markup toolbar providing drawing tools,
 /// text markup actions (highlight, underline, strikethrough), color swatches, and stroke widths.
 public struct PDFMarkupToolbarView: View {
+    /// What the color button sets: the selected annotation's color, or the current tool's.
+    private var markupColorHelp: String {
+        if viewModel.inspectedAnnotation != nil { return "Color of the Selected Annotation" }
+        switch viewModel.styleTool {
+        case .highlight: return "Highlight Color (underline and strikethrough keep their own; choose them in the Edit menu or right-click menu)"
+        case .pen: return "Pen Color"
+        case .shape: return "Shape Color"
+        case .textBox: return "Text Box Color"
+        case .callout: return "Callout Color"
+        case .note: return "Note Color"
+        default: return "Color"
+        }
+    }
+
     @ObservedObject var viewModel: PDFViewerViewModel
     @StateObject private var signatureStore = SignatureStore.shared
     @State private var showSignatureCaptureSheet: Bool = false
@@ -122,7 +136,7 @@ public struct PDFMarkupToolbarView: View {
                     PreviewToolbarButton(
                         helpText: "Highlight Selected Text"
                     ) {
-                        viewModel.highlightSelection(color: viewModel.selectedAnnotationColor)
+                        viewModel.highlightSelection(color: viewModel.toolColor(.highlight))
                     } label: {
                         Image(systemName: "highlighter")
                     }
@@ -130,7 +144,7 @@ public struct PDFMarkupToolbarView: View {
                     PreviewToolbarButton(
                         helpText: "Underline Selected Text"
                     ) {
-                        viewModel.underlineSelection(color: viewModel.selectedAnnotationColor)
+                        viewModel.underlineSelection(color: viewModel.toolColor(.underline))
                     } label: {
                         Image(systemName: "underline")
                     }
@@ -138,7 +152,7 @@ public struct PDFMarkupToolbarView: View {
                     PreviewToolbarButton(
                         helpText: "Strikethrough Selected Text"
                     ) {
-                        viewModel.strikethroughSelection(color: viewModel.selectedAnnotationColor)
+                        viewModel.strikethroughSelection(color: viewModel.toolColor(.strikethrough))
                     } label: {
                         Image(systemName: "strikethrough")
                     }
@@ -287,7 +301,7 @@ public struct PDFMarkupToolbarView: View {
                 Divider()
                     .frame(height: 16)
 
-                AnnotationColorPicker(selection: $viewModel.selectedAnnotationColor)
+                AnnotationColorPicker(selection: $viewModel.selectedAnnotationColor, helpText: markupColorHelp)
             }
 
             Spacer()

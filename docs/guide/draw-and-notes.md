@@ -2,7 +2,11 @@
 
 # Draw, add notes, text and callouts
 
-Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To choose a color, click the color button near the right of the toolbar, then click a color. To finish with a tool, press Escape, click the tool again, or choose Text Selection Mode, the first tool in the toolbar.
+Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To choose a color, click the color button near the right of the toolbar, then click a color.
+
+Each tool keeps its own color and line width, and VectorPDF remembers them. At first, the pen and shapes are red, text boxes and callouts black, and notes yellow. Choosing a tool puts down whatever was selected. While a tool is in use, changing its color or width also changes what it just made. To change an annotation you made earlier without changing a tool, select it in Text Selection mode, then choose a color.
+
+To finish with a tool, press Escape, click the tool again, or choose Text Selection Mode, the first tool in the toolbar.
 
 ## Draw freehand
 

@@ -90,7 +90,7 @@ extension PDFCanvasView {
 
         // Shift + Cmd + H: Highlight selection in the current colour (same as the menu item)
         if flags == [.command, .shift] && event.charactersIgnoringModifiers?.lowercased() == "h" {
-            viewModel.highlightSelection(color: viewModel.selectedAnnotationColor)
+            viewModel.highlightSelection(color: viewModel.toolColor(.highlight))
             needsDisplay = true
             return
         }

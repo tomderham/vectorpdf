@@ -606,7 +606,7 @@ struct VectorPDF: App {
 
             Menu("Highlight Selection") {
                 Button("Highlight") {
-                    resolvedViewModel?.highlightSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                    resolvedViewModel?.highlightSelection(color: resolvedViewModel?.toolColor(.highlight) ?? .yellow)
                 }
                 .keyboardShortcut("h", modifiers: [.command, .shift])
 
@@ -614,7 +614,7 @@ struct VectorPDF: App {
 
                 ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
                     Button {
-                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.rememberToolColor(color, for: .highlight)
                         resolvedViewModel?.highlightSelection(color: color)
                     } label: {
                         Label {
@@ -629,7 +629,7 @@ struct VectorPDF: App {
 
             Menu("Underline Selection") {
                 Button("Underline") {
-                    resolvedViewModel?.underlineSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                    resolvedViewModel?.underlineSelection(color: resolvedViewModel?.toolColor(.underline) ?? .red)
                 }
                 .keyboardShortcut("u", modifiers: [.command, .shift])
 
@@ -637,7 +637,7 @@ struct VectorPDF: App {
 
                 ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
                     Button {
-                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.rememberToolColor(color, for: .underline)
                         resolvedViewModel?.underlineSelection(color: color)
                     } label: {
                         Label {
@@ -652,7 +652,7 @@ struct VectorPDF: App {
 
             Menu("Strikethrough Selection") {
                 Button("Strikethrough") {
-                    resolvedViewModel?.strikethroughSelection(color: resolvedViewModel?.selectedAnnotationColor ?? .yellow)
+                    resolvedViewModel?.strikethroughSelection(color: resolvedViewModel?.toolColor(.strikethrough) ?? .red)
                 }
                 .keyboardShortcut("x", modifiers: [.command, .shift])
 
@@ -660,7 +660,7 @@ struct VectorPDF: App {
 
                 ForEach(AnnotationColor.allCases, id: \.rawValue) { color in
                     Button {
-                        resolvedViewModel?.selectedAnnotationColor = color
+                        resolvedViewModel?.rememberToolColor(color, for: .strikethrough)
                         resolvedViewModel?.strikethroughSelection(color: color)
                     } label: {
                         Label {

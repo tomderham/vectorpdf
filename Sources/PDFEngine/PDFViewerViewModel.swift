@@ -356,14 +356,29 @@ public final class PDFViewerViewModel: ObservableObject {
         didSet {
             // Every other mode adds, changes or removes something in the file.
             if canvasMode != .select && isReadOnlyDocument { canvasMode = .select }
+            if canvasMode != oldValue { applyToolStyle() }
         }
     }
-    @Published public var selectedAnnotationColor: AnnotationColor = .yellow
-    @Published public var drawStrokeWidth: CGFloat = 2.5
+    /// Each tool's own color and width, kept between launches (`MarkupToolStyles`).
+    let toolStyles = MarkupToolStyles.shared
+    /// The Markup toolbar's color and width: the current tool's (see `styleTool`), or the selected
+    /// annotation's while one is selected, which changing them restyles.
+    @Published public var selectedAnnotationColor: AnnotationColor = MarkupToolStyles.defaultStyles[.highlight]!.color {
+        didSet { rememberToolStyle() }
+    }
+    @Published public var drawStrokeWidth: CGFloat = MarkupToolStyles.defaultStyles[.pen]!.width {
+        didSet { rememberToolStyle() }
+    }
     /// The Measurement toolbar's color and line width, apart from the markup tools': thin gray
-    /// lines suit drawings, where yellow and medium suit markup.
-    @Published public var measurementColor: AnnotationColor = .gray
-    @Published public var measurementStrokeWidth: CGFloat = 1.5
+    /// lines suit drawings, where red suits markup.
+    @Published public var measurementColor: AnnotationColor = MarkupToolStyles.defaultStyles[.measurement]!.color {
+        didSet { rememberMeasurementStyle() }
+    }
+    @Published public var measurementStrokeWidth: CGFloat = MarkupToolStyles.defaultStyles[.measurement]!.width {
+        didSet { rememberMeasurementStyle() }
+    }
+    /// Set while a tool's style is being shown, so showing it isn't taken for choosing it.
+    var isApplyingToolStyle = false
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
     @Published public var selectedLineEnding: PDFLineEnding = .closedArrow
@@ -433,7 +448,10 @@ public final class PDFViewerViewModel: ObservableObject {
     /// What the page draws where it was last clicked, while the Inspector shows.
     @Published public internal(set) var inspectedContent: PageContentInspection?
     /// The annotation selected on the page, for the Inspector.
-    @Published public internal(set) var inspectedAnnotation: InspectedAnnotation?
+    @Published public internal(set) var inspectedAnnotation: InspectedAnnotation? {
+        // Deselecting shows the current tool's style again.
+        didSet { if inspectedAnnotation == nil && oldValue != nil { applyToolStyle() } }
+    }
     /// The selected annotation is a text box or callout, whose font size the Markup toolbar sets.
     public var selectedAnnotationHasFontSize: Bool {
         guard let selected = inspectedAnnotation,
@@ -763,6 +781,7 @@ public final class PDFViewerViewModel: ObservableObject {
     var cachedOutlineDestinationKeys: (document: ObjectIdentifier, keys: Set<String>)?
 
     public init() {
+        applyToolStyle()
         scaleModeCancellable = PDFViewerAppCoordinator.shared.$scaleMode
             .dropFirst()
             .receive(on: DispatchQueue.main)
