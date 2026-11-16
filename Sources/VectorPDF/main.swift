@@ -81,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             handleSyncTeXRequest(request)
         }
         StoredData.cleanUpAtLaunch()
+        // Once the first window is up: what a crash left unsaved.
+        DispatchQueue.main.async { AutosaveRecovery.offerRecoveryAtLaunch() }
         GitHubUpdater.shared.start(
             gitHubUser: "tomderham",
             gitHubRepo: "vectorpdf",
@@ -198,6 +200,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         // Persist reading state on application termination.
         PDFViewerAppCoordinator.shared.flushAllReadingStates()
+        AutosaveRecovery.discardAllAtQuit()
         GitHubUpdater.shared.stop()
     }
 }

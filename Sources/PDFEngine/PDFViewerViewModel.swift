@@ -333,7 +333,12 @@ public final class PDFViewerViewModel: ObservableObject {
     
     // Form Widgets & Editing State
     @Published public var pageFormWidgets: [Int: [PDFFormWidget]] = [:]
-    @Published public var isDocumentEdited: Bool = false
+    @Published public var isDocumentEdited: Bool = false {
+        didSet { documentEditedChanged() }
+    }
+    /// This document's copy for crash recovery, once one's written (`AutosaveRecovery`).
+    var recoveryID: UUID?
+    var autosaveTask: Task<Void, Never>?
 
     // Annotations & Markup
     @Published public var pageAnnotations: [Int: [PDFAnnotation]] = [:]

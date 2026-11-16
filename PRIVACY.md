@@ -35,6 +35,7 @@ The document, its full text, and anchor thumbnails are not uploaded. The data go
 - **Saved signature image**: in the app's preferences.
 - **Agent search index**: `~/Library/Application Support/VectorPDF/SemanticIndex/`. Text embeddings of documents you've used the Agent tab with, and the text they were made from, so they don't need re-indexing. A document's index is deleted when you redact or save it, or once the document is gone. The folder is kept under 500 MB by deleting the least recently used indexes first.
 - **The tour's copy**: `~/Library/Application Support/VectorPDF/VectorPDF Tour.pdf`, made when you first open the tour so your markups on it can be saved.
+- **Recovery copies**: `~/Library/Application Support/VectorPDF/Recovery/`. While a document has unsaved changes, a copy of it as edited (`<id>.pdf`) and the path of the file it's a copy of (`<id>.json`), updated about every 30 seconds, so the changes can be recovered if VectorPDF quits unexpectedly. Deleted when you save, revert or close the document without saving, and when you quit. Password-protected documents aren't copied.
 - **Anchor thumbnails**: `~/Library/Caches/VectorPDFSnapshotThumbnails/`.
 - **Temporary files**: in your user account's temporary folder. Open it with `open "$TMPDIR"` in Terminal; it's under `/var/folders/`, not `/tmp`. Every name starts with `VectorPDF`:
   - `VectorPDF-working-<id>.pdf`: a working copy of a document with unsaved page edits or redactions. It holds the whole document as edited so far.

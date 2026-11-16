@@ -1,4 +1,4 @@
-<!-- keywords: save, save as, unsaved, revert, revert to saved, reload, discard, undo all, share, Show in Finder, changes, PDF -->
+<!-- keywords: save, save as, unsaved, revert, revert to saved, reload, discard, undo all, share, Show in Finder, changes, autosave, recover, recovery, crash, quit unexpectedly, PDF -->
 
 # Save your changes
 
@@ -17,6 +17,16 @@ If you close a document with unsaved changes, VectorPDF asks whether to save the
 To throw away everything since you last saved, choose File > Revert to Saved. VectorPDF asks first, then opens the file as it was last saved, on the page you were reading. You can't undo a revert.
 
 To make a smaller copy of a document, see [Optimized PDF](export.md#optimized-pdf).
+
+## If VectorPDF quits unexpectedly
+
+While a document has unsaved changes, VectorPDF keeps a copy of it on your Mac, updated about every 30 seconds. If VectorPDF quits unexpectedly, it offers the copies the next time it opens:
+
+- **Open Recovered Copy** saves each copy beside its original, named "(Recovered)", and opens it. The original isn't changed. Compare them, then keep the one you want.
+- **Decide Later** keeps the copies and asks again next time.
+- **Discard Changes** deletes the copies.
+
+The copy is deleted when you save, revert or close the document without saving, and when you quit VectorPDF. Password-protected documents aren't copied, because the copy wouldn't be encrypted.
 
 ## Share a document
 

@@ -14,7 +14,7 @@ VectorPDF has no accounts, analytics, telemetry or crash reporting. Your documen
 
 ## What's stored on your Mac
 
-VectorPDF stores your preferences, favorites, tab groups, reading positions, anchors, recent searches and stamp. It also keeps an index for documents you've used with the Agent, thumbnails of anchors, and temporary working copies of documents with unsaved page edits or redactions, which it deletes when it's finished with them.
+VectorPDF stores your preferences, favorites, tab groups, reading positions, anchors, recent searches and stamp. It also keeps an index for documents you've used with the Agent, thumbnails of anchors, temporary working copies of documents with unsaved page edits or redactions, and [copies of documents with unsaved changes](save.md#if-vectorpdf-quits-unexpectedly) in case it quits unexpectedly. It deletes these when it's finished with them.
 
 To see how much space this takes, or to clear it, use Storage in [Settings](settings.md#free-up-space-or-remove-data).
 
