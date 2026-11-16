@@ -28,6 +28,8 @@ To change a line after you draw it, drag either end to move just that end, or se
 2. Click the page where you want the text, then type.
 3. Click outside the box, or press Escape, to finish.
 
+To change the font size later, select the text box or callout, then use the font size slider in the Markup toolbar. It appears there while one is selected.
+
 ## Add a callout
 
 A callout is a text note with an arrow pointing to something on the page.

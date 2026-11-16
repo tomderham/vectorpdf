@@ -172,7 +172,12 @@ extension PDFCanvasView {
                         if let fs = hit.fontSize {
                             viewModel.selectedFontSize = fs
                         }
-                        viewModel.selectedAnnotationColor = hit.color
+                        // The toolbar for its kind shows its color, to change it.
+                        if hit.isMeasurement {
+                            viewModel.measurementColor = hit.color
+                        } else {
+                            viewModel.selectedAnnotationColor = hit.color
+                        }
                         // The toolbar shows the shape's own width and ending, to change them.
                         if hit.type == .square || hit.type == .circle || hit.type == .line {
                             viewModel.drawStrokeWidth = hit.strokeWidth
@@ -657,8 +662,8 @@ extension PDFCanvasView {
                         value: dist,
                         formattedText: text,
                         leaderOffset: 0.0,
-                        color: viewModel.selectedAnnotationColor,
-                        strokeWidth: viewModel.drawStrokeWidth
+                        color: viewModel.measurementColor,
+                        strokeWidth: viewModel.measurementStrokeWidth
                     ) {
                         selectedAnnotation = (id: annot.id, pageIndex: pIdx)
                     }

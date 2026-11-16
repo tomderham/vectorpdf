@@ -160,9 +160,21 @@ struct MeasurementEditingTests {
         defer { fixture.close() }
         fixture.click(page: 0, at: CGPoint(x: 130, y: 200))
         #expect(fixture.canvas.selectedAnnotation?.id == original.id)
-        fixture.vm.selectedAnnotationColor = .blue
+        // The Measurement toolbar shows its color; the markup tools' color doesn't change it.
+        #expect(fixture.vm.measurementColor == original.color)
+        fixture.vm.selectedAnnotationColor = .green
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(try onlyMeasurement(fixture.vm).color == original.color)
+        fixture.vm.measurementColor = .blue
         try await Task.sleep(nanoseconds: 100_000_000)
         #expect(try onlyMeasurement(fixture.vm).color == .blue)
+    }
+
+    @MainActor
+    @Test func measurementsAreThinAndGrayByDefaultApartFromMarkup() {
+        let vm = PDFViewerViewModel()
+        #expect(vm.measurementColor == .gray && vm.measurementStrokeWidth == 1.5)
+        #expect(vm.selectedAnnotationColor == .yellow && vm.drawStrokeWidth == 2.5)
     }
 
     @MainActor
@@ -270,5 +282,21 @@ struct MeasurementEditingTests {
         let (value, text) = vm.measured(.measureArea, points: square, pageIndex: 0)
         _ = try #require(vm.addMeasurementAnnotation(pageIndex: 0, type: .measureArea, points: square, value: value, formattedText: text))
         #expect(vm.takeoffEntries().map(\.annotation.type) == [.measureLength, .measureArea])
+    }
+}
+
+/// The Markup toolbar's font size in Select mode is for a selected text box or callout only.
+@MainActor
+@Suite struct MarkupToolbarFontSizeTests {
+    @Test func showsOnlyForATextBoxOrCallout() {
+        let vm = PDFViewerViewModel()
+        let highlight = PDFAnnotation(pageIndex: 0, type: .highlight)
+        let textBox = PDFAnnotation(pageIndex: 0, type: .freeText, rect: CGRect(x: 0, y: 0, width: 80, height: 20), fontSize: 13)
+        vm.pageAnnotations[0] = [highlight, textBox]
+        #expect(!vm.selectedAnnotationHasFontSize)
+        vm.inspectedAnnotation = InspectedAnnotation(id: highlight.id, pageIndex: 0)
+        #expect(!vm.selectedAnnotationHasFontSize)
+        vm.inspectedAnnotation = InspectedAnnotation(id: textBox.id, pageIndex: 0)
+        #expect(vm.selectedAnnotationHasFontSize)
     }
 }

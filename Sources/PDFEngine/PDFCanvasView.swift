@@ -355,6 +355,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             .store(in: &cancellables)
 
+        viewModel.$measurementColor
+            .dropFirst()          // the current value, replayed on subscribe — not a change
+            .removeDuplicates()   // selecting a measurement re-sets it to its own color
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newColor in
+                guard self?.hasLiveViewModel == true else { return }
+                self?.handleMeasurementColorChanged(newColor)
+            }
+            .store(in: &cancellables)
+
         viewModel.$drawStrokeWidth
             .dropFirst()
             .removeDuplicates()

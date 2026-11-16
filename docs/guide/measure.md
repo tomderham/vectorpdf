@@ -39,7 +39,7 @@ To select an area, click its edge: clicking inside it selects the text there.
 
 ## Change how measurements look
 
-Use the color button and line width in the Measurement toolbar before you measure. To change the color of a measurement you've already made, select it, then choose a color.
+Use the color button and line width in the Measurement toolbar before you measure. New measurements are gray, with thin lines, until you choose otherwise; the Markup toolbar keeps its own color and width. To change the color of a measurement you've already made, select it, then choose a color in the Measurement toolbar.
 
 ## Keep or remove measurements
 

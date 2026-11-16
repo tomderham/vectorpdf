@@ -144,18 +144,22 @@ public struct PDFMarkupToolbarView: View {
                     }
                 }
 
-                Divider()
-                    .frame(height: 16)
+                // Font size, for a selected text box or callout: text markup has no size of its own,
+                // as it follows the text it marks.
+                if viewModel.selectedAnnotationHasFontSize {
+                    Divider()
+                        .frame(height: 16)
 
-                HStack(spacing: 6) {
-                    Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
-                        .frame(width: 64)
-                        .controlSize(.small)
-                    Text("\(Int(viewModel.selectedFontSize)) pt")
-                        .font(.caption.monospacedDigit())
-                        .frame(width: 32, alignment: .leading)
+                    HStack(spacing: 6) {
+                        Slider(value: $viewModel.selectedFontSize, in: 6...32, step: 1)
+                            .frame(width: 64)
+                            .controlSize(.small)
+                        Text("\(Int(viewModel.selectedFontSize)) pt")
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 32, alignment: .leading)
+                    }
+                    .help("Font Size of the Selected Text Box or Callout (6–32 pt)")
                 }
-                .help("Annotation Font Size (6–32 pt)")
 
             case .draw:
                 Divider()

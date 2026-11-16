@@ -726,13 +726,13 @@ extension PDFCanvasView {
 
             // 2.9 Live Measurement Drafting & Snapping in Progress
             if currentMeasurePage == pageIdx, !currentMeasurePoints.isEmpty || currentMeasureCandidatePoint != nil {
-                let color = viewModel.selectedAnnotationColor.nsColor
+                let color = viewModel.measurementColor.nsColor
                 let pageScale = viewModel.scaleConfig(for: pageIdx)
 
                 // 1. Draw committed points in path
                 if currentMeasurePoints.count > 1 {
                     let path = NSBezierPath()
-                    path.lineWidth = max(viewModel.drawStrokeWidth * viewModel.effectiveZoom, 1.5)
+                    path.lineWidth = max(viewModel.measurementStrokeWidth * viewModel.effectiveZoom, 1.5)
                     let p0 = canvasPoint(for: currentMeasurePoints[0], pFrame: pFrame, pBounds: pBounds)
                     path.move(to: p0)
                     for pt in currentMeasurePoints.dropFirst() {
@@ -760,7 +760,7 @@ extension PDFCanvasView {
 
                     // Dashed rubber-band segment
                     let rbPath = NSBezierPath()
-                    rbPath.lineWidth = max(viewModel.drawStrokeWidth * viewModel.effectiveZoom, 1.5)
+                    rbPath.lineWidth = max(viewModel.measurementStrokeWidth * viewModel.effectiveZoom, 1.5)
                     let dashes: [CGFloat] = [4.0, 3.0]
                     rbPath.setLineDash(dashes, count: 2, phase: 0)
                     rbPath.move(to: sLast)

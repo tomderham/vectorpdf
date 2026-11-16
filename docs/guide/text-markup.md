@@ -16,7 +16,7 @@ You can also use the buttons in the Markup toolbar, or right-click the selection
 
 ## Choose a color
 
-The Markup toolbar (⇧⌘A) has a color button. Click it, then click a color. The shortcuts and toolbar buttons use the color selected there. To pick a color for one markup, use the color list in the right-click menu, or under the item in the Edit menu.
+The Markup toolbar (⇧⌘A) has a color button. Click it, then click a color. The shortcuts and toolbar buttons use the color selected there. Highlights, underlines and strikethroughs have no size of their own: they follow the text they mark. To pick a color for one markup, use the color list in the right-click menu, or under the item in the Edit menu.
 
 ## Remove a markup
 

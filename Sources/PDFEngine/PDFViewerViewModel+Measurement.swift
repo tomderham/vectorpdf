@@ -76,7 +76,7 @@ extension PDFViewerViewModel {
         label: String? = nil
     ) -> PDFAnnotation? {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount, !points.isEmpty else { return nil }
-        let annotColor = color ?? selectedAnnotationColor
+        let annotColor = color ?? measurementColor
         let annot = PDFAnnotation(
             pageIndex: pageIndex,
             type: type,

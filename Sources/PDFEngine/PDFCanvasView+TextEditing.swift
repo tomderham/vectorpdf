@@ -545,6 +545,20 @@ extension PDFCanvasView {
         }
     }
 
+    /// The Measurement toolbar's color changed: recolors the selected measurement.
+    func handleMeasurementColorChanged(_ newColor: AnnotationColor) {
+        guard activeInlineTextField == nil, let doc = viewModel.document,
+              let (targetId, pIdx) = selectedAnnotation, pIdx >= 0, pIdx < doc.pageCount,
+              let annot = viewModel.pageAnnotations[pIdx]?.first(where: { $0.id == targetId }),
+              annot.isMeasurement, annot.color != newColor else { return }
+        if let updated = viewModel.replaceMeasurement(annot, with: viewModel.editedMeasurement(annot, color: newColor)) {
+            selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+        }
+        needsDisplay = true
+    }
+
+    /// The markup color changed: recolors the text being typed or the selected annotation, other
+    /// than a measurement, which takes the Measurement toolbar's color.
     func handleAnnotationColorChanged(_ newColor: AnnotationColor) {
         guard let doc = viewModel.document else { return }
 
@@ -558,16 +572,10 @@ extension PDFCanvasView {
            pIdx >= 0, pIdx < doc.pageCount,
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
-           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile || annot.isMeasurement) {
+           !annot.isMeasurement,
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile) {
 
             guard annot.color != newColor else { return }
-            if annot.isMeasurement {
-                if let updated = viewModel.replaceMeasurement(annot, with: viewModel.editedMeasurement(annot, color: newColor)) {
-                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
-                }
-                needsDisplay = true
-                return
-            }
             if annot.isFromFile {
                 // Text boxes and stamps keep the colors their app drew them in.
                 if annot.type != .freeText && annot.type != .stamp {

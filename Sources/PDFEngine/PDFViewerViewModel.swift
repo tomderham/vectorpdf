@@ -360,6 +360,10 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     @Published public var selectedAnnotationColor: AnnotationColor = .yellow
     @Published public var drawStrokeWidth: CGFloat = 2.5
+    /// The Measurement toolbar's color and line width, apart from the markup tools': thin gray
+    /// lines suit drawings, where yellow and medium suit markup.
+    @Published public var measurementColor: AnnotationColor = .gray
+    @Published public var measurementStrokeWidth: CGFloat = 1.5
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
     @Published public var selectedLineEnding: PDFLineEnding = .closedArrow
@@ -430,6 +434,12 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var inspectedContent: PageContentInspection?
     /// The annotation selected on the page, for the Inspector.
     @Published public internal(set) var inspectedAnnotation: InspectedAnnotation?
+    /// The selected annotation is a text box or callout, whose font size the Markup toolbar sets.
+    public var selectedAnnotationHasFontSize: Bool {
+        guard let selected = inspectedAnnotation,
+              let annot = pageAnnotations[selected.pageIndex]?.first(where: { $0.id == selected.id }) else { return false }
+        return annot.type == .freeText || annot.type == .callout
+    }
     /// The last change to an annotation's place or size made in the Inspector.
     @Published public internal(set) var annotationGeometryEdit: AnnotationGeometryEdit?
     var inspectionTask: Task<Void, Never>?

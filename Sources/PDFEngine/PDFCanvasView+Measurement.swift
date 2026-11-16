@@ -360,8 +360,8 @@ extension PDFCanvasView {
             points: currentMeasurePoints,
             value: totalDist,
             formattedText: text,
-            color: viewModel.selectedAnnotationColor,
-            strokeWidth: viewModel.drawStrokeWidth
+            color: viewModel.measurementColor,
+            strokeWidth: viewModel.measurementStrokeWidth
         )
         currentMeasurePage = nil
         currentMeasurePoints = []
@@ -380,8 +380,8 @@ extension PDFCanvasView {
             points: currentMeasurePoints,
             value: areaPts,
             formattedText: text,
-            color: viewModel.selectedAnnotationColor,
-            strokeWidth: viewModel.drawStrokeWidth
+            color: viewModel.measurementColor,
+            strokeWidth: viewModel.measurementStrokeWidth
         )
         currentMeasurePage = nil
         currentMeasurePoints = []
@@ -402,8 +402,8 @@ extension PDFCanvasView {
             points: currentMeasurePoints,
             value: deg,
             formattedText: text,
-            color: viewModel.selectedAnnotationColor,
-            strokeWidth: viewModel.drawStrokeWidth
+            color: viewModel.measurementColor,
+            strokeWidth: viewModel.measurementStrokeWidth
         )
         currentMeasurePage = nil
         currentMeasurePoints = []
