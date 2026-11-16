@@ -365,6 +365,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             .store(in: &cancellables)
 
+        viewModel.$measurementStrokeWidth
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] width in
+                guard self?.hasLiveViewModel == true else { return }
+                self?.handleMeasurementStrokeWidthChanged(width)
+            }
+            .store(in: &cancellables)
+
         viewModel.$drawStrokeWidth
             .dropFirst()
             .removeDuplicates()

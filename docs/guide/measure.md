@@ -32,6 +32,7 @@ Press Escape, or click the selected tool, to put the measurement tool down, then
 | Move the whole measurement | Drag its line, or press the arrow keys (⇧ moves it 10 points). |
 | Move a dimension line nearer or further from what it measures | Drag its label, or drag the dimension line once it's away from the points. |
 | Change its color | Choose a color with the color button in the Measurement toolbar. |
+| Change its line width | Choose or type a width in the Measurement toolbar's line width box. |
 
 The value is worked out again as you drag. Drag past the edge of the window to scroll, for a measurement longer than the view. Choose Edit > Undo to put a measurement back as it was. Measurements already saved in the PDF can be changed too.
 
@@ -39,7 +40,7 @@ To select an area, click its edge: clicking inside it selects the text there.
 
 ## Change how measurements look
 
-Use the color button and line width in the Measurement toolbar before you measure. New measurements are gray, with thin lines, until you choose otherwise; the Markup toolbar keeps its own color and width. To change the color of a measurement you've already made, select it, then choose a color in the Measurement toolbar.
+Use the color button and line width box in the Measurement toolbar before you measure. Choose a width in points, or type one, from 0.1 to 72 points. New measurements are gray, 1.5 points wide, until you choose otherwise; the Markup toolbar keeps its own color and width. To change the color or width of a measurement you've already made, select it, then choose a color or width in the Measurement toolbar. The width is saved in the PDF.
 
 ## Keep or remove measurements
 

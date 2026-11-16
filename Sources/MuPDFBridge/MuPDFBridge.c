@@ -1342,9 +1342,10 @@ static fz_rect include_label_pill(fz_rect rect, const char *text, float cx, floa
 int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                        float x0, float y0, float x1, float y1,
                                        float leader_offset, const char *text,
-                                       float r, float g, float b,
+                                       float r, float g, float b, float stroke_width,
                                        const char **out_error) {
     if (!ctx || !doc || !text) return -1;
+    float w = stroke_width > 0.0f ? stroke_width : 1.5f;
     pdf_page *ppage = NULL;
     pdf_annot *annot = NULL;
     fz_buffer *buf = NULL;
@@ -1403,7 +1404,7 @@ int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pa
 
         float color[3] = {r, g, b};
         pdf_set_annot_color(ctx, annot, 3, color);
-        pdf_set_annot_border_width(ctx, annot, 1.5f);
+        pdf_set_annot_border_width(ctx, annot, w);
         pdf_update_annot(ctx, annot);
 
         // Build appearance stream /AP /N so all viewers render dimension lines and labels
@@ -1411,7 +1412,7 @@ int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pa
         if (n) {
             ensure_helv_font(ctx, pdoc, n);
             buf = fz_new_buffer(ctx, 512);
-            fz_append_printf(ctx, buf, "1.5 w\n0 J\n0 j\n%g %g %g RG\n", r, g, b);
+            fz_append_printf(ctx, buf, "%g w\n0 J\n0 j\n%g %g %g RG\n", w, r, g, b);
 
             // Witness leader lines
             if (fabsf(leader_offset) > 1.0f) {
@@ -1438,7 +1439,8 @@ int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pa
             float tx = (ux - uy) * 0.7071f * tick_len;
             float ty = (ux + uy) * 0.7071f * tick_len;
 
-            fz_append_string(ctx, buf, "2.0 w\n");
+            // The ticks a third heavier than the line, as before (2 for 1.5).
+            fz_append_printf(ctx, buf, "%g w\n", w * 4.0f / 3.0f);
             ap_move(ctx, buf, inv, off0_x - tx, off0_y - ty);
             ap_line(ctx, buf, inv, off0_x + tx, off0_y + ty);
             fz_append_string(ctx, buf, "S\n");
@@ -1471,7 +1473,8 @@ int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pa
 // of midway between the two end vertices.
 static int add_polyline_common(fz_context *ctx, fz_document *doc, int pageno,
                                const fz_point *vertices, int n_vertices, const char *text,
-                               float r, float g, float b, int is_angle, const char **out_error) {
+                               float r, float g, float b, float stroke_width, int is_angle, const char **out_error) {
+    float w = stroke_width > 0.0f ? stroke_width : 2.0f;
     pdf_page *ppage = NULL;
     pdf_annot *annot = NULL;
     fz_buffer *buf = NULL;
@@ -1532,7 +1535,7 @@ static int add_polyline_common(fz_context *ctx, fz_document *doc, int pageno,
 
         float color[3] = {r, g, b};
         pdf_set_annot_color(ctx, annot, 3, color);
-        pdf_set_annot_border_width(ctx, annot, 2.0f);
+        pdf_set_annot_border_width(ctx, annot, w);
         pdf_update_annot(ctx, annot);
 
         // Build appearance stream /AP /N
@@ -1540,7 +1543,7 @@ static int add_polyline_common(fz_context *ctx, fz_document *doc, int pageno,
         if (n) {
             ensure_helv_font(ctx, pdoc, n);
             buf = fz_new_buffer(ctx, 512);
-            fz_append_printf(ctx, buf, "2.0 w\n1 J\n1 j\n%g %g %g RG\n", r, g, b);
+            fz_append_printf(ctx, buf, "%g w\n1 J\n1 j\n%g %g %g RG\n", w, r, g, b);
             ap_move(ctx, buf, inv, vertices[0].x, vertices[0].y);
             for (int i = 1; i < n_vertices; i++) {
                 ap_line(ctx, buf, inv, vertices[i].x, vertices[i].y);
@@ -1576,27 +1579,28 @@ static int add_polyline_common(fz_context *ctx, fz_document *doc, int pageno,
 int mupdf_pdf_add_polyline_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                            const fz_point *vertices, int n_vertices,
                                            const char *text,
-                                           float r, float g, float b,
+                                           float r, float g, float b, float stroke_width,
                                            const char **out_error) {
     if (!ctx || !doc || !vertices || n_vertices < 2 || !text) return -1;
-    return add_polyline_common(ctx, doc, pageno, vertices, n_vertices, text, r, g, b, 0, out_error);
+    return add_polyline_common(ctx, doc, pageno, vertices, n_vertices, text, r, g, b, stroke_width, 0, out_error);
 }
 
 int mupdf_pdf_add_angle_annot(fz_context *ctx, fz_document *doc, int pageno,
                               const fz_point *vertices, int n_vertices,
                               const char *text,
-                              float r, float g, float b,
+                              float r, float g, float b, float stroke_width,
                               const char **out_error) {
     if (!ctx || !doc || !vertices || n_vertices != 3 || !text) return -1;
-    return add_polyline_common(ctx, doc, pageno, vertices, n_vertices, text, r, g, b, 1, out_error);
+    return add_polyline_common(ctx, doc, pageno, vertices, n_vertices, text, r, g, b, stroke_width, 1, out_error);
 }
 
 int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                           const fz_point *vertices, int n_vertices,
                                           const char *text,
-                                          float r, float g, float b, float fill_alpha,
+                                          float r, float g, float b, float fill_alpha, float stroke_width,
                                           const char **out_error) {
     if (!ctx || !doc || !vertices || n_vertices < 3 || !text) return -1;
+    float w = stroke_width > 0.0f ? stroke_width : 1.8f;
     pdf_page *ppage = NULL;
     pdf_annot *annot = NULL;
     fz_buffer *buf = NULL;
@@ -1638,7 +1642,7 @@ int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int
         pdf_set_annot_interior_color(ctx, annot, 3, color);
         float alpha = fill_alpha > 0.05f ? fill_alpha : 0.22f;
         pdf_set_annot_opacity(ctx, annot, alpha);
-        pdf_set_annot_border_width(ctx, annot, 1.8f);
+        pdf_set_annot_border_width(ctx, annot, w);
         pdf_update_annot(ctx, annot);
 
         // Build appearance stream /AP /N
@@ -1649,7 +1653,7 @@ int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int
             buf = fz_new_buffer(ctx, 512);
             // The translucent fill is scoped to q…Q so the label pill below stays opaque.
             fz_append_string(ctx, buf, "q\n/GSa gs\n");
-            fz_append_printf(ctx, buf, "1.8 w\n1 J\n1 j\n%g %g %g RG\n", r, g, b);
+            fz_append_printf(ctx, buf, "%g w\n1 J\n1 j\n%g %g %g RG\n", w, r, g, b);
             fz_append_printf(ctx, buf, "%g %g %g rg\n", r, g, b);
             ap_move(ctx, buf, inv, vertices[0].x, vertices[0].y);
             for (int i = 1; i < n_vertices; i++) {
@@ -3184,6 +3188,7 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                 m->objnum = pdf_to_num(ctx, pdf_annot_obj(ctx, a));
                 m->layer = vp_oc_layer(ctx, pdf_annot_obj(ctx, a));
                 m->hidden = vp_oc_hidden(ctx, pdoc, pdf_annot_obj(ctx, a));
+                m->stroke_width = pdf_annot_has_border(ctx, a) ? pdf_annot_border_width(ctx, a) : 0;
                 int n_color = 0;
                 float color[4] = {0, 0, 0, 0};
                 pdf_annot_color(ctx, a, &n_color, color);

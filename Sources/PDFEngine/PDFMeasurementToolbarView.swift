@@ -125,16 +125,7 @@ public struct PDFMeasurementToolbarView: View {
                 .frame(height: 16)
 
             // 4. Line Width Selector
-            Picker("Line Width", selection: $viewModel.measurementStrokeWidth) {
-                Text("Thin").tag(CGFloat(1.5))
-                Text("Medium").tag(CGFloat(2.5))
-                Text("Thick").tag(CGFloat(4.5))
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.small)
-            .frame(width: 145)
-            .help("Dimension Stroke Width")
+            LineWidthBox(width: $viewModel.measurementStrokeWidth, help: "Dimension Stroke Width (type a width in points, or choose one)")
 
             Divider()
                 .frame(height: 16)

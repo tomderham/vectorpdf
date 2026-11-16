@@ -6,12 +6,12 @@ Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. C
 
 ## Draw freehand
 
-Choose the pen tool, set the line width to Thin, Medium or Thick, then drag on the page.
+Choose the pen tool, set the line width, then drag on the page. Choose a width in points from the line width box, or type one, from 0.1 to 72 points.
 
 ## Draw a shape
 
 1. Choose the Shapes tool, then choose Rectangle, Oval, Line or Arrow, or Revision Cloud.
-2. Set the line width to Thin, Medium or Thick. For a line, use the Line Ending menu to choose an arrowhead, such as Open Arrow, Closed Arrow or Diamond, or None for a plain line.
+2. Set the line width: choose a width in points, or type one. For a line, use the Line Ending menu to choose an arrowhead, such as Open Arrow, Closed Arrow or Diamond, or None for a plain line.
 3. Drag on the page. A rectangle or oval fills the area you drag across. A line runs from where you start to where you stop, with its ending at the end.
 
 Hold ⇧ while you drag to draw a square or circle, or to keep a line at a multiple of 45°.

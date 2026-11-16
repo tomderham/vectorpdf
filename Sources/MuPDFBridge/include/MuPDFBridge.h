@@ -144,6 +144,8 @@ typedef struct {
     /* For a length: how far the dimension line is drawn from the measured points, in page
        (top-down) space, as mupdf_pdf_add_line_dimension's leader_offset. */
     float leader;
+    /* Its line width (/BS /W), or 0 if it has none. */
+    float stroke_width;
 } mupdf_measurement_annot;
 int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int pageno,
                                      mupdf_measurement_annot *out, int capacity, int *out_count,
@@ -228,22 +230,22 @@ void mupdf_pdf_free_review_annots(fz_context *ctx, mupdf_review_annot *annots, i
 int mupdf_pdf_add_line_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                        float x0, float y0, float x1, float y1,
                                        float leader_offset, const char *text,
-                                       float r, float g, float b,
+                                       float r, float g, float b, float stroke_width,
                                        const char **out_error);
 int mupdf_pdf_add_polyline_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                            const fz_point *vertices, int n_vertices,
                                            const char *text,
-                                           float r, float g, float b,
+                                           float r, float g, float b, float stroke_width,
                                            const char **out_error);
 int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int pageno,
                                           const fz_point *vertices, int n_vertices,
                                           const char *text,
-                                          float r, float g, float b, float fill_alpha,
+                                          float r, float g, float b, float fill_alpha, float stroke_width,
                                           const char **out_error);
 int mupdf_pdf_add_angle_annot(fz_context *ctx, fz_document *doc, int pageno,
                               const fz_point *vertices, int n_vertices,
                               const char *text,
-                              float r, float g, float b,
+                              float r, float g, float b, float stroke_width,
                               const char **out_error);
 int mupdf_pdf_set_page_scale(fz_context *ctx, fz_document *doc, int pageno,
                              const char *ratio_str, const char *unit_str,

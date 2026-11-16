@@ -102,7 +102,8 @@ extension PDFViewerViewModel {
                         text: formattedText,
                         red: annotColor.rgb.red,
                         green: annotColor.rgb.green,
-                        blue: annotColor.rgb.blue
+                        blue: annotColor.rgb.blue,
+                        strokeWidth: strokeWidth
                     )
                 }
             case .measurePerimeter:
@@ -113,7 +114,8 @@ extension PDFViewerViewModel {
                         text: formattedText,
                         red: annotColor.rgb.red,
                         green: annotColor.rgb.green,
-                        blue: annotColor.rgb.blue
+                        blue: annotColor.rgb.blue,
+                        strokeWidth: strokeWidth
                     )
                 }
             case .measureArea:
@@ -124,7 +126,8 @@ extension PDFViewerViewModel {
                         text: formattedText,
                         red: annotColor.rgb.red,
                         green: annotColor.rgb.green,
-                        blue: annotColor.rgb.blue
+                        blue: annotColor.rgb.blue,
+                        strokeWidth: strokeWidth
                     )
                 }
             case .measureAngle:
@@ -135,7 +138,8 @@ extension PDFViewerViewModel {
                         text: formattedText,
                         red: annotColor.rgb.red,
                         green: annotColor.rgb.green,
-                        blue: annotColor.rgb.blue
+                        blue: annotColor.rgb.blue,
+                        strokeWidth: strokeWidth
                     )
                 }
             default:
@@ -175,7 +179,7 @@ extension PDFViewerViewModel {
 
     /// `annot` with new points, dimension-line offset or color, its value and label worked out
     /// again. A label of its own, rather than its value, is kept.
-    func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil) -> PDFAnnotation {
+    func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil, strokeWidth: CGFloat? = nil) -> PDFAnnotation {
         let points = points ?? annot.measurementPoints
         let (value, text) = measured(annot.type, points: points, pageIndex: annot.pageIndex)
         let hasOwnLabel = !annot.text.isEmpty && annot.text != annot.measurementText
@@ -183,7 +187,7 @@ extension PDFViewerViewModel {
             id: annot.id,
             pageIndex: annot.pageIndex,
             type: annot.type,
-            strokeWidth: annot.strokeWidth,
+            strokeWidth: strokeWidth ?? annot.strokeWidth,
             color: color ?? annot.color,
             text: hasOwnLabel ? annot.text : text,
             measurementPoints: points,

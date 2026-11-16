@@ -545,6 +545,18 @@ extension PDFCanvasView {
         }
     }
 
+    /// The Measurement toolbar's line width changed: redraws the selected measurement at it.
+    func handleMeasurementStrokeWidthChanged(_ width: CGFloat) {
+        guard activeInlineTextField == nil, let doc = viewModel.document,
+              let (targetId, pIdx) = selectedAnnotation, pIdx >= 0, pIdx < doc.pageCount,
+              let annot = viewModel.pageAnnotations[pIdx]?.first(where: { $0.id == targetId }),
+              annot.isMeasurement, abs(annot.strokeWidth - width) > 0.001 else { return }
+        if let updated = viewModel.replaceMeasurement(annot, with: viewModel.editedMeasurement(annot, strokeWidth: width)) {
+            selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+        }
+        needsDisplay = true
+    }
+
     /// The Measurement toolbar's color changed: recolors the selected measurement.
     func handleMeasurementColorChanged(_ newColor: AnnotationColor) {
         guard activeInlineTextField == nil, let doc = viewModel.document,

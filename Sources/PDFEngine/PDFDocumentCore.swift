@@ -845,7 +845,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         text: String,
         red: Float,
         green: Float,
-        blue: Float
+        blue: Float,
+        strokeWidth: CGFloat = 0
     ) throws {
         guard !text.isEmpty else { return }
         lock.lock()
@@ -866,6 +867,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 red,
                 green,
                 blue,
+                Float(strokeWidth),
                 &errorMsg
             )
         }
@@ -881,7 +883,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         text: String,
         red: Float,
         green: Float,
-        blue: Float
+        blue: Float,
+        strokeWidth: CGFloat = 0
     ) throws {
         guard !text.isEmpty, vertices.count >= 2 else { return }
         lock.lock()
@@ -901,6 +904,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                     red,
                     green,
                     blue,
+                    Float(strokeWidth),
                     &errorMsg
                 )
             }
@@ -918,7 +922,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         red: Float,
         green: Float,
         blue: Float,
-        fillAlpha: Float = 0.22
+        fillAlpha: Float = 0.22,
+        strokeWidth: CGFloat = 0
     ) throws {
         guard !text.isEmpty, vertices.count >= 3 else { return }
         lock.lock()
@@ -939,6 +944,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                     green,
                     blue,
                     fillAlpha,
+                    Float(strokeWidth),
                     &errorMsg
                 )
             }
@@ -957,7 +963,8 @@ public final class PDFDocumentCore: @unchecked Sendable {
         text: String,
         red: Float,
         green: Float,
-        blue: Float
+        blue: Float,
+        strokeWidth: CGFloat = 0
     ) throws {
         guard !text.isEmpty, points.count == 3 else { return }
         lock.lock()
@@ -977,6 +984,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
                     red,
                     green,
                     blue,
+                    Float(strokeWidth),
                     &errorMsg
                 )
             }
@@ -1430,6 +1438,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
             var annot = PDFAnnotation(
                 pageIndex: pageIndex,
                 type: type,
+                strokeWidth: raw.stroke_width > 0 ? CGFloat(raw.stroke_width) : 1.5,
                 color: AnnotationColor.nearest(red: raw.r, green: raw.g, blue: raw.b),
                 text: text,
                 measurementPoints: points,

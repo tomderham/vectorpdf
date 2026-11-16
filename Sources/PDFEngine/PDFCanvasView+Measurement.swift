@@ -28,7 +28,7 @@ extension PDFCanvasView {
         let p0 = annot.measurementPoints[0]
         let p1 = annot.measurementPoints[1]
         let color = annot.color.nsColor
-        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 1.2)
+        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 0.5)
 
         let dx = p1.x - p0.x
         let dy = p1.y - p0.y
@@ -94,7 +94,7 @@ extension PDFCanvasView {
     func drawMeasurePerimeter(annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect, isSelected: Bool) {
         guard annot.measurementPoints.count >= 2 else { return }
         let color = annot.color.nsColor
-        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 1.5)
+        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 0.5)
 
         let path = NSBezierPath()
         path.lineWidth = strokeW
@@ -128,7 +128,7 @@ extension PDFCanvasView {
     func drawMeasureArea(annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect, isSelected: Bool) {
         guard annot.measurementPoints.count >= 3 else { return }
         let color = annot.color.nsColor
-        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 1.8)
+        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 0.5)
 
         let path = NSBezierPath()
         path.lineWidth = strokeW
@@ -158,7 +158,7 @@ extension PDFCanvasView {
     func drawMeasureAngle(annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect, isSelected: Bool) {
         guard annot.measurementPoints.count >= 3 else { return }
         let color = annot.color.nsColor
-        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 1.5)
+        let strokeW = max(annot.strokeWidth * viewModel.effectiveZoom, 0.5)
 
         let r1 = canvasPoint(for: annot.measurementPoints[0], pFrame: pFrame, pBounds: pBounds)
         let apex = canvasPoint(for: annot.measurementPoints[1], pFrame: pFrame, pBounds: pBounds)

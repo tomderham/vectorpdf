@@ -155,6 +155,18 @@ struct MeasurementEditingTests {
     }
 
     @MainActor
+    @Test func changingTheWidthRestylesTheSelectedMeasurement() async throws {
+        let (fixture, original) = try await fixtureWithLength()
+        defer { fixture.close() }
+        fixture.click(page: 0, at: CGPoint(x: 130, y: 200))
+        #expect(fixture.canvas.selectedAnnotation?.id == original.id)
+        #expect(fixture.vm.measurementStrokeWidth == original.strokeWidth)
+        fixture.vm.measurementStrokeWidth = 0.5
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(try onlyMeasurement(fixture.vm).strokeWidth == 0.5)
+    }
+
+    @MainActor
     @Test func theColorButtonRecolorsTheSelectedMeasurement() async throws {
         let (fixture, original) = try await fixtureWithLength()
         defer { fixture.close() }
@@ -299,4 +311,42 @@ struct MeasurementEditingTests {
         vm.inspectedAnnotation = InspectedAnnotation(id: textBox.id, pageIndex: 0)
         #expect(vm.selectedAnnotationHasFontSize)
     }
+}
+
+/// Line widths are typed or picked in points.
+@Suite struct LineWidthBoxTests {
+    @Test func readsWhatIsTyped() {
+        #expect(LineWidthBox.parse("0.5") == 0.5)
+        #expect(LineWidthBox.parse(" 3 pt ") == 3)
+        #expect(LineWidthBox.parse("0,75pt") == 0.75)
+        #expect(LineWidthBox.parse("500") == 72)
+        #expect(LineWidthBox.parse("0.01") == 0.1)
+        for nonsense in ["", "thin", "-2", "0", "pt"] { #expect(LineWidthBox.parse(nonsense) == nil) }
+    }
+
+    @Test func showsWidthsInPoints() {
+        #expect(LineWidthBox.format(0.25) == "0.25 pt")
+        #expect(LineWidthBox.format(1.5) == "1.5 pt")
+        #expect(LineWidthBox.format(2) == "2 pt")
+        #expect(LineWidthBox.presets.allSatisfy { LineWidthBox.parse(LineWidthBox.format($0)) == $0 })
+    }
+}
+
+/// A measurement keeps its width in the file, and changing the width restyles a selected one.
+@MainActor
+@Suite struct MeasurementWidthTests {
+    @Test func theWidthIsSavedAndReadBack() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plan.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha"])
+        let doc = try PDFDocumentCore(filePath: url.path)
+        try doc.addLineDimension(pageIndex: 0, startPoint: CGPoint(x: 100, y: 200), endPoint: CGPoint(x: 300, y: 200), text: "10 ft", red: 0.5, green: 0.5, blue: 0.5, strokeWidth: 0.5)
+        try doc.addPolygonDimension(pageIndex: 0, vertices: [CGPoint(x: 100, y: 300), CGPoint(x: 200, y: 300), CGPoint(x: 150, y: 380)], text: "20 sq ft", red: 0.5, green: 0.5, blue: 0.5, strokeWidth: 6)
+        let saved = dir.appendingPathComponent("Saved.pdf")
+        try doc.save(to: saved.path)
+        let widths = try PDFDocumentCore(filePath: saved.path).measurementAnnotations(pageIndex: 0).map(\.strokeWidth).sorted()
+        #expect(widths == [0.5, 6])
+    }
+
 }

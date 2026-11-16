@@ -166,16 +166,7 @@ public struct PDFMarkupToolbarView: View {
                     .frame(height: 16)
 
                 // Stroke Width Selector (only in Draw mode)
-                Picker("Line Width", selection: $viewModel.drawStrokeWidth) {
-                    Text("Thin").tag(CGFloat(1.5))
-                    Text("Medium").tag(CGFloat(2.5))
-                    Text("Thick").tag(CGFloat(4.5))
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .controlSize(.small)
-                .frame(width: 155)
-                .help("Pen Stroke Width")
+                LineWidthBox(width: $viewModel.drawStrokeWidth, help: "Pen Stroke Width (type a width in points, or choose one)")
 
             case .text:
                 Divider()
@@ -249,16 +240,7 @@ public struct PDFMarkupToolbarView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    Picker("Line Width", selection: $viewModel.drawStrokeWidth) {
-                        Text("Thin").tag(CGFloat(1.5))
-                        Text("Medium").tag(CGFloat(2.5))
-                        Text("Thick").tag(CGFloat(4.5))
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .controlSize(.small)
-                    .frame(width: 155)
-                    .help("Line Width")
+                    LineWidthBox(width: $viewModel.drawStrokeWidth, help: "Line Width (type a width in points, or choose one)")
                 }
 
                 if viewModel.selectedShape == .line {

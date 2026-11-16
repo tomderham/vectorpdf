@@ -175,6 +175,7 @@ extension PDFCanvasView {
                         // The toolbar for its kind shows its color, to change it.
                         if hit.isMeasurement {
                             viewModel.measurementColor = hit.color
+                            viewModel.measurementStrokeWidth = hit.strokeWidth
                         } else {
                             viewModel.selectedAnnotationColor = hit.color
                         }
