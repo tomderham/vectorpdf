@@ -24,6 +24,8 @@ extension PDFCanvasView {
     // MARK: - Mouse & Gesture Interaction
     
     public override func mouseDown(with event: NSEvent) {
+        hoverWorkItem?.cancel()
+        if hoverOutline != nil { hoverOutline = nil; needsDisplay = true }
         PDFViewerViewModel.active = viewModel
         PDFViewerAppCoordinator.shared.registerActive(viewModel)
         window?.makeFirstResponder(self)
@@ -150,17 +152,7 @@ extension PDFCanvasView {
 
                 // 2. Check if clicked on an annotation body or callout target/knee. One that came
                 // with the file is found as precisely as the document allows, and picked up.
-                let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIdx, at: pagePoint)
-                let shownHit = list.reversed().first(where: { annot in
-                    if annot.isFromFile { return annot.documentObjectNumber == fileHit }
-                    if annot.isMeasurement { return viewModel.canvasMode == .select && measurementHit(annot, at: pagePoint) }
-                    return (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
-                })
-                // A measurement that was in the file when it was opened is picked up to change it.
-                let fileMeasurementHit = viewModel.canvasMode == .select
-                    ? fileHit.flatMap { viewModel.fileMeasurement(pageIndex: pageIdx, objectNumber: $0) }.flatMap { measurementHit($0, at: pagePoint) ? viewModel.pickUpMeasurement($0) : nil }
-                    : nil
-                if let hit = shownHit ?? fileMeasurementHit ?? fileHit.flatMap({ viewModel.pickUpFileAnnotation(pageIndex: pageIdx, objectNumber: $0) }) {
+                if let hit = annotationHit(pageIndex: pageIdx, at: pagePoint, list: list, pickingUp: true) {
                     if event.clickCount == 2, hit.isFromFile || (hit.type != .freeText && hit.type != .callout), let number = hit.documentObjectNumber {
                         showComments(pageIndex: pageIdx, objectNumber: number)
                         return
@@ -757,6 +749,11 @@ extension PDFCanvasView {
         dragStartCanvasPoint = nil
         activeDragPage = nil
 
+        // An area (⌥-drag) also selects the annotations entirely inside it.
+        if wasDragged, viewModel.canvasMode == .select, let area = viewModel.activeSelection, area.result.mode == .rectangularArea {
+            selectAnnotations(in: area.result.boundingRect, pageIndex: area.pageIndex)
+        }
+
         if let pending = pending, !wasDragged {
             hoveredLink = nil
             needsDisplay = true
@@ -862,6 +859,20 @@ extension PDFCanvasView {
         }
         let point = convert(event.locationInWindow, from: nil)
 
+        // Select mode outlines what a click would pick up, once the pointer pauses.
+        if viewModel.canvasMode == .select {
+            scheduleHoverOutline(at: point)
+            if let hover = hoverOutline, let (pageIdx, _, pagePoint) = pageInfo(at: point), hover.pageIndex == pageIdx,
+               hover.rect.insetBy(dx: -6, dy: -6).contains(pagePoint), activeAnnotationDrag == nil {
+                if hoveredLink != nil { hoveredLink = nil; needsDisplay = true }
+                NSCursor.openHand.set()
+                return
+            }
+        } else if hoverOutline != nil {
+            hoverOutline = nil
+            needsDisplay = true
+        }
+
         // Hover feedback over annotations or callout handles in interactive modes
         if viewModel.canvasMode == .select || viewModel.canvasMode == .text || viewModel.canvasMode == .callout {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point),
@@ -936,6 +947,11 @@ extension PDFCanvasView {
     
     public override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        hoverWorkItem?.cancel()
+        if hoverOutline != nil {
+            hoverOutline = nil
+            needsDisplay = true
+        }
         updatePointerReadout(nil)
         linkPeek.dismiss()
         if currentHoverCanvasPoint != nil {
@@ -1033,3 +1049,53 @@ extension PDFCanvasView {
         }
     }
 }
+
+extension PDFCanvasView {
+    /// What a click at `pagePoint` picks up: an annotation made here (by its outline, for a shape),
+    /// or one from the file, found as precisely as the document allows. With `pickingUp`, one
+    /// from the file is picked up to be moved and changed; without, it's only described, for
+    /// hover feedback.
+    func annotationHit(pageIndex pageIdx: Int, at pagePoint: CGPoint, list: [PDFAnnotation]? = nil, pickingUp: Bool) -> PDFAnnotation? {
+        let list = list ?? viewModel.shownAnnotations(onPage: pageIdx)
+        let fileHit = viewModel.document?.annotationObjectNumber(pageIndex: pageIdx, at: pagePoint)
+        if let shown = list.reversed().first(where: { annot in
+            if annot.isFromFile { return annot.documentObjectNumber == fileHit }
+            if annot.isMeasurement { return viewModel.canvasMode == .select && measurementHit(annot, at: pagePoint) }
+            return (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
+        }) {
+            return shown
+        }
+        guard let fileHit, list.contains(where: { $0.documentObjectNumber == fileHit }) == false else { return nil }
+        // A measurement that was in the file when it was opened is picked up to change it.
+        if viewModel.canvasMode == .select, let measurement = viewModel.fileMeasurement(pageIndex: pageIdx, objectNumber: fileHit) {
+            guard measurementHit(measurement, at: pagePoint) else { return nil }
+            return pickingUp ? viewModel.pickUpMeasurement(measurement) : measurement
+        }
+        return pickingUp ? viewModel.pickUpFileAnnotation(pageIndex: pageIdx, objectNumber: fileHit) : viewModel.describedFileAnnotation(pageIndex: pageIdx, objectNumber: fileHit)
+    }
+
+    /// Works out, 60 ms after the pointer stops, what a click there would pick up, and outlines it.
+    /// Annotations from the file are found by asking the document, so not on every move.
+    func scheduleHoverOutline(at canvasPoint: CGPoint) {
+        hoverWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.hasLiveViewModel, self.viewModel.canvasMode == .select,
+                  self.activeAnnotationDrag == nil, !self.isDraggingSelection else { return }
+            var outline: (pageIndex: Int, rect: CGRect)?
+            if let (pageIdx, _, pagePoint) = self.pageInfo(at: canvasPoint),
+               let hit = self.annotationHit(pageIndex: pageIdx, at: pagePoint, pickingUp: false) {
+                let box = hit.type == .measureCount || !hit.isMeasurement ? hit.boundingRect : CGRect(enclosing: hit.measurementPoints).insetBy(dx: -4, dy: -4)
+                outline = (pageIdx, box)
+            }
+            let changed = outline?.pageIndex != self.hoverOutline?.pageIndex || outline?.rect != self.hoverOutline?.rect
+            self.hoverOutline = outline
+            if changed {
+                if outline != nil { NSCursor.openHand.set() }
+                self.needsDisplay = true
+            }
+        }
+        hoverWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06, execute: item)
+    }
+}
+

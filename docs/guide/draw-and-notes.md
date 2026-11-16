@@ -4,9 +4,19 @@
 
 Press ⇧⌘A, or click the Markup Toolbar button, to show the Markup toolbar. Choose a tool, then a color and size. To choose a color, click the color button near the right of the toolbar, then click a color.
 
-Each tool keeps its own color and line width, and VectorPDF remembers them. At first, the pen and shapes are red, text boxes and callouts black, and notes yellow. Choosing a tool puts down whatever was selected. While a tool is in use, changing its color or width also changes what it just made. To change an annotation you made earlier without changing a tool, select it in Text Selection mode, then choose a color.
+Each tool keeps its own color and line width, and VectorPDF remembers them. At first, the pen and shapes are red, text boxes and callouts black, and notes yellow. Choosing a tool puts down whatever was selected. While a tool is in use, changing its color or width also changes what it just made. To change an annotation you made earlier without changing a tool, select it with the Select tool, then choose a color.
 
-To finish with a tool, press Escape, click the tool again, or choose Text Selection Mode, the first tool in the toolbar.
+To finish with a tool, press Escape, click the tool again, or choose Select, the arrow at the start of the toolbar.
+
+## Select and change annotations
+
+Choose **Select**, the arrow at the start of the Markup toolbar, or of the Measurement toolbar. With Select, you can select text, and annotations and measurements too:
+
+- **Point at one** and a dashed outline shows what a click picks up. For a rectangle, oval, polygon or cloud, point at its outline: inside it, a click selects the text there.
+- **Click it** to select it. Then drag it to move it, drag a handle to resize or reshape it, press the arrow keys to nudge it, choose a color or width in the toolbar, or press Delete. Right-click it for its commands.
+- **Select several:** ⇧-click each one, or hold ⌥ and drag across them to select everything entirely inside the area. Choose Edit > Select All Annotations on Page (⌥⌘A) for all of them. See [Change several annotations at once](#change-several-annotations-at-once).
+
+While a drawing or measuring tool is in use, clicking makes something new, so choose Select first, or press Escape.
 
 ## Draw freehand
 
@@ -101,7 +111,7 @@ Highlights, underlines, strikethroughs, freehand drawings and measurements from 
 
 ## Change several annotations at once
 
-In Text Selection mode, select an annotation, then hold ⇧ and click others on the same page to add them; ⇧-click one again to take it out. Then:
+With the Select tool, select an annotation, then hold ⇧ and click others on the same page to add them; ⇧-click one again to take it out. Or hold ⌥ and drag across them, or choose Edit > Select All Annotations on Page (⌥⌘A). Then:
 
 - **Move them:** drag any of them, or press the arrow keys.
 - **Change their color or line width:** choose it in the toolbar.

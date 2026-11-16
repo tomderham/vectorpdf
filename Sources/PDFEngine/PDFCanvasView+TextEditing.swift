@@ -802,5 +802,45 @@ extension PDFCanvasView {
             commitAnnotationEdit(annot, pageIndex: page, part: .entireAnnotation, delta: delta, minimumDistance: (0, 0))
         }
     }
+
+    /// Selects every annotation that can be moved and lies entirely inside `rect` (page space),
+    /// made here or from the file, picking up those from the file. Returns how many.
+    @discardableResult
+    func selectAnnotations(in rect: CGRect, pageIndex page: Int) -> Int {
+        let shown = viewModel.shownAnnotations(onPage: page)
+        func box(_ annot: PDFAnnotation) -> CGRect {
+            annot.isMeasurement && annot.type != .measureCount ? CGRect(enclosing: annot.measurementPoints) : annot.boundingRect
+        }
+        func selectable(_ annot: PDFAnnotation) -> Bool {
+            annot.isFromFile || annot.isMeasurement || annot.isShape
+                || annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note
+        }
+        var found = shown.filter { selectable($0) && rect.contains(box($0)) }
+        // Annotations from the file not picked up yet, found by their boxes.
+        let known = Set(shown.compactMap(\.documentObjectNumber))
+        for thread in viewModel.annotationThreads(pageIndex: page) where !known.contains(thread.root.objectNumber) && rect.contains(thread.root.rect) {
+            let number = thread.root.objectNumber
+            if let measurement = viewModel.fileMeasurement(pageIndex: page, objectNumber: number) {
+                found.append(viewModel.pickUpMeasurement(measurement))
+            } else if let picked = viewModel.pickUpFileAnnotation(pageIndex: page, objectNumber: number) {
+                found.append(picked)
+            }
+        }
+        guard let first = found.first else { return 0 }
+        groupSelection = found.dropFirst().map(\.id)
+        isEditingGroup = true
+        selectedAnnotation = (id: first.id, pageIndex: page)
+        isEditingGroup = false
+        needsDisplay = true
+        return found.count
+    }
+
+    /// Edit > Select All Annotations on Page.
+    func selectAllAnnotations(onPage page: Int) {
+        guard let doc = viewModel.document, page >= 0, page < doc.pageCount else { return }
+        if viewModel.canvasMode != .select { viewModel.canvasMode = .select }
+        viewModel.clearSelection()
+        selectAnnotations(in: doc.pageBounds[page].insetBy(dx: -1000, dy: -1000), pageIndex: page)
+    }
 }
 

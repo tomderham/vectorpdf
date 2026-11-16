@@ -88,12 +88,12 @@ import PDFKit
         vm.addCountMarker(pageIndex: 1, at: CGPoint(x: 200, y: 200))
 
         let entries = vm.takeoffEntries().filter { $0.annotation.type == .measureCount }
-        #expect(entries.map(\.formattedValue) == ["3 Outlets", "1 Doors", "1 Outlets"])
+        #expect(entries.map(\.formattedValue) == ["Outlets × 3", "Doors × 1", "Outlets × 1"])
         let totals = vm.takeoffCounts(entries)
         #expect(totals.map(\.group) == ["Doors", "Outlets"])
         #expect(totals.map(\.count) == [1, 4])
         let csv = vm.generateTakeoffSummaryCSV()
-        #expect(csv.contains(",Count,") && csv.contains("\"3 Outlets\""))
+        #expect(csv.contains(",Count,") && csv.contains("\"Outlets × 3\""))
         #expect(vm.generateTakeoffSummaryMarkdown().contains("**Count, Outlets:** 4"))
     }
 

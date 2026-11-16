@@ -119,3 +119,64 @@ import AppKit
         #expect(fixture.canvas.allSelectedAnnotationIDs.count == 3)
     }
 }
+
+/// Finding annotations to select: hover outlines, an area, or all on the page.
+@MainActor
+@Suite struct FindingAnnotationsToSelectTests {
+    @Test func theAnnotationUnderThePointerIsOutlined() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        let rect = try #require(fixture.vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 300), to: CGPoint(x: 200, y: 380)))
+        fixture.canvas.scheduleHoverOutline(at: fixture.canvasPoint(page: 0, CGPoint(x: 100, y: 340)))
+        try await Task.sleep(nanoseconds: 150_000_000)
+        let hover = try #require(fixture.canvas.hoverOutline)
+        #expect(hover.pageIndex == 0 && hover.rect.contains(rect.rect!))
+        // Inside a rectangle there's nothing to pick up: clicks there select text.
+        fixture.canvas.scheduleHoverOutline(at: fixture.canvasPoint(page: 0, CGPoint(x: 150, y: 340)))
+        try await Task.sleep(nanoseconds: 150_000_000)
+        #expect(fixture.canvas.hoverOutline == nil)
+        // A measurement in Select mode too.
+        let count = try #require(fixture.vm.addCountMarker(pageIndex: 0, at: CGPoint(x: 400, y: 400)))
+        fixture.canvas.scheduleHoverOutline(at: fixture.canvasPoint(page: 0, CGPoint(x: 400, y: 400)))
+        try await Task.sleep(nanoseconds: 150_000_000)
+        #expect(fixture.canvas.hoverOutline?.rect.contains(count.measurementPoints[0]) == true)
+    }
+
+    @Test func anAreaSelectsWhatsEntirelyInsideIt() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plan.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha"])
+        // Saved in the file, so they're picked up from it.
+        do {
+            let vm = PDFViewerViewModel()
+            await vm.loadDocument(from: url.path)
+            _ = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 300), to: CGPoint(x: 160, y: 340))
+            _ = vm.addShapeAnnotation(pageIndex: 0, shape: .oval, from: CGPoint(x: 200, y: 300), to: CGPoint(x: 260, y: 340))
+            _ = vm.addCountMarker(pageIndex: 0, at: CGPoint(x: 300, y: 320))
+            // Partly outside the area: left alone.
+            _ = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 380, y: 300), to: CGPoint(x: 600, y: 340))
+            try vm.document?.save(to: url.path)
+        }
+        let fixture = try await CanvasFixture(view: .single, file: url)
+        defer { fixture.close() }
+        let count = fixture.canvas.selectAnnotations(in: CGRect(x: 80, y: 280, width: 400, height: 80), pageIndex: 0)
+        #expect(count == 3)
+        #expect(fixture.canvas.allSelectedAnnotationIDs.count == 3)
+        let types = fixture.canvas.selectedAnnotationsNow.map(\.type)
+        #expect(Set(types) == [.square, .circle, .measureCount])
+    }
+
+    @Test func selectAllAnnotationsOnThePage() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        _ = fixture.vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 300), to: CGPoint(x: 160, y: 340))
+        _ = fixture.vm.addShapeAnnotation(pageIndex: 0, shape: .oval, from: CGPoint(x: 200, y: 300), to: CGPoint(x: 260, y: 340))
+        _ = fixture.vm.addShapeAnnotation(pageIndex: 1, shape: .oval, from: CGPoint(x: 200, y: 300), to: CGPoint(x: 260, y: 340))
+        fixture.vm.canvasMode = .draw
+        NotificationCenter.default.post(name: .selectAllAnnotationsCommand, object: fixture.vm)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(fixture.vm.canvasMode == .select)
+        #expect(fixture.canvas.allSelectedAnnotationIDs.count == 2)
+    }
+}

@@ -86,6 +86,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Select an area | ⌥-drag |
 | Extend the selection | ⇧-click |
 | Add an annotation to the selection, or take it out | ⇧-click it |
+| Select the annotations in an area | ⌥-drag across them |
 | Scroll while selecting or drawing | Drag past the edge of the window |
 | Open an annotation's comments | Double-click it, except a text box or callout |
 | Zoom | Pinch |
@@ -95,6 +96,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Action | Shortcut | Right-click |
 | --- | --- | --- |
 | Undo or redo an annotation change | ⌘Z or ⇧⌘Z | |
+| Select All Annotations on Page | ⌥⌘A | |
 | Edit selected text box or callout | Return | The annotation |
 | Delete selected annotation | Delete | The annotation |
 | Move selected annotation | Arrow keys, or ⇧Arrow keys for 10 points | |

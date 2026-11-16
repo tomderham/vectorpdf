@@ -282,7 +282,7 @@ extension PDFViewerViewModel {
             let markers = all.filter { $0.type == .measureCount }
             for (group, inGroup) in Dictionary(grouping: markers, by: \.text).sorted(by: { $0.key.localizedStandardCompare($1.key) == .orderedAscending }) {
                 guard let first = inGroup.first else { continue }
-                entries.append(TakeoffEntry(pageIndex: pageIndex, annotation: first, scale: scale, realValue: Double(inGroup.count), unitSymbol: "ea", formattedValue: "\(inGroup.count) \(group)"))
+                entries.append(TakeoffEntry(pageIndex: pageIndex, annotation: first, scale: scale, realValue: Double(inGroup.count), unitSymbol: "ea", formattedValue: "\(group) × \(inGroup.count)"))
             }
             for annot in all where annot.type != .measureCount {
                 let realValue: Double

@@ -743,6 +743,16 @@ extension PDFCanvasView {
                 ghostPath.stroke()
             }
 
+            // What a click would pick up, under the pointer (Select mode).
+            if let hover = hoverOutline, hover.pageIndex == pageIdx, let geometry = pageGeometry(for: pageIdx) {
+                let box = geometry.canvasRect(forPageRect: hover.rect).insetBy(dx: -3, dy: -3)
+                let outline = NSBezierPath(roundedRect: box, xRadius: 3, yRadius: 3)
+                outline.lineWidth = 1
+                outline.setLineDash([4, 3], count: 2, phase: 0)
+                NSColor.controlAccentColor.withAlphaComponent(0.85).setStroke()
+                outline.stroke()
+            }
+
             // 2.9 Live Measurement Drafting & Snapping in Progress
             if currentMeasurePage == pageIdx, !currentMeasurePoints.isEmpty || currentMeasureCandidatePoint != nil {
                 let color = viewModel.measurementColor.nsColor

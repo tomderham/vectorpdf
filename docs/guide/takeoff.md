@@ -2,7 +2,7 @@
 
 # Takeoff table
 
-The takeoff table is a schedule of every measurement in a document, with its page, type, value and scale, and totals for length and area. [Counts](measure.md#count-things-on-a-drawing) are one row for each group on each page, such as "12 Outlets", and totalled for each group across the document.
+The takeoff table is a schedule of every measurement in a document, with its page, type, value and scale, and totals for length and area. [Counts](measure.md#count-things-on-a-drawing) are one row for each group on each page, such as "Outlets × 12", and totalled for each group across the document.
 
 Click **Takeoff Table** in the [Measurement toolbar](measure.md).
 

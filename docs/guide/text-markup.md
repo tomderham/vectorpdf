@@ -22,7 +22,7 @@ To highlight a figure, part of a drawing or a scanned page, where there's no tex
 
 Highlights start yellow, and underlines and strikethroughs red. Each keeps its own color, and VectorPDF remembers it. The shortcuts and toolbar buttons use it.
 
-- **Highlight:** in Text Selection mode, the Markup toolbar's (⇧⌘A) color button sets the highlight color. Click it, then click a color.
+- **Highlight:** with the Select tool, the Markup toolbar's (⇧⌘A) color button sets the highlight color. Click it, then click a color.
 - **Underline or strikethrough:** choose a color from its list in the right-click menu, or under its item in the Edit menu. That markup is made in the color, and it's used for the next ones too.
 
 Highlights, underlines and strikethroughs have no size of their own: they follow the text they mark.

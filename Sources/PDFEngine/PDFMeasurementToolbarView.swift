@@ -36,6 +36,15 @@ public struct PDFMeasurementToolbarView: View {
             // 1. Tool Mode Buttons
             HStack(spacing: 2) {
                 PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .select,
+                    helpText: "Select (measurements to move, change or delete; ⇧-click to select several)"
+                ) {
+                    viewModel.canvasMode = .select
+                } label: {
+                    Image(systemName: "cursorarrow")
+                }
+
+                PreviewToolbarButton(
                     isSelected: viewModel.canvasMode == .measureLength,
                     helpText: "Linear Dimension Tool (Measure distance between two points)"
                 ) {

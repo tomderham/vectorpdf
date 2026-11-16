@@ -586,6 +586,12 @@ struct VectorPDF: App {
         }
 
         CommandGroup(after: .textEditing) {
+            Button("Select All Annotations on Page") {
+                NotificationCenter.default.post(name: .selectAllAnnotationsCommand, object: resolvedViewModel)
+            }
+            .keyboardShortcut("a", modifiers: [.command, .option])
+            .disabled(!canEditDocument)
+
             Menu("Find") {
                 Button("Find...") {
                     NotificationCenter.default.post(name: .focusSearchCommand, object: nil)

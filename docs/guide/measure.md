@@ -31,7 +31,9 @@ To move a marker, drag it with the Select tool. To remove one, right-click it an
 
 ## Change a measurement
 
-Press Escape, or click the selected tool, to put the measurement tool down, then click a measurement to select it. Handles appear on its points.
+Choose **Select**, the arrow at the start of the Measurement toolbar, or press Escape to put the measuring tool down. Point at a measurement and a dashed outline shows it; click it to select it. ⇧-click to select several, or hold ⌥ and drag across them. With a measuring tool in use, clicking measures again instead.
+
+A selected measurement has handles on its points.
 
 | To | Do this |
 | --- | --- |

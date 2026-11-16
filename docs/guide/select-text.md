@@ -7,7 +7,7 @@
 - **Drag** across the text. Selections follow the reading order, so they keep to one column of a multi-column layout and skip margin line numbers. They can run across pages: drag past the top or bottom of the window and the document scrolls, faster the further past you go.
 - **Hold ⇧ and click** to extend the selection from where it started to where you click, on any page. Click at the start, scroll to the end, then ⇧-click there. You can keep dragging after ⇧-clicking.
 - **Double-click** to select a word, or **triple-click** to select a line.
-- **Hold ⌥ and drag** to select a rectangular area, such as a figure or table.
+- **Hold ⌥ and drag** to select a rectangular area, such as a figure or table. Annotations and measurements entirely inside it are selected too, to move, change or delete together.
 
 Press Escape to clear the selection.
 

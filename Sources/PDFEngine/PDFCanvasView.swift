@@ -150,6 +150,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             if viewModel.inspectedAnnotation != inspected { viewModel.inspectedAnnotation = inspected }
         }
     }
+    /// What a click would pick up where the pointer rests, outlined (Select mode).
+    var hoverOutline: (pageIndex: Int, rect: CGRect)?
+    var hoverWorkItem: DispatchWorkItem?
     /// Annotations selected with the selected one (⇧-click), on its page: moved, nudged,
     /// recolored, aligned and deleted together. Their IDs change as they're edited.
     var groupSelection: [UUID] = []
@@ -321,6 +324,14 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             }
             .store(in: &cancellables)
             
+        NotificationCenter.default.publisher(for: .selectAllAnnotationsCommand)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] note in
+                guard let self, self.hasLiveViewModel, note.object as AnyObject? === self.viewModel else { return }
+                self.selectAllAnnotations(onPage: self.viewModel.currentPageIndex)
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .formWidgetDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

@@ -54,11 +54,11 @@ public struct PDFMarkupToolbarView: View {
             HStack(spacing: 2) {
                 PreviewToolbarButton(
                     isSelected: viewModel.canvasMode == .select,
-                    helpText: "Text Selection Mode"
+                    helpText: "Select (text, and annotations to move, change or delete; ⇧-click to select several)"
                 ) {
                     viewModel.canvasMode = .select
                 } label: {
-                    Image(systemName: "text.cursor")
+                    Image(systemName: "cursorarrow")
                 }
 
                 PreviewToolbarButton(

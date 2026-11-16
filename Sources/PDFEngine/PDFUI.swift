@@ -29,6 +29,8 @@ extension Notification.Name {
     public static let focusAnchorsCommand = Notification.Name("focusAnchorsCommand")
     /// Object: the `PDFViewerViewModel` whose sidebar should show every tab's anchors.
     public static let showAllTabAnchorsCommand = Notification.Name("showAllTabAnchorsCommand")
+    /// Edit > Select All Annotations on Page, for the view model posted as the object.
+    public static let selectAllAnnotationsCommand = Notification.Name("selectAllAnnotationsCommand")
     public static let formWidgetDidChange = Notification.Name("formWidgetDidChange")
     public static let showDocumentPropertiesCommand = Notification.Name("showDocumentPropertiesCommand")
     public static let showSplitPDFCommand = Notification.Name("showSplitPDFCommand")

@@ -595,6 +595,14 @@ extension PDFViewerViewModel {
         return annot
     }
 
+    /// An annotation from the file that could be picked up, described but not picked up: for
+    /// showing where it is as the pointer passes over it.
+    func describedFileAnnotation(pageIndex: Int, objectNumber: Int) -> PDFAnnotation? {
+        guard let annot = fileAnnotation(pageIndex: pageIndex, objectNumber: objectNumber, id: UUID(), revision: 0),
+              Self.movableFileSubtypes.contains(annot.fileSubtype ?? "") else { return nil }
+        return annot
+    }
+
     /// An annotation from the file as the canvas handles it: what it is and where, enough to
     /// select it, drag it and hit it, while the document says how it looks.
     private func fileAnnotation(pageIndex: Int, objectNumber: Int, id: UUID, revision: Int) -> PDFAnnotation? {
