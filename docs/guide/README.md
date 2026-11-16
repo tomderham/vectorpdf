@@ -52,7 +52,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 ## Measure drawings
 
 - [Set a drawing scale](drawing-scale.md)
-- [Measure lengths, areas and angles](measure.md)
+- [Measure lengths, areas and angles, and count](measure.md)
 - [Takeoff table](takeoff.md)
 
 ## Edit and protect

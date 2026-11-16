@@ -128,6 +128,7 @@ extension PDFCanvasView {
             case .measurePerimeter: removeTitle = "Delete Perimeter"
             case .measureArea: removeTitle = "Delete Area Takeoff"
             case .measureAngle: removeTitle = "Delete Angle Measurement"
+            case .measureCount: removeTitle = "Delete Count Marker"
             }
             let removeItem = NSMenuItem(title: removeTitle, action: #selector(removeHitAnnotationAction(_:)), keyEquivalent: "")
             removeItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)

@@ -194,6 +194,25 @@ extension PDFCanvasView {
         drawMeasurementTextPill(text: text, at: pillPos, color: color, isSelected: isSelected)
     }
 
+    /// A Count tool marker: a dot in its color with a white rim, as written to the file.
+    func drawCountMarker(annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect, isSelected: Bool) {
+        guard let center = annot.measurementPoints.first else { return }
+        let c = canvasPoint(for: center, pFrame: pFrame, pBounds: pBounds)
+        let radius = max(PDFAnnotation.countMarkerRadius * viewModel.effectiveZoom, 3)
+        let dot = NSBezierPath(ovalIn: NSRect(x: c.x - radius, y: c.y - radius, width: radius * 2, height: radius * 2))
+        annot.color.nsColor.setFill()
+        dot.fill()
+        NSColor.white.setStroke()
+        dot.lineWidth = max(radius * 0.2, 1)
+        dot.stroke()
+        if isSelected {
+            let ring = NSBezierPath(ovalIn: NSRect(x: c.x - radius - 3, y: c.y - radius - 3, width: (radius + 3) * 2, height: (radius + 3) * 2))
+            NSColor.controlAccentColor.setStroke()
+            ring.lineWidth = 1.5
+            ring.stroke()
+        }
+    }
+
     func drawMeasurementTextPill(text: String, at point: NSPoint, color: NSColor, isSelected: Bool) {
         guard !text.isEmpty else { return }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 10.0, weight: .semibold)
@@ -423,6 +442,8 @@ extension PDFCanvasView {
             return points.indices.contains { distance(from: pagePoint, toSegment: points[$0], points[($0 + 1) % points.count]) <= reach }
         case .measureLength:
             return annot.contains(pagePoint: pagePoint, tolerance: reach) || isOnLengthLabel(annot, pagePoint)
+        case .measureCount:
+            return annot.contains(pagePoint: pagePoint, tolerance: reach)
         case .measurePerimeter, .measureAngle:
             return points.indices.dropFirst().contains { distance(from: pagePoint, toSegment: points[$0 - 1], points[$0]) <= reach }
                 || (annot.type == .measureAngle && points.count >= 3 && distance(from: pagePoint, toSegment: points[1], points[2]) <= reach)

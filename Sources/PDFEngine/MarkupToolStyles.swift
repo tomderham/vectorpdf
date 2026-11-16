@@ -157,7 +157,7 @@ extension CanvasMode {
     /// One of the Measurement toolbar's tools.
     var isMeasuring: Bool {
         switch self {
-        case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .calibrateScale: return true
+        case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount, .calibrateScale: return true
         default: return false
         }
     }

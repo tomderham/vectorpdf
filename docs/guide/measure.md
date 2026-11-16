@@ -1,6 +1,6 @@
-<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, edit, change, move, reshape, handle, offset -->
+<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, count, counting, tally, symbols, ortho, snap, snapping, edit, change, move, reshape, handle, offset -->
 
-# Measure lengths, areas and angles
+# Measure lengths, areas and angles, and count
 
 Press ⇧⌘M to show the Measurement toolbar. If your drawing is to scale, [set the scale](drawing-scale.md) first.
 
@@ -14,6 +14,13 @@ Zoom in for accuracy before you measure. Pressing Escape cancels a measurement i
 | Perimeter | Click each point along the path. Press Return or double-click to finish. |
 | Polygon Area | Click each corner. Press Return, double-click, or click the first point to close the shape. |
 | Vertex Angle | Click a point on the first line, then the corner, then a point on the second line. |
+| Count | Type what you're counting in the group box, such as Outlets, then click each one. |
+
+## Count things on a drawing
+
+Choose the Count tool, then type a group name in the box beside it, such as Outlets or Type A Doors, or choose one already in the document from the menu next to the box. Each click places a marker, a dot in the Measurement toolbar's color, and the toolbar shows how many of that group are on the page. Change the group name to count something else; each group is counted apart. Use a different color for each group to tell them apart on the page.
+
+To move a marker, drag it with the Select tool. To remove one, right-click it and choose Delete Count Marker. The [takeoff table](takeoff.md) shows how many of each group there are on each page, with totals. Markers are saved in the PDF as small circles, so other apps show them too.
 
 ## Draw accurately
 
@@ -44,6 +51,6 @@ Use the color button and line width box in the Measurement toolbar before you me
 
 ## Keep or remove measurements
 
-Measurements are annotations, stored in the PDF when you [save](save.md). To delete one, right-click it, then choose the delete command, such as Delete Dimension or Delete Area Takeoff.
+Measurements are annotations, stored in the PDF when you [save](save.md). To delete one, right-click it, then choose the delete command, such as Delete Dimension, Delete Area Takeoff or Delete Count Marker.
 
 To list all your measurements, see the [Takeoff table](takeoff.md).

@@ -137,6 +137,8 @@ public enum PDFAnnotationType: String, Codable, Sendable {
     case measurePerimeter
     case measureArea
     case measureAngle
+    /// A Count tool marker at `measurementPoints[0]`; `text` is its group, such as "Outlets".
+    case measureCount
 }
 
 /// What the Shapes tool draws.
@@ -342,6 +344,8 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     case measurePerimeter
     case measureArea
     case measureAngle
+    /// Click each thing to count, in the group `countGroup`.
+    case measureCount
     case calibrateScale
 }
 
@@ -439,8 +443,11 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
 
     /// Whether this annotation is an architectural or engineering measurement.
     public var isMeasurement: Bool {
-        return type == .measureLength || type == .measurePerimeter || type == .measureArea || type == .measureAngle
+        return type == .measureLength || type == .measurePerimeter || type == .measureArea || type == .measureAngle || type == .measureCount
     }
+
+    /// A count marker's radius, page points.
+    public static let countMarkerRadius: CGFloat = 5
 
     /// Bounding box alias for boundingRect.
     public var boundingBox: CGRect {
@@ -516,6 +523,10 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
             }
             let halfW = strokeWidth / 2.0
             return CGRect(x: minX - halfW, y: minY - halfW, width: (maxX - minX) + strokeWidth, height: (maxY - minY) + strokeWidth)
+        }
+        if type == .measureCount, let center = measurementPoints.first {
+            let r = Self.countMarkerRadius + 1
+            return CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
         }
         if type == .measureLength || type == .measurePerimeter || type == .measureArea || type == .measureAngle {
             guard !measurementPoints.isEmpty else { return .zero }
@@ -626,6 +637,10 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
                 }
             }
             return false
+        }
+        if type == .measureCount {
+            guard let center = measurementPoints.first else { return false }
+            return hypot(pagePoint.x - center.x, pagePoint.y - center.y) <= Self.countMarkerRadius + tolerance
         }
         if type == .measurePerimeter {
             let effectiveTol = tolerance + strokeWidth / 2.0 + 3.0

@@ -93,6 +93,8 @@ extension PDFViewerViewModel {
                     md += "- **[Area Takeoff]** *(\(colorName))*: \(annot.measurementText.isEmpty ? annot.text : annot.measurementText)\n"
                 case .measureAngle:
                     md += "- **[Angle]** *(\(colorName))*: \(annot.measurementText.isEmpty ? annot.text : annot.measurementText)\n"
+                case .measureCount:
+                    md += "- **[Count]** *(\(colorName))*: \(annot.text)\n"
                 }
                 if let number = annot.documentObjectNumber, let thread = threadsByNumber[number] {
                     md += reviewDetailMarkdown(for: thread)

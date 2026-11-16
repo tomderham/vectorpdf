@@ -142,6 +142,17 @@ extension PDFViewerViewModel {
                         strokeWidth: strokeWidth
                     )
                 }
+            case .measureCount:
+                if let center = points.first {
+                    try doc.addCountMarker(
+                        pageIndex: pageIndex,
+                        center: center,
+                        group: label ?? formattedText,
+                        red: annotColor.rgb.red,
+                        green: annotColor.rgb.green,
+                        blue: annotColor.rgb.blue
+                    )
+                }
             default:
                 break
             }
@@ -167,6 +178,8 @@ extension PDFViewerViewModel {
         case .measureArea:
             let area = PDFMeasurementGeometry.shoelaceArea(points: points)
             return (area, scale.formatArea(pointsSquared: area))
+        case .measureCount:
+            return (1, "")
         case .measureAngle:
             guard points.count >= 3 else { return (0, "") }
             let degrees = PDFMeasurementGeometry.angleDegrees(r1: points[0], apex: points[1], r2: points[2])
@@ -182,7 +195,8 @@ extension PDFViewerViewModel {
     func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil, strokeWidth: CGFloat? = nil) -> PDFAnnotation {
         let points = points ?? annot.measurementPoints
         let (value, text) = measured(annot.type, points: points, pageIndex: annot.pageIndex)
-        let hasOwnLabel = !annot.text.isEmpty && annot.text != annot.measurementText
+        // A count marker's text is its group, whatever its point.
+        let hasOwnLabel = annot.type == .measureCount || (!annot.text.isEmpty && annot.text != annot.measurementText)
         var edited = PDFAnnotation(
             id: annot.id,
             pageIndex: annot.pageIndex,
@@ -261,10 +275,16 @@ extension PDFViewerViewModel {
         guard let doc = document else { return [] }
         var entries: [TakeoffEntry] = []
         for pageIndex in 0..<doc.pageCount {
-            let annots = doc.measurementAnnotations(pageIndex: pageIndex, shownOnly: true)
-            guard !annots.isEmpty else { continue }
+            let all = doc.measurementAnnotations(pageIndex: pageIndex, shownOnly: true)
+            guard !all.isEmpty else { continue }
             let scale = resolvedScaleConfig(for: pageIndex)
-            for annot in annots {
+            // Count markers are one row per group on each page, with how many there are.
+            let markers = all.filter { $0.type == .measureCount }
+            for (group, inGroup) in Dictionary(grouping: markers, by: \.text).sorted(by: { $0.key.localizedStandardCompare($1.key) == .orderedAscending }) {
+                guard let first = inGroup.first else { continue }
+                entries.append(TakeoffEntry(pageIndex: pageIndex, annotation: first, scale: scale, realValue: Double(inGroup.count), unitSymbol: "ea", formattedValue: "\(inGroup.count) \(group)"))
+            }
+            for annot in all where annot.type != .measureCount {
                 let realValue: Double
                 let unit: String
                 let formatted: String
@@ -318,8 +338,18 @@ extension PDFViewerViewModel {
         case .measurePerimeter: return "Perimeter"
         case .measureArea: return "Area Takeoff"
         case .measureAngle: return "Angle"
+        case .measureCount: return "Count"
         default: return "Measurement"
         }
+    }
+
+    /// How many of each Count group there are in `entries`, by group name.
+    public func takeoffCounts(_ entries: [TakeoffEntry]) -> [(group: String, count: Int)] {
+        var counts: [String: Int] = [:]
+        for entry in entries where entry.annotation.type == .measureCount {
+            counts[entry.annotation.text, default: 0] += Int(entry.realValue)
+        }
+        return counts.sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }.map { ($0.key, $0.value) }
     }
 
     public func generateTakeoffSummaryMarkdown() -> String {
@@ -359,6 +389,9 @@ extension PDFViewerViewModel {
         if let area = totals.area {
             md += "- **Total Calculated Surface Area:** \(area)\n"
         }
+        for (group, count) in takeoffCounts(entries) {
+            md += "- **Count, \(group):** \(count)\n"
+        }
         return md
     }
 
@@ -395,3 +428,49 @@ extension PDFViewerViewModel {
         }
     }
 }
+
+// MARK: - Count tool
+
+extension PDFViewerViewModel {
+    /// The group a Count marker is placed in: `countGroup`, or "Count" when that's blank.
+    public var effectiveCountGroup: String {
+        let group = countGroup.trimmingCharacters(in: .whitespacesAndNewlines)
+        return group.isEmpty ? "Count" : group
+    }
+
+    /// How many markers of `group` page `page` has.
+    public func countMarkers(onPage page: Int, group: String) -> Int {
+        guard let doc = document, page >= 0, page < doc.pageCount else { return 0 }
+        let revision = annotationChange.revision
+        if let cache = countCache, cache.revision == revision, cache.page == page {
+            return cache.counts[group] ?? 0
+        }
+        var counts: [String: Int] = [:]
+        for annot in doc.measurementAnnotations(pageIndex: page, shownOnly: true) where annot.type == .measureCount {
+            counts[annot.text, default: 0] += 1
+        }
+        countCache = (revision, page, counts)
+        return counts[group] ?? 0
+    }
+
+    /// The Count groups used in the document, by name.
+    public func countGroupsInDocument() -> [String] {
+        guard let doc = document else { return [] }
+        var groups = Set<String>()
+        for page in 0..<doc.pageCount {
+            for annot in doc.measurementAnnotations(pageIndex: page) where annot.type == .measureCount {
+                groups.insert(annot.text)
+            }
+        }
+        return groups.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    /// Places a Count marker in the current group at `point` on `page`.
+    @discardableResult
+    public func addCountMarker(pageIndex: Int, at point: CGPoint) -> PDFAnnotation? {
+        let group = effectiveCountGroup
+        return addMeasurementAnnotation(pageIndex: pageIndex, type: .measureCount, points: [point], value: 1,
+                                        formattedText: group, color: measurementColor, strokeWidth: measurementStrokeWidth, label: group)
+    }
+}
+

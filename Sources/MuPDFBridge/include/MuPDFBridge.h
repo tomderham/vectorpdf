@@ -133,7 +133,7 @@ int mupdf_pdf_delete_annot_by_objnum(fz_context *ctx, fz_document *doc, int page
 
 #define MUPDF_MEASUREMENT_MAX_POINTS 512
 typedef struct {
-    int kind;      /* 1 = length, 2 = perimeter, 3 = area, 4 = angle */
+    int kind;      /* 1 = length, 2 = perimeter, 3 = area, 4 = angle, 5 = count */
     int objnum;
     float r, g, b;
     int n_points;
@@ -247,6 +247,10 @@ int mupdf_pdf_add_angle_annot(fz_context *ctx, fz_document *doc, int pageno,
                               const char *text,
                               float r, float g, float b, float stroke_width,
                               const char **out_error);
+// A Count tool marker: a filled circle of `radius` round (x, y), page space, in group `label`. The
+// measurement listing reports it as kind 5, with its centre as its one point and `label` as text.
+int mupdf_pdf_add_count_annot(fz_context *ctx, fz_document *doc, int pageno, float x, float y, float radius,
+                              const char *label, float r, float g, float b, const char **out_error);
 int mupdf_pdf_set_page_scale(fz_context *ctx, fz_document *doc, int pageno,
                              const char *ratio_str, const char *unit_str,
                              float pts_per_unit, const char **out_error);

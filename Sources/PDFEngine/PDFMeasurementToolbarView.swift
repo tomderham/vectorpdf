@@ -70,6 +70,19 @@ public struct PDFMeasurementToolbarView: View {
                 } label: {
                     Image(systemName: "angle")
                 }
+
+                PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .measureCount,
+                    helpText: "Count Tool (Click each thing to count, such as outlets or doors)"
+                ) {
+                    viewModel.toggleTool(.measureCount)
+                } label: {
+                    Image(systemName: "number.circle")
+                }
+            }
+
+            if viewModel.canvasMode == .measureCount {
+                CountGroupControls(viewModel: viewModel)
             }
 
             Divider()
@@ -177,5 +190,43 @@ public struct PDFMeasurementToolbarView: View {
         .padding(.vertical, 4)
         .frame(height: 32)
         .background(Color(nsColor: .topWindowBarColor))
+    }
+}
+
+/// The Count tool's group (what's being counted) and how many are on the page.
+private struct CountGroupControls: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    @State private var groups: [String] = []
+
+    var body: some View {
+        HStack(spacing: 4) {
+            TextField("Group", text: $viewModel.countGroup)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.small)
+                .frame(width: 110)
+                .help("What you're counting, such as Outlets or Type A Doors. Each group is counted apart.")
+            Menu {
+                if groups.isEmpty {
+                    Text("No Groups in This Document Yet")
+                } else {
+                    ForEach(groups, id: \.self) { group in
+                        Button(group) { viewModel.countGroup = group }
+                    }
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Groups in This Document")
+            .onAppear { groups = viewModel.countGroupsInDocument() }
+            .onChange(of: viewModel.annotationChange.revision) { _, _ in groups = viewModel.countGroupsInDocument() }
+
+            Text("\(viewModel.countMarkers(onPage: viewModel.currentPageIndex, group: viewModel.effectiveCountGroup)) on this page")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .fixedSize()
+        }
     }
 }

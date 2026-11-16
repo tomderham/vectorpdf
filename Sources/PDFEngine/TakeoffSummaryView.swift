@@ -41,7 +41,7 @@ public struct TakeoffSummaryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Measurement Takeoff Summary")
                         .font(.headline)
-                    Text("Itemized schedule of lengths, perimeters, surface areas, and angles.")
+                    Text("Itemized schedule of lengths, perimeters, surface areas, angles and counts.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -68,7 +68,7 @@ public struct TakeoffSummaryView: View {
                         .foregroundColor(.secondary.opacity(0.6))
                     Text("No Measurements Found")
                         .font(.headline)
-                    Text("Use the Linear Dimension, Perimeter, Area, or Angle tools from the Measurement Toolbar to perform drawing takeoffs.")
+                    Text("Use the Linear Dimension, Perimeter, Area, Angle or Count tools from the Measurement Toolbar to perform drawing takeoffs.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -146,6 +146,15 @@ public struct TakeoffSummaryView: View {
                             Text("Total Area: \(formattedArea)")
                                 .font(.caption.monospacedDigit().weight(.medium))
                         }
+
+                        let counts = viewModel.takeoffCounts(items)
+                        if !counts.isEmpty {
+                            Text(counts.map { "\($0.group): \($0.count)" }.joined(separator: ", "))
+                                .font(.caption.monospacedDigit().weight(.medium))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .help(counts.map { "\($0.group): \($0.count)" }.joined(separator: "\n"))
+                        }
                     }
                 }
 
@@ -195,6 +204,7 @@ public struct TakeoffSummaryView: View {
         case .measurePerimeter: return "Perimeter"
         case .measureArea: return "Area Takeoff"
         case .measureAngle: return "Angle"
+        case .measureCount: return "Count"
         default: return "Measurement"
         }
     }

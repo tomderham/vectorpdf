@@ -503,7 +503,7 @@ extension PDFCanvasView {
                                 }
                             }
 
-                        case .measureLength, .measurePerimeter, .measureArea, .measureAngle:
+                        case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount:
                             // As a drag in progress leaves it, with its value worked out again.
                             let shown = draggedMeasurement(annot)
                             let isSelected = selectedAnnotation?.id == annot.id
@@ -511,6 +511,7 @@ extension PDFCanvasView {
                             case .measureLength: drawMeasureLength(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             case .measurePerimeter: drawMeasurePerimeter(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             case .measureArea: drawMeasureArea(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
+                            case .measureCount: drawCountMarker(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             default: drawMeasureAngle(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             }
                             if isSelected {

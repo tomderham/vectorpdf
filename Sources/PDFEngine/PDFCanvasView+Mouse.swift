@@ -225,11 +225,7 @@ extension PDFCanvasView {
         }
 
         // In measurement or calibration modes:
-        if viewModel.canvasMode == .measureLength ||
-           viewModel.canvasMode == .measurePerimeter ||
-           viewModel.canvasMode == .measureArea ||
-           viewModel.canvasMode == .measureAngle ||
-           viewModel.canvasMode == .calibrateScale {
+        if viewModel.canvasMode.isMeasuring {
 
             if let (pageIdx, _, rawPagePoint) = pageInfo(at: point) {
                 let prevPt = (currentMeasurePage == pageIdx) ? currentMeasurePoints.last : nil
@@ -282,6 +278,11 @@ extension PDFCanvasView {
                         }
                     }
                     currentMeasureCandidatePoint = snappedPoint
+                    needsDisplay = true
+
+                case .measureCount:
+                    // Each click counts one; nothing is selected, so the next can follow at once.
+                    viewModel.addCountMarker(pageIndex: pageIdx, at: snappedPoint)
                     needsDisplay = true
 
                 case .calibrateScale:
@@ -783,11 +784,7 @@ extension PDFCanvasView {
             return
         }
 
-        if viewModel.canvasMode == .measureLength ||
-           viewModel.canvasMode == .measurePerimeter ||
-           viewModel.canvasMode == .measureArea ||
-           viewModel.canvasMode == .measureAngle ||
-           viewModel.canvasMode == .calibrateScale {
+        if viewModel.canvasMode.isMeasuring {
 
             if hoveredLink != nil {
                 hoveredLink = nil

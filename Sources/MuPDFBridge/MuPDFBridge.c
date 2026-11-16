@@ -1680,6 +1680,42 @@ int mupdf_pdf_add_polygon_dimension_annot(fz_context *ctx, fz_document *doc, int
     return 0;
 }
 
+// A count marker (the Count tool): a filled Circle annotation of `radius` round (x, y), page space,
+// with a white rim so it shows on dark line work. /VPCount holds its group ("Outlets"), which is
+// also its /Contents, so other apps show the group in its pop-up; /Subj is "Count".
+int mupdf_pdf_add_count_annot(fz_context *ctx, fz_document *doc, int pageno, float x, float y, float radius,
+                              const char *label, float r, float g, float b, const char **out_error) {
+    if (!ctx || !doc || !label) return -1;
+    float rad = radius > 0.5f ? radius : 5.0f;
+    pdf_page *ppage = NULL;
+    pdf_annot *annot = NULL;
+    fz_var(ppage);
+    fz_var(annot);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        annot = pdf_create_annot(ctx, ppage, PDF_ANNOT_CIRCLE);
+        pdf_set_annot_rect(ctx, annot, fz_make_rect(x - rad, y - rad, x + rad, y + rad));
+        float white[3] = {1, 1, 1};
+        float fill[3] = {r, g, b};
+        pdf_set_annot_color(ctx, annot, 3, white);
+        pdf_set_annot_interior_color(ctx, annot, 3, fill);
+        pdf_set_annot_border_width(ctx, annot, rad * 0.2f);
+        pdf_set_annot_contents(ctx, annot, label);
+        pdf_dict_put_text_string(ctx, pdf_annot_obj(ctx, annot), PDF_NAME(Subj), "Count");
+        pdf_dict_puts_drop(ctx, pdf_annot_obj(ctx, annot), "VPCount", pdf_new_text_string(ctx, label));
+        pdf_update_annot(ctx, annot);
+    } fz_always(ctx) {
+        if (annot) pdf_drop_annot(ctx, annot);
+        if (ppage) pdf_drop_page(ctx, ppage);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return fz_caught(ctx) ? fz_caught(ctx) : -1;
+    }
+    return 0;
+}
+
 #define VP_SCALE_NAME "Drawing Scale"
 
 // Records the drawing scale as an ISO 32000 /VP viewport on the page. Replaces this app's own
@@ -2723,7 +2759,8 @@ int mupdf_pdf_describe_annot(fz_context *ctx, fz_document *doc, int pageno, int 
             }
             enum pdf_intent intent = pdf_annot_has_intent(ctx, annot) ? pdf_annot_intent(ctx, annot) : PDF_ANNOT_IT_DEFAULT;
             out->is_measurement = intent == PDF_ANNOT_IT_LINE_DIMENSION || intent == PDF_ANNOT_IT_POLYLINE_DIMENSION
-                || intent == PDF_ANNOT_IT_POLYGON_DIMENSION || pdf_dict_gets(ctx, pdf_annot_obj(ctx, annot), "Measure") != NULL;
+                || intent == PDF_ANNOT_IT_POLYGON_DIMENSION || pdf_dict_gets(ctx, pdf_annot_obj(ctx, annot), "Measure") != NULL
+                || pdf_dict_gets(ctx, pdf_annot_obj(ctx, annot), "VPCount") != NULL;
             found = 1;
         }
     } fz_always(ctx) {
@@ -3172,6 +3209,8 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                 kind = 2;
             } else if (atype == PDF_ANNOT_POLYGON && intent == PDF_ANNOT_IT_POLYGON_DIMENSION) {
                 kind = 3;
+            } else if (atype == PDF_ANNOT_CIRCLE && pdf_dict_gets(ctx, pdf_annot_obj(ctx, a), "VPCount")) {
+                kind = 5;
             } else if (atype == PDF_ANNOT_POLY_LINE && pdf_annot_vertex_count(ctx, a) == 3) {
                 const char *subj = pdf_dict_get_text_string(ctx, pdf_annot_obj(ctx, a), PDF_NAME(Subj));
                 /* Angles written before /Subj was added are recognised by their degree label. */
@@ -3191,7 +3230,9 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                 m->stroke_width = pdf_annot_has_border(ctx, a) ? pdf_annot_border_width(ctx, a) : 0;
                 int n_color = 0;
                 float color[4] = {0, 0, 0, 0};
-                pdf_annot_color(ctx, a, &n_color, color);
+                /* A count marker's color is its fill; its border is a white rim. */
+                if (kind == 5) pdf_annot_interior_color(ctx, a, &n_color, color);
+                else pdf_annot_color(ctx, a, &n_color, color);
                 if (n_color == 3) {
                     m->r = color[0]; m->g = color[1]; m->b = color[2];
                 } else if (n_color == 1) {
@@ -3206,6 +3247,12 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                     m->xy[2] = p1.x; m->xy[3] = p1.y;
                     /* Written negated (see mupdf_pdf_add_line_dimension). */
                     m->leader = -pdf_annot_line_leader(ctx, a);
+                } else if (kind == 5) {
+                    /* A count marker is at its circle's centre. */
+                    fz_rect rr = pdf_annot_rect(ctx, a);
+                    m->n_points = 1;
+                    m->xy[0] = (rr.x0 + rr.x1) / 2;
+                    m->xy[1] = (rr.y0 + rr.y1) / 2;
                 } else {
                     int n = pdf_annot_vertex_count(ctx, a);
                     if (n > MUPDF_MEASUREMENT_MAX_POINTS) n = MUPDF_MEASUREMENT_MAX_POINTS;
@@ -3216,7 +3263,11 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                     }
                     m->n_points = n;
                 }
-                if (contents) {
+                /* A count marker's text is its group, kept apart from /Contents. */
+                const char *group = kind == 5 ? pdf_to_text_string(ctx, pdf_dict_gets(ctx, pdf_annot_obj(ctx, a), "VPCount")) : NULL;
+                if (group && *group) {
+                    strncpy(m->text, group, sizeof(m->text) - 1);
+                } else if (contents) {
                     strncpy(m->text, contents, sizeof(m->text) - 1);
                 }
             }

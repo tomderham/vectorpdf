@@ -415,7 +415,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
         case .highlight: markupType = 0
         case .underline: markupType = 1
         case .strikeout: markupType = 2
-        case .ink, .freeText, .callout, .stamp, .note, .cloud, .square, .circle, .line, .other, .measureLength, .measurePerimeter, .measureArea, .measureAngle: return
+        case .ink, .freeText, .callout, .stamp, .note, .cloud, .square, .circle, .line, .other, .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount: return
         }
 
         let fzQuads = quads.map { $0.toFZQuad() }
@@ -957,6 +957,21 @@ public final class PDFDocumentCore: @unchecked Sendable {
 
     /// Writes an angle measurement (rays `points[0]` and `points[2]` meeting at apex `points[1]`)
     /// as a PolyLine annotation labelled with `text`.
+    /// A Count tool marker at `center` (page space) in `group`, such as "Outlets".
+    public func addCountMarker(pageIndex: Int, center: CGPoint, group: String, red: Float, green: Float, blue: Float) throws {
+        let name = group.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Count" : group
+        lock.lock()
+        defer { lock.unlock() }
+        var errorMsg: UnsafePointer<CChar>?
+        let ret = name.withCString { cName in
+            mupdf_pdf_add_count_annot(ctx, doc, Int32(pageIndex), Float(center.x), Float(center.y),
+                                      Float(PDFAnnotation.countMarkerRadius), cName, red, green, blue, &errorMsg)
+        }
+        if ret != 0 {
+            throw PDFError.saveFailed(errorMsg != nil ? String(cString: errorMsg!) : "Failed to add count marker")
+        }
+    }
+
     public func addAngleMeasurement(
         pageIndex: Int,
         points: [CGPoint],
@@ -1432,6 +1447,10 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 guard points.count >= 3 else { return nil }
                 type = .measureAngle
                 value = PDFMeasurementGeometry.angleDegrees(r1: points[0], apex: points[1], r2: points[2])
+            case 5:
+                guard points.count == 1 else { return nil }
+                type = .measureCount
+                value = 1
             default:
                 return nil
             }

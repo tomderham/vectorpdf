@@ -379,6 +379,18 @@ public final class PDFViewerViewModel: ObservableObject {
     }
     /// Set while a tool's style is being shown, so showing it isn't taken for choosing it.
     var isApplyingToolStyle = false
+    /// The Count tool's group: what each click counts, such as "Outlets". Kept between launches.
+    @Published public var countGroup: String = PDFViewerViewModel.savedCountGroup {
+        didSet {
+            if !Self.isRunningTests { UserDefaults.standard.set(countGroup, forKey: Self.countGroupKey) }
+        }
+    }
+    static let countGroupKey = "com.thomasderham.vectorpdf.countGroup"
+    static var savedCountGroup: String {
+        isRunningTests ? "Count" : (UserDefaults.standard.string(forKey: countGroupKey) ?? "Count")
+    }
+    /// Count markers on a page by group, read once per page and annotation change.
+    var countCache: (revision: Int, page: Int, counts: [String: Int])?
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
     @Published public var selectedLineEnding: PDFLineEnding = .closedArrow
@@ -517,7 +529,7 @@ public final class PDFViewerViewModel: ObservableObject {
                     canvasMode = .measureLength
                 }
             } else {
-                if canvasMode == .measureLength || canvasMode == .measurePerimeter || canvasMode == .measureArea || canvasMode == .measureAngle || canvasMode == .calibrateScale {
+                if canvasMode.isMeasuring {
                     canvasMode = .select
                 }
             }
