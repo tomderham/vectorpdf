@@ -233,7 +233,7 @@ extension PDFCanvasView {
                         case .freeText:
                             guard let initialRect = annot.rect, !annot.text.isEmpty else { continue }
                             var rect = initialRect
-                            if let drag = activeAnnotationDrag, drag.id == annot.id {
+                            if let drag = dragAffecting(annot) {
                                 rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
                             }
 
@@ -260,7 +260,7 @@ extension PDFCanvasView {
                             }
 
                             // If selected (and not inline editing), draw selection outline and corner handles
-                            if selectedAnnotation?.id == annot.id {
+                            if isAnnotationSelected(annot.id) {
                                 let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
                                 let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
                                 selPath.lineWidth = 1.5
@@ -296,7 +296,7 @@ extension PDFCanvasView {
                         case .note, .cloud, .square, .circle, .line, .polygon, .polyline:
                             guard let initialRect = annot.rect else { continue }
                             var rect = initialRect
-                            if let drag = activeAnnotationDrag, drag.id == annot.id {
+                            if let drag = dragAffecting(annot) {
                                 rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
                             }
                             let boxRect = NSRect(
@@ -306,7 +306,7 @@ extension PDFCanvasView {
                                 height: rect.height * viewModel.effectiveZoom
                             )
                             var pagePoints = annot.inkPoints(fittedTo: rect)
-                            if annot.type == .line, let drag = activeAnnotationDrag, drag.id == annot.id {
+                            if annot.type == .line, let drag = dragAffecting(annot) {
                                 pagePoints = updatedLineEnds(of: annot, part: drag.part, delta: drag.currentDelta)
                             }
                             let ends = pagePoints.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
@@ -320,7 +320,7 @@ extension PDFCanvasView {
                             default:
                                 drawShape(annot.type, box: boxRect, ends: ends, strokeWidth: annot.strokeWidth, ending: annot.lineEnding, color: annot.color.nsColor)
                             }
-                            if selectedAnnotation?.id == annot.id {
+                            if isAnnotationSelected(annot.id) {
                                 if annot.type == .line {
                                     drawEndHandles(ends)
                                 } else {
@@ -341,7 +341,7 @@ extension PDFCanvasView {
                             var targetPt = initialTargetPt
                             var kneePt = initialKneePt
 
-                            if let drag = activeAnnotationDrag, drag.id == annot.id {
+                            if let drag = dragAffecting(annot) {
                                 let dx = drag.currentDelta.width
                                 let dy = drag.currentDelta.height
                                 switch drag.part {
@@ -411,7 +411,7 @@ extension PDFCanvasView {
                             borderPath.stroke()
 
                             // If selected (and not inline editing), draw selection border and target/knee/corner handles
-                            if selectedAnnotation?.id == annot.id && activeEditingAnnotation == nil {
+                            if isAnnotationSelected(annot.id) && activeEditingAnnotation == nil {
                                 let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
                                 let selPath = NSBezierPath(roundedRect: selRect, xRadius: 4, yRadius: 4)
                                 selPath.lineWidth = 1.5
@@ -466,7 +466,7 @@ extension PDFCanvasView {
                         case .stamp:
                             guard let initialRect = annot.rect, let data = annot.stampImageData, let img = NSImage(data: data) else { continue }
                             var rect = initialRect
-                            if let drag = activeAnnotationDrag, drag.id == annot.id {
+                            if let drag = dragAffecting(annot) {
                                 rect = updatedRect(from: initialRect, part: drag.part, delta: drag.currentDelta)
                             }
 
@@ -479,7 +479,7 @@ extension PDFCanvasView {
                             img.draw(in: boxRect)
 
                             // If selected, draw selection outline and corner handles
-                            if selectedAnnotation?.id == annot.id {
+                            if isAnnotationSelected(annot.id) {
                                 let selRect = boxRect.insetBy(dx: -2.5, dy: -2.5)
                                 let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
                                 selPath.lineWidth = 1.5
@@ -506,7 +506,7 @@ extension PDFCanvasView {
                         case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount:
                             // As a drag in progress leaves it, with its value worked out again.
                             let shown = draggedMeasurement(annot)
-                            let isSelected = selectedAnnotation?.id == annot.id
+                            let isSelected = isAnnotationSelected(annot.id)
                             switch annot.type {
                             case .measureLength: drawMeasureLength(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             case .measurePerimeter: drawMeasurePerimeter(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)

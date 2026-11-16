@@ -132,6 +132,17 @@ extension PDFCanvasView {
             case .measureAngle: removeTitle = "Delete Angle Measurement"
             case .measureCount: removeTitle = "Delete Count Marker"
             }
+            // One of several selected: commands for all of them.
+            if isAnnotationSelected(hitAnnot.id), !groupSelection.isEmpty {
+                let count = allSelectedAnnotationIDs.count
+                menu.addItem(makeAlignItem(count: count))
+                menu.addItem(NSMenuItem.separator())
+                let deleteAll = NSMenuItem(title: "Delete \(count) Annotations", action: #selector(deleteSelectedAnnotationsAction(_:)), keyEquivalent: "")
+                deleteAll.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
+                deleteAll.target = self
+                menu.addItem(deleteAll)
+                return menu
+            }
             let removeItem = NSMenuItem(title: removeTitle, action: #selector(removeHitAnnotationAction(_:)), keyEquivalent: "")
             removeItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
             removeItem.target = self
@@ -608,3 +619,58 @@ extension PDFCanvasView {
         startInlineEditing(annotation: annot, pageIndex: annot.pageIndex)
     }
 }
+
+extension PDFCanvasView {
+    private static let alignments: [(String, String, AnnotationAlignment)] = [
+        ("Align Left Edges", "align.horizontal.left", .left),
+        ("Align Centers Horizontally", "align.horizontal.center", .centerX),
+        ("Align Right Edges", "align.horizontal.right", .right),
+        ("Align Top Edges", "align.vertical.top", .top),
+        ("Align Centers Vertically", "align.vertical.center", .centerY),
+        ("Align Bottom Edges", "align.vertical.bottom", .bottom),
+    ]
+
+    /// Align ▸ for several selected annotations, and Distribute for three or more.
+    func makeAlignItem(count: Int) -> NSMenuItem {
+        let item = NSMenuItem(title: "Align", action: nil, keyEquivalent: "")
+        item.image = NSImage(systemSymbolName: "align.horizontal.left", accessibilityDescription: nil)
+        let submenu = NSMenu(title: "Align")
+        for (index, (title, symbol, _)) in Self.alignments.enumerated() {
+            let entry = NSMenuItem(title: title, action: #selector(alignSelectedAction(_:)), keyEquivalent: "")
+            entry.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+            entry.target = self
+            entry.tag = index
+            submenu.addItem(entry)
+            if index == 2 { submenu.addItem(.separator()) }
+        }
+        if count >= 3 {
+            submenu.addItem(.separator())
+            for (tag, title, symbol) in [(100, "Distribute Horizontally", "distribute.horizontal.center"), (101, "Distribute Vertically", "distribute.vertical.center")] {
+                let entry = NSMenuItem(title: title, action: #selector(alignSelectedAction(_:)), keyEquivalent: "")
+                entry.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+                entry.target = self
+                entry.tag = tag
+                submenu.addItem(entry)
+            }
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    @objc func alignSelectedAction(_ sender: NSMenuItem) {
+        let alignment: AnnotationAlignment
+        switch sender.tag {
+        case 100: alignment = .distributeX
+        case 101: alignment = .distributeY
+        default:
+            guard Self.alignments.indices.contains(sender.tag) else { return }
+            alignment = Self.alignments[sender.tag].2
+        }
+        alignSelectedAnnotations(alignment)
+    }
+
+    @objc func deleteSelectedAnnotationsAction(_ sender: Any?) {
+        forEachSelectedAnnotation { deleteSelectedAnnotation() }
+    }
+}
+

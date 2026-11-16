@@ -17,6 +17,7 @@ Right-click, or Control-click, to see commands for what's under the pointer. The
 | A note, or the outline of a rectangle, oval or revision cloud | Comments…, and the delete command |
 | A line or arrow | Comments…, Line Ending, and the delete command |
 | A drawing, stamp or measurement | Comments…, and the delete command |
+| One of several selected annotations | Align (edges and centers; Distribute with three or more), Delete with how many |
 | A shape, cloud, line, note, stamp or text box saved in the document earlier, or made in another app | Comments…, Line Ending for a line, and the delete command |
 | A highlight, drawing or measurement saved in the document earlier, or made in another app | Comments…, and the commands for anywhere else on the page |
 | Anywhere else on the page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

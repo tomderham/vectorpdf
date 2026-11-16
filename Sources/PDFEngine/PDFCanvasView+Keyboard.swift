@@ -178,7 +178,7 @@ extension PDFCanvasView {
         // Delete / Backspace: Delete selected annotation
         if (event.keyCode == 51 || event.keyCode == 117) && activeInlineTextField == nil {
             if selectedAnnotation != nil {
-                deleteSelectedAnnotation()
+                forEachSelectedAnnotation { deleteSelectedAnnotation() }
                 return
             }
         }
@@ -214,7 +214,7 @@ extension PDFCanvasView {
                     let v = geometry.pageVector(forCanvasVector: CGSize(width: dx * zoom, height: dy * zoom))
                     (dx, dy) = (v.width.rounded(), v.height.rounded())
                 }
-                nudgeSelectedAnnotation(dx: dx, dy: dy)
+                forEachSelectedAnnotation { nudgeSelectedAnnotation(dx: dx, dy: dy) }
                 return
             }
         }

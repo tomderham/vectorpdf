@@ -683,3 +683,124 @@ extension PDFCanvasView {
         return false
     }
 }
+
+// MARK: - Several annotations selected
+
+extension PDFCanvasView {
+    /// The selected annotation and the rest of its group, in order.
+    var allSelectedAnnotationIDs: [UUID] {
+        guard let primary = selectedAnnotation else { return [] }
+        return [primary.id] + groupSelection
+    }
+
+    func isAnnotationSelected(_ id: UUID) -> Bool {
+        selectedAnnotation?.id == id || groupSelection.contains(id)
+    }
+
+    /// How a drag in progress carries `annot`: the one dragged, or the rest of its group when
+    /// the whole of it is being moved.
+    func dragAffecting(_ annot: PDFAnnotation) -> (part: DraggingAnnotationPart, currentDelta: CGSize)? {
+        guard let drag = activeAnnotationDrag else { return nil }
+        if drag.id == annot.id { return (drag.part, drag.currentDelta) }
+        if drag.part == .entireAnnotation, groupSelection.contains(annot.id) || selectedAnnotation?.id == annot.id {
+            return (.entireAnnotation, drag.currentDelta)
+        }
+        return nil
+    }
+
+    /// Runs `edit` on each selected annotation in turn, as the selected one, as one Undo step,
+    /// then keeps them all selected under the IDs the edits gave them.
+    func forEachSelectedAnnotation(_ edit: () -> Void) {
+        guard let primary = selectedAnnotation, !groupSelection.isEmpty else {
+            edit()
+            return
+        }
+        let page = primary.pageIndex
+        let ids = allSelectedAnnotationIDs
+        viewModel.undoManager.beginUndoGrouping()
+        isEditingGroup = true
+        var kept: [UUID] = []
+        for id in ids where viewModel.pageAnnotations[page]?.contains(where: { $0.id == id }) == true {
+            selectedAnnotation = (id: id, pageIndex: page)
+            edit()
+            if let now = selectedAnnotation { kept.append(now.id) }
+        }
+        isEditingGroup = false
+        viewModel.undoManager.endUndoGrouping()
+        selectedAnnotation = kept.first.map { (id: $0, pageIndex: page) }
+        groupSelection = Array(kept.dropFirst())
+        needsDisplay = true
+    }
+
+    /// ⇧-click on an annotation: adds it to the selection, or takes it out.
+    func toggleInSelection(_ annot: PDFAnnotation, pageIndex: Int) {
+        guard let primary = selectedAnnotation, primary.pageIndex == pageIndex else {
+            groupSelection = []
+            selectedAnnotation = (id: annot.id, pageIndex: pageIndex)
+            needsDisplay = true
+            return
+        }
+        if primary.id == annot.id {
+            let rest = groupSelection
+            isEditingGroup = true
+            selectedAnnotation = rest.first.map { (id: $0, pageIndex: pageIndex) }
+            isEditingGroup = false
+            groupSelection = Array(rest.dropFirst())
+        } else if let index = groupSelection.firstIndex(of: annot.id) {
+            groupSelection.remove(at: index)
+        } else {
+            groupSelection.append(annot.id)
+        }
+        needsDisplay = true
+    }
+
+    /// The selected annotations as they are now.
+    var selectedAnnotationsNow: [PDFAnnotation] {
+        guard let page = selectedAnnotation?.pageIndex, let list = viewModel.pageAnnotations[page] else { return [] }
+        return allSelectedAnnotationIDs.compactMap { id in list.first { $0.id == id } }
+    }
+
+    enum AnnotationAlignment {
+        case left, centerX, right, top, centerY, bottom, distributeX, distributeY
+    }
+
+    /// Lines the selected annotations up by their boxes, or spaces them evenly (three or more),
+    /// as one Undo step.
+    func alignSelectedAnnotations(_ alignment: AnnotationAlignment) {
+        let annots = selectedAnnotationsNow
+        guard annots.count >= 2, let page = selectedAnnotation?.pageIndex else { return }
+        let boxes = Dictionary(uniqueKeysWithValues: annots.map { ($0.id, $0.boundingRect) })
+        let all = annots.map(\.boundingRect)
+        var deltas: [UUID: CGSize] = [:]
+        switch alignment {
+        case .left: let x = all.map(\.minX).min()!; for a in annots { deltas[a.id] = CGSize(width: x - boxes[a.id]!.minX, height: 0) }
+        case .right: let x = all.map(\.maxX).max()!; for a in annots { deltas[a.id] = CGSize(width: x - boxes[a.id]!.maxX, height: 0) }
+        case .centerX:
+            let x = (all.map(\.minX).min()! + all.map(\.maxX).max()!) / 2
+            for a in annots { deltas[a.id] = CGSize(width: x - boxes[a.id]!.midX, height: 0) }
+        case .top: let y = all.map(\.minY).min()!; for a in annots { deltas[a.id] = CGSize(width: 0, height: y - boxes[a.id]!.minY) }
+        case .bottom: let y = all.map(\.maxY).max()!; for a in annots { deltas[a.id] = CGSize(width: 0, height: y - boxes[a.id]!.maxY) }
+        case .centerY:
+            let y = (all.map(\.minY).min()! + all.map(\.maxY).max()!) / 2
+            for a in annots { deltas[a.id] = CGSize(width: 0, height: y - boxes[a.id]!.midY) }
+        case .distributeX, .distributeY:
+            guard annots.count >= 3 else { return }
+            let across = alignment == .distributeX
+            let sorted = annots.sorted { across ? boxes[$0.id]!.midX < boxes[$1.id]!.midX : boxes[$0.id]!.midY < boxes[$1.id]!.midY }
+            let first = across ? boxes[sorted.first!.id]!.midX : boxes[sorted.first!.id]!.midY
+            let last = across ? boxes[sorted.last!.id]!.midX : boxes[sorted.last!.id]!.midY
+            let step = (last - first) / CGFloat(sorted.count - 1)
+            for (i, a) in sorted.enumerated() {
+                let target = first + step * CGFloat(i)
+                let now = across ? boxes[a.id]!.midX : boxes[a.id]!.midY
+                deltas[a.id] = across ? CGSize(width: target - now, height: 0) : CGSize(width: 0, height: target - now)
+            }
+        }
+        forEachSelectedAnnotation { [self] in
+            guard let sel = selectedAnnotation, let annot = viewModel.pageAnnotations[page]?.first(where: { $0.id == sel.id }),
+                  let delta = deltas[annot.id], hypot(delta.width, delta.height) > 0.01 else { return }
+            commitAnnotationEdit(annot, pageIndex: page, part: .entireAnnotation, delta: delta, minimumDistance: (0, 0))
+        }
+    }
+}
+

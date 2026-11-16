@@ -145,10 +145,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
     var selectedAnnotation: (id: UUID, pageIndex: Int)? {
         didSet {
+            if selectedAnnotation == nil && !isEditingGroup { groupSelection = [] }
             let inspected = selectedAnnotation.map { InspectedAnnotation(id: $0.id, pageIndex: $0.pageIndex) }
             if viewModel.inspectedAnnotation != inspected { viewModel.inspectedAnnotation = inspected }
         }
     }
+    /// Annotations selected with the selected one (⇧-click), on its page: moved, nudged,
+    /// recolored, aligned and deleted together. Their IDs change as they're edited.
+    var groupSelection: [UUID] = []
+    /// Set while each of the group is edited in turn as the selected one.
+    var isEditingGroup = false
     var activeAnnotationDrag: (
         id: UUID,
         pageIndex: Int,
@@ -356,7 +362,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newColor in
                 guard self?.hasLiveViewModel == true else { return }
-                self?.handleAnnotationColorChanged(newColor)
+                self?.forEachSelectedAnnotation { self?.handleAnnotationColorChanged(newColor) }
             }
             .store(in: &cancellables)
 
@@ -366,7 +372,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newColor in
                 guard self?.hasLiveViewModel == true else { return }
-                self?.handleMeasurementColorChanged(newColor)
+                self?.forEachSelectedAnnotation { self?.handleMeasurementColorChanged(newColor) }
             }
             .store(in: &cancellables)
 
@@ -376,7 +382,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] width in
                 guard self?.hasLiveViewModel == true else { return }
-                self?.handleMeasurementStrokeWidthChanged(width)
+                self?.forEachSelectedAnnotation { self?.handleMeasurementStrokeWidthChanged(width) }
             }
             .store(in: &cancellables)
 
@@ -386,7 +392,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] width in
                 guard self?.hasLiveViewModel == true else { return }
-                self?.restyleSelectedShape(strokeWidth: width)
+                self?.forEachSelectedAnnotation { self?.restyleSelectedShape(strokeWidth: width) }
             }
             .store(in: &cancellables)
 
@@ -447,7 +453,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] ending in
                 guard self?.hasLiveViewModel == true else { return }
-                self?.restyleSelectedShape(lineEnding: ending)
+                self?.forEachSelectedAnnotation { self?.restyleSelectedShape(lineEnding: ending) }
             }
             .store(in: &cancellables)
 

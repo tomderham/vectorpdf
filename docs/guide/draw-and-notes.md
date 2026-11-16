@@ -1,4 +1,4 @@
-<!-- keywords: draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
+<!-- keywords: select several, multiple, align, distribute, group, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
 
 # Draw, add notes, text and callouts
 
@@ -98,6 +98,17 @@ You can change annotations that were already in the document, such as another re
 - Select one and choose a color, line width or line ending in the Markup toolbar to change it. VectorPDF then draws it again in its own style.
 
 Highlights, underlines, strikethroughs, freehand drawings and measurements from the file stay where they are, as yours do, but you can delete them or reply to them. You can't edit the text of a text box from another app.
+
+## Change several annotations at once
+
+In Text Selection mode, select an annotation, then hold ⇧ and click others on the same page to add them; ⇧-click one again to take it out. Then:
+
+- **Move them:** drag any of them, or press the arrow keys.
+- **Change their color or line width:** choose it in the toolbar.
+- **Line them up:** right-click one of them and choose Align, then an edge or center. With three or more, Distribute Horizontally or Distribute Vertically spaces them evenly.
+- **Delete them:** press Delete, or right-click one and choose Delete, which says how many.
+
+Each of these is one step for Undo. Click anywhere else to select just one again.
 
 ## Undo a change
 

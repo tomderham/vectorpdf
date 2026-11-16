@@ -167,24 +167,39 @@ extension PDFCanvasView {
                     } else if event.clickCount == 2 && hit.type != .stamp {
                         startInlineEditing(annotation: hit, pageIndex: pageIdx)
                         return
+                    } else if event.modifierFlags.contains(.shift), viewModel.canvasMode == .select {
+                        // ⇧-click adds it to the selection, or takes it out.
+                        toggleInSelection(hit, pageIndex: pageIdx)
+                        return
                     } else {
-                        selectedAnnotation = (id: hit.id, pageIndex: pageIdx)
-                        if let fs = hit.fontSize {
-                            viewModel.selectedFontSize = fs
-                        }
-                        // The toolbar for its kind shows its color, to change it.
-                        if hit.isMeasurement {
-                            viewModel.measurementColor = hit.color
-                            viewModel.measurementStrokeWidth = hit.strokeWidth
+                        // Clicking one of several selected keeps them all, to drag together.
+                        if isAnnotationSelected(hit.id), !groupSelection.isEmpty {
+                            groupSelection = allSelectedAnnotationIDs.filter { $0 != hit.id }
                         } else {
-                            viewModel.selectedAnnotationColor = hit.color
+                            groupSelection = []
                         }
-                        // The toolbar shows the shape's own width and ending, to change them.
-                        if hit.type == .square || hit.type == .circle || hit.type == .line {
-                            viewModel.drawStrokeWidth = hit.strokeWidth
-                        }
-                        if hit.type == .line, let ending = hit.lineEnding {
-                            viewModel.selectedShapeLineEnding = ending
+                        selectedAnnotation = (id: hit.id, pageIndex: pageIdx)
+                        // The toolbar shows its style, to change it; not for several at once, whose
+                        // styles differ, since changing the toolbar changes them all.
+                        if groupSelection.isEmpty {
+                            if let fs = hit.fontSize {
+                                viewModel.selectedFontSize = fs
+                            }
+                            // The toolbar for its kind shows its color, to change it.
+                            if hit.isMeasurement {
+                                viewModel.measurementColor = hit.color
+                                viewModel.measurementStrokeWidth = hit.strokeWidth
+                            } else {
+                                viewModel.selectedAnnotationColor = hit.color
+                            }
+                            // The toolbar shows the shape's own width and ending, to change them.
+                            if hit.type == .square || hit.type == .circle || hit.type == .line || hit.isPolyShape {
+                                viewModel.drawStrokeWidth = hit.strokeWidth
+                            }
+                            if hit.type == .line || hit.type == .polyline, let ending = hit.lineEnding {
+                                viewModel.selectedShapeLineEnding = ending
+                            }
+
                         }
 
                         let part: DraggingAnnotationPart
@@ -589,7 +604,17 @@ extension PDFCanvasView {
         }
         if let drag = activeAnnotationDrag {
             activeAnnotationDrag = nil
-            commitAnnotationEdit(drag.initialAnnotation, pageIndex: drag.pageIndex, part: drag.part, delta: drag.currentDelta)
+            if drag.part == .entireAnnotation, !groupSelection.isEmpty, drag.currentDelta != .zero {
+                // The rest of the group moves with it.
+                let delta = drag.currentDelta
+                forEachSelectedAnnotation { [self] in
+                    guard let sel = selectedAnnotation,
+                          let annot = viewModel.pageAnnotations[sel.pageIndex]?.first(where: { $0.id == sel.id }) else { return }
+                    commitAnnotationEdit(annot, pageIndex: sel.pageIndex, part: .entireAnnotation, delta: delta)
+                }
+            } else {
+                commitAnnotationEdit(drag.initialAnnotation, pageIndex: drag.pageIndex, part: drag.part, delta: drag.currentDelta)
+            }
             needsDisplay = true
             return
         }

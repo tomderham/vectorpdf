@@ -516,7 +516,7 @@ extension PDFCanvasView {
 
     /// A measurement as drawn: as the drag in progress leaves it, if it's being dragged.
     func draggedMeasurement(_ annot: PDFAnnotation) -> PDFAnnotation {
-        guard let drag = activeAnnotationDrag, drag.id == annot.id, drag.currentDelta != .zero else { return annot }
+        guard let drag = dragAffecting(annot), drag.currentDelta != .zero else { return annot }
         return editedMeasurement(annot, part: drag.part, delta: drag.currentDelta)
     }
 

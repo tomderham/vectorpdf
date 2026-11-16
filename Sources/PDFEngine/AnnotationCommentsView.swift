@@ -240,7 +240,7 @@ extension PDFCanvasView {
         } else if let fresh = viewModel.document?.renderAnnotation(pageIndex: annot.pageIndex, objectNumber: number, scale: scale) {
             fileAnnotationPictures[number] = (annot.appearanceRevision, scale, fresh.image, fresh.bounds)
         }
-        let drag = activeAnnotationDrag.flatMap { $0.id == annot.id ? $0 : nil }
+        let drag = dragAffecting(annot)
         var rect = initialRect
         var ends = annot.inkPoints
         if let drag {
@@ -272,7 +272,7 @@ extension PDFCanvasView {
         if let drag, drag.part == .lineStart || drag.part == .lineEnd, canvasEnds.count >= 2 {
             drawShape(.line, box: .zero, ends: canvasEnds, strokeWidth: annot.strokeWidth, ending: annot.lineEnding, color: annot.color.nsColor)
         }
-        guard selectedAnnotation?.id == annot.id else { return }
+        guard isAnnotationSelected(annot.id) else { return }
         if annot.type == .line {
             drawEndHandles(canvasEnds)
             return
