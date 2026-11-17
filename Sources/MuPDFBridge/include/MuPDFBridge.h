@@ -496,6 +496,40 @@ int mupdf_pdf_list_signatures(fz_context *ctx, fz_document *doc, int *out, int c
 // For the signed signature field `objnum`. Free with mupdf_pdf_free_signature_data.
 int mupdf_pdf_signature_data(fz_context *ctx, fz_document *doc, int objnum, mupdf_signature_data *out, const char **out_error);
 void mupdf_pdf_free_signature_data(fz_context *ctx, mupdf_signature_data *data);
+// Headers, footers and watermarks (PageMarks.c), drawn into pages as content streams of their own
+// so they can be taken off again. Colours are RGB, 0 to 1; sizes and margins in points, measured
+// on the page as shown (after its rotation and crop).
+#define MUPDF_PAGE_MARK_HEADER_FOOTER 1
+#define MUPDF_PAGE_MARK_WATERMARK 2
+typedef struct {
+    /* Top left, centre, right, then bottom left, centre, right; NULL or empty for none. */
+    const char *text[6];
+    int font;  /* 0 Helvetica, 1 Times, 2 Courier, 3 Helvetica Bold */
+    float size;
+    float color[3];
+    float margin_top, margin_bottom, margin_left, margin_right;
+} mupdf_header_footer;
+typedef struct {
+    const char *text;  /* lines separated by \n */
+    int font;
+    float size;  /* 0 for as large as fits */
+    float color[3];
+    float opacity;
+    float rotation;  /* degrees, anticlockwise */
+    int behind;  /* drawn before the page's content rather than over it */
+} mupdf_watermark;
+int mupdf_page_add_header_footer(fz_context *ctx, fz_document *doc, int pageno, const mupdf_header_footer *hf, const char **out_error);
+int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_watermark *wm, const char **out_error);
+// Which kinds of mark the document's pages have (MUPDF_PAGE_MARK_* bits).
+int mupdf_pdf_page_marks(fz_context *ctx, fz_document *doc);
+// Removes the marks of the kinds in `mask` from every page; returns how many were removed.
+int mupdf_pdf_remove_page_marks(fz_context *ctx, fz_document *doc, int mask, const char **out_error);
+// The settings the marks were made with, as given to mupdf_pdf_set_page_marks_settings (JSON);
+// NULL if none. Free with fz_free.
+char *mupdf_pdf_page_marks_settings(fz_context *ctx, fz_document *doc);
+// NULL or empty removes them.
+int mupdf_pdf_set_page_marks_settings(fz_context *ctx, fz_document *doc, const char *json, const char **out_error);
+
 typedef struct {
     char name[256];
     /* -1 if it doesn't resolve to a page; x, y in page (top-down) coordinates. */

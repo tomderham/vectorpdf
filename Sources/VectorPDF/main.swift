@@ -702,6 +702,13 @@ struct VectorPDF: App {
 
             Divider()
 
+            Button("Headers, Footers and Watermark…") {
+                resolvedViewModel?.showPageMarks()
+            }
+            .disabled(!canEditDocument)
+
+            Divider()
+
             Menu("Speech") {
                 // No shortcut: ⌥⌘S is Save Encrypted with Password.
                 Button("Start Speaking") {

@@ -615,6 +615,7 @@ public final class PDFViewerViewModel: ObservableObject {
     // Document Inspection & Metadata
     @Published public var isShowingDocumentProperties: Bool = false
     @Published public var isShowingSplitPDF: Bool = false
+    @Published public var isShowingPageMarks: Bool = false
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Redaction, Callout & On-Device OCR

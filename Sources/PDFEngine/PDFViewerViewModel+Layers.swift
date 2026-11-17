@@ -389,7 +389,7 @@ extension PDFViewerViewModel {
 
     /// Saves the document to its working copy and opens the renderer and search on it again, for
     /// a change their copies don't have, then redraws `pages`.
-    private func refreshRendererCopy(pages: Set<Int>) {
+    func refreshRendererCopy(pages: Set<Int>) {
         guard let doc = document else { return }
         if workingCopyPath == nil {
             workingCopyPath = Self.newWorkingCopyPath()

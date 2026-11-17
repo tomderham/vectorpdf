@@ -60,6 +60,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 
 - [Rearrange pages](pages.md)
 - [Split a PDF](split-pdf.md)
+- [Headers, footers, Bates numbers and watermarks](headers-footers-watermarks.md)
 - [Redact sensitive content](redact.md)
 - [Passwords and encryption](passwords.md)
 

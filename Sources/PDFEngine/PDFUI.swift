@@ -1943,6 +1943,9 @@ private struct ViewerSheetsModifier: ViewModifier {
             .sheet(isPresented: $viewModel.isShowingSplitPDF) {
                 PDFSplitPDFView(viewModel: viewModel)
             }
+            .sheet(isPresented: $viewModel.isShowingPageMarks) {
+                PageMarksSheet(viewModel: viewModel)
+            }
             .sheet(isPresented: $viewModel.isShowingCalibrationSheet) {
                 ScaleCalibrationSheet(viewModel: viewModel)
             }
