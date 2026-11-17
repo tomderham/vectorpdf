@@ -12,7 +12,7 @@ To finish with a tool, press Escape, click the tool again, or choose Select, the
 
 Choose **Select**, the arrow at the start of the Markup toolbar, or of the Measurement toolbar. With Select, you can select text, and annotations and measurements too:
 
-- **Point at one** and a dashed outline shows what a click picks up. For a rectangle, oval, polygon or cloud, point at its outline: inside it, a click selects the text there.
+- **Point at one** and a dashed outline shows what a click picks up. For a rectangle, oval, polygon or cloud, point at its outline, and for a freehand drawing, at its line: elsewhere, a click selects the text there.
 - **Click it** to select it. Then drag it to move it, drag a handle to resize or reshape it, press the arrow keys to nudge it, choose a color or width in the toolbar, or press Delete. Right-click it for its commands.
 - **Select several:** ⇧-click each one, or hold ⌥ and drag across them to select everything entirely inside the area. Choose Edit > Select All Annotations on Page (⌥⌘A) for all of them. See [Change several annotations at once](#change-several-annotations-at-once).
 
@@ -21,6 +21,8 @@ While a drawing or measuring tool is in use, clicking makes something new, so ch
 ## Draw freehand
 
 Choose the pen tool, set the line width, then drag on the page. Choose a width in points from the line width box, or type one, from 0.1 to 72 points.
+
+To move a drawing, change its color or width, or delete it, choose Select and click its line. With the pen, clicking a drawing draws over it instead.
 
 ## Draw a shape
 

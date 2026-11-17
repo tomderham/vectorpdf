@@ -185,7 +185,7 @@ extension PDFCanvasView {
                                 viewModel.selectedAnnotationColor = hit.color
                             }
                             // The toolbar shows the shape's own width and ending, to change them.
-                            if hit.type == .square || hit.type == .circle || hit.type == .line || hit.isPolyShape {
+                            if hit.type == .square || hit.type == .circle || hit.type == .line || hit.isPolyShape || hit.type == .ink {
                                 viewModel.drawStrokeWidth = hit.strokeWidth
                             }
                             if hit.type == .line || hit.type == .polyline, let ending = hit.lineEnding {
@@ -1040,6 +1040,12 @@ extension PDFCanvasView {
                 ) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
+            } else if orig.type == .ink {
+                // A drawing moves as a whole.
+                let moved = orig.inkPoints.map { CGPoint(x: $0.x + dx, y: $0.y + dy) }
+                if let updated = viewModel.addInkAnnotation(pageIndex: pIdx, points: moved, strokeWidth: orig.strokeWidth, color: orig.color) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
             } else if orig.type == .stamp {
                 let rect = updatedRect(from: orig.rect ?? CGRect(x: 50, y: 50, width: 140, height: 50), part: part, delta: delta)
                 if let data = orig.stampImageData, let updated = viewModel.addStampAnnotation(pageIndex: pIdx, rect: rect, imageData: data, color: orig.color) {
@@ -1061,6 +1067,8 @@ extension PDFCanvasView {
         if let shown = list.reversed().first(where: { annot in
             if annot.isFromFile { return annot.documentObjectNumber == fileHit }
             if annot.isMeasurement { return viewModel.canvasMode == .select && measurementHit(annot, at: pagePoint) }
+            // A drawing only with Select: in the other tools a click on one starts something new.
+            if annot.type == .ink { return viewModel.canvasMode == .select && annot.contains(pagePoint: pagePoint, tolerance: 6.0) }
             return (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape) && annot.contains(pagePoint: pagePoint, tolerance: 6.0)
         }) {
             return shown

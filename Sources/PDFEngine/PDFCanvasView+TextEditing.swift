@@ -141,7 +141,8 @@ extension PDFCanvasView {
         guard activeInlineTextField == nil,
               let (targetId, pIdx) = selectedAnnotation,
               let annot = viewModel.pageAnnotations[pIdx]?.first(where: { $0.id == targetId }),
-              annot.type == .square || annot.type == .circle || annot.type == .line || annot.isPolyShape || (annot.isFromFile && annot.type == .cloud) else { return }
+              annot.type == .square || annot.type == .circle || annot.type == .line || annot.isPolyShape || annot.type == .ink
+                || (annot.isFromFile && (annot.type == .cloud || annot.fileSubtype == "Ink")) else { return }
         let widthChanges = strokeWidth.map { $0 != annot.strokeWidth } ?? false
         let endingChanges = (annot.type == .line || annot.type == .polyline) && (lineEnding.map { $0 != annot.lineEnding } ?? false)
         guard widthChanges || endingChanges else { return }
@@ -154,6 +155,13 @@ extension PDFCanvasView {
         }
         viewModel.beginReplacingAnnotation(annot)
         defer { viewModel.finishReplacingAnnotation() }
+        if annot.type == .ink {
+            if let updated = viewModel.addInkAnnotation(pageIndex: pIdx, points: annot.inkPoints, strokeWidth: strokeWidth ?? annot.strokeWidth, color: annot.color) {
+                selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+            }
+            needsDisplay = true
+            return
+        }
         if let updated = viewModel.addRestyledShape(annot, strokeWidth: widthChanges ? strokeWidth : nil, lineEnding: endingChanges ? lineEnding : nil) {
             selectedAnnotation = (id: updated.id, pageIndex: pIdx)
         }
@@ -350,9 +358,17 @@ extension PDFCanvasView {
             needsDisplay = true
             return
         }
-        guard orig.type == .callout || orig.type == .freeText || orig.type == .note || orig.isShape || (orig.type == .stamp && orig.stampImageData != nil) else { return }
+        guard orig.type == .callout || orig.type == .freeText || orig.type == .note || orig.type == .ink || orig.isShape || (orig.type == .stamp && orig.stampImageData != nil) else { return }
         viewModel.beginReplacingAnnotation(orig)
         defer { viewModel.finishReplacingAnnotation() }
+        if orig.type == .ink {
+            let moved = orig.inkPoints.map { CGPoint(x: $0.x + dx, y: $0.y + dy) }
+            if let updated = viewModel.addInkAnnotation(pageIndex: sel.pageIndex, points: moved, strokeWidth: orig.strokeWidth, color: orig.color) {
+                selectedAnnotation = (id: updated.id, pageIndex: sel.pageIndex)
+            }
+            needsDisplay = true
+            return
+        }
         if orig.type == .callout {
             let targetPt = orig.targetPoint.map { CGPoint(x: $0.x + dx, y: $0.y + dy) } ?? .zero
             let kneePt = orig.kneePoint.map { CGPoint(x: $0.x + dx, y: $0.y + dy) } ?? .zero
@@ -585,7 +601,7 @@ extension PDFCanvasView {
            let list = viewModel.pageAnnotations[pIdx],
            let annot = list.first(where: { $0.id == targetId }),
            !annot.isMeasurement,
-           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.isShape || annot.isFromFile) {
+           (annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.type == .ink || annot.isShape || annot.isFromFile) {
 
             guard annot.color != newColor else { return }
             if annot.isFromFile {
@@ -615,6 +631,10 @@ extension PDFCanvasView {
                     color: newColor,
                     lineEnding: annot.lineEnding ?? .closedArrow
                 ) {
+                    selectedAnnotation = (id: updated.id, pageIndex: pIdx)
+                }
+            } else if annot.type == .ink {
+                if let updated = viewModel.addInkAnnotation(pageIndex: pIdx, points: annot.inkPoints, strokeWidth: annot.strokeWidth, color: newColor) {
                     selectedAnnotation = (id: updated.id, pageIndex: pIdx)
                 }
             } else if annot.type == .note || annot.isShape, let r = annot.rect {
@@ -813,7 +833,7 @@ extension PDFCanvasView {
         }
         func selectable(_ annot: PDFAnnotation) -> Bool {
             annot.isFromFile || annot.isMeasurement || annot.isShape
-                || annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note
+                || annot.type == .callout || annot.type == .freeText || annot.type == .stamp || annot.type == .note || annot.type == .ink
         }
         var found = shown.filter { selectable($0) && rect.contains(box($0)) }
         // Annotations from the file not picked up yet, found by their boxes.

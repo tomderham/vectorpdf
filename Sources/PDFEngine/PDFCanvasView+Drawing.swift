@@ -202,11 +202,14 @@ extension PDFCanvasView {
                             }
                         case .ink:
                             guard !annot.inkPoints.isEmpty else { continue }
+                            // Where a drag in progress carries it.
+                            let inkOffset = dragAffecting(annot)?.currentDelta ?? .zero
+                            let inkPoints = annot.inkPoints.map { CGPoint(x: $0.x + inkOffset.width, y: $0.y + inkOffset.height) }
                             annot.color.nsColor.setStroke()
                             annot.color.nsColor.setFill()
                             let lineWidth = max(annot.strokeWidth * viewModel.effectiveZoom, 1.0)
-                            if annot.inkPoints.count == 1 {
-                                let p = annot.inkPoints[0]
+                            if inkPoints.count == 1 {
+                                let p = inkPoints[0]
                                 let cx = pFrame.minX + (p.x - pBounds.minX) * viewModel.effectiveZoom
                                 let cy = pFrame.minY + (p.y - pBounds.minY) * viewModel.effectiveZoom
                                 let dotRect = NSRect(x: cx - lineWidth * 0.5, y: cy - lineWidth * 0.5, width: lineWidth, height: lineWidth)
@@ -217,18 +220,30 @@ extension PDFCanvasView {
                                 path.lineWidth = lineWidth
                                 path.lineCapStyle = .round
                                 path.lineJoinStyle = .round
-                                let first = annot.inkPoints[0]
+                                let first = inkPoints[0]
                                 path.move(to: NSPoint(
                                     x: pFrame.minX + (first.x - pBounds.minX) * viewModel.effectiveZoom,
                                     y: pFrame.minY + (first.y - pBounds.minY) * viewModel.effectiveZoom
                                 ))
-                                for pt in annot.inkPoints.dropFirst() {
+                                for pt in inkPoints.dropFirst() {
                                     path.line(to: NSPoint(
                                         x: pFrame.minX + (pt.x - pBounds.minX) * viewModel.effectiveZoom,
                                         y: pFrame.minY + (pt.y - pBounds.minY) * viewModel.effectiveZoom
                                     ))
                                 }
                                 path.stroke()
+                            }
+                            if isAnnotationSelected(annot.id) {
+                                let box = CGRect(enclosing: inkPoints).insetBy(dx: -annot.strokeWidth / 2 - 2, dy: -annot.strokeWidth / 2 - 2)
+                                let selRect = NSRect(
+                                    x: pFrame.minX + (box.minX - pBounds.minX) * viewModel.effectiveZoom,
+                                    y: pFrame.minY + (box.minY - pBounds.minY) * viewModel.effectiveZoom,
+                                    width: box.width * viewModel.effectiveZoom, height: box.height * viewModel.effectiveZoom
+                                ).insetBy(dx: -2, dy: -2)
+                                let selPath = NSBezierPath(roundedRect: selRect, xRadius: 3, yRadius: 3)
+                                selPath.lineWidth = 1.5
+                                NSColor.controlAccentColor.setStroke()
+                                selPath.stroke()
                             }
                         case .freeText:
                             guard let initialRect = annot.rect, !annot.text.isEmpty else { continue }

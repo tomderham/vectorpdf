@@ -180,3 +180,74 @@ import AppKit
         #expect(fixture.canvas.allSelectedAnnotationIDs.count == 2)
     }
 }
+
+/// Freehand drawings are selected with Select like other annotations.
+@MainActor
+@Suite struct SelectingDrawingsTests {
+    private let stroke = [CGPoint(x: 100, y: 300), CGPoint(x: 150, y: 330), CGPoint(x: 200, y: 310)]
+
+    private func drawings(_ vm: PDFViewerViewModel) -> [PDFAnnotation] {
+        (vm.pageAnnotations[0] ?? []).filter { $0.type == .ink }
+    }
+
+    @Test func clickingAStrokeSelectsItToMoveRestyleAndDelete() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        try #require(fixture.vm.addInkAnnotation(pageIndex: 0, points: stroke, strokeWidth: 2, color: .red) != nil)
+        // Away from the stroke, nothing; on it, the drawing.
+        fixture.click(page: 0, at: CGPoint(x: 150, y: 380))
+        #expect(fixture.canvas.selectedAnnotation == nil)
+        fixture.click(page: 0, at: CGPoint(x: 125, y: 315))
+        let selected = try #require(fixture.canvas.selectedAnnotation)
+        #expect(drawings(fixture.vm).first?.id == selected.id)
+
+        fixture.drag(page: 0, from: CGPoint(x: 125, y: 315), to: CGPoint(x: 165, y: 335))
+        let moved = try #require(drawings(fixture.vm).first)
+        #expect(abs(moved.inkPoints[0].x - 140) < 0.5 && abs(moved.inkPoints[0].y - 320) < 0.5)
+        #expect(drawings(fixture.vm).count == 1)
+
+        fixture.vm.selectedAnnotationColor = .blue
+        fixture.vm.drawStrokeWidth = 6
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let restyled = try #require(drawings(fixture.vm).first)
+        #expect(restyled.color == .blue && restyled.strokeWidth == 6)
+
+        fixture.canvas.keyDown(with: NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil, characters: "\u{7f}", charactersIgnoringModifiers: "\u{7f}", isARepeat: false, keyCode: 51)!)
+        #expect(drawings(fixture.vm).isEmpty)
+    }
+
+    @Test func thePenDrawsOverAStrokeRatherThanSelectingIt() async throws {
+        let fixture = try await CanvasFixture(view: .single)
+        defer { fixture.close() }
+        try #require(fixture.vm.addInkAnnotation(pageIndex: 0, points: stroke, strokeWidth: 2, color: .red) != nil)
+        fixture.vm.canvasMode = .draw
+        fixture.drag(page: 0, from: CGPoint(x: 125, y: 315), to: CGPoint(x: 180, y: 360))
+        #expect(fixture.canvas.selectedAnnotation == nil)
+        #expect(drawings(fixture.vm).count == 2)
+    }
+
+    @Test func aDrawingSavedInTheFileCanBeSelectedAndMoved() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plan.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha"])
+        do {
+            let vm = PDFViewerViewModel()
+            await vm.loadDocument(from: url.path)
+            _ = vm.addInkAnnotation(pageIndex: 0, points: stroke, strokeWidth: 2, color: .red)
+            try vm.document?.save(to: url.path)
+        }
+        let fixture = try await CanvasFixture(view: .single, file: url)
+        defer { fixture.close() }
+        fixture.click(page: 0, at: CGPoint(x: 125, y: 315))
+        let selected = try #require(fixture.canvas.selectedAnnotationsNow.first)
+        #expect(selected.isFromFile && selected.fileSubtype == "Ink")
+        let before = try #require(selected.rect)
+        fixture.drag(page: 0, from: CGPoint(x: 125, y: 315), to: CGPoint(x: 145, y: 315))
+        let after = try #require(fixture.canvas.selectedAnnotationsNow.first?.rect)
+        #expect(abs(after.minX - before.minX - 20) < 1)
+        // An area selects it too.
+        fixture.canvas.selectedAnnotation = nil
+        #expect(fixture.canvas.selectAnnotations(in: CGRect(x: 50, y: 250, width: 250, height: 150), pageIndex: 0) == 1)
+    }
+}
