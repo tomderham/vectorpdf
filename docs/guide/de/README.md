@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -56,7 +56,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 ## Zeichnungen vermessen
 
 - [Zeichnungsmaßstab festlegen](drawing-scale.md)
-- [Längen, Flächen und Winkel messen](measure.md)
+- [Längen, Flächen und Winkel messen und zählen](measure.md)
 - [Takeoff-Tabelle](takeoff.md)
 
 ## Bearbeiten und schützen

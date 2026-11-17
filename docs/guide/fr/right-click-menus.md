@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # Menus du clic droit
 
@@ -10,7 +10,7 @@ Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, po
 | Clic droit sur | Commandes |
 | --- | --- |
 | Du texte sélectionné | Copy Text, Look Up, Translate Selection, Start Speaking ou Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Une zone sélectionnée | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| Une zone sélectionnée | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un lien | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un surlignage, un soulignement ou un texte barré | Comments… et la commande Remove correspondante |
 | Une zone de texte | Comments…, Edit Text Box et la commande de suppression |
@@ -18,6 +18,7 @@ Cliquez avec le bouton droit, ou en maintenant la touche Contrôle enfoncée, po
 | Une note, ou le contour d’un rectangle, d’un ovale ou d’un nuage de révision | Comments… et la commande de suppression |
 | Une ligne ou une flèche | Comments…, Line Ending et la commande de suppression |
 | Un dessin, un tampon ou une mesure | Comments… et la commande de suppression |
+| L’une de plusieurs annotations sélectionnées | Align (bords et centres ; Distribute à partir de trois), Delete avec le nombre |
 | Une forme, un nuage, une ligne, une note, un tampon ou une zone de texte enregistré plus tôt dans le document, ou créé dans une autre app | Comments…, Line Ending pour une ligne, et la commande de suppression |
 | Un surlignage, un dessin ou une mesure enregistré plus tôt dans le document, ou créé dans une autre app | Comments… et les commandes valables partout ailleurs sur la page |
 | Partout ailleurs sur la page | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

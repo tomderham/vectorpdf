@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 002054758a02 -->
+<!-- source: 160d66146451 -->
 
 # Atalhos de teclado
 
@@ -86,6 +86,8 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Selecionar uma linha | Clique três vezes |
 | Selecionar uma área | Arraste com ⌥ pressionada |
 | Ampliar a seleção | Clique com ⇧ pressionada |
+| Adicionar uma anotação à seleção ou tirá-la | Clique nela com ⇧ pressionada |
+| Selecionar as anotações de uma área | Arraste sobre elas com ⌥ pressionada |
 | Rolar ao selecionar ou desenhar | Arraste além da borda da janela |
 | Abrir os comentários de uma anotação | Clicar duas vezes nela, exceto em uma caixa de texto ou texto explicativo |
 | Zoom | Faça o gesto de pinça |
@@ -95,6 +97,7 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Ação | Atalho | Botão direito |
 | --- | --- | --- |
 | Desfazer ou refazer uma alteração em uma anotação | ⌘Z ou ⇧⌘Z | |
+| Select All Annotations on Page | ⌥⌘A | |
 | Editar a caixa de texto ou o texto explicativo selecionado | Return | A anotação |
 | Apagar a anotação selecionada | Delete | A anotação |
 | Mover a anotação selecionada | Arrow keys, ou ⇧Arrow keys para mover 10 pontos | |

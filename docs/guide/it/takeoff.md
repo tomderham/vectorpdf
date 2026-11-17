@@ -1,9 +1,9 @@
-<!-- keywords: takeoff, computo, computo metrico, tabella, prospetto, quantità, totali, misurazioni, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: takeoff, computo, computo metrico, tabella, prospetto, quantità, totali, misurazioni, take-off, table, schedule, CSV, quantities, totals, measurements, conteggio, conteggi, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # Tabella Takeoff
 
-La tabella Takeoff è un prospetto di tutte le misurazioni di un documento, con pagina, tipo, valore e scala di ciascuna, e i totali di lunghezza e area.
+La tabella Takeoff è un prospetto di tutte le misurazioni di un documento, con pagina, tipo, valore e scala di ciascuna, e i totali di lunghezza e area. I [conteggi](measure.md#count-things-on-a-drawing) occupano una riga per ogni gruppo in ogni pagina, ad esempio "Outlets × 12", e vengono totalizzati per ogni gruppo in tutto il documento.
 
 Fai clic su **Takeoff Table** nella [barra degli strumenti Measurement](measure.md).
 

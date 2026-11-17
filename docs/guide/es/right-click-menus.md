@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # Menús de clic derecho
 
@@ -10,7 +10,7 @@ Haz clic con el botón derecho, o con la tecla Control pulsada, para ver comando
 | Clic derecho en | Comandos |
 | --- | --- |
 | Texto seleccionado | Copy Text, Look Up, Translate Selection, Start Speaking o Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Un área seleccionada | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| Un área seleccionada | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un enlace | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un resaltado, subrayado o tachado | Comments… y el comando Remove correspondiente |
 | Un cuadro de texto | Comments…, Edit Text Box y el comando de eliminación |
@@ -18,6 +18,7 @@ Haz clic con el botón derecho, o con la tecla Control pulsada, para ver comando
 | Una nota, o el contorno de un rectángulo, óvalo o nube de revisión | Comments… y el comando para eliminar |
 | Una línea o flecha | Comments…, Line Ending y el comando para eliminar |
 | Un dibujo, sello o medición | Comments… y el comando de eliminación |
+| Una de varias anotaciones seleccionadas | Align (bordes y centros; Distribute con tres o más), Delete con cuántas son |
 | Una forma, nube, línea, nota, sello o cuadro de texto guardado antes en el documento, o creado en otra app | Comments…, Line Ending para una línea, y el comando para eliminar |
 | Un resaltado, dibujo o medición guardado antes en el documento, o creado en otra app | Comments… y los comandos de cualquier otro lugar de la página |
 | Cualquier otro lugar de la página | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

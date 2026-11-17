@@ -1,5 +1,5 @@
 <!-- keywords: confidentialité, données, réseau, télémétrie, statistiques, sécurité, recherches récentes, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 464311d898b1 -->
+<!-- source: 1f4607569e3c -->
 
 # Confidentialité
 
@@ -15,7 +15,7 @@ VectorPDF ne comporte ni compte, ni statistiques d’utilisation, ni télémétr
 
 ## Ce qui est stocké sur votre Mac
 
-VectorPDF stocke vos préférences, vos favoris, vos groupes d’onglets, vos positions de lecture, vos ancres et votre tampon. Il conserve aussi un index des documents que vous avez utilisés avec l’Agent, des vignettes d’ancres et des copies de travail temporaires des documents dont les modifications de pages ou les caviardages ne sont pas enregistrés, qu’il supprime lorsqu’il n’en a plus besoin.
+VectorPDF stocke vos préférences, favoris, groupes d’onglets, positions de lecture, ancres, recherches récentes et tampon. Il conserve aussi un index des documents utilisés avec l’Agent, des vignettes d’ancres, des copies de travail temporaires des documents dont les modifications de pages ou caviardages ne sont pas enregistrés, et des [copies des documents dont les modifications ne sont pas enregistrées](save.md#if-vectorpdf-quits-unexpectedly) au cas où il quitterait de façon inattendue. Il les supprime lorsqu’il n’en a plus besoin.
 
 Il conserve aussi les recherches récentes de chaque document. Pour voir l’espace que tout cela occupe, ou pour l’effacer, utilisez Storage dans [Settings](settings.md#free-up-space-or-remove-data).
 

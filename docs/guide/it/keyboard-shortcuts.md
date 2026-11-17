@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 002054758a02 -->
+<!-- source: 160d66146451 -->
 
 # Abbreviazioni da tastiera
 
@@ -86,6 +86,8 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Selezionare una riga | Triplo clic |
 | Selezionare un'area | Trascina tenendo premuto ⌥ |
 | Estendere la selezione | Fai clic tenendo premuto ⇧ |
+| Aggiungere un'annotazione alla selezione o toglierla | Fai clic tenendo premuto ⇧ |
+| Selezionare le annotazioni in un'area | Trascina sopra di esse tenendo premuto ⌥ |
 | Scorrere mentre selezioni o disegni | Trascina oltre il bordo della finestra |
 | Aprire i commenti di un'annotazione | Fare doppio clic su di essa, tranne che su una casella di testo o un richiamo |
 | Zoom | Pizzica |
@@ -95,6 +97,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Azione | Abbreviazione | Clic con il tasto destro |
 | --- | --- | --- |
 | Annullare o ripetere una modifica a un'annotazione | ⌘Z o ⇧⌘Z | |
+| Select All Annotations on Page | ⌥⌘A | |
 | Modificare la casella di testo o il richiamo selezionato | Return | L'annotazione |
 | Eliminare l'annotazione selezionata | Delete | L'annotazione |
 | Spostare l'annotazione selezionata | Tasti freccia, oppure ⇧Arrow keys per 10 punti | |

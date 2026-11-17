@@ -1,5 +1,5 @@
 <!-- keywords: 高亮, 高亮显示, 下划线, 删除线, 标记, 注释, 颜色, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: 7a7e383d477e -->
+<!-- source: ae0219932828 -->
 
 # 高亮、下划线和删除线
 
@@ -15,9 +15,18 @@
 
 你也可以使用 Markup 工具栏中的按钮，或者右键点按所选内容并选取 Highlight、Underline 或 Strikethrough。每一项都有颜色列表。
 
+## 高亮一个区域 {#highlight-an-area}
+
+若要高亮图、图纸的一部分或扫描页面等没有可选择文本的位置，请按住 ⌥ 在该区域上方拖移，然后右键点按它并选取 Highlight Area，或者点按 Markup 工具栏中的高亮按钮。
+
 ## 选取颜色
 
-Markup 工具栏 (⇧⌘A) 中有一个颜色按钮。点按它，然后点按一种颜色。快捷键和工具栏按钮会使用在其中选定的颜色。若要为单个标记选取颜色，请使用右键菜单中的颜色列表，或者 Edit 菜单中相应项目下的颜色列表。
+高亮起初为黄色，下划线和删除线为红色。每种标记都保留自己的颜色，VectorPDF 会记住它。快捷键和工具栏按钮会使用该颜色。
+
+- **高亮：**使用 Select 工具时，Markup 工具栏 (⇧⌘A) 的颜色按钮可设置高亮颜色。点按它，然后点按一种颜色。
+- **下划线或删除线：**从右键菜单中的相应列表，或者 Edit 菜单中相应项目下选取颜色。该标记会以此颜色创建，之后的标记也会使用此颜色。
+
+高亮、下划线和删除线没有自己的大小：它们跟随所标记的文本。
 
 ## 移除标记
 

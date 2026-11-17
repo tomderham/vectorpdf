@@ -1,5 +1,5 @@
-<!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, automatisch sichern, wiederherstellen, Wiederherstellung, Absturz, unerwartet beendet, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # Änderungen sichern
 
@@ -18,6 +18,16 @@ Wenn du ein Dokument mit nicht gesicherten Änderungen schließt, fragt VectorPD
 Um alles seit dem letzten Sichern zu verwerfen, wähle File > Revert to Saved. VectorPDF fragt zuerst nach und öffnet dann die Datei so, wie sie zuletzt gesichert wurde, auf der Seite, die du gerade gelesen hast. Das Zurücksetzen kann nicht widerrufen werden.
 
 Wie du eine kleinere Kopie eines Dokuments erstellst, erfährst du unter [Optimized PDF](export.md#optimized-pdf).
+
+## Wenn VectorPDF unerwartet beendet wird {#if-vectorpdf-quits-unexpectedly}
+
+Solange ein Dokument nicht gesicherte Änderungen hat, bewahrt VectorPDF eine Kopie davon auf deinem Mac auf, die etwa alle 30 Sekunden aktualisiert wird. Wird VectorPDF unerwartet beendet, bietet es die Kopien beim nächsten Öffnen an:
+
+- **Open Recovered Copy** sichert jede Kopie neben ihrem Original mit dem Zusatz „(Recovered)“ und öffnet sie. Das Original bleibt unverändert. Vergleiche die beiden und behalte das, das du möchtest.
+- **Decide Later** behält die Kopien und fragt beim nächsten Mal erneut.
+- **Discard Changes** löscht die Kopien.
+
+Die Kopie wird gelöscht, wenn du das Dokument sicherst, es auf die gesicherte Version zurücksetzt oder ohne Sichern schließt, und wenn du VectorPDF beendest. Passwortgeschützte Dokumente werden nicht kopiert, weil die Kopie nicht verschlüsselt wäre.
 
 ## Ein Dokument teilen
 

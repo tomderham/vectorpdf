@@ -1,33 +1,55 @@
-<!-- keywords: desenhar, desenho, tinta, caneta, mão livre, forma, formas, retângulo, quadrado, oval, círculo, elipse, linha, seta, caixa de texto, texto explicativo, nota, notas, nota adesiva, comentário, comentários, resposta, respostas, status, autor, nuvem de revisão, nuvem, terminação de linha, cor, desfazer, refazer, anotar, anotação, anotações, borracha, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: d9645d5143e8 -->
+<!-- keywords: desenhar, desenho, tinta, caneta, mão livre, forma, formas, retângulo, quadrado, oval, círculo, elipse, linha, seta, caixa de texto, texto explicativo, nota, notas, nota adesiva, comentário, comentários, resposta, respostas, status, autor, nuvem de revisão, nuvem, terminação de linha, cor, desfazer, refazer, anotar, anotação, anotações, borracha, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF, selecionar várias, alinhar, distribuir, grupo, select several, multiple, align, distribute, group -->
+<!-- source: 7023d91b7100 -->
 
 # Desenhar, adicionar notas, texto e textos explicativos
 
-Pressione ⇧⌘A ou clique no botão Markup Toolbar para mostrar a barra de ferramentas Markup. Escolha uma ferramenta e, depois, uma cor e um tamanho. Para escolher uma cor, clique no botão de cor perto da direita da barra e, depois, em uma cor. Para terminar de usar uma ferramenta, pressione Escape, clique na ferramenta de novo ou escolha Text Selection Mode, a primeira ferramenta da barra.
+Pressione ⇧⌘A ou clique no botão Markup Toolbar para mostrar a barra de ferramentas Markup. Escolha uma ferramenta e, depois, uma cor e um tamanho. Para escolher uma cor, clique no botão de cor perto da direita da barra e, depois, em uma cor.
+
+Cada ferramenta tem sua própria cor e espessura de linha, e o VectorPDF se lembra delas. No início, a caneta e as formas são vermelhas, as caixas de texto e os balões pretos, e as notas amarelas. Escolher uma ferramenta desmarca o que estava selecionado. Enquanto uma ferramenta está em uso, mudar sua cor ou espessura também muda o que ela acabou de criar. Para alterar uma anotação feita antes sem mudar nenhuma ferramenta, selecione-a com a ferramenta Select e escolha uma cor.
+
+Para terminar de usar uma ferramenta, pressione Escape, clique na ferramenta de novo ou escolha Select, a seta no início da barra.
+
+## Selecionar e alterar anotações {#select-and-change-annotations}
+
+Escolha **Select**, a seta no início da barra Markup ou da barra Measurement. Com Select, você pode selecionar texto e também anotações e medições:
+
+- **Aponte para uma** e um contorno tracejado mostra o que um clique vai pegar. Em um retângulo, oval, polígono ou nuvem, aponte para o contorno, e em um desenho à mão livre, para a linha: em outro lugar, um clique seleciona o texto ali.
+- **Clique nela** para selecioná-la. Depois arraste-a para movê-la, arraste uma alça para redimensioná-la ou mudar sua forma, pressione as setas para deslocá-la um pouco, escolha uma cor ou espessura na barra ou pressione Delete. Clique com o botão direito para ver os comandos.
+- **Selecionar várias:** clique em cada uma com ⇧ pressionada, ou mantenha ⌥ pressionada e arraste sobre elas para selecionar tudo o que estiver inteiramente dentro da área. Escolha Edit > Select All Annotations on Page (⌥⌘A) para selecionar todas. Consulte [Alterar várias anotações de uma vez](#change-several-annotations-at-once).
+
+Enquanto uma ferramenta de desenho ou medição está em uso, um clique cria algo novo; então escolha Select primeiro, ou pressione Escape.
 
 ## Desenhar à mão livre
 
-Escolha a ferramenta de caneta, defina a espessura da linha como Thin, Medium ou Thick e arraste na página.
+Escolha a ferramenta de caneta, defina a espessura da linha e arraste na página. Escolha uma espessura em pontos na caixa de espessura ou digite uma, de 0,1 a 72 pontos.
+
+Para mover um desenho, mudar sua cor ou espessura, ou apagá-lo, escolha Select e clique na linha dele. Com a caneta, clicar em um desenho desenha por cima dele.
 
 ## Desenhar uma forma
 
-1. Escolha a ferramenta Shapes e, depois, Rectangle, Oval, Line or Arrow ou Revision Cloud.
-2. Defina a espessura da linha como Thin, Medium ou Thick. Para uma linha, use o menu Line Ending para escolher uma ponta de seta, como Open Arrow, Closed Arrow ou Diamond, ou None para uma linha simples.
+1. Escolha a ferramenta Shapes e, depois, Rectangle, Oval, Line or Arrow, Revision Cloud, Polygon ou Polyline.
+2. Defina a espessura da linha: escolha uma espessura em pontos ou digite uma. Para uma linha ou polilinha, use o menu Line Ending para escolher uma ponta de seta, como Open Arrow, Closed Arrow ou Diamond, ou None para uma linha simples.
 3. Arraste na página. Um retângulo ou oval preenche a área sobre a qual você arrasta. Uma linha vai de onde você começa até onde para, com a terminação no fim.
 
 Mantenha ⇧ pressionada enquanto arrasta para desenhar um quadrado ou círculo, ou para manter uma linha em um múltiplo de 45°.
 
+Para um polígono ou polilinha, clique em cada ponto em vez de arrastar. Clique no primeiro ponto de novo para fechar um polígono, ou clique duas vezes ou pressione Return para terminar. Uma polilinha fica aberta e pode terminar em uma seta. Pressione Escape para descartar a que estiver desenhando. Ortho Lock e o ajuste da barra Measurement valem para cada ponto.
+
 Uma nuvem de revisão marca uma área que mudou ou precisa de revisão. Arraste ao redor da área, e a nuvem segue o contorno que você desenha. Um arraste rápido em linha reta cria uma nuvem oval.
 
-Para selecionar, mover ou clicar com o botão direito em um retângulo, oval ou nuvem, use o contorno; assim você ainda pode selecionar o texto dentro dele.
+Para selecionar, mover ou clicar com o botão direito em um retângulo, oval, polígono ou nuvem, use o contorno; assim você ainda pode selecionar o texto dentro dele.
 
-Para alterar uma linha depois de desenhá-la, arraste uma das extremidades para mover só essa extremidade, ou selecione-a e escolha outra espessura ou terminação de linha na barra. Você também pode clicar nela com o botão direito e escolher Line Ending. Selecione um retângulo ou oval e escolha uma espessura de linha para alterar sua espessura.
+Para alterar uma linha depois de desenhá-la, arraste uma das extremidades para mover só essa extremidade, ou selecione-a e escolha outra espessura ou terminação de linha na barra. Você também pode clicar nela com o botão direito e escolher Line Ending. Selecione um retângulo, oval, polígono ou polilinha e escolha uma espessura para alterá-la; em uma polilinha, você também pode mudar a terminação.
 
 ## Adicionar uma caixa de texto
 
 1. Escolha a ferramenta de caixa de texto e defina um tamanho de fonte de 6 a 32 pontos.
 2. Clique na página onde deseja colocar o texto e digite.
 3. Clique fora da caixa ou pressione Escape para terminar.
+
+Uma caixa de texto não tem borda nem fundo: o texto fica direto na página, como em uma máquina de escrever. O Acrobat e o PDF-XChange a tratam como texto de máquina de escrever.
+
+Para mudar o tamanho da fonte depois, selecione a caixa de texto ou o balão e use o controle de tamanho da fonte na barra Markup. Ele aparece ali enquanto um deles está selecionado.
 
 ## Adicionar um texto explicativo
 
@@ -89,6 +111,17 @@ Você pode alterar da mesma forma as anotações que já estavam no documento, c
 - Selecione uma e escolha uma cor, espessura ou terminação de linha na barra de ferramentas Markup para alterá-la. O VectorPDF a desenha de novo no próprio estilo.
 
 Realces, sublinhados, tachados, desenhos à mão livre e medições do arquivo ficam onde estão, como os seus, mas você pode apagá-los ou respondê-los. Não é possível editar o texto de uma caixa de texto criada em outro app.
+
+## Alterar várias anotações de uma vez {#change-several-annotations-at-once}
+
+Com a ferramenta Select, selecione uma anotação e clique em outras da mesma página com ⇧ pressionada para adicioná-las; clique em uma de novo com ⇧ para tirá-la. Ou mantenha ⌥ pressionada e arraste sobre elas, ou escolha Edit > Select All Annotations on Page (⌥⌘A). Depois:
+
+- **Movê-las:** arraste qualquer uma delas ou pressione as setas.
+- **Mudar a cor ou a espessura da linha:** escolha na barra.
+- **Alinhá-las:** clique com o botão direito em uma delas e escolha Align e, depois, uma borda ou centro. Com três ou mais, Distribute Horizontally ou Distribute Vertically as espaça por igual.
+- **Apagá-las:** pressione Delete, ou clique com o botão direito em uma e escolha Delete, que diz quantas são.
+
+Cada uma dessas ações é um único passo para Undo. Clique em qualquer outro lugar para voltar a selecionar só uma.
 
 ## Desfazer uma alteração
 

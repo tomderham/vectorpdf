@@ -1,9 +1,9 @@
-<!-- keywords: levantamento, levantamento de quantitativos, tabela, quantitativos, quantidades, totais, medições, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: levantamento, levantamento de quantitativos, tabela, quantitativos, quantidades, totais, medições, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, contagem, contagens, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # Tabela de levantamento
 
-A tabela de levantamento é uma lista de todas as medições de um documento, com a página, o tipo, o valor e a escala de cada uma, além dos totais de comprimento e área.
+A tabela de levantamento é uma lista de todas as medições de um documento, com a página, o tipo, o valor e a escala de cada uma, além dos totais de comprimento e área. As [contagens](measure.md#count-things-on-a-drawing) ocupam uma linha por grupo em cada página, como "Outlets × 12", e são somadas por grupo em todo o documento.
 
 Clique em **Takeoff Table** na [barra de ferramentas Measurement](measure.md).
 

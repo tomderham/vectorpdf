@@ -1,7 +1,7 @@
-<!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset -->
-<!-- source: 3104d2e23c51 -->
+<!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset, zählen, Zählung, Strichliste, Symbole, count, counting, tally, symbols -->
+<!-- source: 105c5177cf19 -->
 
-# Längen, Flächen und Winkel messen
+# Längen, Flächen und Winkel messen und zählen
 
 Drücke ⇧⌘M, um die Symbolleiste „Measurement“ einzublenden. Wenn deine Zeichnung maßstabsgetreu ist, [lege zuerst den Maßstab fest](drawing-scale.md).
 
@@ -15,6 +15,13 @@ Zoome für mehr Genauigkeit in die Zeichnung, bevor du misst. Mit der Escape-Tas
 | Perimeter | Klicke auf jeden Punkt entlang des Pfads. Drücke zum Abschließen die Return-Taste oder doppelklicke. |
 | Polygon Area | Klicke auf jede Ecke. Drücke die Return-Taste, doppelklicke oder klicke auf den ersten Punkt, um die Form zu schließen. |
 | Vertex Angle | Klicke auf einen Punkt der ersten Linie, dann auf die Ecke und dann auf einen Punkt der zweiten Linie. |
+| Count | Gib im Gruppenfeld ein, was du zählst, etwa Steckdosen, und klicke dann auf jedes Exemplar. |
+
+## Dinge auf einer Zeichnung zählen {#count-things-on-a-drawing}
+
+Wähle das Werkzeug „Count“ und gib im Feld daneben einen Gruppennamen ein, etwa Steckdosen oder Türen Typ A, oder wähle im Menü neben dem Feld eine Gruppe, die es im Dokument schon gibt. Jeder Klick setzt eine Markierung, einen Punkt in der Farbe der Symbolleiste „Measurement“, und die Symbolleiste zeigt, wie viele dieser Gruppe auf der Seite sind. Ändere den Gruppennamen, um etwas anderes zu zählen; jede Gruppe wird für sich gezählt. Verwende für jede Gruppe eine andere Farbe, um sie auf der Seite zu unterscheiden.
+
+Um eine Markierung zu bewegen, ziehe sie mit dem Werkzeug „Select“. Um eine zu entfernen, klicke mit der rechten Maustaste darauf und wähle „Delete Count Marker“. Die [Takeoff-Tabelle](takeoff.md) zeigt, wie viele jeder Gruppe auf jeder Seite sind, mit Summen. Markierungen werden im PDF als kleine Kreise gesichert, sodass andere Apps sie ebenfalls zeigen.
 
 ## Genau zeichnen
 
@@ -25,7 +32,9 @@ Zoome für mehr Genauigkeit in die Zeichnung, bevor du misst. Mit der Escape-Tas
 
 ## Eine Messung ändern
 
-Drücke die Escape-Taste oder klicke auf das ausgewählte Werkzeug, um das Messwerkzeug wegzulegen, und klicke dann auf eine Messung, um sie auszuwählen. An ihren Punkten erscheinen Ziehpunkte.
+Wähle **Select**, den Pfeil am Anfang der Symbolleiste „Measurement“, oder drücke die Escape-Taste, um das Messwerkzeug wegzulegen. Zeige auf eine Messung, und ein gestrichelter Umriss zeigt sie; klicke darauf, um sie auszuwählen. Klicke bei gedrückter ⇧-Taste, um mehrere auszuwählen, oder ziehe bei gedrückter ⌥-Taste über sie. Solange ein Messwerkzeug aktiv ist, misst ein Klick stattdessen erneut.
+
+Eine ausgewählte Messung hat Ziehpunkte an ihren Punkten.
 
 | Aktion | Vorgehensweise |
 | --- | --- |
@@ -33,6 +42,7 @@ Drücke die Escape-Taste oder klicke auf das ausgewählte Werkzeug, um das Messw
 | Die ganze Messung verschieben | Ziehe ihre Linie oder drücke die Pfeiltasten (mit ⇧ um 10 Punkte). |
 | Eine Maßlinie näher an das Gemessene oder weiter davon weg rücken | Ziehe ihre Beschriftung oder, sobald sie von den Punkten abgerückt ist, die Maßlinie selbst. |
 | Ihre Farbe ändern | Wähle mit der Farbtaste in der Symbolleiste „Measurement“ eine Farbe. |
+| Linienstärke ändern | Wähle eine Stärke im Feld für die Linienstärke in der Symbolleiste „Measurement“ oder gib eine ein. |
 
 Der Wert wird beim Ziehen neu berechnet. Ziehe über den Fensterrand hinaus, um zu scrollen, wenn eine Messung länger als die Ansicht ist. Wähle Edit > Undo, um eine Messung wieder so herzustellen, wie sie war. Auch Messungen, die bereits im PDF gesichert sind, lassen sich ändern.
 
@@ -40,10 +50,10 @@ Um eine Fläche auszuwählen, klicke auf ihren Rand: Ein Klick in die Fläche w�
 
 ## Das Aussehen von Messungen ändern
 
-Verwende vor dem Messen die Farbtaste und die Linienstärke in der Symbolleiste „Measurement“. Um die Farbe einer bereits erstellten Messung zu ändern, wähle sie aus und wähle dann eine Farbe.
+Verwende vor dem Messen die Farbtaste und das Feld für die Linienstärke in der Symbolleiste „Measurement“. Wähle eine Stärke in Punkt oder gib eine ein, von 0,1 bis 72 Punkt. Neue Messungen sind grau und 1,5 Punkt stark, bis du etwas anderes wählst. VectorPDF merkt sich deine Wahl, und die Symbolleiste „Markup“ behält ihre eigenen Farben und Stärken. Um die Farbe oder Stärke einer bereits erstellten Messung zu ändern, wähle sie aus und wähle dann in der Symbolleiste „Measurement“ eine Farbe oder Stärke. Die Stärke wird im PDF gesichert.
 
 ## Messungen behalten oder entfernen
 
-Messungen sind Anmerkungen, die beim [Sichern](save.md) im PDF gespeichert werden. Um eine Messung zu löschen, klicke mit der rechten Maustaste darauf und wähle dann den Löschbefehl, zum Beispiel „Delete Dimension“ oder „Delete Area Takeoff“.
+Messungen sind Anmerkungen, die beim [Sichern](save.md) im PDF gespeichert werden. Um eine Messung zu löschen, klicke mit der rechten Maustaste darauf und wähle dann den Löschbefehl, zum Beispiel „Delete Dimension“, „Delete Area Takeoff“ oder „Delete Count Marker“.
 
 Eine Liste aller deiner Messungen findest du in der [Takeoff-Tabelle](takeoff.md).

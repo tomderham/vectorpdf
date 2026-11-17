@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # राइट-क्लिक मेनू
 
@@ -10,7 +10,7 @@
 | राइट-क्लिक | कमांड |
 | --- | --- |
 | चयनित टेक्स्ट | Copy Text, Look Up, Translate Selection, Start Speaking या Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| चयनित क्षेत्र | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| चयनित क्षेत्र | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | लिंक | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | हाइलाइट, अंडरलाइन या स्ट्राइकथ्रू | Comments…, और उससे मेल खाता Remove कमांड |
 | टेक्स्ट बॉक्स | Comments…, Edit Text Box, और हटाने का कमांड |
@@ -18,6 +18,7 @@
 | कोई नोट, या किसी आयत, अंडाकार या रिविज़न क्लाउड की रूपरेखा | Comments…, और हटाने का कमांड |
 | कोई रेखा या तीर | Comments…, Line Ending, और हटाने का कमांड |
 | ड्रॉइंग, स्टैम्प या माप | Comments…, और हटाने का कमांड |
+| कई चुने गए ऐनोटेशन में से एक | Align (किनारे और केंद्र; तीन या अधिक के साथ Distribute), Delete संख्या के साथ |
 | पहले दस्तावेज़ में सेव की गई, या किसी दूसरी ऐप में बनाई गई आकृति, क्लाउड, रेखा, नोट, स्टैम्प या टेक्स्ट बॉक्स | Comments…, रेखा के लिए Line Ending, और हटाने का कमांड |
 | पहले दस्तावेज़ में सेव किया गया, या किसी दूसरी ऐप में बनाया गया हाइलाइट, ड्रॉइंग या माप | Comments…, और पेज पर किसी दूसरी जगह के कमांड |
 | पेज पर कहीं और | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

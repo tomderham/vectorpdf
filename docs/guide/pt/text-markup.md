@@ -1,5 +1,5 @@
 <!-- keywords: realçar, realce, realces, sublinhar, sublinhado, tachar, tachado, marcação, marcar, anotar, anotação, anotações, cor, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: 7a7e383d477e -->
+<!-- source: ae0219932828 -->
 
 # Realçar, sublinhar e tachar
 
@@ -15,9 +15,18 @@ Selecione o texto e faça uma destas ações:
 
 Você também pode usar os botões da barra de ferramentas Markup, ou clicar na seleção com o botão direito e escolher Highlight, Underline ou Strikethrough. Cada um tem uma lista de cores.
 
+## Realçar uma área {#highlight-an-area}
+
+Para realçar uma figura, parte de um desenho ou uma página digitalizada, onde não há texto para selecionar, mantenha ⌥ pressionada e arraste sobre a área; depois clique nela com o botão direito e escolha Highlight Area, ou clique no botão de realce da barra Markup.
+
 ## Escolher uma cor
 
-A barra de ferramentas Markup (⇧⌘A) tem um botão de cor. Clique nele e, depois, em uma cor. Os atalhos e os botões da barra usam a cor selecionada ali. Para escolher uma cor para uma única marcação, use a lista de cores do menu de contexto ou a que fica abaixo do item no menu Edit.
+Os realces começam amarelos, e os sublinhados e tachados vermelhos. Cada um mantém sua própria cor, e o VectorPDF se lembra dela. Os atalhos e os botões da barra a usam.
+
+- **Realce:** com a ferramenta Select, o botão de cor da barra Markup (⇧⌘A) define a cor do realce. Clique nele e, depois, em uma cor.
+- **Sublinhado ou tachado:** escolha uma cor na lista dele no menu de contexto ou abaixo do item no menu Edit. Essa marcação é feita nessa cor, que também é usada nas próximas.
+
+Realces, sublinhados e tachados não têm tamanho próprio: acompanham o texto que marcam.
 
 ## Remover uma marcação
 

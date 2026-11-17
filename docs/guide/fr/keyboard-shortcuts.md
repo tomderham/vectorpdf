@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 002054758a02 -->
+<!-- source: 160d66146451 -->
 
 # Raccourcis clavier
 
@@ -86,6 +86,8 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Sélectionner une ligne | Triple-clic |
 | Sélectionner une zone | ⌥-glisser |
 | Étendre la sélection | ⇧-clic |
+| Ajouter une annotation à la sélection ou l’en retirer | ⇧-clic dessus |
+| Sélectionner les annotations d’une zone | ⌥-glisser par-dessus |
 | Faire défiler pendant une sélection ou un dessin | Faire glisser au-delà du bord de la fenêtre |
 | Ouvrir les commentaires d’une annotation | Double-cliquer dessus, sauf sur une zone de texte ou une bulle |
 | Zoomer | Pincer |
@@ -95,6 +97,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Action | Raccourci | Clic droit |
 | --- | --- | --- |
 | Annuler ou rétablir une modification d’annotation | ⌘Z ou ⇧⌘Z | |
+| Select All Annotations on Page | ⌥⌘A | |
 | Modifier la zone de texte ou la bulle sélectionnée | Return | L’annotation |
 | Supprimer l’annotation sélectionnée | Delete | L’annotation |
 | Déplacer l’annotation sélectionnée | Touches fléchées, ou ⇧Arrow keys pour 10 points | |

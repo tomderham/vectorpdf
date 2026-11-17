@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 002054758a02 -->
+<!-- source: 160d66146451 -->
 
 # Tastaturkurzbefehle
 
@@ -86,6 +86,8 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Eine Zeile auswählen | Dreimal klicken |
 | Einen Bereich auswählen | Bei gedrückter ⌥-Taste ziehen |
 | Auswahl erweitern | Bei gedrückter ⇧-Taste klicken |
+| Eine Anmerkung zur Auswahl hinzufügen oder herausnehmen | Bei gedrückter ⇧-Taste darauf klicken |
+| Die Anmerkungen in einem Bereich auswählen | Bei gedrückter ⌥-Taste darüber ziehen |
 | Beim Auswählen oder Zeichnen scrollen | Über den Fensterrand hinaus ziehen |
 | Kommentare einer Anmerkung öffnen | Doppelklicken, außer bei einem Textfeld oder einer Legende |
 | Zoomen | Zwei Finger zusammen- oder auseinanderziehen |
@@ -95,6 +97,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Aktion | Kurzbefehl | Rechtsklick |
 | --- | --- | --- |
 | Änderung an einer Anmerkung widerrufen oder wiederholen | ⌘Z oder ⇧⌘Z | |
+| Select All Annotations on Page | ⌥⌘A | |
 | Ausgewähltes Textfeld oder ausgewählte Legende bearbeiten | Return | Die Anmerkung |
 | Ausgewählte Anmerkung löschen | Delete | Die Anmerkung |
 | Ausgewählte Anmerkung bewegen | Arrow keys oder ⇧Arrow keys für 10 Punkt | |

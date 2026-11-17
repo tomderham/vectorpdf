@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # VectorPDF 使用手册
 
@@ -56,7 +56,7 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 ## 测量图纸
 
 - [设置图纸比例](drawing-scale.md)
-- [测量长度、面积和角度](measure.md)
+- [测量长度、面积和角度，以及计数](measure.md)
 - [工程量表](takeoff.md)
 
 ## 编辑和保护

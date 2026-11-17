@@ -1,5 +1,5 @@
-<!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, salvamento automático, recuperar, recuperação, falha, fechamento inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # Salvar suas alterações
 
@@ -18,6 +18,16 @@ Se você fechar um documento com alterações não salvas, o VectorPDF perguntar
 Para descartar tudo o que foi feito desde a última vez que você salvou, escolha File > Revert to Saved. O VectorPDF pergunta primeiro e, em seguida, abre o arquivo como foi salvo pela última vez, na página que você estava lendo. Não é possível desfazer essa ação.
 
 Para criar uma cópia menor de um documento, consulte [Optimized PDF](export.md#optimized-pdf).
+
+## Se o VectorPDF fechar inesperadamente {#if-vectorpdf-quits-unexpectedly}
+
+Enquanto um documento tem alterações não salvas, o VectorPDF mantém uma cópia dele no seu Mac, atualizada a cada 30 segundos, aproximadamente. Se o VectorPDF fechar inesperadamente, ele oferece as cópias na próxima vez que for aberto:
+
+- **Open Recovered Copy** salva cada cópia ao lado do original, com o nome "(Recovered)", e a abre. O original não é alterado. Compare os dois e fique com o que preferir.
+- **Decide Later** mantém as cópias e pergunta de novo na próxima vez.
+- **Discard Changes** apaga as cópias.
+
+A cópia é apagada quando você salva o documento, reverte para a versão salva ou o fecha sem salvar, e quando você encerra o VectorPDF. Documentos protegidos por senha não são copiados, porque a cópia não seria criptografada.
 
 ## Compartilhar um documento
 

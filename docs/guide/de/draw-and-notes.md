@@ -1,33 +1,55 @@
-<!-- keywords: zeichnen, Zeichnung, Tinte, Stift, Freihand, Form, Formen, Rechteck, Quadrat, Oval, Kreis, Ellipse, Linie, Pfeil, Textfeld, Legende, Legenden, Notiz, Notizen, Haftnotiz, Kommentar, Kommentare, Antwort, Antworten, Status, Autor, Revisionswolke, Wolke, Linienende, Farbe, rückgängig, wiederholen, Anmerkung, Anmerkungen, Radierer, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: d9645d5143e8 -->
+<!-- keywords: zeichnen, Zeichnung, Tinte, Stift, Freihand, Form, Formen, Rechteck, Quadrat, Oval, Kreis, Ellipse, Linie, Pfeil, Textfeld, Legende, Legenden, Notiz, Notizen, Haftnotiz, Kommentar, Kommentare, Antwort, Antworten, Status, Autor, Revisionswolke, Wolke, Linienende, Farbe, rückgängig, wiederholen, Anmerkung, Anmerkungen, Radierer, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF, mehrere auswählen, ausrichten, verteilen, Gruppe, select several, multiple, align, distribute, group -->
+<!-- source: 7023d91b7100 -->
 
 # Zeichnen, Notizen, Text und Legenden hinzufügen
 
-Drücke ⇧⌘A oder klicke auf die Taste „Markup Toolbar“, um die Symbolleiste „Markup“ einzublenden. Wähle ein Werkzeug aus und dann eine Farbe und Größe. Um eine Farbe zu wählen, klicke auf die Farbtaste rechts in der Symbolleiste und dann auf eine Farbe. Um ein Werkzeug zu beenden, drücke die Escape-Taste, klicke erneut auf das Werkzeug oder wähle „Text Selection Mode“, das erste Werkzeug in der Symbolleiste.
+Drücke ⇧⌘A oder klicke auf die Taste „Markup Toolbar“, um die Symbolleiste „Markup“ einzublenden. Wähle ein Werkzeug aus und dann eine Farbe und Größe. Um eine Farbe zu wählen, klicke auf die Farbtaste rechts in der Symbolleiste und dann auf eine Farbe.
+
+Jedes Werkzeug hat seine eigene Farbe und Linienstärke, und VectorPDF merkt sie sich. Anfangs sind Stift und Formen rot, Textfelder und Legenden schwarz und Notizen gelb. Wenn du ein Werkzeug wählst, wird die bisherige Auswahl aufgehoben. Solange ein Werkzeug aktiv ist, ändert eine neue Farbe oder Linienstärke auch das, was es gerade erstellt hat. Um eine früher erstellte Anmerkung zu ändern, ohne ein Werkzeug zu ändern, wähle sie mit dem Werkzeug „Select“ aus und wähle dann eine Farbe.
+
+Um ein Werkzeug zu beenden, drücke die Escape-Taste, klicke erneut auf das Werkzeug oder wähle „Select“, den Pfeil am Anfang der Symbolleiste.
+
+## Anmerkungen auswählen und ändern {#select-and-change-annotations}
+
+Wähle **Select**, den Pfeil am Anfang der Symbolleiste „Markup“ oder der Symbolleiste „Measurement“. Mit „Select“ kannst du Text auswählen und auch Anmerkungen und Messungen:
+
+- **Zeige auf eine**, und ein gestrichelter Umriss zeigt, was ein Klick aufnimmt. Bei einem Rechteck, Oval, Polygon oder einer Wolke zeigst du auf den Umriss, bei einer Freihandzeichnung auf ihre Linie: Anderswo wählt ein Klick den Text dort aus.
+- **Klicke darauf**, um sie auszuwählen. Dann kannst du sie ziehen, um sie zu bewegen, an einem Ziehpunkt ziehen, um ihre Größe oder Form zu ändern, sie mit den Pfeiltasten verschieben, in der Symbolleiste eine Farbe oder Linienstärke wählen oder die Rückschritttaste drücken, um sie zu löschen. Klicke mit der rechten Maustaste darauf, um ihre Befehle zu sehen.
+- **Mehrere auswählen:** Klicke bei gedrückter ⇧-Taste auf jede, oder ziehe bei gedrückter ⌥-Taste über sie, um alles auszuwählen, was ganz im Bereich liegt. Wähle Edit > Select All Annotations on Page (⌥⌘A), um alle auszuwählen. Siehe [Mehrere Anmerkungen gleichzeitig ändern](#change-several-annotations-at-once).
+
+Solange ein Zeichen- oder Messwerkzeug aktiv ist, erstellt ein Klick etwas Neues. Wähle also zuerst „Select“ oder drücke die Escape-Taste.
 
 ## Freihand zeichnen
 
-Wähle das Stiftwerkzeug aus, stelle die Linienstärke auf „Thin“, „Medium“ oder „Thick“ ein und ziehe dann auf der Seite.
+Wähle das Stiftwerkzeug aus, stelle die Linienstärke ein und ziehe dann auf der Seite. Wähle eine Stärke in Punkt im Feld für die Linienstärke oder gib eine ein, von 0,1 bis 72 Punkt.
+
+Um eine Zeichnung zu bewegen, ihre Farbe oder Stärke zu ändern oder sie zu löschen, wähle „Select“ und klicke auf ihre Linie. Mit dem Stift zeichnest du bei einem Klick auf eine Zeichnung stattdessen darüber.
 
 ## Eine Form zeichnen
 
-1. Wähle das Werkzeug „Shapes“ aus und dann „Rectangle“, „Oval“, „Line or Arrow“ oder „Revision Cloud“.
-2. Stelle die Linienstärke auf „Thin“, „Medium“ oder „Thick“ ein. Für eine Linie wählst du im Menü „Line Ending“ eine Pfeilspitze, etwa „Open Arrow“, „Closed Arrow“ oder „Diamond“, oder „None“ für eine einfache Linie.
+1. Wähle das Werkzeug „Shapes“ aus und dann „Rectangle“, „Oval“, „Line or Arrow“, „Revision Cloud“, „Polygon“ oder „Polyline“.
+2. Stelle die Linienstärke ein: Wähle eine Stärke in Punkt oder gib eine ein. Für eine Linie oder einen Linienzug wählst du im Menü „Line Ending“ eine Pfeilspitze, etwa „Open Arrow“, „Closed Arrow“ oder „Diamond“, oder „None“ für eine einfache Linie.
 3. Ziehe auf der Seite. Ein Rechteck oder Oval füllt den Bereich, über den du ziehst. Eine Linie verläuft von dort, wo du beginnst, bis dort, wo du aufhörst, mit ihrem Ende am Endpunkt.
 
 Halte beim Ziehen ⇧ gedrückt, um ein Quadrat oder einen Kreis zu zeichnen oder eine Linie in einem Vielfachen von 45° zu halten.
 
+Bei einem Polygon oder Linienzug klickst du jeden Punkt an, statt zu ziehen. Klicke erneut auf den ersten Punkt, um ein Polygon zu schließen, oder doppelklicke bzw. drücke den Zeilenschalter, um fertig zu werden. Ein Linienzug bleibt offen und kann in einem Pfeil enden. Drücke die Escape-Taste, um einen begonnenen zu verwerfen. „Ortho Lock“ und das Einrasten aus der Symbolleiste „Measurement“ gelten für jeden Punkt.
+
 Eine Revisionswolke markiert einen Bereich, der geändert wurde oder geprüft werden muss. Ziehe um den Bereich herum, und die Wolke folgt dem Umriss, den du zeichnest. Ziehst du schnell gerade darüber, entsteht stattdessen eine ovale Wolke.
 
-Um ein Rechteck, ein Oval oder eine Wolke auszuwählen, zu bewegen oder mit der rechten Maustaste darauf zu klicken, verwende den Umriss. So kannst du den Text darin weiterhin auswählen.
+Um ein Rechteck, ein Oval, ein Polygon oder eine Wolke auszuwählen, zu bewegen oder mit der rechten Maustaste darauf zu klicken, verwende den Umriss. So kannst du den Text darin weiterhin auswählen.
 
-Um eine Linie nach dem Zeichnen zu ändern, ziehe an einem ihrer Enden, um nur dieses Ende zu bewegen, oder wähle sie aus und wähle in der Symbolleiste eine andere Linienstärke oder ein anderes Linienende. Du kannst auch mit der rechten Maustaste darauf klicken und „Line Ending“ wählen. Wähle ein Rechteck oder Oval aus und wähle eine Linienstärke, um seine Stärke zu ändern.
+Um eine Linie nach dem Zeichnen zu ändern, ziehe an einem ihrer Enden, um nur dieses Ende zu bewegen, oder wähle sie aus und wähle in der Symbolleiste eine andere Linienstärke oder ein anderes Linienende. Du kannst auch mit der rechten Maustaste darauf klicken und „Line Ending“ wählen. Wähle ein Rechteck, Oval, Polygon oder einen Linienzug aus und wähle eine Linienstärke, um seine Stärke zu ändern; bei einem Linienzug kannst du auch sein Ende ändern.
 
 ## Ein Textfeld hinzufügen
 
 1. Wähle das Textfeldwerkzeug aus und lege eine Schriftgröße von 6 bis 32 Punkt fest.
 2. Klicke auf die Stelle der Seite, an der der Text stehen soll, und gib ihn ein.
 3. Klicke außerhalb des Felds oder drücke die Escape-Taste, um den Vorgang abzuschließen.
+
+Ein Textfeld hat keinen Rahmen und keinen Hintergrund: Der Text steht direkt auf der Seite, wie bei einer Schreibmaschine. Acrobat und PDF-XChange behandeln ihn als Schreibmaschinentext.
+
+Um die Schriftgröße später zu ändern, wähle das Textfeld oder die Legende aus und verwende dann den Schieberegler für die Schriftgröße in der Symbolleiste „Markup“. Er erscheint dort, solange eines davon ausgewählt ist.
 
 ## Eine Legende hinzufügen
 
@@ -89,6 +111,17 @@ Anmerkungen, die bereits im Dokument waren, etwa die Formen, Notizen und Wolken 
 - Wähle eine Anmerkung aus und wähle in der Symbolleiste „Markup“ eine Farbe, Linienstärke oder ein Linienende, um sie zu ändern. VectorPDF zeichnet sie dann in seinem eigenen Stil neu.
 
 Hervorhebungen, Unterstreichungen, Durchstreichungen, Freihandzeichnungen und Messungen aus der Datei bleiben, wie deine eigenen, an ihrem Platz. Du kannst sie aber löschen oder darauf antworten. Den Text eines Textfelds aus einer anderen App kannst du nicht bearbeiten.
+
+## Mehrere Anmerkungen gleichzeitig ändern {#change-several-annotations-at-once}
+
+Wähle mit dem Werkzeug „Select“ eine Anmerkung aus und klicke dann bei gedrückter ⇧-Taste auf andere auf derselben Seite, um sie hinzuzufügen; klicke bei gedrückter ⇧-Taste erneut auf eine, um sie wieder herauszunehmen. Oder ziehe bei gedrückter ⌥-Taste über sie, oder wähle Edit > Select All Annotations on Page (⌥⌘A). Dann:
+
+- **Bewegen:** Ziehe eine davon, oder drücke die Pfeiltasten.
+- **Farbe oder Linienstärke ändern:** Wähle sie in der Symbolleiste.
+- **Ausrichten:** Klicke mit der rechten Maustaste auf eine davon und wähle „Align“ und dann eine Kante oder Mitte. Bei drei oder mehr verteilt „Distribute Horizontally“ oder „Distribute Vertically“ sie gleichmäßig.
+- **Löschen:** Drücke die Rückschritttaste, oder klicke mit der rechten Maustaste auf eine und wähle „Delete“, das die Anzahl nennt.
+
+Jede dieser Änderungen ist ein Schritt für „Undo“. Klicke irgendwo anders hin, um wieder nur eine auszuwählen.
 
 ## Eine Änderung widerrufen
 

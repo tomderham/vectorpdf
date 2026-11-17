@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # VectorPDF ユーザガイド
 
@@ -56,7 +56,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 ## 図面を測定する
 
 - [図面の縮尺を設定する](drawing-scale.md)
-- [長さ、面積、角度を測定する](measure.md)
+- [長さ、面積、角度を測定し、数を数える](measure.md)
 - [拾い出し表](takeoff.md)
 
 ## 編集と保護

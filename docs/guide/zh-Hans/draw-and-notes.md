@@ -1,33 +1,55 @@
-<!-- keywords: 绘图, 绘制, 墨迹, 笔, 手绘, 形状, 矩形, 正方形, 椭圆, 圆形, 线条, 箭头, 文本框, 标注框, 便笺, 备注, 评论, 回复, 状态, 作者, 修订云, 云形, 线条末端, 颜色, 撤销, 重做, 注释, 橡皮擦, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF -->
-<!-- source: d9645d5143e8 -->
+<!-- keywords: 绘图, 绘制, 墨迹, 笔, 手绘, 形状, 矩形, 正方形, 椭圆, 圆形, 线条, 箭头, 文本框, 标注框, 便笺, 备注, 评论, 回复, 状态, 作者, 修订云, 云形, 线条末端, 颜色, 撤销, 重做, 注释, 橡皮擦, draw, drawing, ink, pen, freehand, shape, shapes, rectangle, square, oval, circle, ellipse, line, arrow, text box, callout, callouts, note, notes, sticky note, comment, comments, reply, replies, status, author, revision cloud, cloud, line ending, color, colour, undo, redo, annotate, annotation, annotations, eraser, PDF, 选择多个, 对齐, 分布, 组, select several, multiple, align, distribute, group -->
+<!-- source: 7023d91b7100 -->
 
 # 绘图、添加便笺、文本和标注框
 
-按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要选取颜色，请点按工具栏右侧附近的颜色按钮，然后点按一种颜色。若要结束使用工具，请按下 Escape 键、再次点按该工具，或者选取工具栏中的第一个工具 Text Selection Mode。
+按下 ⇧⌘A 或点按 Markup Toolbar 按钮，以显示 Markup 工具栏。选取一个工具，然后选取颜色和大小。若要选取颜色，请点按工具栏右侧附近的颜色按钮，然后点按一种颜色。
+
+每个工具都有自己的颜色和线条粗细，VectorPDF 会记住它们。起初，钢笔和形状为红色，文本框和标注为黑色，便笺为黄色。选取一个工具会取消选择当前所选内容。工具使用期间，更改其颜色或粗细也会更改它刚刚创建的内容。若要在不更改工具的情况下更改之前创建的注释，请用 Select 工具选择它，然后选取颜色。
+
+若要结束使用工具，请按下 Escape 键、再次点按该工具，或者选取工具栏开头的箭头 Select。
+
+## 选择和更改注释 {#select-and-change-annotations}
+
+选取 Markup 工具栏或 Measurement 工具栏开头的箭头 **Select**。使用 Select，你可以选择文本，也可以选择注释和测量结果：
+
+- **将指针移到某个注释上**，虚线轮廓会显示点按将选中的内容。对于矩形、椭圆、多边形或云形，请指向其轮廓；对于手绘图形，请指向其线条：在其他位置点按会选择该处的文本。
+- **点按它**即可选中。然后可以拖移来移动它，拖移控制点来调整大小或形状，按箭头键微移，在工具栏中选取颜色或粗细，或者按下 Delete 键。右键点按它可查看其命令。
+- **选择多个：**按住 ⇧ 点按每一个，或者按住 ⌥ 在它们上方拖移，以选择完全位于该区域内的所有内容。选取 Edit > Select All Annotations on Page (⌥⌘A) 可全部选中。请参阅[一次更改多个注释](#change-several-annotations-at-once)。
+
+绘图或测量工具使用期间，点按会创建新内容，因此请先选取 Select，或按下 Escape 键。
 
 ## 手绘
 
-选取钢笔工具，将线宽设为 Thin、Medium 或 Thick，然后在页面上拖移。
+选取钢笔工具，设置线宽，然后在页面上拖移。在线宽框中选取以磅为单位的宽度，或输入 0.1 到 72 磅之间的值。
+
+若要移动绘图、更改其颜色或粗细，或者删除它，请选取 Select 并点按其线条。使用钢笔时，点按绘图会在其上方绘制。
 
 ## 绘制形状
 
-1. 选取 Shapes 工具，然后选取 Rectangle、Oval、Line or Arrow 或 Revision Cloud。
-2. 将线条粗细设为 Thin、Medium 或 Thick。对于线条，可使用 Line Ending 菜单选取箭头样式，例如 Open Arrow、Closed Arrow 或 Diamond；选取 None 则为普通线条。
+1. 选取 Shapes 工具，然后选取 Rectangle、Oval、Line or Arrow、Revision Cloud、Polygon 或 Polyline。
+2. 设置线条粗细：选取以磅为单位的粗细，或输入一个值。对于线条或折线，可使用 Line Ending 菜单选取箭头样式，例如 Open Arrow、Closed Arrow 或 Diamond；选取 None 则为普通线条。
 3. 在页面上拖移。矩形或椭圆会填满你拖过的区域。线条从你开始拖移的位置画到停止的位置，末端带有所选的线条末端。
 
 拖移时按住 ⇧ 可绘制正方形或圆形，或者让线条保持在 45° 的倍数角度。
 
+对于多边形或折线，请逐个点按各点，而不是拖移。再次点按第一个点可闭合多边形，或者连按两次或按下 Return 键来完成。折线保持开放，末端可以是箭头。按下 Escape 键可放弃正在绘制的图形。Measurement 工具栏中的 Ortho Lock 和吸附适用于每个点。
+
 修订云用于标记已更改或需要审阅的区域。沿着区域周围拖移，云形会跟随你画出的轮廓。快速直线拖过则会生成椭圆形的云。
 
-若要选择、移动或右键点按矩形、椭圆或云形，请使用其轮廓，这样你仍然可以选择其中的文本。
+若要选择、移动或右键点按矩形、椭圆、多边形或云形，请使用其轮廓，这样你仍然可以选择其中的文本。
 
-若要在绘制线条后更改它，请拖移任一端以只移动该端，或者选择线条并在工具栏中选取其他线条粗细或线条末端。你也可以右键点按线条并选取 Line Ending。选择矩形或椭圆并选取线条粗细，即可更改其粗细。
+若要在绘制线条后更改它，请拖移任一端以只移动该端，或者选择线条并在工具栏中选取其他线条粗细或线条末端。你也可以右键点按线条并选取 Line Ending。选择矩形、椭圆、多边形或折线并选取线条粗细，即可更改其粗细；对于折线，还可以更改其末端。
 
 ## 添加文本框
 
 1. 选取文本框工具，并设置 6 到 32 点的字体大小。
 2. 在页面上要放置文本的位置点按，然后键入内容。
 3. 点按文本框外部或按下 Escape 键以完成。
+
+文本框没有边框或背景：文本直接位于页面上，就像用打字机打出来一样。Acrobat 和 PDF-XChange 会将其视为打字机文本。
+
+若要之后更改字体大小，请选择文本框或标注，然后使用 Markup 工具栏中的字体大小滑块。只有在选中其中一个时，滑块才会显示。
 
 ## 添加标注框
 
@@ -89,6 +111,17 @@
 - 选择一条注释，然后在 Markup 工具栏中选取颜色、线条粗细或线条末端即可更改它。之后 VectorPDF 会以自己的样式重新绘制它。
 
 文件中的高亮、下划线、删除线、手绘图和测量会像你自己创建的一样保持在原位，但你可以删除它们或回复它们。你无法编辑其他 App 创建的文本框中的文本。
+
+## 一次更改多个注释 {#change-several-annotations-at-once}
+
+使用 Select 工具选择一个注释，然后按住 ⇧ 点按同一页面上的其他注释来添加它们；再次按住 ⇧ 点按某个注释可将其移出选择。也可以按住 ⌥ 在它们上方拖移，或者选取 Edit > Select All Annotations on Page (⌥⌘A)。然后：
+
+- **移动它们：**拖移其中任意一个，或按箭头键。
+- **更改其颜色或线条粗细：**在工具栏中选取。
+- **对齐它们：**右键点按其中一个并选取 Align，然后选取一条边或中心。选中三个或更多时，Distribute Horizontally 或 Distribute Vertically 可让它们均匀分布。
+- **删除它们：**按下 Delete 键，或者右键点按其中一个并选取 Delete，其中会显示数量。
+
+每项操作都是 Undo 的一个步骤。点按其他任意位置可重新只选择一个。
 
 ## 撤销更改
 

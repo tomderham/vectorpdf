@@ -1,9 +1,9 @@
-<!-- keywords: Takeoff, Mengenermittlung, Aufmaß, Tabelle, Aufstellung, Mengen, Summen, Messungen, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: Takeoff, Mengenermittlung, Aufmaß, Tabelle, Aufstellung, Mengen, Summen, Messungen, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, Zählung, Zählungen, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # Takeoff-Tabelle
 
-Die Takeoff-Tabelle ist eine Aufstellung aller Messungen in einem Dokument mit Seite, Typ, Wert und Maßstab sowie Summen für Längen und Flächen.
+Die Takeoff-Tabelle ist eine Aufstellung aller Messungen in einem Dokument mit Seite, Typ, Wert und Maßstab sowie Summen für Längen und Flächen. [Zählungen](measure.md#count-things-on-a-drawing) sind eine Zeile für jede Gruppe auf jeder Seite, etwa „Outlets × 12“, und werden für jede Gruppe über das ganze Dokument summiert.
 
 Klicke in der [Symbolleiste „Measurement“](measure.md) auf **Takeoff Table**.
 

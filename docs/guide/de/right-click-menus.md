@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # Kontextmenüs
 
@@ -10,7 +10,7 @@ Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befeh
 | Rechtsklick auf | Befehle |
 | --- | --- |
 | Ausgewählter Text | Copy Text, Look Up, Translate Selection, Start Speaking oder Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Ein ausgewählter Bereich | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| Ein ausgewählter Bereich | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Ein Link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Eine Hervorhebung, Unterstreichung oder Durchstreichung | Comments… und der passende Befehl „Remove“ |
 | Ein Textfeld | Comments…, Edit Text Box und der Löschbefehl |
@@ -18,6 +18,7 @@ Klicke mit der rechten Maustaste oder bei gedrückter Taste „ctrl“, um Befeh
 | Eine Notiz oder der Umriss eines Rechtecks, Ovals oder einer Revisionswolke | „Comments…“ und der Löschbefehl |
 | Eine Linie oder ein Pfeil | „Comments…“, „Line Ending“ und der Löschbefehl |
 | Eine Zeichnung, ein Stempel oder eine Messung | Comments… und der Löschbefehl |
+| Eine von mehreren ausgewählten Anmerkungen | Align (Kanten und Mitten; Distribute bei drei oder mehr), Delete mit der Anzahl |
 | Eine Form, Wolke, Linie, Notiz, ein Stempel oder Textfeld, das früher im Dokument gesichert oder in einer anderen App erstellt wurde | „Comments…“, „Line Ending“ bei einer Linie und der Löschbefehl |
 | Eine Hervorhebung, Zeichnung oder Messung, die früher im Dokument gesichert oder in einer anderen App erstellt wurde | „Comments…“ und die Befehle für jede andere Stelle der Seite |
 | Eine andere Stelle auf der Seite | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

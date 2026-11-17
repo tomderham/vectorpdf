@@ -1,7 +1,7 @@
-<!-- keywords: medir, medición, mediciones, medida, medidas, longitud, distancia, cota, dimensión, perímetro, área, ángulo, orto, ajuste, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, cambiar, mover, tirador, desplazamiento, edit, change, move, reshape, handle, offset -->
-<!-- source: 3104d2e23c51 -->
+<!-- keywords: medir, medición, mediciones, medida, medidas, longitud, distancia, cota, dimensión, perímetro, área, ángulo, orto, ajuste, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, cambiar, mover, tirador, desplazamiento, edit, change, move, reshape, handle, offset, contar, recuento, conteo, símbolos, count, counting, tally, symbols -->
+<!-- source: 105c5177cf19 -->
 
-# Medir longitudes, áreas y ángulos
+# Medir longitudes, áreas y ángulos, y contar
 
 Pulsa ⇧⌘M para mostrar la barra de herramientas Measurement. Si tu plano está a escala, [define la escala](drawing-scale.md) primero.
 
@@ -15,6 +15,13 @@ Amplía la vista antes de medir para ganar precisión. Al pulsar Escape se cance
 | Perimeter | Haz clic en cada punto del recorrido. Pulsa Return o haz doble clic para terminar. |
 | Polygon Area | Haz clic en cada esquina. Pulsa Return, haz doble clic o haz clic en el primer punto para cerrar la forma. |
 | Vertex Angle | Haz clic en un punto de la primera línea, luego en la esquina y después en un punto de la segunda línea. |
+| Count | Escribe lo que cuentas en el cuadro de grupo, como Enchufes, y haz clic en cada uno. |
+
+## Contar elementos en un plano {#count-things-on-a-drawing}
+
+Elige la herramienta Count y escribe un nombre de grupo en el cuadro de al lado, como Enchufes o Puertas tipo A, o elige uno que ya exista en el documento en el menú junto al cuadro. Cada clic coloca un marcador, un punto del color de la barra Measurement, y la barra muestra cuántos de ese grupo hay en la página. Cambia el nombre del grupo para contar otra cosa; cada grupo se cuenta por separado. Usa un color distinto para cada grupo para distinguirlos en la página.
+
+Para mover un marcador, arrástralo con la herramienta Select. Para quitar uno, haz clic con el botón derecho en él y elige Delete Count Marker. La [tabla de mediciones](takeoff.md) muestra cuántos de cada grupo hay en cada página, con totales. Los marcadores se guardan en el PDF como pequeños círculos, así que otras apps también los muestran.
 
 ## Dibujar con precisión
 
@@ -25,7 +32,9 @@ Amplía la vista antes de medir para ganar precisión. Al pulsar Escape se cance
 
 ## Cambiar una medición
 
-Pulsa Escape, o haz clic en la herramienta seleccionada, para dejar la herramienta de medición y haz clic en una medición para seleccionarla. Aparecen tiradores en sus puntos.
+Elige **Select**, la flecha al principio de la barra Measurement, o pulsa Escape para dejar la herramienta de medición. Apunta a una medición y un contorno discontinuo la muestra; haz clic en ella para seleccionarla. Haz clic con ⇧ pulsada para seleccionar varias, o mantén pulsada ⌥ y arrastra sobre ellas. Con una herramienta de medición en uso, un clic vuelve a medir.
+
+Una medición seleccionada tiene tiradores en sus puntos.
 
 | Para | Haz esto |
 | --- | --- |
@@ -33,6 +42,7 @@ Pulsa Escape, o haz clic en la herramienta seleccionada, para dejar la herramien
 | Mover toda la medición | Arrastra su línea o pulsa las teclas de flecha (con ⇧ se mueve 10 puntos). |
 | Acercar o alejar una línea de cota de lo que mide | Arrastra su etiqueta o, cuando ya esté separada de los puntos, la propia línea de cota. |
 | Cambiar su color | Elige un color con el botón de color de la barra de herramientas Measurement. |
+| Cambiar su grosor de línea | Elige o escribe un grosor en el cuadro de grosor de línea de la barra Measurement. |
 
 El valor se vuelve a calcular mientras arrastras. Arrastra más allá del borde de la ventana para desplazarte, si la medición es más larga que la vista. Elige Edit > Undo para devolver una medición a como estaba. También se pueden cambiar las mediciones ya guardadas en el PDF.
 
@@ -40,10 +50,10 @@ Para seleccionar un área, haz clic en su borde: al hacer clic dentro se selecci
 
 ## Cambiar el aspecto de las mediciones
 
-Usa el botón de color y el grosor de línea de la barra de herramientas Measurement antes de medir. Para cambiar el color de una medición que ya has hecho, selecciónala y elige un color.
+Usa el botón de color y el cuadro de grosor de línea de la barra de herramientas Measurement antes de medir. Elige un grosor en puntos o escribe uno, de 0,1 a 72 puntos. Las mediciones nuevas son grises, de 1,5 puntos, hasta que elijas otra cosa. VectorPDF recuerda lo que eliges, y la barra Markup conserva sus propios colores y grosores. Para cambiar el color o el grosor de una medición que ya has hecho, selecciónala y elige un color o grosor en la barra Measurement. El grosor se guarda en el PDF.
 
 ## Conservar o eliminar mediciones
 
-Las mediciones son anotaciones que se guardan en el PDF al [guardarlo](save.md). Para eliminar una, haz clic en ella con el botón derecho y elige el comando de eliminación, como Delete Dimension o Delete Area Takeoff.
+Las mediciones son anotaciones que se guardan en el PDF al [guardarlo](save.md). Para eliminar una, haz clic en ella con el botón derecho y elige el comando de eliminación, como Delete Dimension, Delete Area Takeoff o Delete Count Marker.
 
 Para ver una lista de todas tus mediciones, consulta la [tabla de mediciones](takeoff.md).

@@ -1,5 +1,5 @@
-<!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 自动存储, 恢复, 崩溃, 意外退出, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # 存储更改
 
@@ -18,6 +18,16 @@
 若要放弃上次存储以来所做的全部更改，请选取 File > Revert to Saved。VectorPDF 会先询问，然后按上次存储时的状态打开文件，并停留在你正在阅读的页面。此操作无法撤销。
 
 若要制作文稿的较小副本，请参阅[Optimized PDF](export.md#optimized-pdf)。
+
+## 如果 VectorPDF 意外退出 {#if-vectorpdf-quits-unexpectedly}
+
+当文稿有未存储的更改时，VectorPDF 会在你的 Mac 上保留该文稿的副本，约每 30 秒更新一次。如果 VectorPDF 意外退出，它会在下次打开时提供这些副本：
+
+- **Open Recovered Copy** 会将每个副本以“(Recovered)”名称存储在原文稿旁边并打开。原文稿不会更改。比较两者后，保留你想要的那个。
+- **Decide Later** 会保留副本，并在下次再次询问。
+- **Discard Changes** 会删除副本。
+
+当你存储文稿、复原文稿或不存储就关闭文稿时，以及退出 VectorPDF 时，副本会被删除。受密码保护的文稿不会被复制，因为副本不会加密。
 
 ## 共享文稿
 

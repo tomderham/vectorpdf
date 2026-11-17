@@ -1,5 +1,5 @@
-<!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, guardado automático, recuperar, recuperación, fallo, cierre inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # Guardar los cambios
 
@@ -18,6 +18,16 @@ Si cierras un documento con cambios sin guardar, VectorPDF te pregunta si quiere
 Para descartar todo lo que hayas hecho desde la última vez que guardaste, elige File > Revert to Saved. VectorPDF te lo pregunta primero y, a continuación, abre el archivo tal como se guardó por última vez, en la página que estabas leyendo. No se puede deshacer.
 
 Para crear una copia más pequeña de un documento, consulta [Optimized PDF](export.md#optimized-pdf).
+
+## Si VectorPDF se cierra de forma inesperada {#if-vectorpdf-quits-unexpectedly}
+
+Mientras un documento tiene cambios sin guardar, VectorPDF conserva una copia en tu Mac, que actualiza cada 30 segundos aproximadamente. Si VectorPDF se cierra de forma inesperada, ofrece las copias la próxima vez que se abre:
+
+- **Open Recovered Copy** guarda cada copia junto a su original, con el nombre «(Recovered)», y la abre. El original no cambia. Compáralos y quédate con el que quieras.
+- **Decide Later** conserva las copias y vuelve a preguntar la próxima vez.
+- **Discard Changes** elimina las copias.
+
+La copia se elimina cuando guardas el documento, lo restauras o lo cierras sin guardar, y cuando sales de VectorPDF. Los documentos protegidos con contraseña no se copian, porque la copia no estaría cifrada.
 
 ## Compartir un documento
 

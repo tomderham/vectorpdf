@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # Menu di scelta rapida
 
@@ -10,7 +10,7 @@ Fai clic con il tasto destro, o fai clic tenendo premuto Ctrl, per vedere i coma
 | Clic con il tasto destro su | Comandi |
 | --- | --- |
 | Testo selezionato | Copy Text, Look Up, Translate Selection, Start Speaking o Stop Speaking, Highlight, Underline, Strikethrough, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Un'area selezionata | Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
+| Un'area selezionata | Highlight Area, Copy Extracted Text, Copy Screenshot, Save Screenshot As, Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un link | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un'evidenziazione, una sottolineatura o una barratura | Comments… e il comando Remove corrispondente |
 | Una casella di testo | Comments…, Edit Text Box e il comando di eliminazione |
@@ -18,6 +18,7 @@ Fai clic con il tasto destro, o fai clic tenendo premuto Ctrl, per vedere i coma
 | Una nota, o il contorno di un rettangolo, di un ovale o di una nuvola di revisione | Comments… e il comando di eliminazione |
 | Una linea o una freccia | Comments…, Line Ending e il comando di eliminazione |
 | Un disegno, un timbro o una misurazione | Comments… e il comando di eliminazione |
+| Una di più annotazioni selezionate | Align (bordi e centri; Distribute con tre o più), Delete con quante sono |
 | Una forma, una nuvola, una linea, una nota, un timbro o una casella di testo salvati in precedenza nel documento, o creati in un'altra app | Comments…, Line Ending per una linea, e il comando di eliminazione |
 | Un'evidenziazione, un disegno o una misura salvati in precedenza nel documento, o creati in un'altra app | Comments… e i comandi validi in qualsiasi altro punto della pagina |
 | Qualsiasi altro punto della pagina | Create Anchor, Create Anchor and Open in New Window, Open in New Window |

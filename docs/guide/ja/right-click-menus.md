@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # 右クリックメニュー
 
@@ -10,7 +10,7 @@
 | 右クリックする場所 | コマンド |
 | --- | --- |
 | 選択したテキスト | Copy Text、Look Up、Translate Selection、Start Speaking または Stop Speaking、Highlight、Underline、Strikethrough、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| 選択した領域 | Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
+| 選択した領域 | Highlight Area、Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | リンク | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | ハイライト、下線、取り消し線 | Comments…、および対応する Remove コマンド |
 | テキストボックス | Comments…、Edit Text Box、および削除コマンド |
@@ -18,6 +18,7 @@
 | メモ、または長方形、楕円、リビジョンクラウドの輪郭 | Comments… と削除コマンド |
 | 線または矢印 | Comments…、Line Ending、削除コマンド |
 | 描画、スタンプ、測定値 | Comments…、および削除コマンド |
+| 複数選択した注釈のいずれか | Align(端と中央。3 つ以上では Distribute)、個数付きの Delete |
 | 以前に書類に保存された、またはほかのアプリで作成された図形、クラウド、線、メモ、スタンプ、テキストボックス | Comments…、線の場合は Line Ending、削除コマンド |
 | 以前に書類に保存された、またはほかのアプリで作成されたハイライト、描画、計測 | Comments… と、ページ上のほかの場所と同じコマンド |
 | ページ上のその他の場所 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |

@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # VectorPDF 사용 설명서
 
@@ -56,7 +56,7 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 ## 도면 측정
 
 - [도면 축척 설정하기](drawing-scale.md)
-- [길이, 면적 및 각도 측정하기](measure.md)
+- [길이, 면적 및 각도 측정하기 및 개수 세기](measure.md)
 - [물량 산출표](takeoff.md)
 
 ## 편집 및 보호

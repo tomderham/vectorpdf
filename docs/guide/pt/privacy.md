@@ -1,5 +1,5 @@
 <!-- keywords: privacidade, dados, rede, telemetria, análises, segurança, pesquisas recentes, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 464311d898b1 -->
+<!-- source: 1f4607569e3c -->
 
 # Privacidade
 
@@ -15,7 +15,7 @@ O VectorPDF não tem contas, análises, telemetria nem relatórios de falhas. Se
 
 ## O que fica armazenado no seu Mac
 
-O VectorPDF armazena suas preferências, favoritos, Grupos de Abas, posições de leitura, âncoras e carimbo. Ele também mantém um índice dos documentos que você usou com o Agent, miniaturas das âncoras e cópias de trabalho temporárias de documentos com edições de páginas ou tarjamentos não salvos, que são apagadas quando deixam de ser necessárias.
+O VectorPDF armazena suas preferências, favoritos, Grupos de Abas, posições de leitura, âncoras, buscas recentes e carimbo. Ele também mantém um índice dos documentos que você usou com o Agent, miniaturas de âncoras, cópias de trabalho temporárias de documentos com edições de páginas ou tarjas não salvas, e [cópias de documentos com alterações não salvas](save.md#if-vectorpdf-quits-unexpectedly) para o caso de ele fechar inesperadamente. Ele as apaga quando não precisa mais delas.
 
 Ele também guarda as pesquisas recentes de cada documento. Para ver quanto espaço tudo isso ocupa, ou para limpá-lo, use Storage em [Settings](settings.md#free-up-space-or-remove-data).
 

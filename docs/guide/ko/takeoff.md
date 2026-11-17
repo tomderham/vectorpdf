@@ -1,9 +1,9 @@
-<!-- keywords: 물량 산출, 물량 산출표, 표, 수량, 합계, 측정, 내역, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: 물량 산출, 물량 산출표, 표, 수량, 합계, 측정, 내역, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, 개수, 카운트, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # 물량 산출표
 
-물량 산출표는 문서의 모든 측정을 페이지, 유형, 값, 축척과 함께 나열하고 길이와 면적의 합계를 보여 주는 표입니다.
+물량 산출표는 문서의 모든 측정을 페이지, 유형, 값, 축척과 함께 나열하고 길이와 면적의 합계를 보여 주는 표입니다. [개수](measure.md#count-things-on-a-drawing)는 각 페이지의 그룹마다 한 행(예: "Outlets × 12")으로 표시되며, 문서 전체에서 그룹별로 합산됩니다.
 
 [Measurement 도구 막대](measure.md)에서 **Takeoff Table**을 클릭합니다.
 

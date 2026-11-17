@@ -1,9 +1,9 @@
-<!-- keywords: 工程量, 算量, 表, 明细表, 数量, 合计, 测量结果, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: 工程量, 算量, 表, 明细表, 数量, 合计, 测量结果, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, 计数, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # 工程量表
 
-工程量表是文稿中所有测量结果的明细表，列出每项测量的页面、类型、数值和比例，以及长度和面积的合计。
+工程量表是文稿中所有测量结果的明细表，列出每项测量的页面、类型、数值和比例，以及长度和面积的合计。[计数](measure.md#count-things-on-a-drawing)在每个页面上每个组占一行，例如“Outlets × 12”，并在整份文稿中按组合计。
 
 点按 [Measurement 工具栏](measure.md)中的 **Takeoff Table**。
 

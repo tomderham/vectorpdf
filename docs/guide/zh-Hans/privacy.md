@@ -1,5 +1,5 @@
 <!-- keywords: 隐私, 数据, 网络, 遥测, 分析, 安全性, 最近搜索, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 464311d898b1 -->
+<!-- source: 1f4607569e3c -->
 
 # 隐私
 
@@ -15,7 +15,7 @@ VectorPDF 没有账户、分析、遥测或崩溃报告功能。你的文稿在 
 
 ## 哪些内容存储在你的 Mac 上
 
-VectorPDF 会存储你的偏好设置、个人收藏、标签页组、阅读位置、锚点和图章。它还会保留用于 Agent 的文稿索引、锚点缩略图，以及含有未存储页面编辑或涂黑操作的文稿的临时工作副本，并在用完后将其删除。
+VectorPDF 会存储你的偏好设置、个人收藏、标签页组、阅读位置、锚点、最近搜索和图章。它还会保留用于 Agent 的文稿索引、锚点缩略图、含有未存储页面编辑或涂黑操作的文稿的临时工作副本，以及[含有未存储更改的文稿的副本](save.md#if-vectorpdf-quits-unexpectedly)，以防意外退出。用完后它会将这些删除。
 
 它还会存储每个文稿的最近搜索。要查看这些内容占用多少空间或将其清除，请使用 [Settings](settings.md#free-up-space-or-remove-data) 中的 Storage。
 

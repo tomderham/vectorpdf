@@ -1,5 +1,5 @@
-<!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 자동 저장, 복구, 충돌, 예기치 않은 종료, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # 변경 사항 저장하기
 
@@ -18,6 +18,16 @@
 마지막으로 저장한 이후의 모든 변경 사항을 버리려면 File > Revert to Saved를 선택합니다. VectorPDF는 먼저 확인한 다음, 마지막으로 저장된 상태의 파일을 읽고 있던 페이지에서 엽니다. 이 작업은 실행 취소할 수 없습니다.
 
 문서의 크기를 줄인 사본을 만들려면 [Optimized PDF](export.md#optimized-pdf)를 참고합니다.
+
+## VectorPDF가 예기치 않게 종료된 경우 {#if-vectorpdf-quits-unexpectedly}
+
+문서에 저장하지 않은 변경 사항이 있으면 VectorPDF는 그 문서의 사본을 Mac에 보관하고 약 30초마다 업데이트합니다. VectorPDF가 예기치 않게 종료되면 다음에 열 때 사본을 제안합니다.
+
+- **Open Recovered Copy**는 각 사본을 원본 옆에 "(Recovered)"라는 이름으로 저장하고 엽니다. 원본은 변경되지 않습니다. 둘을 비교한 다음 원하는 것을 남깁니다.
+- **Decide Later**는 사본을 보관하고 다음에 다시 묻습니다.
+- **Discard Changes**는 사본을 삭제합니다.
+
+문서를 저장하거나, 저장된 상태로 되돌리거나, 저장하지 않고 닫을 때, 그리고 VectorPDF를 종료할 때 사본이 삭제됩니다. 암호로 보호된 문서는 사본이 암호화되지 않으므로 복사하지 않습니다.
 
 ## 문서 공유하기
 

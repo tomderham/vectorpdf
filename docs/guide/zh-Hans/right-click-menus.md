@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 40e9f892a893 -->
+<!-- source: 895a68e76d61 -->
 
 # 右键菜单
 
@@ -10,7 +10,7 @@
 | 右键点按 | 命令 |
 | --- | --- |
 | 所选文本 | Copy Text、Look Up、Translate Selection、Start Speaking 或 Stop Speaking、Highlight、Underline、Strikethrough、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| 所选区域 | Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
+| 所选区域 | Highlight Area、Copy Extracted Text、Copy Screenshot、Save Screenshot As、Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 链接 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 高亮、下划线或删除线 | Comments…，以及相应的 Remove 命令 |
 | 文本框 | Comments…、Edit Text Box，以及删除命令 |
@@ -18,6 +18,7 @@
 | 便笺，或矩形、椭圆或修订云的轮廓 | Comments… 和删除命令 |
 | 线条或箭头 | Comments…、Line Ending 和删除命令 |
 | 绘图、图章或测量结果 | Comments…，以及删除命令 |
+| 多个所选注释中的一个 | Align（边缘和中心；三个或更多时为 Distribute）、显示数量的 Delete |
 | 之前存储在文稿中或在其他 App 中创建的形状、云形、线条、便笺、图章或文本框 | Comments…、线条的 Line Ending，以及删除命令 |
 | 之前存储在文稿中或在其他 App 中创建的高亮、绘图或测量 | Comments…，以及页面上其他位置的命令 |
 | 页面上的其他任何位置 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |

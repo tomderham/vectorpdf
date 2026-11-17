@@ -1,9 +1,9 @@
-<!-- keywords: métré, tableau, tableau de métré, quantités, totaux, mesures, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: métré, tableau, tableau de métré, quantités, totaux, mesures, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, comptage, comptages, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # Tableau de métré
 
-Le tableau de métré récapitule toutes les mesures d’un document, avec leur page, leur type, leur valeur et leur échelle, ainsi que les totaux de longueur et de surface.
+Le tableau de métré récapitule toutes les mesures d’un document, avec leur page, leur type, leur valeur et leur échelle, ainsi que les totaux de longueur et de surface. Les [comptages](measure.md#count-things-on-a-drawing) occupent une ligne par groupe sur chaque page, comme « Outlets × 12 », et sont totalisés par groupe pour tout le document.
 
 Cliquez sur **Takeoff Table** dans la [barre d’outils Measurement](measure.md).
 

@@ -1,5 +1,5 @@
 <!-- keywords: hervorheben, Hervorhebung, Hervorhebungen, unterstreichen, durchstreichen, Durchstreichung, Markierung, markieren, Anmerkung, Anmerkungen, Farbe, highlight, highlights, underline, strikethrough, strike through, markup, mark up, annotate, annotation, annotations, color, PDF -->
-<!-- source: 7a7e383d477e -->
+<!-- source: ae0219932828 -->
 
 # Hervorheben, unterstreichen und durchstreichen
 
@@ -15,9 +15,18 @@ Wähle Text aus und führe dann einen dieser Schritte aus:
 
 Du kannst auch die Tasten in der Symbolleiste „Markup“ verwenden, oder du klickst mit der rechten Maustaste auf die Auswahl und wählst „Highlight“, „Underline“ oder „Strikethrough“. Für jede dieser Optionen gibt es eine Farbliste.
 
+## Einen Bereich hervorheben {#highlight-an-area}
+
+Um eine Abbildung, einen Teil einer Zeichnung oder eine gescannte Seite hervorzuheben, wo es keinen Text zum Auswählen gibt, ziehe bei gedrückter ⌥-Taste über den Bereich, klicke dann mit der rechten Maustaste darauf und wähle „Highlight Area“, oder klicke auf die Hervorheben-Taste in der Symbolleiste „Markup“.
+
 ## Eine Farbe auswählen
 
-Die Symbolleiste „Markup“ (⇧⌘A) hat eine Farbtaste. Klicke darauf und dann auf eine Farbe. Die Kurzbefehle und Tasten der Symbolleiste verwenden die dort ausgewählte Farbe. Um eine Farbe für eine einzelne Markierung zu wählen, verwende die Farbliste im Kontextmenü oder unter dem Eintrag im Menü „Edit“.
+Hervorhebungen beginnen gelb, Unterstreichungen und Durchstreichungen rot. Jede behält ihre eigene Farbe, und VectorPDF merkt sie sich. Die Kurzbefehle und Tasten der Symbolleiste verwenden sie.
+
+- **Hervorheben:** Mit dem Werkzeug „Select“ legt die Farbtaste der Symbolleiste „Markup“ (⇧⌘A) die Farbe für Hervorhebungen fest. Klicke darauf und dann auf eine Farbe.
+- **Unterstreichen oder Durchstreichen:** Wähle eine Farbe aus der Liste im Kontextmenü oder unter dem Eintrag im Menü „Edit“. Die Markierung wird in dieser Farbe erstellt, und die Farbe wird auch für die nächsten verwendet.
+
+Hervorhebungen, Unterstreichungen und Durchstreichungen haben keine eigene Größe: Sie folgen dem Text, den sie markieren.
 
 ## Eine Markierung entfernen
 

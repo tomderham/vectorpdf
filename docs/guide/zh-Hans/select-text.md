@@ -1,5 +1,5 @@
 <!-- keywords: 选择, 所选内容, 拷贝, 复制, 文本, 截屏, 图像, 查询, 词典, 定义, 翻译, 朗读, 语音, 区域, 套索, select, selection, copy, text, screenshot, image, look up, dictionary, define, translate, translation, speak, speech, read aloud, area, lasso, 扩展, Shift-点按, 多个页面, 选择时滚动, extend, shift-click, several pages, scroll while selecting -->
-<!-- source: 43e554563f4f -->
+<!-- source: 8df3ff20c9b7 -->
 
 # 选择、拷贝和查询文本
 
@@ -8,7 +8,7 @@
 - **拖移**划过文本。所选内容遵循阅读顺序，因此在多栏布局中会保持在同一栏内，并跳过页边的行号。所选内容可以跨页：拖移到窗口顶部或底部边缘以外，文稿就会滚动，拖得越远滚动越快。
 - **按住 ⇧ 点按**可将所选内容从起点扩展到你点按的位置，可在任意页面上进行。先点按起点，滚动到终点，然后在那里按住 ⇧ 点按。按住 ⇧ 点按后，你可以继续拖移。
 - **连按两下**可选择一个单词，**连按三下**可选择一行。
-- **按住 ⌥ 并拖移**可选择一个矩形区域，例如图或表。
+- **按住 ⌥ 并拖移**可选择一个矩形区域，例如图或表。完全位于其中的注释和测量结果也会被选中，以便一起移动、更改或删除。
 
 按下 Escape 键可清除所选内容。
 

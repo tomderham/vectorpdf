@@ -1,5 +1,5 @@
-<!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, revenir, dernière version enregistrée, recharger, annuler les modifications, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all -->
-<!-- source: 45889ab73fb0 -->
+<!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, revenir, dernière version enregistrée, recharger, annuler les modifications, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, enregistrement automatique, récupérer, récupération, plantage, fermeture inattendue, autosave, recover, recovery, crash, quit unexpectedly -->
+<!-- source: 722f6c80c23a -->
 
 # Enregistrer vos modifications
 
@@ -18,6 +18,16 @@ Si vous fermez un document contenant des modifications non enregistrées, Vector
 Pour abandonner tout ce que vous avez fait depuis le dernier enregistrement, choisissez File > Revert to Saved. VectorPDF vous le demande d’abord, puis ouvre le fichier tel qu’il a été enregistré pour la dernière fois, à la page que vous lisiez. Cette opération est irréversible.
 
 Pour créer une copie plus légère d’un document, consultez [Optimized PDF](export.md#optimized-pdf).
+
+## Si VectorPDF quitte de façon inattendue {#if-vectorpdf-quits-unexpectedly}
+
+Tant qu’un document a des modifications non enregistrées, VectorPDF en garde une copie sur votre Mac, mise à jour environ toutes les 30 secondes. Si VectorPDF quitte de façon inattendue, il propose les copies à sa prochaine ouverture :
+
+- **Open Recovered Copy** enregistre chaque copie à côté de son original, avec la mention « (Recovered) », et l’ouvre. L’original n’est pas modifié. Comparez-les, puis gardez celui que vous voulez.
+- **Decide Later** garde les copies et redemande la prochaine fois.
+- **Discard Changes** supprime les copies.
+
+La copie est supprimée lorsque vous enregistrez le document, revenez à la version enregistrée ou le fermez sans enregistrer, ainsi que lorsque vous quittez VectorPDF. Les documents protégés par mot de passe ne sont pas copiés, car la copie ne serait pas chiffrée.
 
 ## Partager un document
 

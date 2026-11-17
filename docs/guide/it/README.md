@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # Manuale utente di VectorPDF
 
@@ -56,7 +56,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 ## Misurare i disegni
 
 - [Impostare una scala di disegno](drawing-scale.md)
-- [Misurare lunghezze, aree e angoli](measure.md)
+- [Misurare lunghezze, aree e angoli, e contare](measure.md)
 - [Tabella Takeoff](takeoff.md)
 
 ## Modificare e proteggere

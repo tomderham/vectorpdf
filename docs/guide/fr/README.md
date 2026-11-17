@@ -1,4 +1,4 @@
-<!-- source: d455c4b21f65 -->
+<!-- source: 15b3da8e0dd2 -->
 
 # Guide d’utilisation de VectorPDF
 
@@ -56,7 +56,7 @@ VectorPDF est un lecteur de PDF rapide, conçu pour les articles techniques, les
 ## Mesurer des plans
 
 - [Définir l’échelle d’un plan](drawing-scale.md)
-- [Mesurer des longueurs, des surfaces et des angles](measure.md)
+- [Mesurer des longueurs, des surfaces et des angles, et compter](measure.md)
 - [Tableau de métré](takeoff.md)
 
 ## Modifier et protéger

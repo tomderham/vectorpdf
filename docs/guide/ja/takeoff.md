@@ -1,9 +1,9 @@
-<!-- keywords: 拾い出し, 数量拾い, 表, 集計表, 数量, 合計, 測定値, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements -->
-<!-- source: f92dca5304b3 -->
+<!-- keywords: 拾い出し, 数量拾い, 表, 集計表, 数量, 合計, 測定値, takeoff, take-off, table, schedule, CSV, quantities, totals, measurements, カウント, 個数, count, counts -->
+<!-- source: 4b652eba713c -->
 
 # 拾い出し表
 
-拾い出し表は、書類内のすべての測定値を、ページ、種類、値、縮尺とともに一覧にし、長さと面積の合計を示す表です。
+拾い出し表は、書類内のすべての測定値を、ページ、種類、値、縮尺とともに一覧にし、長さと面積の合計を示す表です。[カウント](measure.md#count-things-on-a-drawing)は、各ページのグループごとに 1 行(例: 「Outlets × 12」)で表示され、書類全体でグループごとに合計されます。
 
 [Measurement ツールバー](measure.md)の **Takeoff Table** をクリックします。
 
