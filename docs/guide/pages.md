@@ -21,6 +21,7 @@ Right-click a thumbnail, or a selection of thumbnails, then choose:
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** adds pages from another PDF. You can also choose File > Insert Pages from PDF (⌥⌘I).
 - **Save selected page as a PDF:** extracts pages into a new file.
+- **Export Page as Image:** saves pages as PNG, JPEG or TIFF images. See [Images](export.md#images).
 - **Delete Page.**
 
 ## If you've made anchors

@@ -443,6 +443,9 @@ struct VectorPDF: App {
                 Button("Scalable Vector Graphics (.svg)...") {
                     resolvedViewModel?.exportDocument(as: .svgDocument)
                 }
+                Button("Images (PNG, JPEG, TIFF)...") {
+                    resolvedViewModel?.exportPagesAsImages()
+                }
                 Button("Flattened PDF (.pdf)...") {
                     resolvedViewModel?.exportDocument(as: .flattenedPDF)
                 }

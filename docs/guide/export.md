@@ -1,8 +1,8 @@
-<!-- keywords: export, convert, plain text, text, Word, docx, SVG, flatten, flattened, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, annotations summary, CSV, Markdown, searchable PDF, OCR, PDF -->
+<!-- keywords: export, convert, plain text, text, Word, docx, SVG, image, images, picture, PNG, JPEG, JPG, TIFF, dpi, resolution, page as image, flatten, flattened, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, annotations summary, CSV, Markdown, searchable PDF, OCR, PDF -->
 
 # Export to other formats
 
-To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF or Searchable PDF. The annotations summary and measurements have their own commands.
+To export a whole document, choose File > Export Document As, then choose Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF or Searchable PDF. The annotations summary and measurements have their own commands.
 
 ## Plain text
 
@@ -15,6 +15,18 @@ Saves a `.docx` file you can edit in Word and other apps. Complex page layouts m
 ## SVG
 
 Saves each page as a Scalable Vector Graphics file, with text as vector paths, so it looks exactly like the PDF. A multi-page document is saved as a folder with one file per page.
+
+## Images
+
+Saves pages as pictures, as they look in VectorPDF, with their comments and form fields and only the [layers](layers.md) shown. Choose File > Export Document As > Images. In the save dialog, choose:
+
+- **Format:** PNG keeps every detail and suits drawings and text. JPEG makes smaller files and suits photos. TIFF is for apps that need it, such as some document and fax systems.
+- **Resolution:** 72 dpi for the screen, 150 dpi for a document or presentation, 300 or 600 dpi for printing.
+- **Pages:** all pages, the current page, or the pages selected in the [thumbnails](outline-and-thumbnails.md).
+
+One page is saved as one file. Several pages are saved in a folder with the name you give, one image each, numbered by page. A very large page, such as a big drawing at 600 dpi, is made smaller so that its longest side is 16,384 pixels.
+
+To export particular pages, select their thumbnails, right-click one, then choose Export Pages as Images.
 
 ## Flattened PDF
 

@@ -33,7 +33,7 @@ In a document with [layers](layers.md), the menu for an annotation also has **La
 | Right-click | Commands |
 | --- | --- |
 | An outline entry | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| A thumbnail | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. With several pages selected, the commands name how many, such as Delete 3 Pages. See [Rearrange pages](pages.md). |
+| A thumbnail | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. With several pages selected, the commands name how many, such as Delete 3 Pages. See [Rearrange pages](pages.md). |
 | A search result | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | An anchor | Open in New Window or Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | An annotation in the Comments tab | Show on Page, Comments…, Delete |

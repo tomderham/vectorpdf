@@ -479,6 +479,12 @@ public struct PDFThumbnailGridView: View {
                                             Label("Save \(count) selected pages as a PDF…", systemImage: "arrow.up.forward.square")
                                         }
 
+                                        Button {
+                                            viewModel.exportPagesAsImages(selectedPages: true)
+                                        } label: {
+                                            Label("Export \(count) Pages as Images…", systemImage: "photo")
+                                        }
+
                                         Divider()
 
                                         Button(role: .destructive) {
@@ -532,6 +538,13 @@ public struct PDFThumbnailGridView: View {
                                             viewModel.extractPage(pageIndex)
                                         } label: {
                                             Label("Save selected page as a PDF…", systemImage: "arrow.up.forward.square")
+                                        }
+
+                                        Button {
+                                            viewModel.selectedThumbnailPageIndices = [pageIndex]
+                                            viewModel.exportPagesAsImages(selectedPages: true)
+                                        } label: {
+                                            Label("Export Page as Image…", systemImage: "photo")
                                         }
 
                                         Divider()
