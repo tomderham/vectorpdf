@@ -6,11 +6,12 @@ The Document tab (a box) at the top of the sidebar lists what a document holds b
 
 - **Layers:** see [Show and hide layers](layers.md).
 - **Attachments:** see [Files attached to a PDF](attachments.md).
-- **Form Fields:** every field in a form, with its value, and its signatures.
+- **Signatures:** the document's digital signatures, and whether each is valid. See [Check digital signatures](digital-signatures.md).
+- **Form Fields:** every field in a form, with its value, signature fields included.
 - **Links:** every link, with the text it's on and where it goes.
 - **Destinations:** the named places in the document that links can point to.
 
-Form Fields, Links and Destinations are listed only when you turn on **List form fields, links and destinations in the sidebar** in VectorPDF > Settings > General. Most documents have links, so otherwise the tab would appear for nearly every one.
+Signatures are listed whenever a document is signed. Form Fields, Links and Destinations are listed only when you turn on **List form fields, links and destinations in the sidebar** in VectorPDF > Settings > General. Most documents have links, so otherwise the tab would appear for nearly every one.
 
 The menu offers only what the document has, and the tab appears only when it has at least one of these.
 
@@ -18,9 +19,7 @@ The menu offers only what the document has, and the tab appears only when it has
 
 Fields are listed page by page, by the name the form gives them. Each shows its value, and **Required** when the form says it must be filled in. Hold the pointer over a field to see its full name and type. Click a field to go to it on the page; it's outlined for a moment. To fill in fields, see [Fill in forms](forms.md). The list shows the new values as you type.
 
-A signature field shows who signed it and when, as the signature records them, or **Not signed**. It also says whether the file was saved again after it was signed, which can change what was signed, and whether the signature certifies the document and which changes it allows.
-
-> **Note:** VectorPDF doesn't check the signature's certificate, so it can't tell you whether a signature is valid. Use a program that validates signatures, such as Adobe Acrobat Reader, for that.
+A signature field shows who signed it and whether the signature is valid, or **Not signed**. For more about each signature, choose Signatures from the menu at the top of the tab. See [Check digital signatures](digital-signatures.md).
 
 ## Links
 

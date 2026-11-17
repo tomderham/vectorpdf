@@ -32,6 +32,13 @@ enum Fixture {
     static var lcmsTutorial: URL { url("lcms2-tutorial.pdf") }
     /// Two pages with five embedded files, one of them attached to page 2 (`make_attachment_sample.py`).
     static var attachmentSample: URL { url("attachment-sample.pdf") }
+    /// One page signed by "VectorPDF Test Signer" (`make_signed_samples.py`), its tampered and
+    /// saved-again copies, and the certificate authority that issued the signer's certificate.
+    static var signedValid: URL { url("signed-valid.pdf") }
+    static var signedTampered: URL { url("signed-tampered.pdf") }
+    static var signedThenChanged: URL { url("signed-then-changed.pdf") }
+    static var signedThenPageChanged: URL { url("signed-then-page-changed.pdf") }
+    static var signedSampleCA: URL { url("signed-sample-ca.pem") }
 
     /// A file from the PDF Association's test suite, in `pdf-differences/`.
     static func pdfDifferences(_ name: String, sourceLocation: SourceLocation = #_sourceLocation) -> URL {

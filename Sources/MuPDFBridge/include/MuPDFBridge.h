@@ -464,6 +464,38 @@ typedef struct {
 // Lists up to `capacity` of the page's widgets (one per widget, so a group of radio buttons is
 // several) into `out`, and returns how many there are; -1 on error.
 int mupdf_page_list_form_fields(fz_context *ctx, fz_document *doc, int pageno, mupdf_form_field *out, int capacity);
+
+#define MUPDF_SIGNATURE_MAX_RANGES 8
+/* What a signature signs and with what: the byte ranges of the file it covers (offsets into the
+   file as saved), its /Contents (DER, usually CMS/PKCS #7) and its /SubFilter. */
+typedef struct {
+    int range_count;
+    int has_more_ranges;
+    int64_t range_offset[MUPDF_SIGNATURE_MAX_RANGES];
+    int64_t range_length[MUPDF_SIGNATURE_MAX_RANGES];
+    unsigned char *contents;
+    size_t contents_length;
+    char subfilter[64];
+    /* What pdf_validate_signature says of the saves after it: 0 if they changed nothing the
+       signature locks (or there are none), else how many saves ago it was broken; -2 unknown. */
+    int later_changes;
+    /* When MuPDF found a save it doesn't accept: whether those saves changed only comments,
+       which a signature other than a certification allows. */
+    int later_changes_only_comments;
+    /* Where it is: -1 if its widget names no page; the rect in page (top-down) coordinates. */
+    int page;
+    float x0, y0, x1, y1;
+    char field_name[256];
+    char signer[256];
+    char reason[256];
+    char location[256];
+} mupdf_signature_data;
+// The document's signed signature fields, from its form's field tree (no pages are loaded): the
+// object number of each one's widget, into `out`, up to `capacity`. Returns how many there are.
+int mupdf_pdf_list_signatures(fz_context *ctx, fz_document *doc, int *out, int capacity);
+// For the signed signature field `objnum`. Free with mupdf_pdf_free_signature_data.
+int mupdf_pdf_signature_data(fz_context *ctx, fz_document *doc, int objnum, mupdf_signature_data *out, const char **out_error);
+void mupdf_pdf_free_signature_data(fz_context *ctx, mupdf_signature_data *data);
 typedef struct {
     char name[256];
     /* -1 if it doesn't resolve to a page; x, y in page (top-down) coordinates. */

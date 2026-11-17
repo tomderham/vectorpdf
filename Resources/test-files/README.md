@@ -16,6 +16,7 @@ originals except `ieee-802.11-draft-layout.pdf`.
 | `url-link-sample.pdf` | A URI link | Hand-written | Same as VectorPDF |
 | `layer-configurations-sample.pdf` | Three layers and four layer configurations: a named default, one with the layers in another order, one unnamed | Made with `make_layer_configurations_sample.py` | Same as VectorPDF |
 | `attachment-sample.pdf` | Five embedded files: four attached to the document (one also its `/AF` e-invoice file), one to page 2 by an annotation | Made with `make_attachment_sample.py` | Same as VectorPDF |
+| `signed-valid.pdf`, `signed-tampered.pdf`, `signed-then-changed.pdf`, `signed-then-page-changed.pdf`, `signed-sample-ca.pem` | A page with a digital signature (adbe.pkcs7.detached, SHA-256); the same with a byte of the signed page changed; the same saved again after signing, with a change the signature allows and with one it doesn't; the test certificate authority that issued the signer's certificate | Made with `make_signed_samples.py` (the keys are thrown away) | Same as VectorPDF |
 | `sample.epub`, `sample.fb2` | E-books with chapters in the outline, laid out into pages | Made with `make_other_formats.py` | Same as VectorPDF |
 | `sample.cbz` | A comic archive of three images | Made with `make_other_formats.py` | Same as VectorPDF |
 | `sample.xps` | Two XPS pages of vector paths | Made with `make_other_formats.py` | Same as VectorPDF |

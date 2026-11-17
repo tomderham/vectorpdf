@@ -114,6 +114,7 @@ extension PDFViewerViewModel {
             try doc.save(to: doc.filePath)
             self.isDocumentEdited = false
             self.currentWindow?.isDocumentEdited = false
+            checkSignatures()
             cleanupWorkingCopy()
             // The file on disk changed, so a cached index for it is stale; and if the in-memory
             // index came from the working copy, it's now indexing a deleted file.

@@ -12,6 +12,8 @@ Markups, form entries, page changes and redactions aren't written to your file u
 
 If you close a document with unsaved changes, VectorPDF asks whether to save them.
 
+A [digitally signed](digital-signatures.md) document is saved by adding your changes after what was signed, so its signatures stay valid where the changes are allowed.
+
 ## Discard your changes
 
 To throw away everything since you last saved, choose File > Revert to Saved. VectorPDF asks first, then opens the file as it was last saved, on the page you were reading. You can't undo a revert.

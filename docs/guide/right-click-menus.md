@@ -40,6 +40,7 @@ In a document with [layers](layers.md), the menu for an annotation also has **La
 | A layer in the Document tab | Put New Annotations Here, or Stop Putting New Annotations Here. See [Show and hide layers](layers.md). |
 | An attachment in the Document tab | Quick Look, Open, Save As…, and Show on Page for a file attached to a page. See [Files attached to a PDF](attachments.md). |
 | A form field in the Document tab | Show on Page, Copy Name, Copy Value. See [Form fields, signatures, links and destinations](document-tab.md). |
+| A signature in the Document tab | Show on Page, Show Certificate. See [Check digital signatures](digital-signatures.md). |
 | A link in the Document tab | Show on Page, Go to Destination or Open Link, and Copy Address for a web link |
 | A destination in the Document tab | Copy Name |
 

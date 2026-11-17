@@ -12,7 +12,7 @@ Choose VectorPDF > Settings, or press ⌘,. Settings has four tabs.
 | Digital Stamp | Creates, changes or deletes your [stamp](stamps.md). |
 | PDF Color | Sets [how pages look](pdf-colors.md): Follow System, Light, Dark or Sepia. |
 | Open Links In | Chooses the browser for web links. |
-| List form fields, links and destinations in the sidebar | Adds a document's [form fields, signatures, links and named destinations](document-tab.md) to the Document tab, which then also appears for documents that have any of them. Off unless you turn it on. |
+| List form fields, links and destinations in the sidebar | Adds a document's [form fields, links and named destinations](document-tab.md) to the Document tab, which then also appears for documents that have any of them. Off unless you turn it on. |
 | Automatically check for updates | Checks GitHub for a new version about once a day. Click Check Now to check at any time. |
 
 ### Agent

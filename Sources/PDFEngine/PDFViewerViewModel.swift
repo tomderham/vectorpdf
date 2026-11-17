@@ -440,6 +440,11 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var documentLinks: [PDFDocumentLink]? {
         didSet { documentListsRevision &+= 1 }
     }
+    /// The document's signatures as checked, when it opens and after each save; nil until then.
+    @Published public internal(set) var signatureValidations: [PDFSignatureValidation]?
+    /// The banner about the signatures was closed, for this document.
+    @Published public var isSignatureBannerDismissed = false
+    var signatureValidationTask: Task<Void, Never>?
     @Published public internal(set) var namedDestinations: [PDFNamedDestination]? {
         didSet { documentListsRevision &+= 1 }
     }
@@ -934,6 +939,8 @@ public final class PDFViewerViewModel: ObservableObject {
             self.layers = doc.layers()
             self.attachments = doc.attachments()
             self.resetDocumentContents(summary: contentsSummary)
+            if !isReload { self.isSignatureBannerDismissed = false }
+            self.checkSignatures()
             self.inspectedContent = nil
             self.inspectedAnnotation = nil
             if !isReload { self.pageGuides = [:] }

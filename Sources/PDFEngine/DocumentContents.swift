@@ -21,12 +21,13 @@ import MuPDFBridge
 
 /// The parts of the sidebar's Document tab, each shown only when the document has some.
 public enum DocumentSidebarSection: String, CaseIterable, Sendable {
-    case layers, attachments, fields, links, destinations
+    case layers, attachments, signatures, fields, links, destinations
 
     public var title: String {
         switch self {
         case .layers: return "Layers"
         case .attachments: return "Attachments"
+        case .signatures: return "Signatures"
         case .fields: return "Form Fields"
         case .links: return "Links"
         case .destinations: return "Destinations"
@@ -37,6 +38,7 @@ public enum DocumentSidebarSection: String, CaseIterable, Sendable {
         switch self {
         case .layers: return "square.3.layers.3d"
         case .attachments: return "paperclip"
+        case .signatures: return "signature"
         case .fields: return "character.textbox"
         case .links: return "link"
         case .destinations: return "mappin.and.ellipse"
@@ -50,16 +52,19 @@ public struct DocumentContentsSummary: Equatable, Sendable {
     public var hasFormFields = false
     public var hasLinks = false
     public var hasNamedDestinations = false
+    /// How many signed signatures it has.
+    public var signatureCount = 0
 
-    public init(hasFormFields: Bool = false, hasLinks: Bool = false, hasNamedDestinations: Bool = false) {
+    public init(hasFormFields: Bool = false, hasLinks: Bool = false, hasNamedDestinations: Bool = false, signatureCount: Int = 0) {
         self.hasFormFields = hasFormFields
         self.hasLinks = hasLinks
         self.hasNamedDestinations = hasNamedDestinations
+        self.signatureCount = signatureCount
     }
 }
 
-/// What a signature field says about its signature. Whether the certificate can be trusted isn't
-/// checked: that needs the signature's cryptography (see FUTURE_FEATURES section 2).
+/// What a signature field says about its signature, as written in the document. Whether it's
+/// valid is checked separately (`PDFSignatureValidation`).
 public struct PDFSignatureInfo: Equatable, Sendable {
     public var isSigned: Bool
     public var signer: String?
@@ -89,6 +94,8 @@ public struct PDFSignatureInfo: Equatable, Sendable {
 /// checkboxes sharing a name is one).
 public struct PDFFormFieldEntry: Identifiable, Equatable, Sendable {
     public let id: String
+    /// Its widget's.
+    public let objectNumber: Int
     public let pageIndex: Int
     public let type: PDFWidgetType
     /// Page (top-down) coordinates.
@@ -189,7 +196,8 @@ extension PDFDocumentCore {
             DocumentContentsSummary(
                 hasFormFields: mupdf_pdf_has_form_fields(ctx, doc) != 0,
                 hasLinks: mupdf_pdf_has_links(ctx, doc) != 0,
-                hasNamedDestinations: mupdf_pdf_list_named_dests(ctx, doc, nil, 0) > 0
+                hasNamedDestinations: mupdf_pdf_list_named_dests(ctx, doc, nil, 0) > 0,
+                signatureCount: max(0, Int(mupdf_pdf_list_signatures(ctx, doc, nil, 0)))
             )
         }
     }
@@ -234,6 +242,7 @@ extension PDFDocumentCore {
             }
             result.append(PDFFormFieldEntry(
                 id: "p\(pageIndex)_o\(entry.object_number)_\(result.count)",
+                objectNumber: Int(entry.object_number),
                 pageIndex: pageIndex,
                 type: type,
                 rect: CGRect(x: CGFloat(entry.x0), y: CGFloat(entry.y0), width: CGFloat(entry.x1 - entry.x0), height: CGFloat(entry.y1 - entry.y0)),

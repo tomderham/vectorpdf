@@ -19,7 +19,7 @@ import AppKit
 import SwiftUI
 
 /// The sidebar's Document tab: what the document holds besides its pages, one part at a time,
-/// chosen from a menu at the top: layers, attachments, form fields (with signatures), links and
+/// chosen from a menu at the top: layers, attachments, signatures, form fields, links and
 /// named destinations. Each part is offered only when the document has some, and the tab shows
 /// only when it has at least one.
 struct DocumentSidebarView: View {
@@ -59,6 +59,8 @@ struct DocumentSidebarView: View {
                 LayersSidebarView(viewModel: viewModel)
             case .attachments:
                 AttachmentsSidebarView(viewModel: viewModel)
+            case .signatures:
+                SignaturesSidebarList(viewModel: viewModel)
             case .fields:
                 FormFieldsSidebarList(viewModel: viewModel)
             case .links:
@@ -105,6 +107,7 @@ private struct SectionHeader: View {
 /// Shown while a list is being read.
 private struct LoadingRow: View {
     var progress: Double?
+    var message = "Reading the document…"
 
     var body: some View {
         VStack(spacing: 6) {
@@ -114,7 +117,7 @@ private struct LoadingRow: View {
             } else {
                 ProgressView().controlSize(.small)
             }
-            Text("Reading the document…")
+            Text(message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -137,6 +140,119 @@ private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.setString(text, forType: .string)
 }
 
+// MARK: - Signatures
+
+/// Each signature, as checked: few enough for a plain list, with room to say what was found.
+struct SignaturesSidebarList: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if let results = viewModel.signatureValidations {
+                SectionHeader(caption: "\(results.count) Signature\(results.count == 1 ? "" : "s")", filter: .constant(""), showsFilter: false)
+                Divider()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(results, id: \.objectNumber) { result in
+                            SignatureRow(viewModel: viewModel, result: result)
+                            Divider()
+                        }
+                    }
+                }
+            } else {
+                LoadingRow(message: "Checking the signatures…")
+            }
+        }
+    }
+}
+
+private struct SignatureRow: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    let result: PDFSignatureValidation
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: result.statusSymbol)
+                .foregroundStyle(result.statusColor)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(result.displayName)
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(2)
+                    Spacer(minLength: 4)
+                    if let page = result.pageIndex {
+                        Text(pageTitle(viewModel, page))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Text(result.statusLine)
+                    .font(.caption)
+                    .foregroundStyle(result.hasProblems ? Color.red : Color.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(result.detailLines, id: \.self) { line in
+                    Text(line)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !result.certificates.isEmpty {
+                    Button("Show Certificate…") { viewModel.showCertificate(of: result) }
+                        .controlSize(.small)
+                        .padding(.top, 2)
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture { reveal() }
+        .contextMenu {
+            Button("Show on Page") { reveal() }
+                .disabled(result.pageIndex == nil)
+            Button("Show Certificate…") { viewModel.showCertificate(of: result) }
+                .disabled(result.certificates.isEmpty)
+        }
+    }
+
+    private func reveal() {
+        guard let page = result.pageIndex else { return }
+        viewModel.revealPageRect(result.rect, onPage: page)
+    }
+}
+
+extension PDFSignatureValidation {
+    var statusSymbol: String {
+        if hasProblems { return "xmark.seal.fill" }
+        if case .unsupported = integrity { return "questionmark.circle.fill" }
+        return isFullyValid ? "checkmark.seal.fill" : "exclamationmark.triangle.fill"
+    }
+
+    var statusColor: Color {
+        if hasProblems { return .red }
+        if case .unsupported = integrity { return .secondary }
+        return isFullyValid ? .green : .orange
+    }
+
+    /// What else the Signatures list says about it, a line each.
+    var detailLines: [String] {
+        var lines: [String] = []
+        if let identityDetail, integrity == .intact { lines.append(identityDetail) }
+        if let timestamp {
+            lines.append("Signed \(timestamp.formatted(date: .abbreviated, time: .shortened)), by a timestamp authority's clock")
+        } else if let claimedSigningTime {
+            lines.append("Signed \(claimedSigningTime.formatted(date: .abbreviated, time: .shortened)), by the signer's clock")
+        }
+        if let signerEmail { lines.append(signerEmail) }
+        if let issuerName, issuerName != signerName { lines.append("Certificate issued by \(issuerName)") }
+        if let nameInDocument, nameInDocument != signerName { lines.append("Name in the document: \(nameInDocument)") }
+        if let reason { lines.append("Reason: \(reason)") }
+        if let location { lines.append("Location: \(location)") }
+        return lines
+    }
+}
+
 // MARK: - Form fields
 
 struct FormFieldsSidebarList: View {
@@ -150,7 +266,7 @@ struct FormFieldsSidebarList: View {
                 SectionHeader(caption: caption(entries.count, signatures: signatures), filter: $filter)
                 Divider()
                 DocumentContentsTable(
-                    key: [viewModel.documentListsRevision, filter.hashValue],
+                    key: [viewModel.documentListsRevision, filter.hashValue, viewModel.signatureValidations?.count ?? -1],
                     makeRows: { rows(entries) },
                     onSelect: { item in reveal(item, in: entries) },
                     menuItems: { item in
@@ -192,7 +308,11 @@ struct FormFieldsSidebarList: View {
             }
             var item = ContentsItem(id: field.id, symbol: field.type.systemImage, title: field.displayName, page: field.pageIndex)
             if field.isRequired { item.trailing = "Required" }
-            if let signature = field.signature {
+            if let validation = viewModel.signatureValidations?.first(where: { $0.objectNumber == field.objectNumber }) {
+                item.symbol = validation.statusSymbol
+                item.details = [validation.displayName, validation.statusLine]
+                if validation.hasProblems { item.warning = "See Signatures for details" }
+            } else if let signature = field.signature {
                 item.details = signature.summaryLines
                 if signature.changedSinceSigning == true { item.warning = "Changed since it was signed" }
             } else if !field.displayValue.isEmpty {

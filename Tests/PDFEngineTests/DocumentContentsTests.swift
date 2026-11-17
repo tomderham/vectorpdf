@@ -76,7 +76,7 @@ struct DocumentContentsTests {
         let url = dir.appendingPathComponent("contents.pdf")
         try makeDocumentContentsPDF(at: url)
         let doc = try PDFDocumentCore(filePath: url.path)
-        #expect(doc.contentsSummary() == DocumentContentsSummary(hasFormFields: true, hasLinks: true, hasNamedDestinations: true))
+        #expect(doc.contentsSummary() == DocumentContentsSummary(hasFormFields: true, hasLinks: true, hasNamedDestinations: true, signatureCount: 1))
 
         let plain = dir.appendingPathComponent("plain.pdf")
         makeLabelledPDF(at: plain, labels: ["One"])
@@ -167,14 +167,15 @@ struct DocumentContentsTests {
         let coordinator = PDFViewerAppCoordinator.shared
         let saved = coordinator.showsDocumentStructureInSidebar
         defer { coordinator.showsDocumentStructureInSidebar = saved }
-        // Off by default: a form being filled in, or a paper with links, gets no Document tab.
+        // Off by default: a form being filled in, or a paper with links, gets no Document tab;
+        // but its signatures are listed whatever the setting.
         coordinator.showsDocumentStructureInSidebar = false
-        #expect(vm.documentSidebarSections.isEmpty)
+        #expect(vm.documentSidebarSections == [.signatures])
         coordinator.showsDocumentStructureInSidebar = true
-        #expect(vm.documentSidebarSections == [.fields, .links, .destinations])
+        #expect(vm.documentSidebarSections == [.signatures, .fields, .links, .destinations])
         // Layers was chosen last, but this document has none.
         vm.documentSidebarSection = .layers
-        #expect(vm.shownDocumentSidebarSection == .fields)
+        #expect(vm.shownDocumentSidebarSection == .signatures)
 
         vm.loadDocumentSection(.fields)
         vm.loadDocumentSection(.links)

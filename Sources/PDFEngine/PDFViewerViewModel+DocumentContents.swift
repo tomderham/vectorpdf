@@ -27,6 +27,7 @@ extension PDFViewerViewModel {
             switch section {
             case .layers: return !layers.isEmpty
             case .attachments: return !attachments.isEmpty
+            case .signatures: return documentContentsSummary.signatureCount > 0
             case .fields: return listsStructure && documentContentsSummary.hasFormFields
             case .links: return listsStructure && documentContentsSummary.hasLinks
             case .destinations: return listsStructure && documentContentsSummary.hasNamedDestinations
@@ -82,7 +83,7 @@ extension PDFViewerViewModel {
     public func loadDocumentSection(_ section: DocumentSidebarSection) {
         guard let doc = document, documentContentsTasks[section] == nil else { return }
         switch section {
-        case .layers, .attachments:
+        case .layers, .attachments, .signatures:
             return
         case .fields:
             guard formFieldEntries == nil else { return }

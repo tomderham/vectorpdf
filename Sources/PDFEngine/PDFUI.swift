@@ -268,6 +268,12 @@ public struct PDFViewerMainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .top, spacing: 0) {
                 VStack(spacing: 0) {
+                    if let banner = viewModel.signatureBanner, !isSnapshotWindow {
+                        SignatureBannerView(banner: banner, showSignatures: showSignatures, close: {
+                            viewModel.isSignatureBannerDismissed = true
+                        })
+                        Divider()
+                    }
                     if viewModel.isMarkupBarVisible {
                         PDFMarkupToolbarView(viewModel: viewModel)
                         Divider()
@@ -1551,6 +1557,14 @@ public struct PDFViewerMainView: View {
         }
     }
 
+    /// Opens the Document tab on its list of signatures.
+    private func showSignatures() {
+        viewModel.documentSidebarSection = .signatures
+        selectedSidebarTab = 5
+        viewModel.isSidebarVisible = true
+        sidebarVisibility = .all
+    }
+
     @ToolbarContentBuilder
     private var documentToolbarContent: some ToolbarContent {
             ToolbarItem(placement: .navigation) {
@@ -1851,6 +1865,47 @@ private struct AgentSourcePassageView: View {
                         .strokeBorder(isCited ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 0.5)
                 )
         )
+    }
+}
+
+/// Above the page of a signed document: whether its signatures are valid, at a glance.
+private struct SignatureBannerView: View {
+    let banner: SignatureBanner
+    let showSignatures: () -> Void
+    let close: () -> Void
+
+    private var tint: Color {
+        switch banner.kind {
+        case .valid: return .green
+        case .unverified: return .orange
+        case .invalid: return .red
+        case .unchecked: return .secondary
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: banner.systemImage)
+                .foregroundStyle(tint)
+            Text(banner.message)
+                .font(.caption)
+                .lineLimit(2)
+            Spacer(minLength: 8)
+            Button("Signature Details", action: showSignatures)
+                .controlSize(.small)
+                .help("Show the signatures in the Document tab")
+            Button(action: close) {
+                Image(systemName: "xmark")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Hide this banner")
+            .accessibilityLabel("Close")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(tint.opacity(0.12))
     }
 }
 

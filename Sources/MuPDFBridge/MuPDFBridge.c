@@ -3418,7 +3418,27 @@ int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const ch
         if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
         prepare_document_for_save(ctx, pdoc);
         pdf_write_options save_opts = default_save_options();
+        // A signed document keeps its bytes as they were, with the changes added after them, as
+        // Acrobat saves: rewriting it would break every signature. Not after a redaction, whose
+        // point is that what it removed is gone from the file.
+        int incremental = pdf_count_signatures(ctx, pdoc) > 0 && pdf_can_be_saved_incrementally(ctx, pdoc);
+        if (incremental) {
+            save_opts.do_incremental = 1;
+            save_opts.do_garbage = 0;
+        }
         pdf_save_document(ctx, pdoc, path, &save_opts);
+        if (incremental) {
+            // MuPDF takes the changes as saved in the file it opened, as if appended to it, and a
+            // later save would add only what changed since to that file's bytes, losing these.
+            // So it reads the file just written from now on: the same bytes, then these changes.
+            // (Opened, the file stays readable when the caller moves it into place.)
+            fz_stream *saved = fz_open_file(ctx, path);
+            fz_drop_stream(ctx, pdoc->file);
+            pdoc->file = saved;
+            fz_seek(ctx, saved, 0, SEEK_END);
+            pdoc->file_size = fz_tell(ctx, saved);
+            fz_seek(ctx, saved, 0, SEEK_SET);
+        }
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
         return fz_caught(ctx) ? fz_caught(ctx) : -1;
