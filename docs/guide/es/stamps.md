@@ -1,11 +1,11 @@
 <!-- keywords: sello, sellos, firma, firmas, firmar, iniciales, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: eb4441d846b0 -->
+<!-- source: 8f0c7eb52953 -->
 
 # Sellos y firmas
 
 Un sello es una imagen, como tu firma o tus iniciales, que puedes colocar en cualquier página.
 
-> **Nota:** Un sello es una marca visual. No es una firma digital criptográfica y no certifica el documento.
+> **Nota:** Un sello es una marca visual. No es una firma digital criptográfica y no certifica el documento. Para firmar con un certificado o comprobar las firmas digitales de un documento, consulta [Firmar y comprobar firmas digitales](digital-signatures.md).
 
 ## Crear tu sello
 

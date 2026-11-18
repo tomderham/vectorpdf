@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # Kontextmenüs
 
@@ -33,14 +33,15 @@ In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung au�
 
 | Rechtsklick auf | Befehle |
 | --- | --- |
-| Ein Eintrag der Gliederung | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Eine Miniatur | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Wenn mehrere Seiten ausgewählt sind, nennen die Befehle deren Anzahl, z. B. Delete 3 Pages. Weitere Informationen findest du unter [Seiten neu anordnen](pages.md). |
+| Ein Eintrag der Gliederung | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. Siehe [Die Gliederung bearbeiten](outline-and-thumbnails.md#edit-the-outline). |
+| Eine Miniatur | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. Wenn mehrere Seiten ausgewählt sind, nennen die Befehle deren Anzahl, z. B. Delete 3 Pages. Weitere Informationen findest du unter [Seiten neu anordnen](pages.md). |
 | Ein Suchergebnis | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Ein Anker | Open in New Window oder Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Eine Anmerkung im Tab „Comments“ | „Show on Page“, „Comments…“, „Delete“ |
 | Eine Ebene im Tab „Document“ | „Put New Annotations Here“ oder „Stop Putting New Annotations Here“. Siehe [Ebenen ein- und ausblenden](layers.md). |
 | Ein Anhang im Tab „Document“ | „Quick Look“, „Open“, „Save As…“ und bei einer an eine Seite angehängten Datei „Show on Page“. Siehe [An ein PDF angehängte Dateien](attachments.md). |
 | Ein Formularfeld im Tab „Document“ | „Show on Page“, „Copy Name“, „Copy Value“. Siehe [Formularfelder, Signaturen, Links und Ziele](document-tab.md). |
+| Eine Signatur im Tab „Document“ | Show on Page, Show Certificate. Siehe [Digitale Signaturen erstellen und prüfen](digital-signatures.md). |
 | Ein Link im Tab „Document“ | „Show on Page“, „Go to Destination“ oder „Open Link“ und bei einem Weblink „Copy Address“ |
 | Ein Ziel im Tab „Document“ | „Copy Name“ |
 

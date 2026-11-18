@@ -1,5 +1,5 @@
-<!-- keywords: Document タブ, フォームフィールド, フィールド, 署名, 署名済み, デジタル署名, 証明, リンク, ハイパーリンク, URL, Web リンク, 名前付き移動先, 移動先, 内容, サイドバー, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: e2c42440bfd7 -->
+<!-- keywords: Document タブ, フォームフィールド, フィールド, 署名, 署名済み, デジタル署名, 証明, リンク, ハイパーリンク, URL, Web リンク, 名前付き移動先, 移動先, 内容, サイドバー, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar, URLs -->
+<!-- source: 83fd92f682a7 -->
 
 # フォームフィールド、署名、リンク、移動先
 
@@ -7,11 +7,12 @@
 
 - **Layers:** [レイヤーの表示と非表示](layers.md)を参照してください。
 - **Attachments:** [PDF に添付されたファイル](attachments.md)を参照してください。
-- **Form Fields:** フォームのすべてのフィールドとその値、および署名。
+- **Signatures:** 書類のデジタル署名と、それぞれが有効かどうか。[デジタル署名で署名する、確認する](digital-signatures.md)を参照してください。
+- **Form Fields:** フォームのすべてのフィールドとその値（署名フィールドを含む）。
 - **Links:** すべてのリンクと、リンクが付いているテキスト、リンク先。
 - **Destinations:** リンクから参照できる、書類内の名前付きの場所。
 
-Form Fields、Links、Destinations は、VectorPDF > Settings > General で **List form fields, links and destinations in the sidebar** をオンにした場合にのみ表示されます。ほとんどの書類にはリンクがあるため、そうしないとほぼすべての書類でタブが表示されてしまいます。
+Signatures は、書類が署名されていれば常に表示されます。Form Fields、Links、Destinations は、VectorPDF > Settings > General で **List form fields, links and destinations in the sidebar** をオンにした場合にのみ表示されます。ほとんどの書類にはリンクがあるため、そうしないとほぼすべての書類でタブが表示されてしまいます。
 
 メニューには書類にあるものだけが表示され、タブは書類にこれらのいずれかがある場合にのみ表示されます。
 
@@ -19,9 +20,7 @@ Form Fields、Links、Destinations は、VectorPDF > Settings > General で **Li
 
 フィールドは、フォームが付けた名前でページごとに一覧表示されます。各フィールドには値が表示され、フォームで入力が必須とされている場合は **Required** と表示されます。フィールドにポインタを置くと、完全な名前と種類が表示されます。フィールドをクリックするとページ上のそのフィールドに移動し、一時的に枠で囲まれます。フィールドに入力する方法は、[フォームに入力する](forms.md)を参照してください。入力中の新しい値は一覧にも表示されます。
 
-署名フィールドには、署名に記録されているとおりに誰がいつ署名したか、または **Not signed** と表示されます。また、署名後にファイルが再保存されたか（署名された内容が変わる可能性があります）、署名が書類を証明しているか、証明している場合はどのような変更を許可しているかも表示されます。
-
-> **注記:** VectorPDF は署名の証明書を確認しないため、署名が有効かどうかは判断できません。それには、Adobe Acrobat Reader など、署名を検証するプログラムを使用してください。
+署名フィールドには、誰が署名したかと署名が有効かどうか、または **Not signed** と表示されます。各署名の詳細を見るには、タブ上部のメニューから Signatures を選択します。[デジタル署名で署名する、確認する](digital-signatures.md)を参照してください。
 
 ## リンク
 

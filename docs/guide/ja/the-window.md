@@ -1,5 +1,6 @@
-<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments, ステータスバー, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments, ステータスバー, Inspector, status bar, page indicator -->
+<!-- source: cce7c7e75b8e -->
+
 # VectorPDF のウインドウ
 
 VectorPDF の各ウインドウには、ツールバー、サイドバー、書類本体があります。1 つのウインドウに複数の書類を[タブ](tabs-and-windows.md)として開くこともできます。
@@ -25,7 +26,7 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 - **Outline & Thumbnails:** [目次、または各ページのサムネール](outline-and-thumbnails.md)。
 - **Search:** [現在の書類の検索結果](search.md)。
 - **Anchors:** [保存した場所](anchors.md)。
-- **Document:** 書類のページ以外の内容です。[レイヤー](layers.md)、[添付ファイル](attachments.md)、および設定でオンにした場合は[フォームフィールド、署名、リンク、移動先](document-tab.md)。何を表示するかはタブ上部のメニューから選択します。このタブは、書類にこれらのいずれかがある場合にのみ表示されます。
+- **Document:** 書類のページ以外の内容です。[レイヤー](layers.md)、[添付ファイル](attachments.md)、[デジタル署名](digital-signatures.md)、および設定でオンにした場合は[フォームフィールド、リンク、移動先](document-tab.md)。何を表示するかはタブ上部のメニューから選択します。このタブは、書類にこれらのいずれかがある場合にのみ表示されます。
 - **Comments:** [すべての注釈と、その返信およびステータス](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document:** [Agent](agent.md)。このタブは macOS 26 以降で表示されます。ただし、Settings で [Use Agent](settings.md) をオフにした場合は表示されません。
 

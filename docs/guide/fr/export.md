@@ -1,9 +1,9 @@
-<!-- keywords: exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, optimiser, optimisé, réduire la taille, compresser, plus léger, images, polices, contours, vectoriser le texte, traceur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF interrogeable, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: images, image, PNG, JPEG, TIFF, résolution, page en image, exporter, convertir, texte brut, texte, aplatir, aplati, résumé des annotations, tableur, optimiser, optimisé, réduire la taille, compresser, plus léger, images, polices, contours, vectoriser le texte, traceur, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF interrogeable, OCR, searchable PDF, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # Exporter vers d’autres formats
 
-Pour exporter un document entier, choisissez File > Export Document As, puis choisissez Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF ou Searchable PDF. Le résumé des annotations et les mesures ont leurs propres commandes.
+Pour exporter un document entier, choisissez File > Export Document As, puis choisissez Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF ou Searchable PDF. Le résumé des annotations et les mesures ont leurs propres commandes.
 
 ## Texte brut
 
@@ -16,6 +16,18 @@ Enregistre un fichier `.docx` que vous pouvez modifier dans Word et d’autres a
 ## SVG
 
 Enregistre chaque page dans un fichier SVG (Scalable Vector Graphics), avec le texte sous forme de tracés vectoriels, pour un rendu identique à celui du PDF. Un document de plusieurs pages est enregistré dans un dossier contenant un fichier par page.
+
+## Images {#images}
+
+Enregistre des pages sous forme d’images, telles qu’elles apparaissent dans VectorPDF, avec leurs annotations et leurs champs de formulaire et uniquement les [calques](layers.md) affichés. Choisissez File > Export Document As > Images. Dans la zone de dialogue d’enregistrement, choisissez :
+
+- **Format :** PNG conserve chaque détail et convient aux dessins et au texte. JPEG produit des fichiers plus petits et convient aux photos. TIFF est destiné aux apps qui en ont besoin, comme certains systèmes de gestion de documents et de fax.
+- **Resolution :** 72 ppp pour l’écran, 150 ppp pour un document ou une présentation, 300 ou 600 ppp pour l’impression.
+- **Pages :** toutes les pages, la page actuelle ou les pages sélectionnées dans les [vignettes](outline-and-thumbnails.md).
+
+Une page est enregistrée dans un fichier. Plusieurs pages sont enregistrées dans un dossier portant le nom que vous indiquez, une image par page, numérotées par page. Une très grande page, comme un grand plan à 600 ppp, est réduite pour que son plus grand côté mesure 16 384 pixels.
+
+Pour exporter certaines pages, sélectionnez leurs vignettes, cliquez avec le bouton droit sur l’une d’elles, puis choisissez Export Pages as Images.
 
 ## PDF aplati {#flattened-pdf}
 

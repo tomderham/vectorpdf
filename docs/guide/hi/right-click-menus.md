@@ -1,5 +1,5 @@
 <!-- keywords: राइट-क्लिक, राइट क्लिक, कंट्रोल-क्लिक, संदर्भ मेनू, शॉर्टकट मेनू, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # राइट-क्लिक मेनू
 
@@ -33,14 +33,15 @@ SyncTeX चालू करके LaTeX से बने PDF में, दस�
 
 | राइट-क्लिक | कमांड |
 | --- | --- |
-| आउटलाइन प्रविष्टि | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| थंबनेल | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page। कई पेज चुने होने पर कमांड में उनकी संख्या दिखती है, जैसे Delete 3 Pages। [पेजों को फिर से व्यवस्थित करें](pages.md) देखें। |
+| आउटलाइन प्रविष्टि | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings। [आउटलाइन संपादित करें](outline-and-thumbnails.md#edit-the-outline) देखें। |
+| थंबनेल | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page। कई पेज चुने होने पर कमांड में उनकी संख्या दिखती है, जैसे Delete 3 Pages। [पेजों को फिर से व्यवस्थित करें](pages.md) देखें। |
 | खोज परिणाम | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | ऐंकर | Open in New Window या Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments टैब में कोई ऐनोटेशन | Show on Page, Comments…, Delete |
 | Document टैब में कोई लेयर | Put New Annotations Here, या Stop Putting New Annotations Here। देखें [लेयर दिखाएँ और छिपाएँ](layers.md)। |
 | Document टैब में कोई अटैचमेंट | Quick Look, Open, Save As…, और किसी पेज से जुड़ी फ़ाइल के लिए Show on Page। देखें [PDF से जुड़ी फ़ाइलें](attachments.md)। |
 | Document टैब में कोई फ़ॉर्म फ़ील्ड | Show on Page, Copy Name, Copy Value। देखें [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और गंतव्य](document-tab.md)। |
+| Document टैब में कोई हस्ताक्षर | Show on Page, Show Certificate। [डिजिटल हस्ताक्षर करें और जाँचें](digital-signatures.md) देखें। |
 | Document टैब में कोई लिंक | Show on Page, Go to Destination या Open Link, और वेब लिंक के लिए Copy Address |
 | Document टैब में कोई गंतव्य | Copy Name |
 

@@ -1,5 +1,5 @@
 <!-- keywords: Tastatur, Kurzbefehl, Kurzbefehle, Tastaturkurzbefehle, Tasten, Tastenkombination, Gesten, Trackpad, Maus, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # Tastaturkurzbefehle
 
@@ -23,6 +23,7 @@ Viele dieser Befehle sind auch in einem Kontextmenü verfügbar. Das ist unten v
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Zu Favorites hinzufügen oder daraus entfernen | ⌘D oder Rechtsklick auf den Titel des Dokuments |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

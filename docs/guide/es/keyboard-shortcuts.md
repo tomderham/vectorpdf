@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atajo, atajos, atajos de teclado, teclas, teclas rápidas, gestos, trackpad, ratón, keyboard, shortcut, shortcuts, keys, hot keys, gestures, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # Atajos de teclado
 
@@ -23,6 +23,7 @@ Muchos de estos comandos también están en un menú de clic derecho, como se in
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Añadir a favoritos o quitar de favoritos | ⌘D, o clic con el botón derecho en el título del documento |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

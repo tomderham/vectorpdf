@@ -1,5 +1,5 @@
 <!-- keywords: 保存, 別名で保存, 未保存, 共有, 変更, 最後に保存した状態に戻す, 復帰, 再読み込み, 変更を破棄, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 自動保存, 復元, 復旧, クラッシュ, 予期せぬ終了, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # 変更を保存する
 
@@ -12,6 +12,8 @@
 | パスワードで保護されたコピーを保存する | File > [Save Encrypted with Password](passwords.md) を選択するか、⌥⌘S を押します |
 
 保存していない変更がある書類を閉じると、VectorPDF は変更を保存するかどうかを確認します。
+
+[デジタル署名](digital-signatures.md)された書類は、署名された部分の後に変更を追加する形で保存されるため、変更が許可されている範囲で署名は有効なままです。
 
 ## 変更を破棄する
 

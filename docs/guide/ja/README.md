@@ -1,4 +1,5 @@
-<!-- source: 15b3da8e0dd2 -->
+<!-- keywords:  -->
+<!-- source: a9dbf4350c76 -->
 
 # VectorPDF ユーザガイド
 
@@ -51,6 +52,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 - [ハイライト、下線、取り消し線](text-markup.md)
 - [描画、メモ、テキスト、吹き出し](draw-and-notes.md)
 - [スタンプと署名](stamps.md)
+- [デジタル署名で署名する、確認する](digital-signatures.md)
 - [フォームに入力する](forms.md)
 
 ## 図面を測定する
@@ -63,6 +65,7 @@ VectorPDF は、技術論文、仕様書、契約書、図面のための高速�
 
 - [ページを並べ替える](pages.md)
 - [PDF を分割する](split-pdf.md)
+- [ヘッダ、フッタ、ベイツ番号、透かし](headers-footers-watermarks.md)
 - [機密情報を墨消しする](redact.md)
 - [パスワードと暗号化](passwords.md)
 

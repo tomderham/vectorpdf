@@ -1,5 +1,5 @@
 <!-- keywords: botão direito, clicar com o botão direito, clique com a tecla Control, menu de contexto, menus de contexto, menu de atalho, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # Menus do botão direito
 
@@ -33,14 +33,15 @@ Em um documento com [camadas](layers.md), o menu de uma anotação também tem *
 
 | Onde clicar com o botão direito | Comandos |
 | --- | --- |
-| Uma entrada do sumário | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Uma miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Com várias páginas selecionadas, os comandos indicam quantas, como Delete 3 Pages. Consulte [Reorganizar páginas](pages.md). |
+| Uma entrada do sumário | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. Consulte [Editar o sumário](outline-and-thumbnails.md#edit-the-outline). |
+| Uma miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. Com várias páginas selecionadas, os comandos indicam quantas, como Delete 3 Pages. Consulte [Reorganizar páginas](pages.md). |
 | Um resultado de busca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Uma âncora | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Uma anotação na aba Comments | Show on Page, Comments…, Delete |
 | Uma camada na aba Document | Put New Annotations Here ou Stop Putting New Annotations Here. Consulte [Mostrar e ocultar camadas](layers.md). |
 | Um anexo na aba Document | Quick Look, Open, Save As… e, para um arquivo anexado a uma página, Show on Page. Consulte [Arquivos anexados a um PDF](attachments.md). |
 | Um campo de formulário na aba Document | Show on Page, Copy Name, Copy Value. Consulte [Campos de formulário, assinaturas, links e destinos](document-tab.md). |
+| Uma assinatura na aba Document | Show on Page, Show Certificate. Consulte [Assinar e verificar assinaturas digitais](digital-signatures.md). |
 | Um link na aba Document | Show on Page, Go to Destination ou Open Link e, para um link da web, Copy Address |
 | Um destino na aba Document | Copy Name |
 

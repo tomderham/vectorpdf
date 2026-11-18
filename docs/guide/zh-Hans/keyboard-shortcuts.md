@@ -1,5 +1,5 @@
 <!-- keywords: 键盘, 快捷键, 按键, 热键, 手势, 触控板, 鼠标, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # 键盘快捷键
 
@@ -23,6 +23,7 @@
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D，或右键点按文稿标题 |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

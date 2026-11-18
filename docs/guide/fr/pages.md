@@ -1,5 +1,5 @@
 <!-- keywords: réorganiser, réordonner, déplacer, supprimer, dupliquer, insérer, faire pivoter, extraire, page vierge, combiner, fusionner, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # Réorganiser les pages
 
@@ -22,6 +22,7 @@ Cliquez avec le bouton droit sur une vignette ou une sélection de vignettes, pu
 - **Insert Blank Page.**
 - **Insert Pages from PDF :** ajoute des pages d’un autre PDF. Vous pouvez aussi choisir File > Insert Pages from PDF (⌥⌘I).
 - **Save selected page as a PDF :** extrait des pages dans un nouveau fichier.
+- **Export Page as Image :** enregistre des pages sous forme d’images PNG, JPEG ou TIFF. Consultez [Images](export.md#images).
 - **Delete Page.**
 
 ## Si vous avez créé des ancres

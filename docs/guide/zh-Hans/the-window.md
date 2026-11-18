@@ -1,5 +1,6 @@
 <!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, 附件, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 状态栏, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # VectorPDF 窗口
 
 每个 VectorPDF 窗口都包含工具栏、边栏和文稿本身。一个窗口可以将多份文稿作为[标签页](tabs-and-windows.md)保存。
@@ -25,7 +26,7 @@
 - **Outline & Thumbnails：** [目录，或每一页的缩略图](outline-and-thumbnails.md)。
 - **Search：** [当前文稿的结果](search.md)。
 - **Anchors：** [你保存的位置](anchors.md)。
-- **Document：**文稿除页面之外包含的内容：它的[图层](layers.md)、[附件](attachments.md)，以及（如果你在设置中打开）它的[表单栏位、签名、链接和目标](document-tab.md)。从标签页顶部的菜单中选择要显示的内容。只有当文稿至少包含其中一种时，这个标签页才会出现。
+- **Document：**文稿除页面之外包含的内容：它的[图层](layers.md)、[附件](attachments.md)、[数字签名](digital-signatures.md)，以及（如果你在设置中打开）它的[表单栏位、链接和目标](document-tab.md)。从标签页顶部的菜单中选择要显示的内容。只有当文稿至少包含其中一种时，这个标签页才会出现。
 - **Comments：** [所有注释及其回复和状态](draw-and-notes.md#see-all-annotations)。
 - **Ask About This Document：** [Agent](agent.md)。此标签页在 macOS 26 或更高版本上显示，除非你在 Settings 中关闭了 [Use Agent](settings.md)。
 

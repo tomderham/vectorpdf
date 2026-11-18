@@ -1,5 +1,5 @@
 <!-- keywords: página, páginas, reorganizar, reordenar, mover, eliminar, duplicar, insertar, girar, rotar, extraer, página en blanco, combinar, unir, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # Reorganizar páginas
 
@@ -22,6 +22,7 @@ Haz clic con el botón derecho en una miniatura o en una selección de miniatura
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** añade páginas de otro PDF. También puedes elegir File > Insert Pages from PDF (⌥⌘I).
 - **Save selected page as a PDF:** extrae páginas a un archivo nuevo.
+- **Export Page as Image:** guarda páginas como imágenes PNG, JPEG o TIFF. Consulta [Imágenes](export.md#images).
 - **Delete Page.**
 
 ## Si has creado anclas

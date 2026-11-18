@@ -1,5 +1,5 @@
 <!-- keywords: 페이지, 재배열, 순서 변경, 이동, 삭제, 복제, 삽입, 회전, 추출, 빈 페이지, 결합, 병합, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # 페이지 재배열하기
 
@@ -22,6 +22,7 @@
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** 다른 PDF의 페이지를 추가합니다. File > Insert Pages from PDF(⌥⌘I)를 선택할 수도 있습니다.
 - **Save selected page as a PDF:** 페이지를 새로운 파일로 추출합니다.
+- **Export Page as Image:** 페이지를 PNG, JPEG 또는 TIFF 이미지로 저장합니다. [이미지](export.md#images)를 참조하십시오.
 - **Delete Page.**
 
 ## 앵커를 만든 경우

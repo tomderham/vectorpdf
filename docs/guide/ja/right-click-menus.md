@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # 右クリックメニュー
 
@@ -33,14 +33,15 @@ SyncTeX を有効にして LaTeX で作成した PDF では、書類内のすべ
 
 | 右クリックする場所 | コマンド |
 | --- | --- |
-| アウトラインの項目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| サムネール | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。複数のページを選択している場合は、Delete 3 Pages のようにコマンドにページ数が示されます。[ページを並べ替える](pages.md)を参照してください。 |
+| アウトラインの項目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window、Add Entry After、Add Entry Inside、Rename、Go Here Instead、Move Up、Move Down、Indent、Outdent、Delete Entry、Build Outline from Headings。[アウトラインを編集する](outline-and-thumbnails.md#edit-the-outline)を参照してください。 |
+| サムネール | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Export Page as Image、Move Page Up、Move Page Down、Delete Page。複数のページを選択している場合は、Delete 3 Pages のようにコマンドにページ数が示されます。[ページを並べ替える](pages.md)を参照してください。 |
 | 検索結果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | アンカー | Open in New Window または Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments タブの注釈 | Show on Page、Comments…、Delete |
 | Document タブのレイヤー | Put New Annotations Here または Stop Putting New Annotations Here。[レイヤーの表示と非表示](layers.md)を参照してください。 |
 | Document タブの添付ファイル | Quick Look、Open、Save As…、およびページに添付されたファイルの場合は Show on Page。[PDF に添付されたファイル](attachments.md)を参照してください。 |
 | Document タブのフォームフィールド | Show on Page、Copy Name、Copy Value。[フォームフィールド、署名、リンク、移動先](document-tab.md)を参照してください。 |
+| Document タブの署名 | Show on Page、Show Certificate。[デジタル署名で署名する、確認する](digital-signatures.md)を参照してください。 |
 | Document タブのリンク | Show on Page、Go to Destination または Open Link、および Web リンクの場合は Copy Address |
 | Document タブの移動先 | Copy Name |
 

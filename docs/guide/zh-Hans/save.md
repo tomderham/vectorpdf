@@ -1,5 +1,5 @@
 <!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 自动存储, 恢复, 崩溃, 意外退出, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # 存储更改
 
@@ -12,6 +12,8 @@
 | 存储受密码保护的副本 | 选取 File > [Save Encrypted with Password](passwords.md)，或者按下 ⌥⌘S |
 
 如果你关闭有未存储更改的文稿，VectorPDF 会询问是否存储。
+
+存储[已数字签名](digital-signatures.md)的文稿时，你的更改会添加在已签名的内容之后，因此在更改被允许的范围内，其签名仍然有效。
 
 ## 放弃更改
 

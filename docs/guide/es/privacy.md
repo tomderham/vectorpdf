@@ -1,5 +1,5 @@
 <!-- keywords: privacidad, datos, red, telemetría, analíticas, seguridad, búsquedas recientes, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 1f4607569e3c -->
+<!-- source: 4ab468c99e88 -->
 
 # Privacidad
 
@@ -11,6 +11,7 @@ VectorPDF no tiene cuentas, analíticas, telemetría ni informes de fallos. Tus 
 - **El Agent:** con el motor On-Device, nada sale de tu Mac. [Private Cloud Compute y los modelos en línea](agent-engines.md) envían tu pregunta y pasajes del documento, y solo cuando haces una pregunta. Al configurar un modelo en línea, también se usa tu clave para obtener la lista de sus modelos y enviar una prueba breve. Preguntar mediante [Atajos o Siri](shortcuts-and-siri.md) envía lo mismo, y la respuesta va a Atajos o a Siri.
 - **iCloud:** tu estado de lectura se guarda en tu propia cuenta de iCloud: dónde está el archivo, la última página y el zoom, y los nombres, extractos y páginas de tus anclas. Los documentos, su texto completo y las miniaturas de las anclas no se cargan. Tus búsquedas recientes también se guardan allí.
 - **Los enlaces en los que haces clic** se abren en el navegador.
+- **Las firmas digitales** se crean y se comprueban en tu Mac. La clave privada de tu certificado se queda en tu llavero o en tu archivo, y VectorPDF no se conecta a internet para comprobar si el certificado de un firmante se ha revocado.
 - **Servicios de Apple:** macOS proporciona Translation, Look Up, la voz y el OCR, que pueden descargar archivos de idioma de Apple. Handoff comparte el documento y la página que estás leyendo con tus otros dispositivos.
 
 ## Qué se guarda en tu Mac

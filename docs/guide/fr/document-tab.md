@@ -1,5 +1,5 @@
-<!-- keywords: onglet Document, champs de formulaire, champs, signatures, signé, signature numérique, certifié, liens, hyperliens, URL, liens web, destinations nommées, destinations, contenu, barre latérale, document tab, form fields, fields, signed, digital signature, certified, links, hyperlinks, web links, named destinations, contents, sidebar -->
-<!-- source: e2c42440bfd7 -->
+<!-- keywords: onglet Document, champs de formulaire, champs, signatures, signé, signature numérique, certifié, liens, hyperliens, URL, liens web, destinations nommées, destinations, contenu, barre latérale, document tab, form fields, fields, signed, digital signature, certified, links, hyperlinks, web links, named destinations, contents, sidebar, URLs -->
+<!-- source: 83fd92f682a7 -->
 
 # Champs de formulaire, signatures, liens et destinations
 
@@ -7,11 +7,12 @@ L’onglet Document (une boîte), en haut de la barre latérale, répertorie ce 
 
 - **Layers :** voir [Afficher et masquer les calques](layers.md).
 - **Attachments :** voir [Fichiers joints à un PDF](attachments.md).
-- **Form Fields :** chaque champ d’un formulaire, avec sa valeur, ainsi que ses signatures.
+- **Signatures :** les signatures numériques du document, et si chacune est valide. Consultez [Signer et vérifier des signatures numériques](digital-signatures.md).
+- **Form Fields :** chaque champ d’un formulaire, avec sa valeur, champs de signature compris.
 - **Links :** chaque lien, avec le texte sur lequel il se trouve et l’endroit où il mène.
 - **Destinations :** les emplacements nommés du document vers lesquels des liens peuvent pointer.
 
-Form Fields, Links et Destinations ne sont répertoriés que si vous activez **List form fields, links and destinations in the sidebar** dans VectorPDF > Settings > General. La plupart des documents contiennent des liens : sans cela, l’onglet apparaîtrait pour presque tous.
+Signatures est répertorié dès qu’un document est signé. Form Fields, Links et Destinations ne sont répertoriés que si vous activez **List form fields, links and destinations in the sidebar** dans VectorPDF > Settings > General. La plupart des documents contiennent des liens : sans cela, l’onglet apparaîtrait pour presque tous.
 
 Le menu ne propose que ce que contient le document, et l’onglet n’apparaît que si celui-ci en contient au moins un.
 
@@ -19,9 +20,7 @@ Le menu ne propose que ce que contient le document, et l’onglet n’apparaît 
 
 Les champs sont répertoriés page par page, sous le nom que leur donne le formulaire. Chacun affiche sa valeur, et **Required** lorsque le formulaire indique qu’il doit être rempli. Maintenez le pointeur sur un champ pour voir son nom complet et son type. Cliquez sur un champ pour vous y rendre dans la page ; il est entouré un instant. Pour remplir des champs, voir [Remplir des formulaires](forms.md). La liste affiche les nouvelles valeurs pendant que vous tapez.
 
-Un champ de signature indique qui l’a signé et quand, tel que la signature l’enregistre, ou **Not signed**. Il indique aussi si le fichier a été enregistré de nouveau après la signature, ce qui peut modifier ce qui a été signé, et si la signature certifie le document et quelles modifications elle autorise.
-
-> **Remarque :** VectorPDF ne vérifie pas le certificat de la signature et ne peut donc pas vous dire si une signature est valide. Pour cela, utilisez un programme qui valide les signatures, comme Adobe Acrobat Reader.
+Un champ de signature indique qui l’a signé et si la signature est valide, ou **Not signed**. Pour en savoir plus sur chaque signature, choisissez Signatures dans le menu en haut de l’onglet. Consultez [Signer et vérifier des signatures numériques](digital-signatures.md).
 
 ## Liens
 

@@ -1,4 +1,5 @@
-<!-- source: 15b3da8e0dd2 -->
+<!-- keywords:  -->
+<!-- source: a9dbf4350c76 -->
 
 # Manuale utente di VectorPDF
 
@@ -51,6 +52,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 - [Evidenziare, sottolineare e barrare](text-markup.md)
 - [Disegnare, aggiungere note, testo e richiami](draw-and-notes.md)
 - [Timbri e firme](stamps.md)
+- [Firmare e verificare le firme digitali](digital-signatures.md)
 - [Compilare moduli](forms.md)
 
 ## Misurare i disegni
@@ -63,6 +65,7 @@ VectorPDF è un lettore PDF veloce per articoli tecnici, specifiche, contratti e
 
 - [Riordinare le pagine](pages.md)
 - [Dividere un PDF](split-pdf.md)
+- [Intestazioni, piè di pagina, numeri Bates e filigrane](headers-footers-watermarks.md)
 - [Oscurare contenuti sensibili](redact.md)
 - [Password e codifica](passwords.md)
 

@@ -1,5 +1,5 @@
 <!-- keywords: privacidade, dados, rede, telemetria, análises, segurança, pesquisas recentes, privacy, data, network, telemetry, analytics, iCloud, security -->
-<!-- source: 1f4607569e3c -->
+<!-- source: 4ab468c99e88 -->
 
 # Privacidade
 
@@ -11,6 +11,7 @@ O VectorPDF não tem contas, análises, telemetria nem relatórios de falhas. Se
 - **O Agent:** nada sai do seu Mac com o mecanismo On-Device. O [Private Cloud Compute e os modelos online](agent-engines.md) enviam sua pergunta e trechos do documento, e somente quando você faz uma pergunta. A configuração de um modelo online também usa sua chave para listar os modelos e enviar um pequeno teste. Perguntar pelos [Atalhos ou pela Siri](shortcuts-and-siri.md) envia o mesmo, e a resposta vai para os Atalhos ou para a Siri.
 - **iCloud:** seu estado de leitura é mantido na sua própria conta do iCloud: onde o arquivo está, a última página e o zoom, além dos nomes, excertos e páginas das suas âncoras. Os documentos, seu texto completo e as miniaturas das âncoras não são enviados. Suas pesquisas recentes também ficam lá.
 - **Os links em que você clica** são abertos no navegador.
+- **Assinaturas digitais** são criadas e verificadas no seu Mac. A chave privada do seu certificado fica no seu porta-chaves ou no seu arquivo, e o VectorPDF não se conecta à internet para verificar se o certificado de um signatário foi revogado.
 - **Serviços da Apple:** tradução, Look Up, fala e OCR são fornecidos pelo macOS e podem baixar arquivos de idioma da Apple. O Handoff compartilha com seus outros dispositivos o documento e a página que você está lendo.
 
 ## O que fica armazenado no seu Mac

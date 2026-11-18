@@ -1,5 +1,5 @@
 <!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, automatisch sichern, wiederherstellen, Wiederherstellung, Absturz, unerwartet beendet, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # Änderungen sichern
 
@@ -12,6 +12,8 @@ Markierungen, Formulareingaben, Seitenänderungen und Schwärzungen werden erst 
 | Passwortgeschützte Kopie sichern | Wähle File > [Save Encrypted with Password](passwords.md) oder drücke ⌥⌘S |
 
 Wenn du ein Dokument mit nicht gesicherten Änderungen schließt, fragt VectorPDF, ob du sie sichern möchtest.
+
+Ein [digital signiertes](digital-signatures.md) Dokument wird gesichert, indem deine Änderungen hinter das Signierte angefügt werden, sodass seine Signaturen gültig bleiben, soweit die Änderungen erlaubt sind.
 
 ## Änderungen verwerfen
 

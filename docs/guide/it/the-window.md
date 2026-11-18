@@ -1,5 +1,6 @@
 <!-- keywords: finestra, barra degli strumenti, barre degli strumenti, barra laterale, pannelli, schermata Start, interfaccia, indicatore di pagina, controlli, allegati, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barra di stato, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # La finestra di VectorPDF
 
 Ogni finestra di VectorPDF ha una barra degli strumenti, una barra laterale e il documento stesso. Le finestre possono contenere più documenti come [pannelli](tabs-and-windows.md).
@@ -25,7 +26,7 @@ I pannelli nella parte superiore della barra laterale consentono di passare tra:
 - **Outline & Thumbnails:** l'[indice o una miniatura di ogni pagina](outline-and-thumbnails.md).
 - **Search:** i [risultati per il documento corrente](search.md).
 - **Anchors:** [i punti che hai salvato](anchors.md).
-- **Document:** ciò che il documento contiene oltre alle pagine: i suoi [livelli](layers.md), i suoi [allegati](attachments.md) e, se li attivi nelle Impostazioni, i suoi [campi modulo, firme, link e destinazioni](document-tab.md). Scegli cosa mostrare dal menu in cima al pannello. Questo pannello compare solo quando il documento ne ha almeno uno.
+- **Document:** ciò che il documento contiene oltre alle pagine: i suoi [livelli](layers.md), i suoi [allegati](attachments.md), le sue [firme digitali](digital-signatures.md) e, se li attivi nelle Impostazioni, i suoi [campi modulo, link e destinazioni](document-tab.md). Scegli cosa mostrare dal menu in cima al pannello. Questo pannello compare solo quando il documento ne ha almeno uno.
 - **Comments:** [tutte le annotazioni, con le risposte e lo stato](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [l'Agent](agent.md). Questo pannello compare su macOS 26 o versioni successive, a meno che tu non abbia disattivato [Use Agent](settings.md) in Settings.
 

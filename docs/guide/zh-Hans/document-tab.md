@@ -1,5 +1,5 @@
-<!-- keywords: Document 标签页, 表单栏位, 栏位, 签名, 已签名, 数字签名, 认证, 链接, 超链接, URL, 网页链接, 命名目标, 目标, 内容, 边栏, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: e2c42440bfd7 -->
+<!-- keywords: Document 标签页, 表单栏位, 栏位, 签名, 已签名, 数字签名, 认证, 链接, 超链接, URL, 网页链接, 命名目标, 目标, 内容, 边栏, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar, URLs -->
+<!-- source: 83fd92f682a7 -->
 
 # 表单栏位、签名、链接和目标
 
@@ -7,11 +7,12 @@
 
 - **Layers：**请参阅[显示和隐藏图层](layers.md)。
 - **Attachments：**请参阅[附加到 PDF 的文件](attachments.md)。
-- **Form Fields：**表单中的每个栏位及其值，以及表单的签名。
+- **Signatures：**文稿的数字签名，以及每个签名是否有效。请参阅[进行数字签名和检查数字签名](digital-signatures.md)。
+- **Form Fields：**表单中的每个栏位及其值，包括签名栏位。
 - **Links：**每个链接，以及它所在的文本和指向的位置。
 - **Destinations：**文稿中可供链接指向的命名位置。
 
-只有在 VectorPDF > Settings > General 中打开 **List form fields, links and destinations in the sidebar** 后，才会列出 Form Fields、Links 和 Destinations。大多数文稿都带有链接，否则几乎每份文稿都会出现这个标签页。
+只要文稿已签名，就会列出 Signatures。只有在 VectorPDF > Settings > General 中打开 **List form fields, links and destinations in the sidebar** 后，才会列出 Form Fields、Links 和 Destinations。大多数文稿都带有链接，否则几乎每份文稿都会出现这个标签页。
 
 菜单只提供文稿中有的内容，而且只有当文稿至少包含其中一种时，这个标签页才会出现。
 
@@ -19,9 +20,7 @@
 
 栏位按页面列出，使用表单为其指定的名称。每个栏位都会显示其值；如果表单要求必须填写，还会显示 **Required**。将指针悬停在栏位上可查看其完整名称和类型。点按栏位可前往页面上的该栏位，它会短暂显示外框。若要填写栏位，请参阅[填写表单](forms.md)。你键入时，列表会显示新值。
 
-签名栏位会按照签名的记录显示签名人和签名时间，或者显示 **Not signed**。它还会说明文件在签名后是否再次存储过（这可能会改变签名的内容），以及签名是否认证了文稿、允许哪些更改。
-
-> **注：** VectorPDF 不检查签名的证书，因此无法告诉你签名是否有效。若要检查，请使用能验证签名的程序，例如 Adobe Acrobat Reader。
+签名栏位会显示签名人以及签名是否有效，或者显示 **Not signed**。若要进一步了解每个签名，请从标签页顶部的菜单中选取 Signatures。请参阅[进行数字签名和检查数字签名](digital-signatures.md)。
 
 ## 链接
 

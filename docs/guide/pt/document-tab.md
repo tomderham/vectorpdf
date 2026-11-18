@@ -1,5 +1,5 @@
 <!-- keywords: aba Document, campos de formulário, campos, assinaturas, assinado, assinatura digital, certificado, links, hiperlinks, URLs, links da web, destinos nomeados, destinos, conteúdo, barra lateral, document tab, form fields, fields, signatures, signed, digital signature, certified, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: e2c42440bfd7 -->
+<!-- source: 83fd92f682a7 -->
 
 # Campos de formulário, assinaturas, links e destinos
 
@@ -7,11 +7,12 @@ A aba Document (uma caixa), na parte superior da barra lateral, lista o que um d
 
 - **Layers:** consulte [Mostrar e ocultar camadas](layers.md).
 - **Attachments:** consulte [Arquivos anexados a um PDF](attachments.md).
-- **Form Fields:** cada campo de um formulário, com seu valor, e suas assinaturas.
+- **Signatures:** as assinaturas digitais do documento e se cada uma é válida. Consulte [Assinar e verificar assinaturas digitais](digital-signatures.md).
+- **Form Fields:** cada campo de um formulário, com seu valor, incluindo os campos de assinatura.
 - **Links:** cada link, com o texto em que está e para onde leva.
 - **Destinations:** os lugares nomeados do documento para onde os links podem apontar.
 
-Form Fields, Links e Destinations só são listados quando você ativa **List form fields, links and destinations in the sidebar** em VectorPDF > Settings > General. A maioria dos documentos tem links, então, caso contrário, a aba apareceria em quase todos.
+Signatures é listado sempre que um documento está assinado. Form Fields, Links e Destinations só são listados quando você ativa **List form fields, links and destinations in the sidebar** em VectorPDF > Settings > General. A maioria dos documentos tem links, então, caso contrário, a aba apareceria em quase todos.
 
 O menu oferece apenas o que o documento tem, e a aba só aparece quando ele tem pelo menos um deles.
 
@@ -19,9 +20,7 @@ O menu oferece apenas o que o documento tem, e a aba só aparece quando ele tem 
 
 Os campos são listados página por página, pelo nome que o formulário dá a eles. Cada um mostra seu valor e **Required** quando o formulário diz que ele precisa ser preenchido. Mantenha o cursor sobre um campo para ver seu nome completo e seu tipo. Clique em um campo para ir até ele na página; ele fica destacado por um instante. Para preencher campos, consulte [Preencher formulários](forms.md). A lista mostra os novos valores enquanto você digita.
 
-Um campo de assinatura mostra quem o assinou e quando, conforme a assinatura registra, ou **Not signed**. Ele também diz se o arquivo foi salvo de novo depois de assinado, o que pode alterar o que foi assinado, e se a assinatura certifica o documento e quais alterações ela permite.
-
-> **Observação:** O VectorPDF não verifica o certificado da assinatura, então não pode dizer se uma assinatura é válida. Para isso, use um programa que valide assinaturas, como o Adobe Acrobat Reader.
+Um campo de assinatura mostra quem o assinou e se a assinatura é válida, ou **Not signed**. Para saber mais sobre cada assinatura, escolha Signatures no menu na parte superior da aba. Consulte [Assinar e verificar assinaturas digitais](digital-signatures.md).
 
 ## Links
 

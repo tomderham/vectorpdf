@@ -1,5 +1,5 @@
-<!-- keywords: सेटिंग्ज़, प्राथमिकताएँ, विकल्प, अपडेट, अपडेट जाँचें, ब्राउज़र, लेखक, ऐनोटेशन लेखक, स्टोरेज, डिस्क स्थान, साफ़ करें, डेटा हटाएँ, अनइंस्टॉल, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, सामान्य, उन्नत, डेटा, iCloud, general, agent, advanced, data -->
-<!-- source: 30bc22110b99 -->
+<!-- keywords: सेटिंग्ज़, प्राथमिकताएँ, विकल्प, अपडेट, अपडेट जाँचें, ब्राउज़र, लेखक, ऐनोटेशन लेखक, स्टोरेज, डिस्क स्थान, साफ़ करें, डेटा हटाएँ, अनइंस्टॉल, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, सामान्य, उन्नत, डेटा, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
+<!-- source: 8d8c6240dea0 -->
 
 # सेटिंग्ज़
 
@@ -13,7 +13,7 @@ VectorPDF > Settings चुनें, या ⌘, दबाएँ। सेट�
 | Digital Stamp | आपका [स्टैम्प](stamps.md) बनाती है, बदलती है या हटाती है। |
 | PDF Color | सेट करती है कि [पेज कैसे दिखें](pdf-colors.md): Follow System, Light, Dark या Sepia। |
 | Open Links In | वेब लिंक के लिए ब्राउज़र चुनती है। |
-| List form fields, links and destinations in the sidebar | किसी दस्तावेज़ के [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और नाम वाले गंतव्य](document-tab.md) Document टैब में जोड़ता है; तब यह टैब उन दस्तावेज़ों के लिए भी दिखता है जिनमें इनमें से कुछ भी हो। जब तक आप इसे चालू नहीं करते, यह बंद रहता है। |
+| List form fields, links and destinations in the sidebar | किसी दस्तावेज़ के [फ़ॉर्म फ़ील्ड, लिंक और नाम वाले गंतव्य](document-tab.md) Document टैब में जोड़ता है; तब यह टैब उन दस्तावेज़ों के लिए भी दिखता है जिनमें इनमें से कुछ भी हो। जब तक आप इसे चालू नहीं करते, यह बंद रहता है। |
 | Automatically check for updates | लगभग दिन में एक बार GitHub पर नया संस्करण जाँचती है। किसी भी समय जाँचने के लिए Check Now पर क्लिक करें। |
 
 ### Agent

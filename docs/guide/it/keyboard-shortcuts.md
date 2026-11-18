@@ -1,5 +1,5 @@
 <!-- keywords: tastiera, abbreviazione, abbreviazioni, scorciatoia, scorciatoie, tasti, tasti di scelta rapida, gesti, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # Abbreviazioni da tastiera
 
@@ -23,6 +23,7 @@ Molti di questi comandi sono disponibili anche in un menu di scelta rapida, come
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D, oppure clic con il tasto destro sul titolo del documento |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

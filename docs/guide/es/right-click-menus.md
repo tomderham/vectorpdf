@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # Menús de clic derecho
 
@@ -33,14 +33,15 @@ En un documento con [capas](layers.md), el menú de una anotación también tien
 
 | Clic derecho en | Comandos |
 | --- | --- |
-| Una entrada del esquema | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Con varias páginas seleccionadas, los comandos indican cuántas, como Delete 3 Pages. Consulta [Reorganizar páginas](pages.md). |
+| Una entrada del esquema | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. Consulta [Editar el esquema](outline-and-thumbnails.md#edit-the-outline). |
+| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. Con varias páginas seleccionadas, los comandos indican cuántas, como Delete 3 Pages. Consulta [Reorganizar páginas](pages.md). |
 | Un resultado de búsqueda | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancla | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Una anotación en la pestaña Comments | Show on Page, Comments…, Delete |
 | Una capa en la pestaña Document | Put New Annotations Here o Stop Putting New Annotations Here. Consulta [Mostrar y ocultar capas](layers.md). |
 | Un archivo adjunto en la pestaña Document | Quick Look, Open, Save As… y, para un archivo adjunto a una página, Show on Page. Consulta [Archivos adjuntos a un PDF](attachments.md). |
 | Un campo de formulario en la pestaña Document | Show on Page, Copy Name, Copy Value. Consulta [Campos de formulario, firmas, enlaces y destinos](document-tab.md). |
+| Una firma en la pestaña Document | Show on Page, Show Certificate. Consulta [Firmar y comprobar firmas digitales](digital-signatures.md). |
 | Un enlace en la pestaña Document | Show on Page, Go to Destination u Open Link y, para un enlace web, Copy Address |
 | Un destino en la pestaña Document | Copy Name |
 

@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # 오른쪽 클릭 메뉴
 
@@ -33,14 +33,15 @@ SyncTeX를 켜고 LaTeX로 만든 PDF에서는 문서 안의 모든 메뉴가 **
 
 | 오른쪽 클릭 대상 | 명령 |
 | --- | --- |
-| 개요 항목 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| 축소판 | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. 여러 페이지를 선택하면 Delete 3 Pages와 같이 명령에 페이지 수가 표시됩니다. [페이지 재배열하기](pages.md)를 참조하십시오. |
+| 개요 항목 | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. [개요 편집하기](outline-and-thumbnails.md#edit-the-outline)를 참조하십시오. |
+| 축소판 | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. 여러 페이지를 선택하면 Delete 3 Pages와 같이 명령에 페이지 수가 표시됩니다. [페이지 재배열하기](pages.md)를 참조하십시오. |
 | 검색 결과 | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | 앵커 | Open in New Window 또는 Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Comments 탭의 주석 | Show on Page, Comments…, Delete |
 | Document 탭의 레이어 | Put New Annotations Here 또는 Stop Putting New Annotations Here. [레이어 보기 및 가리기](layers.md)를 참고하십시오. |
 | Document 탭의 첨부 파일 | Quick Look, Open, Save As… 및 페이지에 첨부된 파일의 경우 Show on Page. [PDF에 첨부된 파일](attachments.md)을 참고하십시오. |
 | Document 탭의 양식 필드 | Show on Page, Copy Name, Copy Value. [양식 필드, 서명, 링크 및 대상](document-tab.md)을 참고하십시오. |
+| Document 탭의 서명 | Show on Page, Show Certificate. [디지털 서명하기 및 확인하기](digital-signatures.md)를 참조하십시오. |
 | Document 탭의 링크 | Show on Page, Go to Destination 또는 Open Link 및 웹 링크의 경우 Copy Address |
 | Document 탭의 대상 | Copy Name |
 

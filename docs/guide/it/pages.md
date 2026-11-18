@@ -1,5 +1,5 @@
 <!-- keywords: pagina, pagine, riordinare, spostare, eliminare, duplicare, inserire, ruotare, estrarre, pagina vuota, combinare, unire, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # Riordinare le pagine
 
@@ -22,6 +22,7 @@ Fai clic con il tasto destro su una miniatura o su una selezione di miniature, q
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** aggiunge pagine da un altro PDF. Puoi anche scegliere File > Insert Pages from PDF (⌥⌘I).
 - **Save selected page as a PDF:** estrae le pagine in un nuovo file.
+- **Export Page as Image:** salva le pagine come immagini PNG, JPEG o TIFF. Consulta [Immagini](export.md#images).
 - **Delete Page.**
 
 ## Se hai creato degli ancoraggi

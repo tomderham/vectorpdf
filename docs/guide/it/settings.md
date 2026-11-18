@@ -1,5 +1,5 @@
-<!-- keywords: impostazioni, preferenze, opzioni, aggiornamenti, aggiornamento, verifica aggiornamenti, browser, autore, autore annotazioni, spazio, spazio su disco, cancellare, rimuovere dati, eliminare dati, disinstallare, settings, preferences, options, updates, update, check for updates, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, generale, avanzate, dati, iCloud, general, agent, advanced, data -->
-<!-- source: 30bc22110b99 -->
+<!-- keywords: impostazioni, preferenze, opzioni, aggiornamenti, aggiornamento, verifica aggiornamenti, browser, autore, autore annotazioni, spazio, spazio su disco, cancellare, rimuovere dati, eliminare dati, disinstallare, settings, preferences, options, updates, update, check for updates, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, generale, avanzate, dati, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
+<!-- source: 8d8c6240dea0 -->
 
 # Impostazioni
 
@@ -13,7 +13,7 @@ Scegli VectorPDF > Settings oppure premi ⌘,. Le impostazioni hanno quattro pan
 | Digital Stamp | Crea, modifica o elimina il tuo [timbro](stamps.md). |
 | PDF Color | Imposta [l'aspetto delle pagine](pdf-colors.md): Follow System, Light, Dark o Sepia. |
 | Open Links In | Sceglie il browser per i link web. |
-| List form fields, links and destinations in the sidebar | Aggiunge al pannello Document i [campi modulo, le firme, i link e le destinazioni con nome](document-tab.md) di un documento; il pannello compare allora anche nei documenti che ne hanno. Disattivata finché non la attivi. |
+| List form fields, links and destinations in the sidebar | Aggiunge al pannello Document i [campi modulo, i link e le destinazioni con nome](document-tab.md) di un documento; il pannello compare allora anche nei documenti che ne hanno. Disattivata finché non la attivi. |
 | Automatically check for updates | Cerca una nuova versione su GitHub circa una volta al giorno. Fai clic su Check Now per controllare in qualsiasi momento. |
 
 ### Agent

@@ -1,5 +1,5 @@
 <!-- keywords: 右键点按, 右键, 按住 Control 键点按, 上下文菜单, 快捷菜单, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # 右键菜单
 
@@ -33,14 +33,15 @@
 
 | 右键点按 | 命令 |
 | --- | --- |
-| 大纲条目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
-| 缩略图 | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Move Page Up、Move Page Down、Delete Page。选择多个页面时，命令会显示页数，例如 Delete 3 Pages。请参阅[重新排列页面](pages.md)。 |
+| 大纲条目 | Create Anchor、Create Anchor and Open in New Window、Open in New Window、Add Entry After、Add Entry Inside、Rename、Go Here Instead、Move Up、Move Down、Indent、Outdent、Delete Entry、Build Outline from Headings。请参阅[编辑大纲](outline-and-thumbnails.md#edit-the-outline)。 |
+| 缩略图 | Rotate Clockwise、Rotate Counterclockwise、Rotate 180°、Duplicate Page、Insert Blank Page、Insert Pages from PDF、Save selected page as a PDF、Export Page as Image、Move Page Up、Move Page Down、Delete Page。选择多个页面时，命令会显示页数，例如 Delete 3 Pages。请参阅[重新排列页面](pages.md)。 |
 | 搜索结果 | Create Anchor、Create Anchor and Open in New Window、Open in New Window |
 | 锚点 | Open in New Window 或 Close Window、Copy Text、Copy Screenshot、Delete Anchor |
 | Comments 标签页中的注释 | Show on Page、Comments…、Delete |
 | Document 标签页中的图层 | Put New Annotations Here 或 Stop Putting New Annotations Here。请参阅[显示和隐藏图层](layers.md)。 |
 | Document 标签页中的附件 | Quick Look、Open、Save As…，以及附加到页面的文件的 Show on Page。请参阅[附加到 PDF 的文件](attachments.md)。 |
 | Document 标签页中的表单栏位 | Show on Page、Copy Name、Copy Value。请参阅[表单栏位、签名、链接和目标](document-tab.md)。 |
+| Document 标签页中的签名 | Show on Page、Show Certificate。请参阅[进行数字签名和检查数字签名](digital-signatures.md)。 |
 | Document 标签页中的链接 | Show on Page、Go to Destination 或 Open Link，以及网页链接的 Copy Address |
 | Document 标签页中的目标 | Copy Name |
 

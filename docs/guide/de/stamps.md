@@ -1,11 +1,11 @@
 <!-- keywords: Stempel, Unterschrift, Unterschriften, unterschreiben, signieren, Initialen, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: eb4441d846b0 -->
+<!-- source: 8f0c7eb52953 -->
 
 # Stempel und Unterschriften
 
 Ein Stempel ist ein Bild, zum Beispiel deine Unterschrift oder deine Initialen, das du auf jeder Seite platzieren kannst.
 
-> **Hinweis:** Ein Stempel ist eine sichtbare Markierung. Er ist keine kryptografische digitale Signatur und beglaubigt das Dokument nicht.
+> **Hinweis:** Ein Stempel ist eine sichtbare Markierung. Er ist keine kryptografische digitale Signatur und beglaubigt das Dokument nicht. Wie du mit einem Zertifikat signierst oder die digitalen Signaturen eines Dokuments prüfst, erfährst du unter [Digitale Signaturen erstellen und prüfen](digital-signatures.md).
 
 ## Deinen Stempel erstellen
 

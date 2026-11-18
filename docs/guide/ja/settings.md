@@ -1,5 +1,5 @@
-<!-- keywords: 設定, 環境設定, オプション, アップデート, アップデートを確認, ブラウザ, 作成者, 注釈の作成者, ストレージ, ディスク容量, 消去, データを削除, アンインストール, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, 一般, 詳細, データ, iCloud, general, agent, advanced, data -->
-<!-- source: 30bc22110b99 -->
+<!-- keywords: 設定, 環境設定, オプション, アップデート, アップデートを確認, ブラウザ, 作成者, 注釈の作成者, ストレージ, ディスク容量, 消去, データを削除, アンインストール, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, 一般, 詳細, データ, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
+<!-- source: 8d8c6240dea0 -->
 
 # 設定
 
@@ -13,7 +13,7 @@ VectorPDF > Settings を選択するか、⌘, を押します。設定には 4 
 | Digital Stamp | [スタンプ](stamps.md)を作成、変更、削除します。 |
 | PDF Color | [ページの見た目](pdf-colors.md)を Follow System、Light、Dark、Sepia から設定します。 |
 | Open Links In | Web リンクを開くブラウザを選択します。 |
-| List form fields, links and destinations in the sidebar | 書類の[フォームフィールド、署名、リンク、名前付き移動先](document-tab.md)を Document タブに追加します。オンにすると、それらのいずれかがある書類でも Document タブが表示されます。オンにするまではオフです。 |
+| List form fields, links and destinations in the sidebar | 書類の[フォームフィールド、リンク、名前付き移動先](document-tab.md)を Document タブに追加します。オンにすると、それらのいずれかがある書類でも Document タブが表示されます。オンにするまではオフです。 |
 | Automatically check for updates | 1 日に 1 回程度、GitHub で新しいバージョンを確認します。いつでも確認するには、Check Now をクリックします。 |
 
 ### Agent

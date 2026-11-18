@@ -1,9 +1,9 @@
-<!-- keywords: 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, 优化, 减小文件大小, 压缩, 更小, 图像, 字体, 轮廓, 文本转轮廓, 绘图仪, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 可搜索的 PDF, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: 图像, 图片, PNG, JPEG, TIFF, 分辨率, 页面存储为图像, 导出, 转换, 纯文本, 文本, Word, 拼合, 注释摘要, 表格, 优化, 减小文件大小, 压缩, 更小, 图像, 字体, 轮廓, 文本转轮廓, 绘图仪, export, convert, plain text, text, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 可搜索的 PDF, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # 导出为其他格式
 
-若要导出整个文稿，请选取 File > Export Document As，然后选取 Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、Optimized PDF 或 Searchable PDF。注释摘要和测量结果有各自的命令。
+若要导出整个文稿，请选取 File > Export Document As，然后选取 Plain Text、Word Document、Scalable Vector Graphics、Images、Flattened PDF、Optimized PDF 或 Searchable PDF。注释摘要和测量结果有各自的命令。
 
 ## 纯文本（Plain Text）
 
@@ -16,6 +16,18 @@
 ## SVG
 
 将每个页面存储为一个可缩放矢量图形文件，其中的文本转换为矢量路径，因此外观与 PDF 完全相同。多页文稿会存储为一个文件夹，每页一个文件。
+
+## 图像 {#images}
+
+将页面按其在 VectorPDF 中的样子存储为图像，包含其注释和表单栏位，且只包含显示的[图层](layers.md)。选取 File > Export Document As > Images。在存储对话框中选取：
+
+- **Format：**PNG 保留所有细节，适合图纸和文本。JPEG 生成的文件较小，适合照片。TIFF 用于需要它的 App，例如某些文档系统和传真系统。
+- **Resolution：**屏幕用 72 dpi，文稿或演示文稿用 150 dpi，打印用 300 或 600 dpi。
+- **Pages：**所有页面、当前页面，或在[缩略图](outline-and-thumbnails.md)中选中的页面。
+
+一个页面存储为一个文件。多个页面存储在一个以你给定的名称命名的文件夹中，每页一张图像，按页码编号。非常大的页面（例如 600 dpi 的大型图纸）会被缩小，使其最长边为 16,384 像素。
+
+若要导出特定页面，请选中它们的缩略图，按住 Control 键点按（或右键点按）其中一个，然后选取 Export Pages as Images。
 
 ## 拼合的 PDF（Flattened PDF） {#flattened-pdf}
 

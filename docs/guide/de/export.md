@@ -1,9 +1,9 @@
-<!-- keywords: exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, durchsuchbares PDF, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: Bilder, Bild, PNG, JPEG, TIFF, Auflösung, Seite als Bild, exportieren, konvertieren, reiner Text, Text, Word, reduzieren, Anmerkungsübersicht, optimieren, optimiert, Dateigröße verringern, komprimieren, kleiner, Bilder, Schriften, Konturen, Text in Konturen, Plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, durchsuchbares PDF, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # In andere Formate exportieren
 
-Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF oder Searchable PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
+Um ein ganzes Dokument zu exportieren, wähle File > Export Document As und dann Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF oder Searchable PDF. Für die Anmerkungsübersicht und Messungen gibt es eigene Befehle.
 
 ## Plain Text
 
@@ -16,6 +16,18 @@ Sichert eine `.docx`-Datei, die du in Word und anderen Apps bearbeiten kannst. K
 ## SVG
 
 Sichert jede Seite als SVG-Datei (Scalable Vector Graphics). Text wird dabei in Vektorpfade umgewandelt, sodass die Seite genau wie im PDF aussieht. Ein mehrseitiges Dokument wird als Ordner mit einer Datei pro Seite gesichert.
+
+## Bilder {#images}
+
+Sichert Seiten als Bilder, so wie sie in VectorPDF aussehen, mit ihren Anmerkungen und Formularfeldern und nur den angezeigten [Ebenen](layers.md). Wähle File > Export Document As > Images. Wähle im Dialogfenster zum Sichern:
+
+- **Format:** PNG behält jedes Detail und eignet sich für Zeichnungen und Text. JPEG erzeugt kleinere Dateien und eignet sich für Fotos. TIFF ist für Apps gedacht, die es brauchen, etwa manche Dokument- und Faxsysteme.
+- **Resolution:** 72 dpi für den Bildschirm, 150 dpi für ein Dokument oder eine Präsentation, 300 oder 600 dpi zum Drucken.
+- **Pages:** alle Seiten, die aktuelle Seite oder die in den [Miniaturen](outline-and-thumbnails.md) ausgewählten Seiten.
+
+Eine Seite wird als eine Datei gesichert. Mehrere Seiten werden in einem Ordner mit dem Namen gesichert, den du angibst, ein Bild pro Seite, nach Seiten nummeriert. Eine sehr große Seite, etwa eine große Zeichnung mit 600 dpi, wird verkleinert, sodass ihre längste Seite 16.384 Pixel misst.
+
+Um bestimmte Seiten zu exportieren, wähle ihre Miniaturen aus, klicke mit der rechten Maustaste auf eine davon und wähle dann Export Pages as Images.
 
 ## Flattened PDF {#flattened-pdf}
 

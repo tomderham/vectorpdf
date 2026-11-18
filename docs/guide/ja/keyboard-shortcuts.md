@@ -1,5 +1,5 @@
 <!-- keywords: キーボード, ショートカット, キー, ホットキー, ジェスチャ, トラックパッド, マウス, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # キーボードショートカット
 
@@ -23,6 +23,7 @@
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Favorites への追加または削除 | ⌘D、または書類のタイトルを右クリック |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

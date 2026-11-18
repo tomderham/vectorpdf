@@ -1,5 +1,6 @@
 <!-- keywords: janela, barra de ferramentas, barras de ferramentas, barra lateral, abas, tela inicial, interface, indicador de página, controles, anexos, window, toolbar, toolbars, sidebar, tabs, start screen, page indicator, controls, attachments, barra de status, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # A janela do VectorPDF
 
 Cada janela do VectorPDF tem uma barra de ferramentas, uma barra lateral e o próprio documento. As janelas podem conter vários documentos como [abas](tabs-and-windows.md).
@@ -25,7 +26,7 @@ As abas na parte superior da barra lateral alternam entre:
 - **Outline & Thumbnails:** o [índice ou uma miniatura de cada página](outline-and-thumbnails.md).
 - **Search:** os [resultados do documento atual](search.md).
 - **Anchors:** [os locais que você salvou](anchors.md).
-- **Document:** o que o documento contém além das páginas: suas [camadas](layers.md), seus [anexos](attachments.md) e, se você os ativar nos Ajustes, seus [campos de formulário, assinaturas, links e destinos](document-tab.md). Escolha o que mostrar no menu na parte superior da aba. Esta aba só aparece quando o documento tem pelo menos um deles.
+- **Document:** o que o documento contém além das páginas: suas [camadas](layers.md), seus [anexos](attachments.md), suas [assinaturas digitais](digital-signatures.md) e, se você os ativar nos Ajustes, seus [campos de formulário, links e destinos](document-tab.md). Escolha o que mostrar no menu na parte superior da aba. Esta aba só aparece quando o documento tem pelo menos um deles.
 - **Comments:** [todas as anotações, com as respostas e o status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [o Agent](agent.md). Esta aba aparece no macOS 26 ou posterior, a menos que você tenha desativado [Use Agent](settings.md) em Settings.
 

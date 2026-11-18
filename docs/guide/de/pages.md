@@ -1,5 +1,5 @@
 <!-- keywords: Seite, Seiten, neu anordnen, sortieren, bewegen, löschen, duplizieren, einfügen, drehen, extrahieren, leere Seite, kombinieren, zusammenfügen, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # Seiten neu anordnen
 
@@ -22,6 +22,7 @@ Klicke mit der rechten Maustaste auf eine Miniatur oder eine Auswahl von Miniatu
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** Fügt Seiten aus einem anderen PDF hinzu. Du kannst auch File > Insert Pages from PDF (⌥⌘I) wählen.
 - **Save selected page as a PDF:** Extrahiert Seiten in eine neue Datei.
+- **Export Page as Image:** Sichert Seiten als PNG-, JPEG- oder TIFF-Bilder. Siehe [Bilder](export.md#images).
 - **Delete Page.**
 
 ## Wenn du Anker erstellt hast

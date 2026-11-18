@@ -1,5 +1,5 @@
 <!-- keywords: clavier, raccourci, raccourcis, touches, gestes, souris, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # Raccourcis clavier
 
@@ -23,6 +23,7 @@ Bon nombre de ces commandes figurent aussi dans un menu du clic droit, comme ind
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D, ou clic droit sur le titre du document |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

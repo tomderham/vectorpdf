@@ -1,11 +1,11 @@
 <!-- keywords: tampon, tampons, signer, initiales, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: eb4441d846b0 -->
+<!-- source: 8f0c7eb52953 -->
 
 # Tampons et signatures
 
 Un tampon est une image, par exemple votre signature ou vos initiales, que vous pouvez placer sur n’importe quelle page.
 
-> **Remarque :** Un tampon est une marque visuelle. Ce n’est pas une signature numérique cryptographique, et il ne certifie pas le document.
+> **Remarque :** Un tampon est une marque visuelle. Ce n’est pas une signature numérique cryptographique, et il ne certifie pas le document. Pour signer avec un certificat, ou vérifier les signatures numériques d’un document, consultez [Signer et vérifier des signatures numériques](digital-signatures.md).
 
 ## Créer votre tampon
 

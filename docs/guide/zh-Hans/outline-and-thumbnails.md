@@ -1,5 +1,5 @@
-<!-- keywords: 大纲, 目录, 内容, 书签, 缩略图, 边栏, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar -->
-<!-- source: 9d40d0fcf99f -->
+<!-- keywords: 编辑大纲, 添加书签, 根据标题创建大纲, 标题, 创建目录, 重新命名, 缩进, 取消缩进, 大纲, 目录, 内容, 书签, 缩略图, 边栏, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4dd1a582a981 -->
 
 # 大纲和缩略图
 
@@ -13,6 +13,33 @@
 - **显示或隐藏子章节：** 点按章节旁边的箭头。
 - **查找章节：** 在“Search outline”栏中键入内容。这时只显示匹配的章节。
 - **让章节随手可用：** 右键点按它以创建[锚点](anchors.md)，或者在新窗口中打开它。
+
+## 编辑大纲 {#edit-the-outline}
+
+你可以向文稿的大纲添加条目（其他 App 可能称之为书签），也可以给它们重新命名、移动和删除它们。存储文稿时，这些更改会成为文件的一部分。请参阅[存储](save.md)。
+
+若要添加条目，请前往它要链接到的位置，然后选取 Edit > Add Outline Entry (⌥⌘B)。如果你选中了文本，条目会链接到这段文本，并以它作为建议的标题。否则，它会链接到你正在阅读的页面顶部。输入标题，然后点按 **Add**。这样添加的条目会按页面顺序放在顶层条目之间，所以这也是为没有大纲的文稿开始创建大纲的方法。
+
+其他操作请右键点按条目：
+
+| 若要 | 选取 |
+| --- | --- |
+| 在此条目之后或之内添加条目 | Add Entry After 或 Add Entry Inside |
+| 重新命名它 | Rename |
+| 让它链接到所选文本或你正在阅读的页面 | Go Here Instead |
+| 在同级条目之间移动它 | Move Up 或 Move Down |
+| 把它放进上方的条目，或从所在的条目中移出 | Indent 或 Outdent |
+| 删除它及其中的条目 | Delete Entry |
+
+你也可以拖移条目来移动它，或将它拖放到另一个条目上以放入其中。其中的条目会随之移动。在用“Search outline”栏过滤大纲时，无法编辑条目。Edit > Undo (⌘Z) 可以逐个撤销对大纲的更改。
+
+### 根据标题创建大纲
+
+选取 Edit > Build Outline from Headings，即可一步用文稿的标题创建大纲。大纲条目的右键菜单中也有此命令。如果文稿已有大纲，替换前会先询问你；Edit > Undo 可以恢复原来的大纲。
+
+在带标签的 PDF 中，标题就是其标签所标记的内容。在其他 PDF 中，VectorPDF 会查找与正文不同的行：比正文大，或在正文不是粗体时为粗体。较大的样式比较小的样式级别更高，而在同一样式中，3.2.1 这样的章节编号决定级别。重复出现的页眉和页脚、图表标题以及目录中的行会被排除。
+
+请检查结果：文稿的样式并不总能说明哪些行是标题。可以按照上文所述给条目重新命名、移动或删除条目。扫描页面中的标题不会被找到，即使其文本已被识别也是如此。
 
 ## 缩略图
 

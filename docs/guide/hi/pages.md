@@ -1,5 +1,5 @@
 <!-- keywords: पेज, फिर से व्यवस्थित करें, क्रम बदलें, ले जाएँ, हटाएँ, डुप्लिकेट, सम्मिलित करें, घुमाएँ, निकालें, खाली पेज, जोड़ें, मर्ज, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # पेजों को फिर से व्यवस्थित करें
 
@@ -22,6 +22,7 @@
 - **Insert Blank Page।**
 - **Insert Pages from PDF:** किसी दूसरे PDF से पेज जोड़ता है। आप File > Insert Pages from PDF (⌥⌘I) भी चुन सकते हैं।
 - **Save selected page as a PDF:** पेजों को निकालकर एक नई फ़ाइल में रखता है।
+- **Export Page as Image:** पेजों को PNG, JPEG या TIFF इमेज के रूप में सेव करता है। [इमेज](export.md#images) देखें।
 - **Delete Page।**
 
 ## अगर आपने ऐंकर बनाए हैं

@@ -1,9 +1,9 @@
-<!-- keywords: 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 検索可能な PDF, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: イメージ, 画像, PNG, JPEG, TIFF, 解像度, ページを画像として, 書き出し, 書き出す, 変換, プレーンテキスト, テキスト, フラット化, 注釈の概要, 最適化, ファイルサイズを縮小, 圧縮, 小さく, イメージ, フォント, アウトライン, テキストのアウトライン化, プロッタ, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 検索可能な PDF, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # 他のフォーマットに書き出す
 
-書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、Flattened PDF、Optimized PDF、または Searchable PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
+書類全体を書き出すには、File > Export Document As を選択してから、Plain Text、Word Document、Scalable Vector Graphics、Images、Flattened PDF、Optimized PDF、または Searchable PDF を選択します。注釈の概要と測定値には、それぞれ専用のコマンドがあります。
 
 ## Plain Text
 
@@ -16,6 +16,18 @@ Word などのアプリで編集できる `.docx` ファイルを保存します
 ## SVG
 
 各ページを Scalable Vector Graphics ファイルとして保存します。テキストはベクトルパスになるため、PDF とまったく同じ見た目になります。複数ページの書類は、ページごとに 1 つのファイルが入ったフォルダとして保存されます。
+
+## イメージ {#images}
+
+ページを、VectorPDF での見た目のとおりに、注釈やフォームフィールドとともに、表示されている[レイヤー](layers.md)だけを含めて画像として保存します。File > Export Document As > Images を選択します。保存ダイアログで次を選択します:
+
+- **Format:** PNG はすべての細部を保ち、図面やテキストに適しています。JPEG はファイルが小さくなり、写真に適しています。TIFF は、一部の文書管理システムや FAX システムなど、TIFF を必要とする App 向けです。
+- **Resolution:** 画面用は 72 dpi、書類やプレゼンテーション用は 150 dpi、印刷用は 300 または 600 dpi。
+- **Pages:** すべてのページ、現在のページ、または[サムネール](outline-and-thumbnails.md)で選択したページ。
+
+1 ページは 1 つのファイルとして保存されます。複数のページは、指定した名前のフォルダに 1 ページにつき 1 つの画像として、ページ番号順に保存されます。600 dpi の大きな図面など、非常に大きなページは、長辺が 16,384 ピクセルになるように縮小されます。
+
+特定のページを書き出すには、そのサムネールを選択し、いずれかを右クリックしてから Export Pages as Images を選択します。
 
 ## Flattened PDF {#flattened-pdf}
 

@@ -1,5 +1,5 @@
 <!-- keywords: ページ, 並べ替え, 順序変更, 移動, 削除, 複製, 挿入, 回転, 抽出, 空白ページ, 結合, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # ページを並べ替える
 
@@ -22,6 +22,7 @@
 - **Insert Blank Page.**
 - **Insert Pages from PDF:** 別の PDF からページを追加します。File > Insert Pages from PDF (⌥⌘I) を選択することもできます。
 - **Save selected page as a PDF:** ページを新しいファイルに抽出します。
+- **Export Page as Image:** ページを PNG、JPEG、または TIFF 画像として保存します。[イメージ](export.md#images)を参照してください。
 - **Delete Page.**
 
 ## アンカーを作成している場合

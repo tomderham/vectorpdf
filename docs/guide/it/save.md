@@ -1,5 +1,5 @@
 <!-- keywords: salvare, salva con nome, non salvato, condividere, modifiche, ripristina, ultima versione salvata, ricaricare, annullare le modifiche, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, salvataggio automatico, recuperare, recupero, arresto anomalo, chiusura inaspettata, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # Salvare le modifiche
 
@@ -12,6 +12,8 @@ Le annotazioni, i dati inseriti nei moduli, le modifiche alle pagine e gli oscur
 | Salvare una copia protetta da password | Scegli File > [Save Encrypted with Password](passwords.md) oppure premi ⌥⌘S |
 
 Se chiudi un documento con modifiche non salvate, VectorPDF chiede se vuoi salvarle.
+
+Un documento [firmato digitalmente](digital-signatures.md) viene salvato aggiungendo le tue modifiche dopo la parte firmata, così le sue firme restano valide nella misura in cui le modifiche sono consentite.
 
 ## Annullare le modifiche
 

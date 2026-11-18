@@ -1,5 +1,5 @@
 <!-- keywords: clic droit, clic secondaire, Contrôle-clic, menu contextuel, menus contextuels, menu de raccourcis, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # Menus du clic droit
 
@@ -33,14 +33,15 @@ Dans un document avec des [calques](layers.md), le menu d’une annotation propo
 
 | Clic droit sur | Commandes |
 | --- | --- |
-| Une entrée du plan | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Une vignette | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Lorsque plusieurs pages sont sélectionnées, les commandes indiquent leur nombre, par exemple Delete 3 Pages. Consultez [Réorganiser les pages](pages.md). |
+| Une entrée du plan | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. Consultez [Modifier le plan](outline-and-thumbnails.md#edit-the-outline). |
+| Une vignette | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. Lorsque plusieurs pages sont sélectionnées, les commandes indiquent leur nombre, par exemple Delete 3 Pages. Consultez [Réorganiser les pages](pages.md). |
 | Un résultat de recherche | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Une ancre | Open in New Window ou Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Une annotation dans l’onglet Comments | Show on Page, Comments…, Delete |
 | Un calque dans l’onglet Document | Put New Annotations Here, ou Stop Putting New Annotations Here. Voir [Afficher et masquer les calques](layers.md). |
 | Une pièce jointe dans l’onglet Document | Quick Look, Open, Save As…, et Show on Page pour un fichier joint à une page. Voir [Fichiers joints à un PDF](attachments.md). |
 | Un champ de formulaire dans l’onglet Document | Show on Page, Copy Name, Copy Value. Voir [Champs de formulaire, signatures, liens et destinations](document-tab.md). |
+| Une signature dans l’onglet Document | Show on Page, Show Certificate. Consultez [Signer et vérifier des signatures numériques](digital-signatures.md). |
 | Un lien dans l’onglet Document | Show on Page, Go to Destination ou Open Link, et Copy Address pour un lien web |
 | Une destination dans l’onglet Document | Copy Name |
 

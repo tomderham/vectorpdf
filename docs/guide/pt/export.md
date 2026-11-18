@@ -1,9 +1,9 @@
-<!-- keywords: exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, otimizar, otimizado, reduzir tamanho, comprimir, menor, imagens, fontes, contornos, texto em contornos, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF pesquisável, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: imagens, imagem, PNG, JPEG, TIFF, resolução, página como imagem, exportar, converter, texto simples, texto, nivelar, resumo de anotações, planilha, otimizar, otimizado, reduzir tamanho, comprimir, menor, imagens, fontes, contornos, texto em contornos, plotter, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, PDF pesquisável, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # Exportar para outros formatos
 
-Para exportar um documento inteiro, escolha File > Export Document As e escolha Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF ou Searchable PDF. O resumo de anotações e as medições têm comandos próprios.
+Para exportar um documento inteiro, escolha File > Export Document As e escolha Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF ou Searchable PDF. O resumo de anotações e as medições têm comandos próprios.
 
 ## Plain Text
 
@@ -16,6 +16,18 @@ Salva um arquivo `.docx` que pode ser editado no Word e em outros apps. Layouts 
 ## SVG
 
 Salva cada página como um arquivo Scalable Vector Graphics, com o texto em traçados vetoriais, para que fique exatamente igual ao PDF. Um documento de várias páginas é salvo como uma pasta com um arquivo por página.
+
+## Imagens {#images}
+
+Salva páginas como imagens, como aparecem no VectorPDF, com suas anotações e campos de formulário e somente as [camadas](layers.md) exibidas. Escolha File > Export Document As > Images. Na caixa de diálogo de salvar, escolha:
+
+- **Format:** PNG mantém todos os detalhes e é bom para desenhos e texto. JPEG gera arquivos menores e é bom para fotos. TIFF é para apps que precisam dele, como alguns sistemas de documentos e de fax.
+- **Resolution:** 72 dpi para a tela, 150 dpi para um documento ou uma apresentação, 300 ou 600 dpi para imprimir.
+- **Pages:** todas as páginas, a página atual ou as páginas selecionadas nas [miniaturas](outline-and-thumbnails.md).
+
+Uma página é salva como um arquivo. Várias páginas são salvas em uma pasta com o nome que você der, uma imagem por página, numeradas por página. Uma página muito grande, como um desenho grande a 600 dpi, é reduzida para que seu lado mais longo tenha 16.384 pixels.
+
+Para exportar páginas específicas, selecione as miniaturas delas, clique com o botão direito em uma delas e escolha Export Pages as Images.
 
 ## Flattened PDF {#flattened-pdf}
 

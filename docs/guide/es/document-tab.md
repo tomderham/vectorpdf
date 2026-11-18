@@ -1,5 +1,5 @@
-<!-- keywords: pestaña Document, campos de formulario, campos, firmas, firmado, firma digital, certificado, enlaces, hipervínculos, URL, enlaces web, destinos con nombre, destinos, contenido, barra lateral, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar -->
-<!-- source: e2c42440bfd7 -->
+<!-- keywords: pestaña Document, campos de formulario, campos, firmas, firmado, firma digital, certificado, enlaces, hipervínculos, URL, enlaces web, destinos con nombre, destinos, contenido, barra lateral, document tab, form fields, fields, signatures, signed, digital signature, certified, links, hyperlinks, web links, named destinations, destinations, contents, sidebar, URLs -->
+<!-- source: 83fd92f682a7 -->
 
 # Campos de formulario, firmas, enlaces y destinos
 
@@ -7,11 +7,12 @@ La pestaña Document (una caja) de la parte superior de la barra lateral muestra
 
 - **Layers:** consulta [Mostrar y ocultar capas](layers.md).
 - **Attachments:** consulta [Archivos adjuntos a un PDF](attachments.md).
-- **Form Fields:** cada campo de un formulario, con su valor, y sus firmas.
+- **Signatures:** las firmas digitales del documento y si cada una es válida. Consulta [Firmar y comprobar firmas digitales](digital-signatures.md).
+- **Form Fields:** cada campo de un formulario, con su valor, incluidos los campos de firma.
 - **Links:** cada enlace, con el texto en el que está y adónde lleva.
 - **Destinations:** los lugares con nombre del documento a los que pueden apuntar los enlaces.
 
-Form Fields, Links y Destinations solo aparecen cuando activas **List form fields, links and destinations in the sidebar** en VectorPDF > Settings > General. La mayoría de los documentos tienen enlaces, así que, si no, la pestaña aparecería en casi todos.
+Signatures aparece siempre que un documento está firmado. Form Fields, Links y Destinations solo aparecen cuando activas **List form fields, links and destinations in the sidebar** en VectorPDF > Settings > General. La mayoría de los documentos tienen enlaces, así que, si no, la pestaña aparecería en casi todos.
 
 El menú solo ofrece lo que tiene el documento, y la pestaña solo aparece cuando tiene al menos uno de ellos.
 
@@ -19,9 +20,7 @@ El menú solo ofrece lo que tiene el documento, y la pestaña solo aparece cuand
 
 Los campos se muestran página a página, con el nombre que les da el formulario. Cada uno muestra su valor y **Required** cuando el formulario indica que hay que rellenarlo. Mantén el puntero sobre un campo para ver su nombre completo y su tipo. Haz clic en un campo para ir a él en la página; se resalta un momento. Para rellenar campos, consulta [Rellenar formularios](forms.md). La lista muestra los valores nuevos mientras escribes.
 
-Un campo de firma muestra quién lo firmó y cuándo, según lo registra la firma, o **Not signed**. También indica si el archivo se guardó de nuevo después de firmarse, lo que puede cambiar lo firmado, y si la firma certifica el documento y qué cambios permite.
-
-> **Nota:** VectorPDF no comprueba el certificado de la firma, así que no puede decirte si una firma es válida. Para eso, usa un programa que valide firmas, como Adobe Acrobat Reader.
+Un campo de firma muestra quién lo firmó y si la firma es válida, o **Not signed**. Para ver más sobre cada firma, elige Signatures en el menú de la parte superior de la pestaña. Consulta [Firmar y comprobar firmas digitales](digital-signatures.md).
 
 ## Enlaces
 

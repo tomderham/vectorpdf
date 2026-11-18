@@ -1,5 +1,5 @@
 <!-- keywords: clic destro, tasto destro, clic con il tasto destro, menu di scelta rapida, menu contestuale, menu contestuali, Ctrl-clic, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: 895a68e76d61 -->
+<!-- source: f2298628e73c -->
 
 # Menu di scelta rapida
 
@@ -33,14 +33,15 @@ In un documento con [livelli](layers.md), il menu di un'annotazione contiene anc
 
 | Clic con il tasto destro su | Comandi |
 | --- | --- |
-| Una voce della struttura | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
-| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Move Page Up, Move Page Down, Delete Page. Con più pagine selezionate, i comandi ne indicano il numero, ad esempio Delete 3 Pages. Consulta [Riordinare le pagine](pages.md). |
+| Una voce della struttura | Create Anchor, Create Anchor and Open in New Window, Open in New Window, Add Entry After, Add Entry Inside, Rename, Go Here Instead, Move Up, Move Down, Indent, Outdent, Delete Entry, Build Outline from Headings. Consulta [Modificare la struttura](outline-and-thumbnails.md#edit-the-outline). |
+| Una miniatura | Rotate Clockwise, Rotate Counterclockwise, Rotate 180°, Duplicate Page, Insert Blank Page, Insert Pages from PDF, Save selected page as a PDF, Export Page as Image, Move Page Up, Move Page Down, Delete Page. Con più pagine selezionate, i comandi ne indicano il numero, ad esempio Delete 3 Pages. Consulta [Riordinare le pagine](pages.md). |
 | Un risultato di ricerca | Create Anchor, Create Anchor and Open in New Window, Open in New Window |
 | Un ancoraggio | Open in New Window o Close Window, Copy Text, Copy Screenshot, Delete Anchor |
 | Un'annotazione nel pannello Comments | Show on Page, Comments…, Delete |
 | Un livello nel pannello Document | Put New Annotations Here oppure Stop Putting New Annotations Here. Consulta [Mostrare e nascondere i livelli](layers.md). |
 | Un allegato nel pannello Document | Quick Look, Open, Save As… e, per un file allegato a una pagina, Show on Page. Consulta [File allegati a un PDF](attachments.md). |
 | Un campo modulo nel pannello Document | Show on Page, Copy Name, Copy Value. Consulta [Campi modulo, firme, link e destinazioni](document-tab.md). |
+| Una firma nel pannello Document | Show on Page, Show Certificate. Consulta [Firmare e verificare le firme digitali](digital-signatures.md). |
 | Un link nel pannello Document | Show on Page, Go to Destination oppure Open Link e, per un link web, Copy Address |
 | Una destinazione nel pannello Document | Copy Name |
 

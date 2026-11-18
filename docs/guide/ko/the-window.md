@@ -1,5 +1,6 @@
 <!-- keywords: 윈도우, 창, 도구 막대, 툴바, 사이드바, 탭, 시작 화면, 인터페이스, 페이지 표시기, 컨트롤, 첨부 파일, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 상태 막대, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # VectorPDF 윈도우
 
 각 VectorPDF 윈도우는 도구 막대, 사이드바, 문서로 이루어져 있습니다. 윈도우 하나에 여러 문서를 [탭](tabs-and-windows.md)으로 열어 둘 수 있습니다.
@@ -25,7 +26,7 @@
 - **Outline & Thumbnails:** [목차 또는 각 페이지의 축소판](outline-and-thumbnails.md).
 - **Search:** [현재 문서의 검색 결과](search.md).
 - **Anchors:** [저장한 위치](anchors.md).
-- **Document:** 문서의 페이지 외에 담긴 내용으로, [레이어](layers.md), [첨부 파일](attachments.md) 및 설정에서 켠 경우 [양식 필드, 서명, 링크 및 대상](document-tab.md)입니다. 탭 상단의 메뉴에서 무엇을 볼지 선택합니다. 이 탭은 문서에 이 중 하나 이상이 있을 때만 나타납니다.
+- **Document:** 문서의 페이지 외에 담긴 내용으로, [레이어](layers.md), [첨부 파일](attachments.md), [디지털 서명](digital-signatures.md) 및 설정에서 켠 경우 [양식 필드, 링크 및 대상](document-tab.md)입니다. 탭 상단의 메뉴에서 무엇을 볼지 선택합니다. 이 탭은 문서에 이 중 하나 이상이 있을 때만 나타납니다.
 - **Comments:** [모든 주석과 그 답글 및 상태](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [Agent](agent.md). 이 탭은 macOS 26 이상에서 나타나며, Settings에서 [Use Agent](settings.md)를 끈 경우에는 나타나지 않습니다.
 

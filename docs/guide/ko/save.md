@@ -1,5 +1,5 @@
 <!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 자동 저장, 복구, 충돌, 예기치 않은 종료, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # 변경 사항 저장하기
 
@@ -12,6 +12,8 @@
 | 암호로 보호된 사본 저장하기 | File > [Save Encrypted with Password](passwords.md)를 선택하거나 ⌥⌘S 키를 누릅니다. |
 
 저장하지 않은 변경 사항이 있는 문서를 닫으면 VectorPDF에서 저장할지 묻습니다.
+
+[디지털 서명](digital-signatures.md)된 문서는 서명된 부분 뒤에 변경 사항을 추가하는 방식으로 저장되므로, 변경이 허용되는 범위에서 서명이 유효하게 유지됩니다.
 
 ## 변경 사항 버리기
 

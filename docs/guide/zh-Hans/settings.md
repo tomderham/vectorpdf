@@ -1,5 +1,5 @@
-<!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, 作者, 注释作者, 存储空间, 磁盘空间, 清除, 移除数据, 删除数据, 卸载, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, 通用, 高级, 数据, iCloud, general, agent, advanced, data -->
-<!-- source: 30bc22110b99 -->
+<!-- keywords: 设置, 偏好设置, 选项, 更新, 检查更新, 浏览器, 作者, 注释作者, 存储空间, 磁盘空间, 清除, 移除数据, 删除数据, 卸载, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, 通用, 高级, 数据, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
+<!-- source: 8d8c6240dea0 -->
 
 # 设置
 
@@ -13,7 +13,7 @@
 | Digital Stamp | 创建、更改或删除你的[图章](stamps.md)。 |
 | PDF Color | 设置[页面的外观](pdf-colors.md)：Follow System、Light、Dark 或 Sepia。 |
 | Open Links In | 选择用于打开网页链接的浏览器。 |
-| List form fields, links and destinations in the sidebar | 将文稿的[表单栏位、签名、链接和命名目标](document-tab.md)添加到 Document 标签页；这样，带有其中任何一种的文稿也会显示该标签页。在你打开之前处于关闭状态。 |
+| List form fields, links and destinations in the sidebar | 将文稿的[表单栏位、链接和命名目标](document-tab.md)添加到 Document 标签页；这样，带有其中任何一种的文稿也会显示该标签页。在你打开之前处于关闭状态。 |
 | Automatically check for updates | 大约每天在 GitHub 上检查一次新版本。点按 Check Now 可随时检查。 |
 
 ### Agent

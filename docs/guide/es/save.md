@@ -1,5 +1,5 @@
 <!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, guardado automático, recuperar, recuperación, fallo, cierre inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # Guardar los cambios
 
@@ -12,6 +12,8 @@ Las anotaciones, los datos de formularios, los cambios de páginas y las censura
 | Guardar una copia protegida con contraseña | Elige File > [Save Encrypted with Password](passwords.md) o pulsa ⌥⌘S |
 
 Si cierras un documento con cambios sin guardar, VectorPDF te pregunta si quieres guardarlos.
+
+Un documento [firmado digitalmente](digital-signatures.md) se guarda añadiendo tus cambios después de lo firmado, para que sus firmas sigan siendo válidas en la medida en que los cambios estén permitidos.
 
 ## Descartar los cambios
 

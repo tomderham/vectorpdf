@@ -1,4 +1,5 @@
-<!-- source: 15b3da8e0dd2 -->
+<!-- keywords:  -->
+<!-- source: a9dbf4350c76 -->
 
 # Guide d’utilisation de VectorPDF
 
@@ -51,6 +52,7 @@ VectorPDF est un lecteur de PDF rapide, conçu pour les articles techniques, les
 - [Surligner, souligner et barrer](text-markup.md)
 - [Dessiner, ajouter des notes, du texte et des bulles](draw-and-notes.md)
 - [Tampons et signatures](stamps.md)
+- [Signer et vérifier des signatures numériques](digital-signatures.md)
 - [Remplir des formulaires](forms.md)
 
 ## Mesurer des plans
@@ -63,6 +65,7 @@ VectorPDF est un lecteur de PDF rapide, conçu pour les articles techniques, les
 
 - [Réorganiser les pages](pages.md)
 - [Scinder un PDF](split-pdf.md)
+- [En-têtes, pieds de page, numéros Bates et filigranes](headers-footers-watermarks.md)
 - [Caviarder des informations sensibles](redact.md)
 - [Mots de passe et chiffrement](passwords.md)
 

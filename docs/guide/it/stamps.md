@@ -1,11 +1,11 @@
 <!-- keywords: timbro, timbri, firma, firme, firmare, iniziali, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: eb4441d846b0 -->
+<!-- source: 8f0c7eb52953 -->
 
 # Timbri e firme
 
 Un timbro è un'immagine, come la tua firma o le tue iniziali, che puoi inserire in qualsiasi pagina.
 
-> **Nota:** un timbro è un segno visivo. Non è una firma digitale crittografica e non certifica il documento.
+> **Nota:** un timbro è un segno visivo. Non è una firma digitale crittografica e non certifica il documento. Per firmare con un certificato o verificare le firme digitali di un documento, consulta [Firmare e verificare le firme digitali](digital-signatures.md).
 
 ## Creare il timbro
 

@@ -1,9 +1,9 @@
-<!-- keywords: एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, ऑप्टिमाइज़, फ़ाइल का आकार घटाएँ, कंप्रेस, छोटा, इमेज, फ़ॉन्ट, आउटलाइन, टेक्स्ट को आउटलाइन में बदलें, प्लॉटर, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, खोजने योग्य PDF, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: इमेज, चित्र, PNG, JPEG, TIFF, रिज़ॉल्यूशन, पेज को इमेज के रूप में, एक्सपोर्ट, कनवर्ट, सादा टेक्स्ट, टेक्स्ट, फ़्लैटन, ऐनोटेशन सारांश, ऑप्टिमाइज़, फ़ाइल का आकार घटाएँ, कंप्रेस, छोटा, इमेज, फ़ॉन्ट, आउटलाइन, टेक्स्ट को आउटलाइन में बदलें, प्लॉटर, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, खोजने योग्य PDF, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # अन्य फ़ॉर्मैट में एक्सपोर्ट करें
 
-पूरा दस्तावेज़ एक्सपोर्ट करने के लिए, File > Export Document As चुनें, फिर Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF या Searchable PDF चुनें। ऐनोटेशन सारांश और माप के अपने अलग कमांड हैं।
+पूरा दस्तावेज़ एक्सपोर्ट करने के लिए, File > Export Document As चुनें, फिर Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF या Searchable PDF चुनें। ऐनोटेशन सारांश और माप के अपने अलग कमांड हैं।
 
 ## सादा टेक्स्ट
 
@@ -16,6 +16,18 @@
 ## SVG
 
 हर पेज को Scalable Vector Graphics फ़ाइल के रूप में सहेजता है, जिसमें टेक्स्ट वेक्टर पाथ के रूप में होता है, इसलिए यह बिल्कुल PDF जैसा दिखता है। कई पेजों वाला दस्तावेज़ एक फ़ोल्डर के रूप में सहेजा जाता है, जिसमें हर पेज की एक फ़ाइल होती है।
+
+## इमेज {#images}
+
+पेजों को इमेज के रूप में सेव करता है, जैसे वे VectorPDF में दिखते हैं, उनकी टिप्पणियों और फ़ॉर्म फ़ील्ड के साथ और सिर्फ़ दिखाई गई [लेयर](layers.md) के साथ। File > Export Document As > Images चुनें। सेव डायलॉग में चुनें:
+
+- **Format:** PNG हर बारीकी बनाए रखता है और ड्रॉइंग व टेक्स्ट के लिए अच्छा है। JPEG छोटी फ़ाइलें बनाता है और फ़ोटो के लिए अच्छा है। TIFF उन ऐप के लिए है जिन्हें इसकी ज़रूरत होती है, जैसे कुछ दस्तावेज़ और फ़ैक्स सिस्टम।
+- **Resolution:** स्क्रीन के लिए 72 dpi, दस्तावेज़ या प्रस्तुति के लिए 150 dpi, प्रिंट करने के लिए 300 या 600 dpi।
+- **Pages:** सभी पेज, मौजूदा पेज, या [थंबनेल](outline-and-thumbnails.md) में चुने गए पेज।
+
+एक पेज एक फ़ाइल के रूप में सेव होता है। कई पेज आपके दिए नाम वाले फ़ोल्डर में सेव होते हैं, हर पेज की एक इमेज, पेज के क्रम में नंबर वाली। बहुत बड़ा पेज, जैसे 600 dpi पर कोई बड़ी ड्रॉइंग, छोटा किया जाता है ताकि उसकी सबसे लंबी भुजा 16,384 पिक्सेल हो।
+
+कुछ खास पेज एक्सपोर्ट करने के लिए, उनके थंबनेल चुनें, उनमें से एक पर राइट-क्लिक करें, फिर Export Pages as Images चुनें।
 
 ## फ़्लैटन किया गया PDF {#flattened-pdf}
 

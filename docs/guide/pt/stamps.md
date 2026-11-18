@@ -1,11 +1,11 @@
 <!-- keywords: carimbo, carimbos, assinatura, assinaturas, assinar, iniciais, stamp, stamps, signature, signatures, sign, signing, initials, PDF -->
-<!-- source: eb4441d846b0 -->
+<!-- source: 8f0c7eb52953 -->
 
 # Carimbos e assinaturas
 
 Um carimbo é uma imagem, como sua assinatura ou iniciais, que você pode colocar em qualquer página.
 
-> **Nota:** Um carimbo é uma marca visual. Ele não é uma assinatura digital criptográfica e não certifica o documento.
+> **Nota:** Um carimbo é uma marca visual. Ele não é uma assinatura digital criptográfica e não certifica o documento. Para assinar com um certificado ou verificar as assinaturas digitais de um documento, consulte [Assinar e verificar assinaturas digitais](digital-signatures.md).
 
 ## Criar seu carimbo
 

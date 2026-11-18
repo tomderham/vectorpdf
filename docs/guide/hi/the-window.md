@@ -1,5 +1,6 @@
 <!-- keywords: विंडो, टूलबार, साइडबार, टैब, स्टार्ट स्क्रीन, इंटरफ़ेस, पेज संकेतक, नियंत्रण, अटैचमेंट, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, स्टेटस बार, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # VectorPDF विंडो
 
 हर VectorPDF विंडो में एक टूलबार, एक साइडबार और स्वयं दस्तावेज़ होता है। एक विंडो में कई दस्तावेज़ [टैब](tabs-and-windows.md) के रूप में रखे जा सकते हैं।
@@ -25,7 +26,7 @@
 - **Outline & Thumbnails:** [विषय-सूची, या हर पेज का थंबनेल](outline-and-thumbnails.md)।
 - **Search:** [मौजूदा दस्तावेज़ के परिणाम](search.md)।
 - **Anchors:** [आपकी सहेजी हुई जगहें](anchors.md)।
-- **Document:** दस्तावेज़ में उसके पेजों के अलावा क्या है: उसकी [लेयर](layers.md), [अटैचमेंट](attachments.md), और अगर आप सेटिंग में इन्हें चालू करते हैं, तो उसके [फ़ॉर्म फ़ील्ड, हस्ताक्षर, लिंक और गंतव्य](document-tab.md)। टैब के ऊपर वाले मेनू से चुनें कि क्या दिखे। यह टैब तभी दिखता है जब दस्तावेज़ में इनमें से कम से कम एक चीज़ हो।
+- **Document:** दस्तावेज़ में उसके पेजों के अलावा क्या है: उसकी [लेयर](layers.md), [अटैचमेंट](attachments.md), [डिजिटल हस्ताक्षर](digital-signatures.md), और अगर आप सेटिंग में इन्हें चालू करते हैं, तो उसके [फ़ॉर्म फ़ील्ड, लिंक और गंतव्य](document-tab.md)। टैब के ऊपर वाले मेनू से चुनें कि क्या दिखे। यह टैब तभी दिखता है जब दस्तावेज़ में इनमें से कम से कम एक चीज़ हो।
 - **Comments:** [हर ऐनोटेशन, उसके जवाबों और स्थिति के साथ](draw-and-notes.md#see-all-annotations)।
 - **Ask About This Document:** [Agent](agent.md)। यह टैब macOS 26 या उसके बाद के संस्करण पर दिखाई देता है, बशर्ते आपने Settings में [Use Agent](settings.md) बंद न किया हो।
 

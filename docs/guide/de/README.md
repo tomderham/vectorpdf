@@ -1,4 +1,5 @@
-<!-- source: 15b3da8e0dd2 -->
+<!-- keywords:  -->
+<!-- source: a9dbf4350c76 -->
 
 # VectorPDF-Benutzerhandbuch
 
@@ -51,6 +52,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 - [Hervorheben, unterstreichen und durchstreichen](text-markup.md)
 - [Zeichnen, Notizen, Text und Legenden hinzufügen](draw-and-notes.md)
 - [Stempel und Unterschriften](stamps.md)
+- [Digitale Signaturen erstellen und prüfen](digital-signatures.md)
 - [Formulare ausfüllen](forms.md)
 
 ## Zeichnungen vermessen
@@ -63,6 +65,7 @@ VectorPDF ist ein schneller PDF-Reader für Fachartikel, Spezifikationen, Vertr�
 
 - [Seiten neu anordnen](pages.md)
 - [Ein PDF teilen](split-pdf.md)
+- [Kopfzeilen, Fußzeilen, Bates-Nummern und Wasserzeichen](headers-footers-watermarks.md)
 - [Vertrauliche Inhalte schwärzen](redact.md)
 - [Passwörter und Verschlüsselung](passwords.md)
 

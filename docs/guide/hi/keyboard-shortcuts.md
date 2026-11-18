@@ -1,5 +1,5 @@
 <!-- keywords: कीबोर्ड, शॉर्टकट, कुंजियाँ, हॉट की, जेस्चर, ट्रैकपैड, माउस, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # कीबोर्ड शॉर्टकट
 
@@ -23,6 +23,7 @@
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D, या दस्तावेज़ के शीर्षक पर राइट-क्लिक करें |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

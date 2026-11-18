@@ -1,5 +1,5 @@
-<!-- keywords: ajustes, configuración, preferencias, opciones, actualizaciones, actualización, buscar actualizaciones, navegador, autor, autor de anotaciones, almacenamiento, espacio en disco, borrar, eliminar datos, desinstalar, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, general, avanzado, datos, iCloud, agent, advanced, data -->
-<!-- source: 30bc22110b99 -->
+<!-- keywords: ajustes, configuración, preferencias, opciones, actualizaciones, actualización, buscar actualizaciones, navegador, autor, autor de anotaciones, almacenamiento, espacio en disco, borrar, eliminar datos, desinstalar, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, general, avanzado, datos, iCloud, agent, advanced, data, LaTeX, SyncTeX, editor -->
+<!-- source: 8d8c6240dea0 -->
 
 # Ajustes
 
@@ -13,7 +13,7 @@ Elige VectorPDF > Settings o pulsa ⌘,. Los ajustes tienen cuatro pestañas.
 | Digital Stamp | Crea, cambia o elimina tu [sello](stamps.md). |
 | PDF Color | Define [el aspecto de las páginas](pdf-colors.md): Follow System, Light, Dark o Sepia. |
 | Open Links In | Elige el navegador para los enlaces web. |
-| List form fields, links and destinations in the sidebar | Añade los [campos de formulario, firmas, enlaces y destinos con nombre](document-tab.md) de un documento a la pestaña Document, que entonces también aparece en los documentos que tienen alguno de ellos. Desactivado hasta que lo activas. |
+| List form fields, links and destinations in the sidebar | Añade los [campos de formulario, enlaces y destinos con nombre](document-tab.md) de un documento a la pestaña Document, que entonces también aparece en los documentos que tienen alguno de ellos. Desactivado hasta que lo activas. |
 | Automatically check for updates | Busca una nueva versión en GitHub aproximadamente una vez al día. Haz clic en Check Now para buscar en cualquier momento. |
 
 ### Agent

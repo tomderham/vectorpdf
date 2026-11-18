@@ -1,5 +1,6 @@
 <!-- keywords: ventana, barra de herramientas, barras de herramientas, barra lateral, pestañas, pantalla de inicio, interfaz, indicador de página, controles, adjuntos, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barra de estado, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # La ventana de VectorPDF
 
 Cada ventana de VectorPDF tiene una barra de herramientas, una barra lateral y el propio documento. Las ventanas pueden contener varios documentos como [pestañas](tabs-and-windows.md).
@@ -25,7 +26,7 @@ Las pestañas de la parte superior de la barra lateral permiten pasar de una vis
 - **Outline & Thumbnails:** la [tabla de contenido, o una miniatura de cada página](outline-and-thumbnails.md).
 - **Search:** los [resultados del documento actual](search.md).
 - **Anchors:** los [lugares que has guardado](anchors.md).
-- **Document:** lo que contiene el documento además de sus páginas: sus [capas](layers.md), sus [archivos adjuntos](attachments.md) y, si los activas en Ajustes, sus [campos de formulario, firmas, enlaces y destinos](document-tab.md). Elige qué mostrar en el menú de la parte superior de la pestaña. Esta pestaña solo aparece cuando el documento tiene al menos uno de ellos.
+- **Document:** lo que contiene el documento además de sus páginas: sus [capas](layers.md), sus [archivos adjuntos](attachments.md), sus [firmas digitales](digital-signatures.md) y, si los activas en Ajustes, sus [campos de formulario, enlaces y destinos](document-tab.md). Elige qué mostrar en el menú de la parte superior de la pestaña. Esta pestaña solo aparece cuando el documento tiene al menos uno de ellos.
 - **Comments:** [todas las anotaciones, con sus respuestas y su estado](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** el [Agent](agent.md). Esta pestaña aparece en macOS 26 o posterior, a menos que hayas desactivado [Use Agent](settings.md) en Settings.
 

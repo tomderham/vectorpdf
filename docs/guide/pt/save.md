@@ -1,5 +1,5 @@
 <!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, salvamento automático, recuperar, recuperação, falha, fechamento inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: 722f6c80c23a -->
+<!-- source: cdbdeb12d33f -->
 
 # Salvar suas alterações
 
@@ -12,6 +12,8 @@ Marcações, dados de formulários, alterações de páginas e tarjamentos só s
 | Salvar uma cópia protegida por senha | Escolha File > [Save Encrypted with Password](passwords.md) ou pressione ⌥⌘S |
 
 Se você fechar um documento com alterações não salvas, o VectorPDF perguntará se deseja salvá-las.
+
+Um documento [assinado digitalmente](digital-signatures.md) é salvo adicionando suas alterações depois do que foi assinado, para que as assinaturas continuem válidas na medida em que as alterações forem permitidas.
 
 ## Descartar as alterações
 

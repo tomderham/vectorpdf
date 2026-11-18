@@ -1,5 +1,5 @@
 <!-- keywords: 页面, 重新排列, 重新排序, 移动, 删除, 复制, 插入, 旋转, 提取, 空白页, 合并, page, pages, rearrange, reorder, move, delete, duplicate, insert, rotate, extract, blank page, combine, merge, PDF -->
-<!-- source: 02c37d62b2f1 -->
+<!-- source: 9916cddb614e -->
 
 # 重新排列页面
 
@@ -22,6 +22,7 @@
 - **Insert Blank Page**。
 - **Insert Pages from PDF：** 添加另一个 PDF 中的页面。你也可以选取 File > Insert Pages from PDF (⌥⌘I)。
 - **Save selected page as a PDF：** 将页面提取到新文件中。
+- **Export Page as Image：**将页面存储为 PNG、JPEG 或 TIFF 图像。请参阅[图像](export.md#images)。
 - **Delete Page**。
 
 ## 如果你创建了锚点

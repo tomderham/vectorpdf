@@ -1,9 +1,9 @@
-<!-- keywords: 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, 최적화, 파일 크기 줄이기, 압축, 작게, 이미지, 서체, 윤곽선, 텍스트를 윤곽선으로, 플로터, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 검색 가능한 PDF, OCR, searchable PDF -->
-<!-- source: c82d89e33d61 -->
+<!-- keywords: 이미지, PNG, JPEG, TIFF, 해상도, 페이지를 이미지로, 내보내기, 변환, 일반 텍스트, 텍스트, 평면화, 주석 요약, 최적화, 파일 크기 줄이기, 압축, 작게, 이미지, 서체, 윤곽선, 텍스트를 윤곽선으로, 플로터, export, convert, plain text, text, Word, docx, SVG, flatten, flattened, annotations summary, CSV, Markdown, PDF, optimize, optimized, reduce file size, compress, smaller, downsample, images, fonts, subset, outlines, text to outlines, plotter, 검색 가능한 PDF, OCR, searchable PDF, image, picture, JPG, dpi, resolution, page as image -->
+<!-- source: ddd3c6f28f93 -->
 
 # 다른 포맷으로 내보내기
 
-문서 전체를 내보내려면 File > Export Document As를 선택한 다음 Plain Text, Word Document, Scalable Vector Graphics, Flattened PDF, Optimized PDF 또는 Searchable PDF를 선택합니다. 주석 요약과 측정에는 각각 별도의 명령이 있습니다.
+문서 전체를 내보내려면 File > Export Document As를 선택한 다음 Plain Text, Word Document, Scalable Vector Graphics, Images, Flattened PDF, Optimized PDF 또는 Searchable PDF를 선택합니다. 주석 요약과 측정에는 각각 별도의 명령이 있습니다.
 
 ## 일반 텍스트(Plain Text)
 
@@ -16,6 +16,18 @@ Word 및 다른 앱에서 편집할 수 있는 `.docx` 파일을 저장합니다
 ## SVG
 
 각 페이지를 Scalable Vector Graphics 파일로 저장합니다. 텍스트가 벡터 패스로 저장되므로 PDF와 똑같이 보입니다. 여러 페이지로 된 문서는 페이지당 파일 하나가 들어 있는 폴더로 저장됩니다.
+
+## 이미지 {#images}
+
+페이지를 VectorPDF에서 보이는 그대로, 주석과 양식 필드를 포함하고 보이는 [레이어](layers.md)만 넣어 이미지로 저장합니다. File > Export Document As > Images를 선택합니다. 저장 대화상자에서 다음을 선택합니다.
+
+- **Format:** PNG는 모든 세부 사항을 유지하며 도면과 텍스트에 적합합니다. JPEG는 파일이 더 작으며 사진에 적합합니다. TIFF는 일부 문서 및 팩스 시스템처럼 TIFF가 필요한 앱을 위한 것입니다.
+- **Resolution:** 화면용 72dpi, 문서나 프레젠테이션용 150dpi, 인쇄용 300 또는 600dpi.
+- **Pages:** 모든 페이지, 현재 페이지 또는 [축소판](outline-and-thumbnails.md)에서 선택한 페이지.
+
+한 페이지는 하나의 파일로 저장됩니다. 여러 페이지는 지정한 이름의 폴더에 페이지당 하나의 이미지로, 페이지 번호순으로 저장됩니다. 600dpi의 큰 도면처럼 아주 큰 페이지는 가장 긴 변이 16,384픽셀이 되도록 축소됩니다.
+
+특정 페이지를 내보내려면 해당 축소판을 선택하고 그중 하나를 오른쪽 클릭한 다음 Export Pages as Images를 선택합니다.
 
 ## 평면화된 PDF(Flattened PDF) {#flattened-pdf}
 

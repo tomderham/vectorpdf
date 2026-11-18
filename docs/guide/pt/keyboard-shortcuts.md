@@ -1,5 +1,5 @@
 <!-- keywords: teclado, atalho, atalhos, teclas, teclas de atalho, gestos, trackpad, mouse, keyboard, shortcut, shortcuts, keys, hot keys, gestures -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # Atalhos de teclado
 
@@ -23,6 +23,7 @@ Muitos destes comandos também estão em um menu do botão direito, conforme ind
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D, ou clique com o botão direito no título do documento |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

@@ -1,5 +1,5 @@
 <!-- keywords: 키보드, 단축키, 키, 핫키, 제스처, 트랙패드, 마우스, keyboard, shortcut, shortcuts, keys, hot keys, gestures, trackpad, mouse -->
-<!-- source: 160d66146451 -->
+<!-- source: cf44049893a2 -->
 
 # 키보드 단축키
 
@@ -23,6 +23,7 @@
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D 또는 문서 제목을 오른쪽 클릭 |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

@@ -1,5 +1,6 @@
 <!-- keywords: Fenster, Symbolleiste, Symbolleisten, Seitenleiste, Tabs, Start-Bildschirm, Oberfläche, Seitenanzeige, Bedienelemente, Anhänge, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, Statusleiste, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # Das VectorPDF-Fenster
 
 Jedes VectorPDF-Fenster hat eine Symbolleiste, eine Seitenleiste und das Dokument selbst. Ein Fenster kann mehrere Dokumente als [Tabs](tabs-and-windows.md) enthalten.
@@ -25,7 +26,7 @@ Mit den Tabs oben in der Seitenleiste wechselst du zwischen:
 - **Outline & Thumbnails:** das [Inhaltsverzeichnis oder eine Miniatur jeder Seite](outline-and-thumbnails.md).
 - **Search:** [Ergebnisse für das aktuelle Dokument](search.md).
 - **Anchors:** [die Stellen, die du gespeichert hast](anchors.md).
-- **Document:** was das Dokument außer seinen Seiten enthält: seine [Ebenen](layers.md), [Anhänge](attachments.md) und, wenn du sie in den Einstellungen einschaltest, seine [Formularfelder, Signaturen, Links und Ziele](document-tab.md). Wähle im Menü oben im Tab, was angezeigt wird. Dieser Tab erscheint nur, wenn das Dokument mindestens eines davon hat.
+- **Document:** was das Dokument außer seinen Seiten enthält: seine [Ebenen](layers.md), [Anhänge](attachments.md), [digitalen Signaturen](digital-signatures.md) und, wenn du sie in den Einstellungen einschaltest, seine [Formularfelder, Links und Ziele](document-tab.md). Wähle im Menü oben im Tab, was angezeigt wird. Dieser Tab erscheint nur, wenn das Dokument mindestens eines davon hat.
 - **Comments:** [alle Anmerkungen mit ihren Antworten und ihrem Status](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document:** [der Agent](agent.md). Dieser Tab wird unter macOS 26 oder neuer angezeigt, sofern du [Use Agent](settings.md) in Settings nicht deaktiviert hast.
 

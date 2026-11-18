@@ -1,5 +1,6 @@
 <!-- keywords: fenêtre, barre d’outils, barres d’outils, barre latérale, onglets, écran de démarrage, indicateur de page, commandes, pièces jointes, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barre d’état, Inspector, status bar -->
-<!-- source: fdb75158a744 -->
+<!-- source: cce7c7e75b8e -->
+
 # La fenêtre de VectorPDF
 
 Chaque fenêtre de VectorPDF comporte une barre d’outils, une barre latérale et le document lui-même. Une fenêtre peut contenir plusieurs documents sous forme d’[onglets](tabs-and-windows.md).
@@ -25,7 +26,7 @@ Les onglets en haut de la barre latérale permettent de basculer entre :
 - **Outline & Thumbnails :** la [table des matières ou une vignette de chaque page](outline-and-thumbnails.md).
 - **Search :** les [résultats pour le document actif](search.md).
 - **Anchors :** [les endroits que vous avez enregistrés](anchors.md).
-- **Document :** ce que le document contient en plus de ses pages : ses [calques](layers.md), ses [pièces jointes](attachments.md) et, si vous les activez dans les réglages, ses [champs de formulaire, signatures, liens et destinations](document-tab.md). Choisissez ce qui s’affiche dans le menu en haut de l’onglet. Cet onglet n’apparaît que si le document en contient au moins un.
+- **Document :** ce que le document contient en plus de ses pages : ses [calques](layers.md), ses [pièces jointes](attachments.md), ses [signatures numériques](digital-signatures.md) et, si vous les activez dans les réglages, ses [champs de formulaire, liens et destinations](document-tab.md). Choisissez ce qui s’affiche dans le menu en haut de l’onglet. Cet onglet n’apparaît que si le document en contient au moins un.
 - **Comments :** [toutes les annotations, avec leurs réponses et leur statut](draw-and-notes.md#see-all-annotations).
 - **Ask About This Document :** [l’Agent](agent.md). Cet onglet apparaît sous macOS 26 ou version ultérieure, sauf si vous avez désactivé [Use Agent](settings.md) dans Settings.
 
