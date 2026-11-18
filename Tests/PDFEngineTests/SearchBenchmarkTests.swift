@@ -72,6 +72,27 @@ struct SearchBenchmarkTests {
                      Double(baseline) / 1_048_576, Double(peak) / 1_048_576))
     }
 
+    /// Building an outline from the headings of about 1,000 pages.
+    @Test func findHeadingsInALargeDocument() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("large.pdf")
+        let output = PDFDocument()
+        let sources = ["hr1968-ih.pdf", "lcms2-tutorial.pdf", "rfc9457.pdf"].compactMap { PDFDocument(url: Fixture.url($0)) }
+        while output.pageCount < 1000 {
+            for source in sources {
+                for i in 0..<source.pageCount {
+                    if let page = source.page(at: i)?.copy() as? PDFPage { output.insert(page, at: output.pageCount) }
+                }
+            }
+        }
+        #expect(output.write(to: url))
+        let doc = try PDFDocumentCore(filePath: url.path)
+        let start = Date()
+        let found = try #require(doc.findHeadings())
+        print(String(format: "SearchBenchmark: %d headings found in %d pages in %.2f s", found.count, doc.pageCount, Date().timeIntervalSince(start)))
+    }
+
     /// Compare Documents on the same document and a revision with pages taken out and others put
     /// in: reading both documents' words, then diffing them. The document repeats its sources,
     /// so most of its text occurs several times: a hard case for anchoring.

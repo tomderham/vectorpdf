@@ -116,6 +116,71 @@ import Testing
         #expect(doc.outline.last?.targetPage == first.targetPage)
     }
 
+    /// Each edit's reverse puts the outline back as the file had it, entry for entry.
+    @Test func everyEditCanBeUndone() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("rfc.pdf")
+        try FileManager.default.copyItem(at: Fixture.url("rfc9457.pdf"), to: url)
+        let doc = try PDFDocumentCore(filePath: url.path)
+        func everything() throws -> [[OutlineEntryCopy]] { try doc.outline.indices.map { try doc.copyOutlineEntry(at: [$0]) } }
+        let original = try everything()
+        let parent = try #require(doc.outline.firstIndex { !$0.children.isEmpty })
+        let count = doc.outline.count
+
+        var undo = try doc.deleteOutlineEntry(at: [parent])
+        #expect(doc.outline.count == count - 1)
+        var redo = try doc.applyOutlineEdit(undo)
+        #expect(try everything() == original)
+        // Redo deletes it again.
+        undo = try doc.applyOutlineEdit(redo)
+        #expect(doc.outline.count == count - 1)
+        try doc.applyOutlineEdit(undo)
+        #expect(try everything() == original)
+
+        // To the other end.
+        let end = parent == 0 ? count : 0
+        undo = try #require(try doc.moveOutlineEntry(from: [parent], to: [end]))
+        #expect((end == 0 ? doc.outline.first : doc.outline.last)?.title == original[parent][0].title)
+        try doc.applyOutlineEdit(undo)
+        #expect(try everything() == original)
+
+        undo = try doc.moveOutlineEntry(from: [parent, 0], to: [0])!
+        try doc.applyOutlineEdit(undo)
+        #expect(try everything() == original)
+
+        undo = try doc.renameOutlineEntry(at: [parent, 0], to: "Renamed")
+        try doc.applyOutlineEdit(undo)
+        undo = try doc.setOutlineEntryDestination(at: [parent], page: 0, y: 10)
+        redo = try doc.applyOutlineEdit(undo)
+        #expect(try everything() == original)
+        try doc.applyOutlineEdit(redo)
+        #expect(doc.outline[parent].targetPage == 0)
+
+        undo = try doc.addOutlineEntry(title: "New", page: 1, y: 0, at: [0])
+        try doc.applyOutlineEdit(undo)
+        try doc.applyOutlineEdit(.restore([parent], original[parent][0]))
+        #expect(try everything() == original)
+    }
+
+    /// An entry that had no link gets none back when pointing it somewhere is undone.
+    @Test func undoingARepointTakesTheLinkAwayAgain() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha", "Bravo"])
+        let doc = try PDFDocumentCore(filePath: url.path)
+        let heading = OutlineEntryCopy(level: 0, title: "Heading", uri: nil, isOpen: true, flags: 2, color: (255, 0, 0))
+        try doc.applyOutlineEdit(.insert([0], [heading, OutlineEntryCopy(level: 1, title: "Under", uri: nil, isOpen: false, flags: 0, color: (0, 0, 0))]))
+        let before = try doc.copyOutlineEntry(at: [0])
+        #expect(before.first?.uri == nil && before.first?.flags == 2 && before.first?.color.r == 255)
+        let undo = try doc.setOutlineEntryDestination(at: [0], page: 1, y: 0)
+        #expect(doc.outline[0].targetPage == 1)
+        try doc.applyOutlineEdit(undo)
+        #expect(try doc.copyOutlineEntry(at: [0]) == before)
+        #expect(doc.outline[0].targetPage == nil)
+    }
+
     @Test func placesAfterTheEntryMovedMoveUp() {
         #expect(PDFDocumentCore.placeAfterRemoving([0], [2]) == [1])
         #expect(PDFDocumentCore.placeAfterRemoving([2], [0]) == [0])
@@ -172,5 +237,50 @@ import Testing
         vm.saveDocument()
         let reopened = try PDFDocumentCore(filePath: url.path)
         #expect(reopened.outline.map(\.title) == ["Page 3"])
+    }
+
+    @Test func undoAndRedoStepThroughOutlineEdits() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha", "Bravo", "Charlie"])
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let undo = vm.undoManager
+        undo.groupsByEvent = false
+        func step(_ body: () throws -> Void) rethrows {
+            undo.beginUndoGrouping()
+            defer { undo.endUndoGrouping() }
+            try body()
+        }
+        func titles() -> [String] { vm.document?.outline.map(\.title) ?? [] }
+
+        step { vm.promptToAddOutlineEntry() }
+        vm.currentPageIndex = 2
+        step { vm.promptToAddOutlineEntry() }
+        try step { vm.renameOutlineEntry(try #require(vm.document?.outline.last), to: "End") }
+        try step { vm.moveOutlineEntry(try #require(vm.document?.outline.last), .up) }
+        try step { vm.deleteOutlineEntry(try #require(vm.document?.outline.last)) }
+        #expect(titles() == ["End"])
+        #expect(undo.undoActionName == "Delete Outline Entry")
+
+        undo.undo()
+        #expect(titles() == ["End", "Page 1"])
+        #expect(undo.undoActionName == "Move Outline Entry" && undo.redoActionName == "Delete Outline Entry")
+        undo.undo()
+        #expect(titles() == ["Page 1", "End"])
+        undo.undo()
+        #expect(titles() == ["Page 1", "Page 3"])
+        undo.redo()
+        undo.redo()
+        #expect(titles() == ["End", "Page 1"])
+        let revision = vm.outlineRevision
+        undo.undo()
+        undo.undo()
+        undo.undo()
+        undo.undo()
+        #expect(titles().isEmpty)
+        #expect(!undo.canUndo)
+        #expect(vm.outlineRevision == revision + 4)
     }
 }

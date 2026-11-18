@@ -275,6 +275,33 @@ int mupdf_outline_update(fz_context *ctx, fz_document *doc, const int *path, int
 int mupdf_outline_delete(fz_context *ctx, fz_document *doc, const int *path, int depth, const char **out_error);
 // Moves an entry, with those under it, to `to`: a place in the outline as it is without it.
 int mupdf_outline_move(fz_context *ctx, fz_document *doc, const int *from, int from_depth, const int *to, int to_depth, const char **out_error);
+// An outline entry copied for Undo, with its level below the entry copied (0 for it).
+typedef struct {
+    int level;
+    char *title;
+    char *uri;
+    int is_open;
+    int flags;
+    float r, g, b;
+} vp_outline_entry;
+// Copies the entry at `path`, then those under it in order. Free with mupdf_outline_entries_free.
+int mupdf_outline_copy(fz_context *ctx, fz_document *doc, const int *path, int depth, vp_outline_entry **out, int *out_count, const char **out_error);
+void mupdf_outline_entries_free(fz_context *ctx, vp_outline_entry *entries, int count);
+// Inserts entries as mupdf_outline_copy gives them at `path`; the first's level is the top.
+int mupdf_outline_insert_entries(fz_context *ctx, fz_document *doc, const int *path, int depth, const vp_outline_entry *entries, int count, const char **out_error);
+// Sets an entry's title, link (NULL for none), colour, style and open state.
+int mupdf_outline_set(fz_context *ctx, fz_document *doc, const int *path, int depth, const vp_outline_entry *entry, const char **out_error);
+// Whether a PDF has a structure tree (is tagged).
+int mupdf_pdf_is_tagged(fz_context *ctx, fz_document *doc);
+// A heading in a tagged PDF: its tag's level (1–6, or 0 for H) and its text and box on the page.
+typedef struct {
+    int level;
+    fz_rect bbox;
+    char *text;
+} vp_tagged_heading;
+// The headings a page's structure tags, in order. Free with mupdf_tagged_headings_free.
+int mupdf_page_tagged_headings(fz_context *ctx, fz_document *doc, int pageno, vp_tagged_heading **out, int *out_count, const char **out_error);
+void mupdf_tagged_headings_free(fz_context *ctx, vp_tagged_heading *list, int count);
 int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error);
 int mupdf_pdf_strip_document_data(fz_context *ctx, fz_document *doc, const char **out_error);
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);

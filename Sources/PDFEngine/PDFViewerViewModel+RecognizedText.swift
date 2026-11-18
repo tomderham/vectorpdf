@@ -29,7 +29,7 @@ final class RecognitionProgress: ObservableObject {
     init(total: Int) { self.total = total }
 }
 
-private struct RecognitionProgressView: View {
+struct RecognitionProgressView: View {
     @ObservedObject var progress: RecognitionProgress
     let title: String
 

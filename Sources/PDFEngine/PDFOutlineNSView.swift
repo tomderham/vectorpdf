@@ -506,6 +506,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 add("Outdent", #selector(outdentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .outdent))
                 menu.addItem(.separator())
                 add("Delete Entry", #selector(deleteAction(_:)))
+                menu.addItem(.separator())
+                add("Build Outline from Headings…", #selector(buildFromHeadingsAction(_:)))
             }
             return menu.items.isEmpty ? nil : menu
         }
@@ -519,6 +521,10 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         @objc private func moveDownAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .down) } }
         @objc private func indentAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .indent) } }
         @objc private func outdentAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .outdent) } }
+        @objc private func buildFromHeadingsAction(_ sender: NSMenuItem) {
+            guard let viewModel else { return }
+            Task { await viewModel.buildOutlineFromHeadings() }
+        }
         @objc private func deleteAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.deleteOutlineEntry($0) } }
 
         // MARK: Dragging entries

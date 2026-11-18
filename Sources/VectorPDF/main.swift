@@ -711,6 +711,13 @@ struct VectorPDF: App {
             .keyboardShortcut("b", modifiers: [.command, .option])
             .disabled(!canEditDocument)
 
+            Button("Build Outline from Headings…") {
+                if let viewModel = resolvedViewModel {
+                    Task { await viewModel.buildOutlineFromHeadings() }
+                }
+            }
+            .disabled(!canEditDocument)
+
             Button("Headers, Footers and Watermark…") {
                 resolvedViewModel?.showPageMarks()
             }

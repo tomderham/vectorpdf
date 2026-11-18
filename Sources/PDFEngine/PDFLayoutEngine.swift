@@ -258,6 +258,12 @@ public final class PDFLayoutEngine: Sendable {
     /// (full-width headings, titles) may cross it. Each run of such positions — the width of the
     /// white space between two columns — gives one gutter, at the position fewest lines cross.
     private func detectColumnGutters(lines: [TextLine], pageWidth: CGFloat) -> [CGFloat] {
+        Self.columnGutters(lines.map(\.bbox), pageWidth: pageWidth)
+    }
+
+    /// `detectColumnGutters` for lines given by their boxes.
+    static func columnGutters(_ boxes: [CGRect], pageWidth: CGFloat) -> [CGFloat] {
+        let lines = boxes.map { (bbox: $0, ()) }
         guard lines.count >= 10, pageWidth > 0 else { return [] }
         let step: CGFloat = 2
         var runs: [[(x: CGFloat, crossing: Int)]] = []
@@ -303,21 +309,26 @@ public final class PDFLayoutEngine: Sendable {
     /// Lines in reading order. With gutters: lines spanning a gutter split the page into bands,
     /// and within each band the columns are read left to right.
     private func readingOrderedLines(_ lines: [TextLine], gutters: [CGFloat]) -> [TextLine] {
-        guard !gutters.isEmpty else { return readingOrder(lines) { $0.bbox } }
-        var result: [TextLine] = []
-        var columns = Array(repeating: [TextLine](), count: gutters.count + 1)
+        Self.readingOrdered(lines, gutters: gutters) { $0.bbox }
+    }
+
+    /// `readingOrderedLines` for any lines, given their boxes.
+    static func readingOrdered<T>(_ lines: [T], gutters: [CGFloat], bbox: (T) -> CGRect) -> [T] {
+        guard !gutters.isEmpty else { return readingOrder(lines, frame: bbox) }
+        var result: [T] = []
+        var columns = Array(repeating: [T](), count: gutters.count + 1)
         func flush() {
             for c in columns.indices {
-                result += readingOrder(columns[c]) { $0.bbox }
+                result += readingOrder(columns[c], frame: bbox)
                 columns[c] = []
             }
         }
-        for line in lines.sorted(by: { $0.bbox.minY < $1.bbox.minY }) {
-            if Self.crossesGutter(line.bbox, gutters) {
+        for line in lines.sorted(by: { bbox($0).minY < bbox($1).minY }) {
+            if crossesGutter(bbox(line), gutters) {
                 flush()
                 result.append(line)
             } else {
-                columns[Self.column(of: line.bbox, gutters)].append(line)
+                columns[column(of: bbox(line), gutters)].append(line)
             }
         }
         flush()

@@ -16,6 +16,8 @@
 //
 
 import AppKit
+import Synchronization
+import SwiftUI
 
 extension PDFViewerViewModel {
     public enum OutlineMove { case up, down, indent, outdent }
@@ -63,7 +65,7 @@ extension PDFViewerViewModel {
         } else {
             path = [doc.outline.firstIndex { ($0.targetPage ?? -1) > page } ?? doc.outline.count]
         }
-        editOutline { try doc.addOutlineEntry(title: title, page: page, y: y, at: path) }
+        editOutline("Add Outline Entry") { try doc.addOutlineEntry(title: title, page: page, y: y, at: path) }
     }
 
     public func promptToRenameOutlineEntry(_ node: PDFOutlineNode) {
@@ -74,19 +76,19 @@ extension PDFViewerViewModel {
 
     func renameOutlineEntry(_ node: PDFOutlineNode, to title: String) {
         guard let doc = document, let path = doc.outline.path(of: node.id), title != node.title else { return }
-        editOutline { try doc.renameOutlineEntry(at: path, to: title) }
+        editOutline("Rename Outline Entry") { try doc.renameOutlineEntry(at: path, to: title) }
     }
 
     /// Points the entry at the selection, or the top of the page being read.
     public func setOutlineEntryToCurrentPlace(_ node: PDFOutlineNode) {
         guard canEditOutline, let doc = document, let path = doc.outline.path(of: node.id) else { return }
         let target = newOutlineEntryTarget()
-        editOutline { try doc.setOutlineEntryDestination(at: path, page: target.page, y: target.y) }
+        editOutline("Change Outline Entry") { try doc.setOutlineEntryDestination(at: path, page: target.page, y: target.y) }
     }
 
     public func deleteOutlineEntry(_ node: PDFOutlineNode) {
         guard canEditOutline, let doc = document, let path = doc.outline.path(of: node.id) else { return }
-        editOutline { try doc.deleteOutlineEntry(at: path) }
+        editOutline("Delete Outline Entry") { try doc.deleteOutlineEntry(at: path) }
     }
 
     /// Where `move` would put the entry at `path` (a place in the outline as it is), if it can go.
@@ -116,26 +118,119 @@ extension PDFViewerViewModel {
     public func moveOutlineEntry(_ node: PDFOutlineNode, _ move: OutlineMove) {
         guard canEditOutline, let doc = document, let path = doc.outline.path(of: node.id),
               let destination = outlineDestination(for: move, from: path) else { return }
-        editOutline { try doc.moveOutlineEntry(from: path, to: destination) }
+        let name: String
+        switch move {
+        case .up, .down: name = "Move Outline Entry"
+        case .indent: name = "Indent Outline Entry"
+        case .outdent: name = "Outdent Outline Entry"
+        }
+        editOutline(name) { try doc.moveOutlineEntry(from: path, to: destination) }
     }
 
     /// Moves an entry to a place in the outline as it is: for dragging.
     public func moveOutlineEntry(_ node: PDFOutlineNode, to destination: OutlinePath) {
         guard canEditOutline, let doc = document, let path = doc.outline.path(of: node.id) else { return }
-        editOutline { try doc.moveOutlineEntry(from: path, to: destination) }
+        editOutline("Move Outline Entry") { try doc.moveOutlineEntry(from: path, to: destination) }
     }
 
-    private func editOutline(_ edit: () throws -> Void) {
+    /// Makes an edit, and registers the edit that undoes it under `name`.
+    private func editOutline(_ name: String, _ edit: () throws -> OutlineEdit?) {
         flushPendingFormEdits()
+        let inverse: OutlineEdit?
         do {
-            try edit()
+            inverse = try edit()
         } catch {
             showErrorAlert(title: "Couldn't Change the Outline", message: error.localizedDescription)
             return
         }
+        guard let inverse else { return }
+        registerOutlineUndo(inverse, name: name)
+        outlineEdited()
+    }
+
+    /// Undoes or redoes an outline edit, registering its reverse in turn.
+    private func applyOutlineUndo(_ edit: OutlineEdit, name: String) {
+        guard let doc = document else { return }
+        do {
+            registerOutlineUndo(try doc.applyOutlineEdit(edit), name: name)
+        } catch {
+            showErrorAlert(title: "Couldn't Change the Outline", message: error.localizedDescription)
+            return
+        }
+        outlineEdited()
+    }
+
+    private func registerOutlineUndo(_ edit: OutlineEdit, name: String) {
+        undoManager.registerUndo(withTarget: self) { $0.applyOutlineUndo(edit, name: name) }
+        undoManager.setActionName(name)
+    }
+
+    private func outlineEdited() {
         outlineRevision &+= 1
         isDocumentEdited = true
         currentWindow?.isDocumentEdited = true
+    }
+
+    /// Replaces the outline with one built from the document's headings (see `HeadingOutline`),
+    /// after asking if it has one. Shows progress for a long document; one step for Undo.
+    public func buildOutlineFromHeadings() async {
+        guard canEditOutline, let doc = document else { return }
+        flushPendingFormEdits()
+        if !doc.outline.isEmpty, !Self.isRunningTests {
+            let alert = NSAlert()
+            alert.messageText = "Replace the Outline?"
+            alert.informativeText = "The document's outline is replaced with one built from its headings. Choose Edit > Undo to get the outline back."
+            alert.addButton(withTitle: "Replace")
+            alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+
+        let progress = RecognitionProgress(total: doc.pageCount)
+        let cancelled = CancelFlag()
+        var sheet: NSWindow?
+        if !Self.isRunningTests, doc.pageCount > 40, let window = currentWindow, window.attachedSheet == nil {
+            let panel = NSPanel(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true)
+            panel.contentView = NSHostingView(rootView: RecognitionProgressView(progress: progress, title: "Finding headings…"))
+            panel.setContentSize(panel.contentView?.fittingSize ?? NSSize(width: 380, height: 100))
+            window.beginSheet(panel, completionHandler: nil)
+            sheet = panel
+        }
+        let found = await Task.detached(priority: .userInitiated) {
+            doc.findHeadings(progress: { pages in
+                DispatchQueue.main.async {
+                    progress.done = pages
+                    if progress.isCancelled { cancelled.cancel() }
+                }
+            }, isCancelled: { cancelled.isCancelled })
+        }.value
+        if let sheet { sheet.sheetParent?.endSheet(sheet) }
+        guard let found, document === doc else { return }
+
+        guard found.count >= 2 else {
+            if !Self.isRunningTests {
+                let alert = NSAlert()
+                alert.messageText = "No Headings Found"
+                alert.informativeText = "VectorPDF couldn't tell this document's headings from the rest of its text. You can add entries one at a time with Edit > Add Outline Entry."
+                alert.runModal()
+            }
+            return
+        }
+        let undo: [OutlineEdit]
+        do {
+            undo = try doc.replaceOutline(with: found)
+        } catch {
+            showErrorAlert(title: "Couldn't Change the Outline", message: error.localizedDescription)
+            return
+        }
+        let name = "Build Outline from Headings"
+        undoManager.beginUndoGrouping()
+        // Undo runs the last registered first; these are to be made in order.
+        for edit in undo.reversed() {
+            undoManager.registerUndo(withTarget: self) { $0.applyOutlineUndo(edit, name: name) }
+        }
+        undoManager.setActionName(name)
+        undoManager.endUndoGrouping()
+        outlineEdited()
     }
 
     private func promptForOutlineTitle(message: String, info: String?, initial: String, button: String) -> String? {
@@ -153,4 +248,11 @@ extension PDFViewerViewModel {
         let title = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return title.isEmpty ? nil : title
     }
+}
+
+/// Stops a background task when set from the main thread.
+private final class CancelFlag: Sendable {
+    private let flag = Atomic<Bool>(false)
+    var isCancelled: Bool { flag.load(ordering: .relaxed) }
+    func cancel() { flag.store(true, ordering: .relaxed) }
 }
