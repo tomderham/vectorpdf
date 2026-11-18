@@ -263,6 +263,18 @@ int mupdf_pdf_get_page_scale(fz_context *ctx, fz_document *doc, int pageno,
                              char *out_unit, size_t unit_cap,
                              float *out_pts_per_unit, int *out_found,
                              const char **out_error);
+// Outline editing (OutlineEditing.c). An entry is found by its path: its index among its siblings
+// at each level from the top. Places to insert at may be one past the last entry of a level.
+// A link to a place on a page (y in page space, top-down), for an entry. Free with fz_free.
+char *mupdf_outline_page_uri(fz_context *ctx, fz_document *doc, int page, float y);
+// Inserts an entry at `path` (before the one there).
+int mupdf_outline_insert(fz_context *ctx, fz_document *doc, const int *path, int depth, const char *title, const char *uri, const char **out_error);
+// Changes an entry's title or link; NULL keeps it.
+int mupdf_outline_update(fz_context *ctx, fz_document *doc, const int *path, int depth, const char *title, const char *uri, const char **out_error);
+// Deletes an entry, with those under it.
+int mupdf_outline_delete(fz_context *ctx, fz_document *doc, const int *path, int depth, const char **out_error);
+// Moves an entry, with those under it, to `to`: a place in the outline as it is without it.
+int mupdf_outline_move(fz_context *ctx, fz_document *doc, const int *from, int from_depth, const int *to, int to_depth, const char **out_error);
 int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error);
 int mupdf_pdf_strip_document_data(fz_context *ctx, fz_document *doc, const char **out_error);
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);

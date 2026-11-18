@@ -61,6 +61,9 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         
         let outlineView = CustomOutlineView(frame: .zero)
         outlineView.coordinator = context.coordinator
+        // Entries are dragged to reorder and nest them.
+        outlineView.registerForDraggedTypes([.outlineEntry])
+        outlineView.setDraggingSourceOperationMask(.move, forLocal: true)
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("OutlineColumn"))
         column.title = "Contents"
         outlineView.addTableColumn(column)
@@ -142,6 +145,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
         func updateState(outline: [PDFOutlineNode], documentIdentity: String, searchQuery: String, currentPage: Int, readingSection: PDFViewerViewModel.ReadingSection? = nil) {
             let documentChanged = (documentIdentity != self.lastDocumentIdentity)
+            let previousIdentity = self.lastDocumentIdentity
             let searchChanged = (searchQuery != self.lastSearchQuery)
             let pageChanged = (currentPage != self.currentPage)
             let sectionChanged = (readingSection != self.readingSection)
@@ -165,7 +169,9 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             if documentChanged {
                 searchWorkItem?.cancel()
                 let isSearching = !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                rebuildDisplayedItems(expandAll: isSearching, scrollToActive: true)
+                // The same document's outline, edited: what was open stays open.
+                let sameFile = previousIdentity.map { Self.file(of: $0) == Self.file(of: documentIdentity) } ?? false
+                rebuildDisplayedItems(expandAll: isSearching, scrollToActive: !sameFile, keepingOpen: sameFile && !isSearching ? openTitlePaths() : nil)
             } else if searchChanged {
                 searchWorkItem?.cancel()
                 let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -185,7 +191,32 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             }
         }
 
-        private func rebuildDisplayedItems(expandAll: Bool, scrollToActive: Bool) {
+        private static func file(of identity: String) -> Substring {
+            identity.split(separator: "#").first ?? ""
+        }
+
+        /// The entries that had entries inside them before an edit, by title path.
+        private var hadChildren = Set<[String]>()
+
+        /// The entries open in the outline, each by its title and those of the entries it's in;
+        /// notes those with entries inside them in `hadChildren`.
+        private func openTitlePaths() -> Set<[String]> {
+            guard let outlineView else { return [] }
+            var open = Set<[String]>()
+            hadChildren = []
+            func visit(_ wrappers: [OutlineItemWrapper], _ titles: [String]) {
+                for wrapper in wrappers where !wrapper.children.isEmpty {
+                    let path = titles + [wrapper.node.title]
+                    hadChildren.insert(path)
+                    if outlineView.isItemExpanded(wrapper) { open.insert(path) }
+                    visit(wrapper.children, path)
+                }
+            }
+            visit(displayedWrappers, [])
+            return open
+        }
+
+        private func rebuildDisplayedItems(expandAll: Bool, scrollToActive: Bool, keepingOpen: Set<[String]>? = nil) {
             let query = lastSearchQuery ?? ""
             let filteredNodes = PDFOutlineNode.filter(nodes: rawOutline, query: query)
             displayedWrappers = filteredNodes.map { OutlineItemWrapper(node: $0) }
@@ -199,6 +230,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
                 if expandAll {
                     self.expandAllMatchingItems(in: self.displayedWrappers, in: outlineView)
+                } else if let keepingOpen {
+                    self.reopen(self.displayedWrappers, titles: [], keepingOpen: keepingOpen, in: outlineView)
                 } else {
                     for item in self.displayedWrappers where !item.children.isEmpty {
                         outlineView.expandItem(item)
@@ -206,6 +239,17 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 }
 
                 self.refreshActiveIndicators(scrollToVisible: scrollToActive)
+            }
+        }
+
+        /// Opens the entries in `keepingOpen`, and those just given entries inside them.
+        private func reopen(_ wrappers: [OutlineItemWrapper], titles: [String], keepingOpen: Set<[String]>, in outlineView: NSOutlineView) {
+            for wrapper in wrappers where !wrapper.children.isEmpty {
+                let path = titles + [wrapper.node.title]
+                if keepingOpen.contains(path) || !hadChildren.contains(path) {
+                    outlineView.expandItem(wrapper)
+                    reopen(wrapper.children, titles: path, keepingOpen: keepingOpen, in: outlineView)
+                }
             }
         }
 
@@ -410,10 +454,9 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
         func contextMenu(for node: PDFOutlineNode) -> NSMenu? {
             guard let viewModel = viewModel else { return nil }
+            let menu = NSMenu(title: "Table of Contents")
 
-            if let _ = node.targetPage {
-                let menu = NSMenu(title: "Table of Contents")
-
+            if node.targetPage != nil {
                 if !viewModel.isTransientWindow {
                     let snapItem = NSMenuItem(title: "Create Anchor", action: #selector(snapshotNodeAction(_:)), keyEquivalent: "")
                     snapItem.image = NSImage.anchorIcon
@@ -435,21 +478,89 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 openItem.target = self
                 openItem.representedObject = node
                 menu.addItem(openItem)
-
-                return menu
-            }
-
-            if let uri = node.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
-                let menu = NSMenu(title: "Link")
+            } else if let uri = node.uri, (uri.hasPrefix("http://") || uri.hasPrefix("https://") || uri.hasPrefix("mailto:")), let url = URL(string: uri) {
                 let openLinkItem = NSMenuItem(title: "Open Link", action: #selector(openLinkAction(_:)), keyEquivalent: "")
                 openLinkItem.image = NSImage(systemSymbolName: "safari", accessibilityDescription: nil)
                 openLinkItem.target = self
                 openLinkItem.representedObject = url
                 menu.addItem(openLinkItem)
-                return menu
             }
 
-            return nil
+            // Editing, only on the whole outline: a filtered one hides where entries would go.
+            if viewModel.canEditOutline, (lastSearchQuery ?? "").isEmpty, !viewModel.isTransientWindow {
+                if !menu.items.isEmpty { menu.addItem(.separator()) }
+                func add(_ title: String, _ action: Selector, enabled: Bool = true) {
+                    let item = NSMenuItem(title: title, action: enabled ? action : nil, keyEquivalent: "")
+                    item.target = self
+                    item.representedObject = node
+                    menu.addItem(item)
+                }
+                add("Add Entry After", #selector(addAfterAction(_:)))
+                add("Add Entry Inside", #selector(addInsideAction(_:)))
+                add("Rename…", #selector(renameAction(_:)))
+                add("Go Here Instead", #selector(repointAction(_:)))
+                menu.addItem(.separator())
+                add("Move Up", #selector(moveUpAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .up))
+                add("Move Down", #selector(moveDownAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .down))
+                add("Indent", #selector(indentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .indent))
+                add("Outdent", #selector(outdentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .outdent))
+                menu.addItem(.separator())
+                add("Delete Entry", #selector(deleteAction(_:)))
+            }
+            return menu.items.isEmpty ? nil : menu
+        }
+
+        private func node(_ sender: NSMenuItem) -> PDFOutlineNode? { sender.representedObject as? PDFOutlineNode }
+        @objc private func addAfterAction(_ sender: NSMenuItem) { viewModel?.promptToAddOutlineEntry(near: node(sender)) }
+        @objc private func addInsideAction(_ sender: NSMenuItem) { viewModel?.promptToAddOutlineEntry(near: node(sender), asChild: true) }
+        @objc private func renameAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.promptToRenameOutlineEntry($0) } }
+        @objc private func repointAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.setOutlineEntryToCurrentPlace($0) } }
+        @objc private func moveUpAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .up) } }
+        @objc private func moveDownAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .down) } }
+        @objc private func indentAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .indent) } }
+        @objc private func outdentAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.moveOutlineEntry($0, .outdent) } }
+        @objc private func deleteAction(_ sender: NSMenuItem) { node(sender).map { viewModel?.deleteOutlineEntry($0) } }
+
+        // MARK: Dragging entries
+
+        private var canDragEntries: Bool {
+            viewModel?.canEditOutline == true && (lastSearchQuery ?? "").isEmpty && viewModel?.isTransientWindow == false
+        }
+
+        public func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
+            guard canDragEntries, let wrapper = item as? OutlineItemWrapper else { return nil }
+            let pasteboardItem = NSPasteboardItem()
+            pasteboardItem.setString(wrapper.node.id.uuidString, forType: .outlineEntry)
+            return pasteboardItem
+        }
+
+        private func draggedNode(_ info: NSDraggingInfo) -> PDFOutlineNode? {
+            guard let string = info.draggingPasteboard.string(forType: .outlineEntry), let id = UUID(uuidString: string),
+                  let path = rawOutline.path(of: id) else { return nil }
+            return rawOutline.node(at: path)
+        }
+
+        /// The place a drop at `index` in `item` stands for, in the outline as it is.
+        private func dropPath(item: Any?, index: Int) -> OutlinePath? {
+            if let wrapper = item as? OutlineItemWrapper {
+                guard let parent = rawOutline.path(of: wrapper.node.id) else { return nil }
+                return parent + [index == NSOutlineViewDropOnItemIndex ? wrapper.node.children.count : index]
+            }
+            return [index == NSOutlineViewDropOnItemIndex ? rawOutline.count : index]
+        }
+
+        public func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
+            guard canDragEntries, info.draggingSource as? NSOutlineView === outlineView,
+                  let node = draggedNode(info), let source = rawOutline.path(of: node.id),
+                  let destination = dropPath(item: item, index: index),
+                  !destination.starts(with: source) else { return [] }
+            return .move
+        }
+
+        public func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+            guard canDragEntries, let node = draggedNode(info), let destination = dropPath(item: item, index: index) else { return false }
+            DispatchQueue.main.async { [weak self] in self?.viewModel?.moveOutlineEntry(node, to: destination) }
+            return true
         }
 
         @objc private func snapshotNodeAction(_ sender: NSMenuItem) {
@@ -585,6 +696,11 @@ final class CustomOutlineView: NSOutlineView {
         }
         return coordinator?.contextMenu(for: wrapper.node)
     }
+}
+
+extension NSPasteboard.PasteboardType {
+    /// An outline entry being dragged within the outline.
+    static let outlineEntry = NSPasteboard.PasteboardType("com.thomasderham.vectorpdf.outline-entry")
 }
 
 /// Class wrapper around PDFOutlineNode for standard AppKit outline data source identity and parent tracking.

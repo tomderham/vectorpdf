@@ -252,7 +252,7 @@ public final class PDFDocumentCore: @unchecked Sendable {
     }
     
     /// Recursively converts MuPDF outline tree to Swift PDFOutlineNode array
-    private static func parseOutline(_ outline: FZOutline) -> [PDFOutlineNode] {
+    static func parseOutline(_ outline: FZOutline) -> [PDFOutlineNode] {
         var nodes: [PDFOutlineNode] = []
         var curr: FZOutline? = outline
         

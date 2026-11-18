@@ -919,7 +919,7 @@ public struct PDFViewerMainView: View {
                                     PDFOutlineNSView(
                                         outline: doc.outline,
                                         // Rebuild outline on page edits.
-                                        documentIdentity: "\(doc.filePath)#\(viewModel.thumbnailVersion)",
+                                        documentIdentity: "\(doc.filePath)#\(viewModel.thumbnailVersion)#\(viewModel.outlineRevision)",
                                         searchQuery: tocSearchQuery,
                                         currentPage: viewModel.currentPageIndex,
                                         readingSection: viewModel.readingSection,

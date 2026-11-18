@@ -22,6 +22,7 @@ Many of these commands are also on a right-click menu, noted below. See [Right-c
 | Show in Finder | ⇧⌘R |
 | Print | ⌘P |
 | Document Properties | ⌘I |
+| Add Outline Entry | ⌥⌘B |
 | Add to or Remove from Favorites | ⌘D, or right-click the document's title |
 | Settings | ⌘, |
 | VectorPDF Help | ⇧⌘? |

@@ -705,6 +705,12 @@ struct VectorPDF: App {
 
             Divider()
 
+            Button("Add Outline Entry…") {
+                resolvedViewModel?.promptToAddOutlineEntry()
+            }
+            .keyboardShortcut("b", modifiers: [.command, .option])
+            .disabled(!canEditDocument)
+
             Button("Headers, Footers and Watermark…") {
                 resolvedViewModel?.showPageMarks()
             }

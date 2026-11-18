@@ -616,6 +616,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var isShowingDocumentProperties: Bool = false
     @Published public var isShowingSplitPDF: Bool = false
     @Published public var isShowingPageMarks: Bool = false
+    /// Goes up when the outline is edited, for the sidebar to show it again.
+    @Published public internal(set) var outlineRevision = 0
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Redaction, Callout & On-Device OCR
