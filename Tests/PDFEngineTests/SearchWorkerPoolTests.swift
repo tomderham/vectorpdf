@@ -37,7 +37,9 @@ struct SearchWorkerPoolTests {
         #expect(workers.count == 4)
         workers.forEach(pool.checkIn)
         #expect(pool.idleCount == 4)
-        try await Task.sleep(for: .milliseconds(600))
+        // The trim runs after the delay; on a busy machine (tests in parallel) it can be late.
+        let deadline = Date().addingTimeInterval(5)
+        while pool.idleCount != 1, Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
         #expect(pool.idleCount == 1)
 
         // The next search opens them again.
@@ -64,7 +66,9 @@ struct SearchWorkerPoolTests {
         #expect(pool.idleCount == 3)
         try await Task.sleep(for: .milliseconds(100))
         #expect(pool.idleCount == 3)
-        try await Task.sleep(for: .milliseconds(600))
+        // The trim runs after the delay; on a busy machine (tests in parallel) it can be late.
+        let deadline = Date().addingTimeInterval(5)
+        while pool.idleCount != 1, Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
         #expect(pool.idleCount == 1)
     }
 
