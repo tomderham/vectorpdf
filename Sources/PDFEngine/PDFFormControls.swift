@@ -499,6 +499,26 @@ public final class PDFSignatureStampButton: NSButton {
 
     @objc private func showSignaturePad() {
         guard isEnabled else { return }
+        // Either kind of signature, where a certificate can be used.
+        if viewModel.canSignWithCertificate, image == nil {
+            let menu = NSMenu()
+            let certificate = NSMenuItem(title: "Sign with Certificate…", action: #selector(signWithCertificate), keyEquivalent: "")
+            certificate.target = self
+            menu.addItem(certificate)
+            let handwritten = NSMenuItem(title: "Add Handwritten Signature…", action: #selector(showHandwritingPad), keyEquivalent: "")
+            handwritten.target = self
+            menu.addItem(handwritten)
+            menu.popUp(positioning: nil, at: NSPoint(x: 0, y: isFlipped ? bounds.height + 4 : -4), in: self)
+            return
+        }
+        showHandwritingPad()
+    }
+
+    @objc private func signWithCertificate() {
+        viewModel.beginCertificateSignature(in: widget)
+    }
+
+    @objc private func showHandwritingPad() {
         let capture = SignatureCaptureView { [weak self] image in
             self?.popover?.close()
             guard let self, let image else { return }
@@ -972,6 +992,8 @@ public enum PDFFormControlFactory {
                 return PDFFormChoiceButton(widget: widget, viewModel: viewModel, frame: frame)
             }
         case .signature:
+            // A signed field shows its own appearance, and can't be signed again.
+            if viewModel.document?.isSignedSignatureField(page: widget.pageIndex, widgetIndex: widget.widgetIndex) == true { return nil }
             return PDFSignatureStampButton(widget: widget, viewModel: viewModel, frame: frame)
         default:
             return nil

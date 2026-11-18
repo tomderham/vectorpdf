@@ -302,6 +302,29 @@ typedef struct {
 // The headings a page's structure tags, in order. Free with mupdf_tagged_headings_free.
 int mupdf_page_tagged_headings(fz_context *ctx, fz_document *doc, int pageno, vp_tagged_heading **out, int *out_count, const char **out_error);
 void mupdf_tagged_headings_free(fz_context *ctx, vp_tagged_heading *list, int count);
+// Signing with a certificate (DigitalSigning.c). The app makes the signature: `begin`, then
+// `update` with the signed bytes in order, then `finish` writes the CMS signature (DER) to `out`
+// and returns its length, 0 on failure. `release` is called when MuPDF is done with the signer
+// (once the document is saved, or closed). Nonzero from begin or update is a failure.
+typedef struct {
+    void *context;
+    int (*begin)(void *context);
+    int (*update)(void *context, const unsigned char *data, size_t len);
+    size_t (*finish)(void *context, unsigned char *out, size_t cap);
+    void (*release)(void *context);
+} vp_signer_callbacks;
+// A signer for the certificate named so (any of the names may be NULL), whose signatures are at
+// most `max_size` bytes. Drop with mupdf_drop_signer; MuPDF keeps it until saving.
+pdf_pkcs7_signer *mupdf_new_signer(fz_context *ctx, vp_signer_callbacks callbacks, const char *cn, const char *o, const char *ou, const char *email, const char *c, size_t max_size);
+void mupdf_drop_signer(fz_context *ctx, pdf_pkcs7_signer *signer);
+// Signs the page's widget_index'th widget, a signature field, or with widget_index -1 a new
+// field at `rect`. The signature is made as the document is next saved. `graphic_png` (may be
+// NULL) is drawn on the left of the field; PDF_SIGNATURE_* flags say what text it shows.
+int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_index, fz_rect rect, pdf_pkcs7_signer *signer,
+                   const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location, int flags,
+                   const char **out_error);
+// Whether the page's widget_index'th widget is a signed signature field.
+int mupdf_page_widget_is_signed(fz_context *ctx, fz_document *doc, int pageno, int widget_index);
 int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error);
 int mupdf_pdf_strip_document_data(fz_context *ctx, fz_document *doc, const char **out_error);
 int mupdf_page_apply_redaction_rects(fz_context *ctx, fz_document *doc, int pageno, const fz_rect *rects, int n_rects, int black_boxes, const char **out_error);
@@ -521,6 +544,10 @@ typedef struct {
     /* When MuPDF found a save it doesn't accept: whether those saves changed only comments,
        which a signature other than a certification allows. */
     int later_changes_only_comments;
+    // Those saves added signature fields (signed), besides what MuPDF accepts.
+    int later_changes_added_signatures;
+    // Those saves changed only comments and added only signatures, which the signature allows.
+    int later_changes_allowed;
     /* Where it is: -1 if its widget names no page; the rect in page (top-down) coordinates. */
     int page;
     float x0, y0, x1, y1;

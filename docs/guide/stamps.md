@@ -4,7 +4,7 @@
 
 A stamp is an image, such as your signature or initials, that you can place on any page.
 
-> **Note:** A stamp is a visual mark. It isn't a cryptographic digital signature, and it doesn't certify the document. To check a document's digital signatures, see [Check digital signatures](digital-signatures.md).
+> **Note:** A stamp is a visual mark. It isn't a cryptographic digital signature, and it doesn't certify the document. To sign with a certificate, or check a document's digital signatures, see [Sign and check digital signatures](digital-signatures.md).
 
 ## Create your stamp
 

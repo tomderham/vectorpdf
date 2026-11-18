@@ -730,6 +730,31 @@ extension PDFCanvasView {
                 boxBorder.stroke()
             }
 
+            // Where a new signature field goes, while placing one.
+            if viewModel.canvasMode == .placeSignatureField,
+               let hoverCanvasPt = currentHoverCanvasPoint,
+               case let hoverPt = geometry.layoutPoint(forCanvasPoint: hoverCanvasPt),
+               pFrame.contains(hoverPt) {
+                let zoom = viewModel.effectiveZoom
+                let pagePoint = CGPoint(x: pBounds.minX + (hoverPt.x - pFrame.minX) / zoom, y: pBounds.minY + (hoverPt.y - pFrame.minY) / zoom)
+                if let rect = viewModel.certificateSignatureRect(page: pageIdx, at: pagePoint) {
+                    let box = NSRect(x: pFrame.minX + (rect.minX - pBounds.minX) * zoom, y: pFrame.minY + (rect.minY - pBounds.minY) * zoom,
+                                     width: rect.width * zoom, height: rect.height * zoom)
+                    let path = NSBezierPath(roundedRect: box, xRadius: 3, yRadius: 3)
+                    NSColor.controlAccentColor.withAlphaComponent(0.08).setFill()
+                    path.fill()
+                    path.lineWidth = 1
+                    path.setLineDash([3, 3], count: 2, phase: 0)
+                    NSColor.controlAccentColor.setStroke()
+                    path.stroke()
+                    let label = NSAttributedString(string: "Sign Here", attributes: [
+                        .font: NSFont.systemFont(ofSize: max(9, 12 * zoom)), .foregroundColor: NSColor.controlAccentColor,
+                    ])
+                    let size = label.size()
+                    label.draw(at: NSPoint(x: box.midX - size.width / 2, y: box.midY - size.height / 2))
+                }
+            }
+
             // 2.9 Live Ghost Stamp Preview in Progress
             if viewModel.canvasMode == .stamp,
                let data = viewModel.pendingSignatureData,

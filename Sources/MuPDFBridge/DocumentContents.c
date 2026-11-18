@@ -215,9 +215,17 @@ int mupdf_pdf_list_named_dests(fz_context *ctx, fz_document *doc, mupdf_named_de
     return count;
 }
 
-// MuPDF accepts changes to form fields after signing, and nothing else; Acrobat also accepts
-// comments being added, changed or deleted, unless a certification allows less. These tell
-// whether a save (`version`, as xref sections count: 0 the latest) changed only comments.
+// MuPDF accepts changes to form fields after signing, and nothing else: not even another
+// signature, as its field is a new widget on a page. Acrobat also accepts signatures being
+// added, and comments being added, changed or deleted, unless a certification allows less.
+// These tell whether a save (`version`, as xref sections count: 0 the latest) changed only
+// comments and added only signatures.
+
+/* What a save changed besides what MuPDF accepts. */
+typedef struct {
+    int comments;    /* comments added, changed or deleted */
+    int signatures;  /* signature fields added, signed */
+} later_change_kinds;
 
 static pdf_obj *object_in_version(fz_context *ctx, pdf_document *doc, int num, int version) {
     int base = doc->xref_base;
@@ -243,22 +251,90 @@ static int is_comment(fz_context *ctx, pdf_obj *obj) {
     return !pdf_is_stream(ctx, obj) && pdf_is_array(ctx, pdf_dict_get(ctx, obj, PDF_NAME(Rect)));
 }
 
-/* The widgets in a page's /Annots, by object number, into `out`. Returns how many. */
-static int page_widgets(fz_context *ctx, pdf_obj *annots, int *out, int capacity) {
-    int count = 0;
-    for (int i = 0, n = pdf_array_len(ctx, annots); i < n; i++) {
-        pdf_obj *annot = pdf_array_get(ctx, annots, i);
-        if (pdf_name_eq(ctx, pdf_dict_get(ctx, annot, PDF_NAME(Subtype)), PDF_NAME(Widget))) {
-            if (count < capacity) out[count] = pdf_to_num(ctx, annot);
-            count++;
-        }
+/* Whether `obj`, a widget or field, is a signed signature field made in save `version`. */
+static int is_added_signature(fz_context *ctx, pdf_document *doc, pdf_obj *obj, int version) {
+    if (!pdf_is_indirect(ctx, obj)) return 0;
+    pdf_obj *before = object_in_version(ctx, doc, pdf_to_num(ctx, obj), version + 1);
+    if (before) { pdf_drop_obj(ctx, before); return 0; }
+    int base = doc->xref_base;
+    int ok = 0;
+    doc->xref_base = version;
+    fz_try(ctx) {
+        pdf_obj *v = pdf_dict_get_inheritable(ctx, obj, PDF_NAME(V));
+        ok = pdf_name_eq(ctx, pdf_dict_get_inheritable(ctx, obj, PDF_NAME(FT)), PDF_NAME(Sig))
+            && pdf_is_array(ctx, pdf_dict_get(ctx, v, PDF_NAME(ByteRange))) && pdf_dict_get(ctx, v, PDF_NAME(Contents));
+    } fz_always(ctx) {
+        doc->xref_base = base;
+    } fz_catch(ctx) {
+        ok = 0;
     }
-    return count;
+    return ok;
 }
 
-/* A page whose only change is in its comments: everything but /Annots the same, and the same
-   widgets (form fields) in /Annots. */
-static int page_changed_only_in_comments(fz_context *ctx, pdf_obj *old, pdf_obj *new) {
+/* The widgets in `new` (an /Annots or /Fields array) are those in `old`, in order, with signed
+   signature fields made in save `version` added among them, if any (noted in `kinds`). */
+static int same_widgets_or_signatures_added(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version,
+                                            int widgets_only, later_change_kinds *kinds) {
+    int o = 0, n_old = pdf_array_len(ctx, old);
+    for (int i = 0, n = pdf_array_len(ctx, new); i < n; i++) {
+        pdf_obj *item = pdf_array_get(ctx, new, i);
+        if (widgets_only && !pdf_name_eq(ctx, pdf_dict_get(ctx, item, PDF_NAME(Subtype)), PDF_NAME(Widget))) continue;
+        while (widgets_only && o < n_old && !pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, o), PDF_NAME(Subtype)), PDF_NAME(Widget))) o++;
+        if (o < n_old && pdf_to_num(ctx, pdf_array_get(ctx, old, o)) == pdf_to_num(ctx, item)) { o++; continue; }
+        if (!is_added_signature(ctx, doc, item, version)) return 0;
+        kinds->signatures = 1;
+    }
+    while (widgets_only && o < n_old && !pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, o), PDF_NAME(Subtype)), PDF_NAME(Widget))) o++;
+    return o == n_old;
+}
+
+/* Whether the comments (entries other than widgets) in two /Annots arrays differ. */
+static int comments_differ(fz_context *ctx, pdf_obj *old, pdf_obj *new) {
+    int i = 0, j = 0, n_old = pdf_array_len(ctx, old), n_new = pdf_array_len(ctx, new);
+    for (;;) {
+        while (i < n_old && pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, i), PDF_NAME(Subtype)), PDF_NAME(Widget))) i++;
+        while (j < n_new && pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, new, j), PDF_NAME(Subtype)), PDF_NAME(Widget))) j++;
+        if (i == n_old || j == n_new) return i != n_old || j != n_new;
+        if (pdf_objcmp(ctx, pdf_array_get(ctx, old, i++), pdf_array_get(ctx, new, j++))) return 1;
+    }
+}
+
+/* Every key of `old` and `new` but those in `skip` the same. */
+static int same_except(fz_context *ctx, pdf_obj *old, pdf_obj *new, pdf_obj *skip1, pdf_obj *skip2) {
+    for (int pass = 0; pass < 2; pass++) {
+        pdf_obj *a = pass ? new : old, *b = pass ? old : new;
+        for (int i = 0, n = pdf_dict_len(ctx, a); i < n; i++) {
+            pdf_obj *key = pdf_dict_get_key(ctx, a, i);
+            if (pdf_name_eq(ctx, key, skip1) || (skip2 && pdf_name_eq(ctx, key, skip2))) continue;
+            pdf_obj *va = pdf_dict_get_val(ctx, a, i), *vb = pdf_dict_get(ctx, b, key);
+            if (!vb || pdf_objcmp(ctx, va, vb)) return 0;
+            // An indirect value must be the same object, not just the same number.
+            if (pdf_is_indirect(ctx, va) != pdf_is_indirect(ctx, vb)) return 0;
+        }
+    }
+    return 1;
+}
+
+/* A form (AcroForm) whose only change is signature fields added, and SigFlags set. */
+static int form_changed_only_by_signatures(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version, later_change_kinds *kinds) {
+    if (!pdf_is_dict(ctx, old) || !pdf_is_dict(ctx, new) || !same_except(ctx, old, new, PDF_NAME(Fields), PDF_NAME(SigFlags))) return 0;
+    int old_flags = pdf_dict_get_int(ctx, old, PDF_NAME(SigFlags)), new_flags = pdf_dict_get_int(ctx, new, PDF_NAME(SigFlags));
+    if ((old_flags & ~new_flags) != 0 || (new_flags & ~(old_flags | 3)) != 0) return 0;
+    return same_widgets_or_signatures_added(ctx, doc, pdf_dict_get(ctx, old, PDF_NAME(Fields)), pdf_dict_get(ctx, new, PDF_NAME(Fields)), version, 0, kinds);
+}
+
+/* A catalog whose only change is in a form within it, as `form_changed_only_by_signatures`. */
+static int catalog_changed_only_by_signatures(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version, later_change_kinds *kinds) {
+    if (!pdf_name_eq(ctx, pdf_dict_get(ctx, new, PDF_NAME(Type)), PDF_NAME(Catalog)) || !same_except(ctx, old, new, PDF_NAME(AcroForm), NULL)) return 0;
+    pdf_obj *old_form = pdf_dict_get(ctx, old, PDF_NAME(AcroForm)), *new_form = pdf_dict_get(ctx, new, PDF_NAME(AcroForm));
+    if (pdf_is_indirect(ctx, old_form) || pdf_is_indirect(ctx, new_form))
+        return pdf_is_indirect(ctx, old_form) && pdf_is_indirect(ctx, new_form) && pdf_to_num(ctx, old_form) == pdf_to_num(ctx, new_form);
+    return form_changed_only_by_signatures(ctx, doc, old_form, new_form, version, kinds);
+}
+
+/* A page whose only change is in its comments, or signatures added: everything but /Annots
+   the same, and the same widgets (form fields) in /Annots, but for signature fields added. */
+static int page_changed_only_in_comments(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version, later_change_kinds *kinds) {
     if (!pdf_name_eq(ctx, pdf_dict_get(ctx, old, PDF_NAME(Type)), PDF_NAME(Page))) return 0;
     if (!pdf_name_eq(ctx, pdf_dict_get(ctx, new, PDF_NAME(Type)), PDF_NAME(Page))) return 0;
     for (int pass = 0; pass < 2; pass++) {
@@ -272,11 +348,10 @@ static int page_changed_only_in_comments(fz_context *ctx, pdf_obj *old, pdf_obj 
             if (pdf_is_indirect(ctx, va) != pdf_is_indirect(ctx, vb)) return 0;
         }
     }
-    int old_widgets[64], new_widgets[64];
-    int n_old = page_widgets(ctx, pdf_dict_get(ctx, old, PDF_NAME(Annots)), old_widgets, 64);
-    int n_new = page_widgets(ctx, pdf_dict_get(ctx, new, PDF_NAME(Annots)), new_widgets, 64);
-    if (n_old != n_new || n_old > 64) return 0;
-    for (int i = 0; i < n_old; i++) if (old_widgets[i] != new_widgets[i]) return 0;
+    if (!same_widgets_or_signatures_added(ctx, doc, pdf_dict_get(ctx, old, PDF_NAME(Annots)), pdf_dict_get(ctx, new, PDF_NAME(Annots)), version, 1, kinds))
+        return 0;
+    // Anything else changed in /Annots is comments.
+    if (comments_differ(ctx, pdf_dict_get(ctx, old, PDF_NAME(Annots)), pdf_dict_get(ctx, new, PDF_NAME(Annots)))) kinds->comments = 1;
     return 1;
 }
 
@@ -335,7 +410,7 @@ static int is_page_annots(fz_context *ctx, pdf_document *doc, int num, int versi
     return found;
 }
 
-static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int version) {
+static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int version, later_change_kinds *kinds) {
     if (version < 0 || version + 1 >= doc->num_xref_sections) return 0;
     pdf_xref *xref = &doc->xref_sections[version];
     pdf_obj *info = pdf_dict_get(ctx, xref->trailer, PDF_NAME(Info));
@@ -346,9 +421,12 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
     fz_var(new);
     fz_var(ok);
     fz_try(ctx) {
-        pdf_obj *root = object_in_version(ctx, doc, pdf_to_num(ctx, pdf_dict_get(ctx, xref->trailer, PDF_NAME(Root))), version);
+        int root_num = pdf_to_num(ctx, pdf_dict_get(ctx, xref->trailer, PDF_NAME(Root)));
+        pdf_obj *root = object_in_version(ctx, doc, root_num, version);
         metadata = pdf_dict_get(ctx, root, PDF_NAME(Metadata));
         int metadata_num = pdf_to_num(ctx, metadata);
+        pdf_obj *form_ref = pdf_dict_get(ctx, root, PDF_NAME(AcroForm));
+        int form_num = pdf_is_indirect(ctx, form_ref) ? pdf_to_num(ctx, form_ref) : 0;
         pdf_drop_obj(ctx, root);
         for (pdf_xref_subsec *sub = xref->subsec; sub && ok; sub = sub->next) {
             for (int i = 0; i < sub->len && ok; i++) {
@@ -366,16 +444,22 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
                     ok = 1;
                 } else if (is_comment(ctx, old)) {
                     ok = !new || is_comment(ctx, new);
+                    kinds->comments = 1;
                 } else if (pdf_is_stream(ctx, old)) {
                     ok = is_comment_appearance(ctx, doc, num, version + 1) && (!new || is_comment_appearance(ctx, doc, num, version));
+                    kinds->comments = 1;
+                } else if (new && pdf_is_dict(ctx, old) && num == root_num) {
+                    ok = catalog_changed_only_by_signatures(ctx, doc, old, new, version, kinds);
+                } else if (new && pdf_is_dict(ctx, old) && num == form_num) {
+                    ok = form_changed_only_by_signatures(ctx, doc, old, new, version, kinds);
                 } else if (new && pdf_is_dict(ctx, old)) {
-                    ok = page_changed_only_in_comments(ctx, old, new);
+                    ok = page_changed_only_in_comments(ctx, doc, old, new, version, kinds);
                 } else if (new && pdf_is_array(ctx, old) && pdf_is_array(ctx, new)) {
-                    // A page's /Annots on its own: the same widgets, in the same page's.
-                    int a[64], b[64];
-                    int na = page_widgets(ctx, old, a, 64), nb = page_widgets(ctx, new, b, 64);
-                    ok = na == nb && na <= 64 && is_page_annots(ctx, doc, num, version) && is_page_annots(ctx, doc, num, version + 1);
-                    for (int k = 0; ok && k < na; k++) ok = a[k] == b[k];
+                    // A page's /Annots on its own: the same widgets, but for signatures added, in
+                    // the same page's.
+                    ok = is_page_annots(ctx, doc, num, version) && is_page_annots(ctx, doc, num, version + 1)
+                        && same_widgets_or_signatures_added(ctx, doc, old, new, version, 1, kinds);
+                    if (ok && comments_differ(ctx, old, new)) kinds->comments = 1;
                 } else {
                     ok = 0;
                 }
@@ -394,13 +478,13 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
 }
 
 /* Whether every save after the signature was one MuPDF accepted (before the one `broken` saves
-   ago that it didn't) or one that changed only comments. */
-static int later_changes_only_comments(fz_context *ctx, pdf_document *doc, pdf_obj *field, int broken) {
+   ago that it didn't) or one that changed only comments and added only signatures. */
+static int later_changes_only_comments(fz_context *ctx, pdf_document *doc, pdf_obj *field, int broken, later_change_kinds *kinds) {
     int signed_in = pdf_find_version_for_obj(ctx, doc, field);
     int unsaved = pdf_count_unsaved_versions(ctx, doc);
     for (int v = signed_in - 1; v >= unsaved; v--) {
         if (v - unsaved >= broken) continue;  // MuPDF passed it
-        if (!version_changed_only_comments(ctx, doc, v)) return 0;
+        if (!version_changed_only_comments(ctx, doc, v, kinds)) return 0;
     }
     return 1;
 }
@@ -504,9 +588,17 @@ int mupdf_pdf_signature_data(fz_context *ctx, fz_document *doc, int objnum, mupd
         fz_try(ctx) {
             out->later_changes = pdf_validate_signature(ctx, pdoc, field);
             int level = certification_level(ctx, sig);
-            if (out->later_changes > 0 && level != 1 && level != 2 && !pdf_dict_get(ctx, sig, PDF_NAME(Lock))
-                && !pdf_dict_get(ctx, field, PDF_NAME(Lock)))
-                out->later_changes_only_comments = later_changes_only_comments(ctx, pdoc, field, out->later_changes);
+            // Signatures can be added unless a certification allows no changes; comments only if
+            // it allows them, and no field lock says otherwise.
+            if (out->later_changes > 0 && level != 1) {
+                later_change_kinds kinds = { 0, 0 };
+                int comments_allowed = level != 2 && !pdf_dict_get(ctx, sig, PDF_NAME(Lock)) && !pdf_dict_get(ctx, field, PDF_NAME(Lock));
+                if (later_changes_only_comments(ctx, pdoc, field, out->later_changes, &kinds) && (comments_allowed || !kinds.comments)) {
+                    out->later_changes_only_comments = kinds.comments;
+                    out->later_changes_added_signatures = kinds.signatures;
+                    out->later_changes_allowed = 1;
+                }
+            }
         } fz_catch(ctx) {
             fz_report_error(ctx);
         }

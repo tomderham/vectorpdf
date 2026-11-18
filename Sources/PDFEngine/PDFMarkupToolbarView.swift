@@ -279,6 +279,14 @@ public struct PDFMarkupToolbarView: View {
             case .redact:
                 EmptyView()
 
+            case .placeSignatureField:
+                Divider()
+                    .frame(height: 16)
+
+                Text("Click where the signature goes. Press Esc to cancel.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
             case .eraser:
                 Divider()
                     .frame(height: 16)

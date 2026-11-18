@@ -47,7 +47,7 @@ VectorPDF is a fast PDF reader for technical papers, specifications, contracts a
 - [Highlight, underline and strike through](text-markup.md)
 - [Draw, add notes, text and callouts](draw-and-notes.md)
 - [Stamps and signatures](stamps.md)
-- [Check digital signatures](digital-signatures.md)
+- [Sign and check digital signatures](digital-signatures.md)
 - [Fill in forms](forms.md)
 
 ## Measure drawings

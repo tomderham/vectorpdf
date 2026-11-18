@@ -76,6 +76,16 @@ extension PDFCanvasView {
             return
         }
 
+        // Placing a signature field: the sheet to sign it opens.
+        if viewModel.canvasMode == .placeSignatureField {
+            if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+                currentHoverCanvasPoint = nil
+                viewModel.placeCertificateSignature(page: pageIdx, at: pagePoint)
+                needsDisplay = true
+            }
+            return
+        }
+
         // In stamp mode: place signature at clicked location
         if viewModel.canvasMode == .stamp {
             if let data = viewModel.pendingSignatureData,
@@ -822,7 +832,7 @@ extension PDFCanvasView {
             NSCursor.crosshair.set()
             return
         }
-        if viewModel.canvasMode == .stamp {
+        if viewModel.canvasMode == .stamp || viewModel.canvasMode == .placeSignatureField {
             if hoveredLink != nil {
                 hoveredLink = nil
             }

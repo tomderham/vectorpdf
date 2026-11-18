@@ -1946,6 +1946,9 @@ private struct ViewerSheetsModifier: ViewModifier {
             .sheet(isPresented: $viewModel.isShowingPageMarks) {
                 PageMarksSheet(viewModel: viewModel)
             }
+            .sheet(item: $viewModel.certificateSignaturePlacement) { placement in
+                CertificateSignatureSheet(viewModel: viewModel, placement: placement)
+            }
             .sheet(isPresented: $viewModel.isShowingCalibrationSheet) {
                 ScaleCalibrationSheet(viewModel: viewModel)
             }

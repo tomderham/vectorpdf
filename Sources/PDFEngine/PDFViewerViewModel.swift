@@ -616,6 +616,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var isShowingDocumentProperties: Bool = false
     @Published public var isShowingSplitPDF: Bool = false
     @Published public var isShowingPageMarks: Bool = false
+    /// Where a signature with a certificate is about to go, while its sheet is open.
+    @Published public var certificateSignaturePlacement: CertificateSignaturePlacement? = nil
     /// Goes up when the outline is edited, for the sidebar to show it again.
     @Published public internal(set) var outlineRevision = 0
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil

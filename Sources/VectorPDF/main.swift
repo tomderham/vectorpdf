@@ -723,6 +723,11 @@ struct VectorPDF: App {
             }
             .disabled(!canEditDocument)
 
+            Button("Sign with Certificate…") {
+                resolvedViewModel?.beginCertificateSignature()
+            }
+            .disabled(!canEditDocument || resolvedViewModel?.canSignWithCertificate != true)
+
             Divider()
 
             Menu("Speech") {

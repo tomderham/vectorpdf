@@ -35,8 +35,10 @@ public struct PDFSignatureData: Sendable {
     /// From MuPDF's check of the saves made after signing: 0 if they changed nothing the signature
     /// locks (or there are none), else how many saves ago it was broken; nil if it can't tell.
     public let laterChangesBreakIt: Int?
-    /// When it does: whether those saves changed only comments, which a signature allows unless
-    /// it certifies the document for less.
+    /// When it does: whether those saves changed only comments and added only signatures, which
+    /// a signature allows (comments unless it certifies the document for less).
+    public let laterChangesAllowed: Bool
+    /// Whether they changed comments, too.
     public let laterChangesOnlyComments: Bool
     /// Where it is: nil if its widget names no page. Page (top-down) coordinates.
     public let pageIndex: Int?
@@ -196,6 +198,7 @@ extension PDFDocumentCore {
                 contents: raw.contents.map { Data(bytes: $0, count: raw.contents_length) } ?? Data(),
                 subFilter: text(raw.subfilter),
                 laterChangesBreakIt: raw.later_changes == -2 ? nil : Int(raw.later_changes),
+                laterChangesAllowed: raw.later_changes_allowed != 0,
                 laterChangesOnlyComments: raw.later_changes_only_comments != 0,
                 pageIndex: raw.page >= 0 ? Int(raw.page) : nil,
                 rect: CGRect(x: CGFloat(raw.x0), y: CGFloat(raw.y0), width: CGFloat(raw.x1 - raw.x0), height: CGFloat(raw.y1 - raw.y0)),
@@ -407,7 +410,8 @@ public enum SignatureValidator {
         let rest = file[Int(end)...]
         if rest.allSatisfy({ $0 == 0x0A || $0 == 0x0D || $0 == 0x20 || $0 == 0x00 }) { return .none }
         if let broken = data.laterChangesBreakIt, broken == 0 { return .allowed }
-        return data.laterChangesOnlyComments ? .commentsChanged : .notAllowed
+        guard data.laterChangesAllowed else { return .notAllowed }
+        return data.laterChangesOnlyComments ? .commentsChanged : .allowed
     }
 
     /// The DER signature without the zeros padding it out to the space left for it.

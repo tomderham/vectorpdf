@@ -359,6 +359,8 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     /// Click each thing to count, in the group `countGroup`.
     case measureCount
     case calibrateScale
+    /// Click where a new signature field goes, to sign it with a certificate.
+    case placeSignatureField
 }
 
 /// Represents a user or document annotation in VectorPDF
