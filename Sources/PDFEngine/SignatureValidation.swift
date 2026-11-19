@@ -76,6 +76,8 @@ public struct PDFSignatureValidation: Sendable, Equatable {
     public var claimedSigningTime: Date?
     /// When a timestamp authority vouches it was signed: the time the certificate is checked at.
     public var timestamp: Date?
+    /// Why a timestamp it carries isn't counted, if it has one that isn't.
+    public var timestampProblem: String?
     /// The signer's certificate first, then the others the signature carries (DER), to show.
     public var certificates: [Data]
 
@@ -272,10 +274,14 @@ public enum SignatureValidator {
             result.integrity = .unsupported(data.subFilter.isEmpty ? "this kind of" : data.subFilter)
             return result
         }
-        guard let message = trimmedDER(data.contents) else {
+        guard let full = trimmedDER(data.contents) else {
             result.integrity = .malformed("the signature isn't a PKCS #7 signature")
             return result
         }
+        // A timestamp is checked on its own: the decoder would otherwise fail the whole
+        // signature when it can't trust the timestamp's authority.
+        let split = Timestamps.split(full)
+        let message = split?.withoutTimestamp ?? full
 
         var decoderRef: CMSDecoder?
         guard CMSDecoderCreate(&decoderRef) == errSecSuccess, let decoder = decoderRef else {
@@ -311,9 +317,11 @@ public enum SignatureValidator {
         if CMSDecoderCopySignerSigningTime(decoder, 0, &signingTime) == errSecSuccess {
             result.claimedSigningTime = Date(timeIntervalSinceReferenceDate: signingTime)
         }
-        var timestamp: CFAbsoluteTime = 0
-        if CMSDecoderCopySignerTimestamp(decoder, 0, &timestamp) == errSecSuccess {
-            result.timestamp = Date(timeIntervalSinceReferenceDate: timestamp)
+        if let token = split?.token, let value = split?.signatureValue {
+            switch Timestamps.verify(token: token, signatureValue: value, extraAnchors: extraAnchors) {
+            case .success(let time): result.timestamp = time
+            case .failure(let why): result.timestampProblem = why.message
+            }
         }
 
         var signerRef: SecCertificate?
@@ -429,5 +437,102 @@ public enum SignatureValidator {
         }
         guard header + length <= contents.count else { return nil }
         return contents.prefix(header + length)
+    }
+}
+
+/// Timestamps (RFC 3161) in CMS signatures, checked apart from the signature they're on.
+enum Timestamps {
+    struct Problem: Error { let message: String }
+
+    /// The signature without its timestamp, the timestamp token, and the signer's signature
+    /// value (which the token vouches for); nil if it has no timestamp.
+    static func split(_ der: Data) -> (withoutTimestamp: Data, token: Data, signatureValue: Data)? {
+        guard var contentInfo = DERNode.parse(der), contentInfo.children?.count == 2,
+              var explicit = contentInfo.children?[1], var signedData = explicit.children?.first,
+              var signerInfos = signedData.children?.last, signerInfos.tag == [0x31],
+              var signerInfo = signerInfos.children?.first, var parts = signerInfo.children,
+              let unsignedIndex = parts.firstIndex(where: { $0.tag == [0xA1] }),
+              let value = parts.first(where: { $0.tag == [0x04] }) else { return nil }
+        var attributes = parts[unsignedIndex].children ?? []
+        guard let index = attributes.firstIndex(where: { $0.children?.first?.content == TimestampAuthority.timeStampTokenOID }),
+              let token = attributes[index].children?.dropFirst().first?.children?.first else { return nil }
+        attributes.remove(at: index)
+        if attributes.isEmpty { parts.remove(at: unsignedIndex) } else { parts[unsignedIndex].children = attributes }
+        signerInfo.children = parts
+        signerInfos.children![0] = signerInfo
+        signedData.children![signedData.children!.count - 1] = signerInfos
+        explicit.children![0] = signedData
+        contentInfo.children![1] = explicit
+        return (Data(contentInfo.encoded), Data(token.encoded), Data(value.content))
+    }
+
+    /// The time a token vouches for, if its own signature is sound, it's of this signature
+    /// value, and its authority's certificate chains to one trusted (on this Mac, or in
+    /// `extraAnchors`) at that time.
+    static func verify(token: Data, signatureValue: Data, extraAnchors: [SecCertificate]) -> Result<Date, Problem> {
+        // What it signs, its TSTInfo, is inside it; Apple's decoder wants it given as detached.
+        guard let tokenNode = DERNode.parse(token), let signedData = tokenNode.children?.dropFirst().first?.children?.first,
+              let encapsulated = signedData.children?.first(where: { $0.tag == [0x30] && $0.children?.first?.tag == [0x06] }),
+              let tstInfo = encapsulated.children?.dropFirst().first?.children?.first?.content else {
+            return .failure(Problem(message: "The timestamp can't be read."))
+        }
+        var decoderRef: CMSDecoder?
+        guard CMSDecoderCreate(&decoderRef) == errSecSuccess, let decoder = decoderRef,
+              token.withUnsafeBytes({ CMSDecoderUpdateMessage(decoder, $0.baseAddress!, $0.count) }) == errSecSuccess else {
+            return .failure(Problem(message: "The timestamp can't be read."))
+        }
+        CMSDecoderSetDetachedContent(decoder, Data(tstInfo) as CFData)
+        guard CMSDecoderFinalizeMessage(decoder) == errSecSuccess else { return .failure(Problem(message: "The timestamp can't be read.")) }
+        var status = CMSSignerStatus.unsigned
+        var code: OSStatus = 0
+        CMSDecoderCopySignerStatus(decoder, 0, SecPolicyCreateBasicX509(), false, &status, nil, &code)
+        guard status == .valid else { return .failure(Problem(message: "The timestamp's own signature isn't valid.")) }
+        guard let info = DERNode.parse(Data(tstInfo)), let fields = info.children, fields.count >= 5,
+              let imprint = fields[2].children, imprint.count == 2,
+              let algorithm = imprint[0].children?.first?.content else { return .failure(Problem(message: "The timestamp can't be read.")) }
+        let expected: [UInt8]
+        switch algorithm {
+        case TimestampAuthority.sha256OID: expected = Array(SHA256.hash(data: signatureValue))
+        case [0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02]: expected = Array(SHA384.hash(data: signatureValue))
+        case [0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03]: expected = Array(SHA512.hash(data: signatureValue))
+        case [0x2B, 0x0E, 0x03, 0x02, 0x1A]: expected = Array(Insecure.SHA1.hash(data: signatureValue))
+        default: return .failure(Problem(message: "The timestamp uses a digest VectorPDF can't check."))
+        }
+        guard imprint[1].content == expected else { return .failure(Problem(message: "The timestamp is for something else.")) }
+        guard let time = generalizedTime(fields[4].content) else { return .failure(Problem(message: "The timestamp's time can't be read.")) }
+
+        var signerRef: SecCertificate?
+        CMSDecoderCopySignerCert(decoder, 0, &signerRef)
+        var allRef: CFArray?
+        CMSDecoderCopyAllCerts(decoder, &allRef)
+        guard let tsa = signerRef else { return .failure(Problem(message: "The timestamp doesn't include its authority's certificate.")) }
+        let others = ((allRef as? [SecCertificate]) ?? []).filter { SecCertificateCopyData($0) as Data != SecCertificateCopyData(tsa) as Data }
+        var trustRef: SecTrust?
+        guard SecTrustCreateWithCertificates(([tsa] + others) as CFArray, SecPolicyCreateBasicX509(), &trustRef) == errSecSuccess,
+              let trust = trustRef else { return .failure(Problem(message: "The timestamp's authority can't be checked.")) }
+        SecTrustSetNetworkFetchAllowed(trust, false)
+        SecTrustSetVerifyDate(trust, time as CFDate)
+        if !extraAnchors.isEmpty {
+            SecTrustSetAnchorCertificates(trust, extraAnchors as CFArray)
+            SecTrustSetAnchorCertificatesOnly(trust, false)
+        }
+        guard SecTrustEvaluateWithError(trust, nil) else {
+            return .failure(Problem(message: "The timestamp's authority isn't trusted on this Mac."))
+        }
+        return .success(time)
+    }
+
+    /// A GeneralizedTime (YYYYMMDDHHMMSS[.fff]Z).
+    static func generalizedTime(_ bytes: [UInt8]) -> Date? {
+        guard let text = String(bytes: bytes, encoding: .ascii), text.hasSuffix("Z"), text.count >= 15 else { return nil }
+        let digits = String(text.prefix(14))
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyyMMddHHmmss"
+        guard var date = formatter.date(from: digits) else { return nil }
+        let rest = text.dropFirst(14).dropLast()
+        if rest.hasPrefix("."), let fraction = Double("0" + rest) { date += fraction }
+        return date
     }
 }

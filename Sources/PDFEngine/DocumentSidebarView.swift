@@ -244,6 +244,7 @@ extension PDFSignatureValidation {
         } else if let claimedSigningTime {
             lines.append("Signed \(claimedSigningTime.formatted(date: .abbreviated, time: .shortened)), by the signer's clock")
         }
+        if let timestampProblem { lines.append(timestampProblem) }
         if let signerEmail { lines.append(signerEmail) }
         if let issuerName, issuerName != signerName { lines.append("Certificate issued by \(issuerName)") }
         if let nameInDocument, nameInDocument != signerName { lines.append("Name in the document: \(nameInDocument)") }

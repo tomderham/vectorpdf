@@ -53,7 +53,52 @@ struct TestSigner {
         let pem = try String(contentsOf: dir.appendingPathComponent("ca.pem"), encoding: .utf8)
         let der = try #require(Data(base64Encoded: pem.split(separator: "\n").filter { !$0.hasPrefix("-----") }.joined()))
         authority = try #require(SecCertificateCreateWithData(nil, der as CFData))
+        // A timestamp authority, certified by the same authority, answering with openssl ts.
+        try "basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=critical,timeStamping\n".write(
+            to: dir.appendingPathComponent("tsa.ext"), atomically: true, encoding: .utf8)
+        try openssl("req", "-newkey", "rsa:2048", "-nodes", "-keyout", "tsa.key", "-out", "tsa.csr", "-subj", "/CN=VectorPDF Test Timestamps/O=VectorPDF Tests")
+        try openssl("x509", "-req", "-in", "tsa.csr", "-CA", "ca.pem", "-CAkey", "ca.key", "-CAcreateserial",
+                    "-out", "tsa.pem", "-days", "2", "-extfile", "tsa.ext")
+        try """
+        [ tsa ]
+        default_tsa = tsa_config
+        [ tsa_config ]
+        dir = \(dir.path)
+        serial = \(dir.path)/tsaserial
+        signer_cert = \(dir.path)/tsa.pem
+        certs = \(dir.path)/ca.pem
+        signer_key = \(dir.path)/tsa.key
+        default_policy = 1.2.3.4.1
+        digests = sha256
+        signer_digest = sha256
+        accuracy = secs:1
+        ordering = yes
+        tsa_name = no
+        ess_cert_id_chain = no
+        """.write(to: dir.appendingPathComponent("tsa.cnf"), atomically: true, encoding: .utf8)
+        try "01\n".write(to: dir.appendingPathComponent("tsaserial"), atomically: true, encoding: .utf8)
+        self.dir = dir
         for name in ["ca.key", "signer.key"] { try? FileManager.default.removeItem(at: dir.appendingPathComponent(name)) }
+    }
+
+    let dir: URL
+
+    /// The test timestamp authority: each request answered by openssl ts -reply.
+    var timestampAuthority: TimestampAuthority {
+        let dir = self.dir
+        return TimestampAuthority(url: URL(string: "http://localhost/tsa")!) { request in
+            let query = dir.appendingPathComponent("request-\(UUID().uuidString).tsq"), reply = dir.appendingPathComponent("reply.tsr")
+            try request.write(to: query)
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/openssl")
+            process.arguments = ["ts", "-reply", "-queryfile", query.path, "-config", dir.appendingPathComponent("tsa.cnf").path, "-out", reply.path]
+            process.currentDirectoryURL = dir
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            try process.run()
+            process.waitUntilExit()
+            return try Data(contentsOf: reply)
+        }
     }
 
     func identity() throws -> SigningIdentity { try SigningIdentity.fromPKCS12(p12, password: password) }
@@ -123,6 +168,39 @@ struct TestSigner {
         #expect(results.map(\.changes).sorted { "\($0)" < "\($1)" } == [.allowed, .none])
         #expect(results.contains { $0.signerName == "Signing Test Person" && $0.identity == .trusted })
         #expect(results.contains { $0.signerName == "VectorPDF Test Signer" })
+    }
+
+    /// A timestamp from an authority is added to the signature, and checking reports its time.
+    @Test func aTimestampIsAddedAndChecked() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let signer = try TestSigner(in: dir)
+        let url = dir.appendingPathComponent("Stamped.pdf")
+        makeLabelledPDF(at: url, labels: ["One"])
+        let doc = try PDFDocumentCore(filePath: url.path)
+        let signature = try doc.sign(page: 0, rect: CGRect(x: 72, y: 100, width: 200, height: 60), with: signer.identity(),
+                                     timestamp: signer.timestampAuthority)
+        try doc.save(to: url.path)
+        #expect(signature.failure == nil)
+        let result = try #require(PDFDocumentCore(filePath: url.path).validateSignatures(extraAnchors: [signer.authority]).first)
+        #expect(result.integrity == .intact && result.changes == PDFSignatureValidation.Changes.none)
+        #expect(result.identity == .trusted)
+        let stamped = try #require(result.timestamp)
+        #expect(abs(stamped.timeIntervalSinceNow) < 120)
+        #expect(result.timestampProblem == nil)
+        // Its authority not trusted: the signature still checks out, the timestamp isn't counted.
+        let untrusted = try #require(PDFDocumentCore(filePath: url.path).validateSignatures().first)
+        #expect(untrusted.isIntact && untrusted.timestamp == nil)
+        #expect(untrusted.timestampProblem?.contains("isn't trusted") == true)
+
+        // A server that can't be reached stops the signing, leaving the file as it was.
+        let before = try Data(contentsOf: url)
+        let unreachable = TimestampAuthority(url: URL(string: "http://localhost/none")!) { _ in throw TimestampAuthority.Failure.unreachable("test") }
+        let again = try PDFDocumentCore(filePath: url.path)
+        let failed = try again.sign(page: 0, rect: CGRect(x: 300, y: 100, width: 200, height: 60), with: signer.identity(), timestamp: unreachable)
+        #expect(throws: (any Error).self) { try again.save(to: url.path) }
+        #expect(failed.failure?.contains("couldn't be reached") == true)
+        #expect(try Data(contentsOf: url) == before)
     }
 
     /// A certifying signature allows what it says: form filling and signing here, so another

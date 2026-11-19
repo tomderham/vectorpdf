@@ -28,7 +28,9 @@ Signing saves the document, so if it has unsaved changes, VectorPDF asks to save
 
 Unless you lock them or certify the document for less, the signature leaves the document's other form fields as they were, so others can still fill them in, sign too, or add comments without making your signature invalid. Each later signature is added after the earlier ones in the same way.
 
-The signature is a PKCS #7 signature with SHA-256, carrying your certificate and those of the authorities that issued it. It records the time on your Mac. It doesn't have a timestamp from a timestamp authority yet.
+The signature is a PKCS #7 signature with SHA-256, carrying your certificate and those of the authorities that issued it. It records the time on your Mac.
+
+To have a timestamp server vouch for when you signed, turn on **Add a timestamp** and give its address (your organization may run one; free ones include DigiCert's, `http://timestamp.digicert.com`). A timestamp lets your signature be checked as it was when you signed, even after your certificate expires. The server is sent only a fingerprint of the signature, nothing of the document. If it can't be reached, nothing is signed and the document is left as it was.
 
 ## What VectorPDF checks
 
@@ -37,7 +39,7 @@ For each signature, the list in the Document tab shows:
 - Whether the parts of the file it signed are exactly as they were signed.
 - Whether the file was saved again after signing, and whether those changes are ones the signature allows. Filling in form fields, adding signatures and adding or changing comments are usually allowed. A certifying signature can allow fewer changes. If comments were added after signing, the list says so: a comment can cover what was signed.
 - Who signed it, by the name in their certificate, and who issued the certificate. The name the signing software wrote into the document is shown too when it's different.
-- When it was signed. A time from a timestamp authority is vouched for. A time from the signer's own computer isn't.
+- When it was signed. A time from a timestamp authority is vouched for, if the timestamp is for this signature and its authority is trusted on your Mac; otherwise the list says why it isn't counted. A time from the signer's own computer isn't vouched for.
 - The reason and location the signer gave, if any.
 
 Click a signature to go to it on the page. To see its certificates, click **Show Certificate**, or right-click it and choose Show Certificate.

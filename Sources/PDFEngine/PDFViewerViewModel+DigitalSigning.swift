@@ -98,7 +98,8 @@ extension PDFViewerViewModel {
     @discardableResult
     public func completeCertificateSignature(_ placement: CertificateSignaturePlacement, with identity: SigningIdentity,
                                              appearance: PDFDocumentCore.SignatureAppearance,
-                                             permissions: PDFDocumentCore.SigningPermissions = .init()) async -> Bool {
+                                             permissions: PDFDocumentCore.SigningPermissions = .init(),
+                                             timestamp: TimestampAuthority? = nil) async -> Bool {
         certificateSignaturePlacement = nil
         guard let doc = document, canSignWithCertificate else { return false }
         flushPendingFormEdits()
@@ -107,12 +108,17 @@ extension PDFViewerViewModel {
         fileChangeWatcher = nil
         do {
             let signature = try doc.sign(page: placement.page, widgetIndex: placement.widgetIndex, rect: placement.rect,
-                                         with: identity, appearance: appearance, permissions: permissions)
-            do {
-                try doc.save(to: path)
-            } catch {
-                failure = signature.failure ?? error.localizedDescription
-            }
+                                         with: identity, appearance: appearance, permissions: permissions, timestamp: timestamp)
+            // Saving makes the signature, which may wait on a timestamp server: off the main
+            // thread.
+            failure = await Task.detached(priority: .userInitiated) { () -> String? in
+                do {
+                    try doc.save(to: path)
+                    return nil
+                } catch {
+                    return signature.failure ?? error.localizedDescription
+                }
+            }.value
         } catch {
             failure = error.localizedDescription
         }

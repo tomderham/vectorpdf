@@ -138,17 +138,24 @@ public struct SigningIdentity: @unchecked Sendable, Identifiable, Equatable {
 /// certificates up to the root) of the bytes MuPDF hands it as the document is saved.
 public final class CMSSignature: @unchecked Sendable {
     let signer: SigningIdentity
+    /// Where to get a timestamp of the signature, if one's wanted.
+    let timestampAuthority: TimestampAuthority?
     private var encoder: CMSEncoder?
     /// Why the signature couldn't be made, if it couldn't.
     public private(set) var failure: String?
 
-    init(signer: SigningIdentity) { self.signer = signer }
+    init(signer: SigningIdentity, timestampAuthority: TimestampAuthority? = nil) {
+        self.signer = signer
+        self.timestampAuthority = timestampAuthority
+    }
 
     /// The most a signature can take: the certificates, and room for the signature and its
     /// attributes.
     var maxSize: Int {
         let certificates = ([signer.certificate] + signer.chain).reduce(0) { $0 + CFDataGetLength(SecCertificateCopyData($1)) }
-        return (certificates + 8192 + 1023) / 1024 * 1024
+        // A timestamp token carries the authority's certificates too.
+        let timestamp = timestampAuthority == nil ? 0 : 24 * 1024
+        return (certificates + 8192 + timestamp + 1023) / 1024 * 1024
     }
 
     private func fail(_ what: String, _ status: OSStatus) -> Int32 {
@@ -190,9 +197,17 @@ public final class CMSSignature: @unchecked Sendable {
         let status = CMSEncoderCopyEncodedContent(encoder, &data)
         guard status == errSecSuccess, let encoded = data as Data? else { _ = fail("The signature couldn't be made", status); return 0 }
         // CMSEncoder writes BER, with lengths left open; PDF readers want DER.
-        guard let signature = BERToDER.convert(encoded) else {
+        guard var signature = BERToDER.convert(encoded) else {
             failure = "The signature couldn't be encoded."
             return 0
+        }
+        if let timestampAuthority {
+            do {
+                signature = try timestampAuthority.timestamped(signature)
+            } catch {
+                failure = error.localizedDescription
+                return 0
+            }
         }
         guard signature.count <= capacity else {
             failure = "The signature is larger than the room for it."
@@ -279,9 +294,10 @@ extension PDFDocumentCore {
     @discardableResult
     public func sign(page: Int, widgetIndex: Int? = nil, rect: CGRect = .zero, with signer: SigningIdentity,
                      appearance: SignatureAppearance = SignatureAppearance(),
-                     permissions: SigningPermissions = SigningPermissions()) throws -> CMSSignature {
+                     permissions: SigningPermissions = SigningPermissions(),
+                     timestamp: TimestampAuthority? = nil) throws -> CMSSignature {
         guard isPDF else { throw PDFError.operationFailed("Only a PDF can be signed") }
-        let signature = CMSSignature(signer: signer)
+        let signature = CMSSignature(signer: signer, timestampAuthority: timestamp)
         try withLockedDocument { ctx, doc in
             let context = Unmanaged.passRetained(signature).toOpaque()
             let callbacks = vp_signer_callbacks(

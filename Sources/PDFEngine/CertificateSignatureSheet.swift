@@ -39,6 +39,8 @@ struct CertificateSignatureSheet: View {
     @AppStorage("VectorPDF_SigningReason") private var reason = ""
     @AppStorage("VectorPDF_SigningLocation") private var location = ""
     @AppStorage("VectorPDF_SigningShowsHandwriting") private var showsHandwriting = true
+    @AppStorage("VectorPDF_SigningTimestamp") private var addsTimestamp = false
+    @AppStorage("VectorPDF_SigningTimestampServer") private var timestampServer = "http://timestamp.digicert.com"
     /// Certifying (only a first signature can) and locking fields.
     @State private var certification: PDFDocumentCore.SigningPermissions.Certification?
     private enum LockChoice: Hashable { case none, all, chosen }
@@ -50,6 +52,11 @@ struct CertificateSignatureSheet: View {
 
     private struct PreviewKey: Equatable {
         var name: String, reason: String, location: String, handwriting: Bool
+    }
+
+    private var timestampServerIsValid: Bool {
+        guard let url = URL(string: timestampServer.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        return (url.scheme == "http" || url.scheme == "https") && url.host != nil
     }
 
     private var choices: [SigningIdentity] { (fileIdentity.map { [$0] } ?? []) + identities }
@@ -112,6 +119,16 @@ struct CertificateSignatureSheet: View {
                         Toggle("Show my handwritten signature", isOn: $showsHandwriting)
                     }
                 }
+                Section {
+                    Toggle("Add a timestamp", isOn: $addsTimestamp)
+                    if addsTimestamp {
+                        TextField("Timestamp server", text: $timestampServer, prompt: Text("http://timestamp.digicert.com"))
+                    }
+                } footer: {
+                    Text("A timestamp server vouches for when you signed, so the signature can be checked after your certificate expires. It's sent a fingerprint of the signature, nothing of the document.")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if canCertify || !lockable.isEmpty {
                     Section("After Signing") {
                         if canCertify {
@@ -161,7 +178,7 @@ struct CertificateSignatureSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Sign", action: sign)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(chosen == nil || isSigning)
+                    .disabled(chosen == nil || isSigning || (addsTimestamp && !timestampServerIsValid))
             }
             .padding([.horizontal, .bottom], 20)
         }
@@ -238,7 +255,9 @@ struct CertificateSignatureSheet: View {
         case .chosen: lock = chosenFields.isEmpty ? .none : .fields(lockable.filter(chosenFields.contains))
         }
         let permissions = PDFDocumentCore.SigningPermissions(certification: canCertify ? certification : nil, lock: lock)
+        let server = timestampServer.trimmingCharacters(in: .whitespacesAndNewlines)
+        let timestamp = addsTimestamp ? URL(string: server).flatMap { $0.scheme?.hasPrefix("http") == true ? TimestampAuthority(url: $0) : nil } : nil
         dismiss()
-        Task { await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance, permissions: permissions) }
+        Task { await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance, permissions: permissions, timestamp: timestamp) }
     }
 }
