@@ -1,5 +1,5 @@
 <!-- keywords: 表单, 填写, 栏位, 复选框, 单选按钮, 签名, 重置, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # 填写表单
 
@@ -8,7 +8,7 @@ VectorPDF 支持交互式 PDF 表单 (AcroForms)。栏位会直接显示在页�
 - **文本栏：** 点按并键入。
 - **复选框和单选按钮：** 点按以选择。
 - **弹出式菜单和列表：** 点按并选取一项。
-- **签名栏：** 点按 **Sign**，然后创建或选取[图章](stamps.md)。
+- **签名栏位：**点按 **Sign**，然后选取手写签名或数字签名。请参阅[签署文稿](stamps.md)。
 
 按下 ⌘S [存储](save.md)填写好的表单。
 

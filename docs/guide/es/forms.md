@@ -1,5 +1,5 @@
 <!-- keywords: formulario, formularios, completar, rellenar, llenar, campo, campos, casilla, botón de opción, firmar, restablecer, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # Completar formularios
 
@@ -8,7 +8,7 @@ VectorPDF funciona con formularios PDF interactivos (AcroForms). Los campos apar
 - **Campos de texto:** haz clic y escribe.
 - **Casillas y botones de opción:** haz clic para elegir.
 - **Menús desplegables y listas:** haz clic y elige un elemento.
-- **Campos de firma:** haz clic en **Sign** y crea o elige un [sello](stamps.md).
+- **Campos de firma:** haz clic en **Sign** y luego elige una firma manuscrita o una digital. Consulta [Firmar un documento](stamps.md).
 
 Pulsa ⌘S para [guardar](save.md) el formulario completado.
 

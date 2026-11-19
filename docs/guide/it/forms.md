@@ -1,5 +1,5 @@
 <!-- keywords: modulo, moduli, compilare, campo, campi, casella di controllo, pulsante di opzione, firmare, reimpostare, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # Compilare moduli
 
@@ -8,7 +8,7 @@ VectorPDF funziona con i moduli PDF interattivi (AcroForm). I campi compaiono su
 - **Campi di testo:** fai clic e digita.
 - **Caselle di controllo e pulsanti di opzione:** fai clic per scegliere.
 - **Menu a comparsa ed elenchi:** fai clic e scegli un elemento.
-- **Campi firma:** fai clic su **Sign**, quindi crea o scegli un [timbro](stamps.md).
+- **Campi firma:** fai clic su **Sign**, quindi scegli una firma autografa o una digitale. Consulta [Firmare un documento](stamps.md).
 
 Premi ⌘S per [salvare](save.md) il modulo compilato.
 

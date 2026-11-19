@@ -1,9 +1,9 @@
-<!-- keywords: carimbo de data/hora, servidor de carimbo do tempo, certificar, bloquear campos, assinatura digital, assinaturas digitais, assinar, assinar com certificado, certificado, porta-chaves, assinado, signatário, certificado, certificação, válida, inválida, verificar, validar, confiança, identidade, carimbo de data/hora, adulterado, alterado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 5ae9b04ec005 -->
+<!-- keywords: verificar assinaturas digitais, carimbo de data/hora, servidor de carimbo do tempo, certificar, bloquear campos, assinatura digital, assinaturas digitais, assinar, assinar com certificado, certificado, porta-chaves, assinado, signatário, certificação, válida, inválida, verificar, validar, confiança, identidade, adulterado, alterado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
+<!-- source: 9299a883126e -->
 
-# Assinar e verificar assinaturas digitais
+# Verificar assinaturas digitais
 
-Uma assinatura digital mostra quem assinou um documento e que ele não mudou desde então. Você pode [assinar um PDF](#sign) com um certificado próprio. Quando você abre um PDF assinado, o VectorPDF verifica as assinaturas e mostra o que encontrou em uma barra acima da página:
+Uma assinatura digital mostra quem assinou um documento e que ele não mudou desde então. Para assinar um PDF com um certificado seu, consulte [Assinar com um certificado](stamps.md#sign). Quando você abre um PDF assinado, o VectorPDF verifica as assinaturas e mostra o que encontrou em uma barra acima da página:
 
 - **A assinatura é válida:** o documento não mudou desde que foi assinado, e o certificado do signatário foi emitido por uma autoridade em que o seu Mac confia.
 - **A identidade do signatário não está verificada neste Mac:** o documento não mudou, mas nada garante quem o assinou. Consulte [Por que a identidade de um signatário pode não estar verificada](#signer-identity).
@@ -11,27 +11,7 @@ Uma assinatura digital mostra quem assinou um documento e que ele não mudou des
 
 Clique em **Signature Details** para ver cada assinatura na aba Document da barra lateral. Para ocultar a barra, clique no botão de fechar dela.
 
-> **Nota:** Um [carimbo](stamps.md) é uma imagem de uma assinatura, não uma assinatura digital.
-
-## Assinar com um certificado {#sign}
-
-Para assinar, você precisa de um certificado de assinatura com a chave privada dele. Sua organização ou uma autoridade certificadora pode lhe fornecer um, geralmente como um arquivo .p12 ou .pfx com uma senha. Os certificados do seu porta-chaves podem ser usados diretamente.
-
-1. Escolha Edit > Sign with Certificate e arraste um retângulo na página onde a assinatura deve ficar, ou clique para um do tamanho habitual. Pressione Esc para parar. Se o documento tiver um campo de assinatura vazio, você pode clicar no campo e escolher Sign with Certificate.
-2. Escolha seu certificado. Uma prévia mostra como a assinatura vai ficar. Para usar um arquivo, clique em **Choose Certificate File** e digite a senha dele. O arquivo é lido só para esta assinatura e não é adicionado ao seu porta-chaves.
-3. Se quiser, digite um motivo (como “Aprovo este documento”) e o lugar onde você está assinando. Se você criou um [carimbo](stamps.md), pode mostrar sua assinatura à mão no campo. Caso contrário, seu nome é mostrado.
-4. Se quiser, escolha em After Signing:
-   - **Certify**, se ninguém assinou o documento ainda: diga quais alterações o mantêm válido daqui em diante: preencher formulários, assinar e adicionar anotações; preencher formulários e assinar; ou nenhuma. Um documento certificado aparece como certificado para todos que o verificam, e alterações posteriores que ele não permite invalidam sua assinatura.
-   - **Lock form fields**, em um formulário: todos os campos, ou os que você escolher, ficam somente leitura e mantêm os valores que você assinou.
-5. Clique em **Sign**.
-
-Assinar salva o documento, então, se ele tiver alterações não salvas, o VectorPDF pergunta primeiro se você quer salvá-las. Elas passam a fazer parte do que você assina. O macOS pode pedir que você permita ao VectorPDF usar a chave do seu certificado.
-
-A menos que você os bloqueie ou certifique o documento para menos, a assinatura deixa os outros campos de formulário do documento como estavam, para que outras pessoas ainda possam preenchê-los, assinar também ou adicionar anotações sem invalidar a sua assinatura. Cada assinatura posterior é adicionada depois das anteriores da mesma forma.
-
-A assinatura é uma assinatura PKCS #7 com SHA-256 que contém seu certificado e os das autoridades que o emitiram. Ela registra a hora do seu Mac.
-
-Para que um servidor de carimbo do tempo garanta quando você assinou, ative **Add a timestamp** e informe o endereço dele (sua organização pode ter um; há gratuitos, como o da DigiCert, `http://timestamp.digicert.com`). Com um carimbo de data/hora, sua assinatura pode ser verificada como era quando você assinou, mesmo depois que seu certificado expirar. O servidor recebe só uma impressão digital da assinatura, nada do documento. Se ele não puder ser alcançado, nada é assinado e o documento fica como estava.
+> **Nota:** Uma [assinatura à mão](stamps.md) é a imagem de uma assinatura, não uma assinatura digital.
 
 ## O que o VectorPDF verifica
 

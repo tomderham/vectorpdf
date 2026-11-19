@@ -1,5 +1,5 @@
 <!-- keywords:  -->
-<!-- source: a9dbf4350c76 -->
+<!-- source: 81c3459e629c -->
 
 # VectorPDF 사용 설명서
 
@@ -51,8 +51,8 @@ VectorPDF는 기술 논문, 사양서, 계약서, 도면을 위한 빠른 PDF �
 
 - [하이라이트, 밑줄 및 취소선](text-markup.md)
 - [그리기, 메모, 텍스트 및 설명선 추가하기](draw-and-notes.md)
-- [스탬프와 서명](stamps.md)
-- [디지털 서명하기 및 확인하기](digital-signatures.md)
+- [문서에 서명하기](stamps.md)
+- [디지털 서명 확인하기](digital-signatures.md)
 - [양식 작성하기](forms.md)
 
 ## 도면 측정

@@ -1,5 +1,5 @@
 <!-- keywords:  -->
-<!-- source: a9dbf4350c76 -->
+<!-- source: 81c3459e629c -->
 
 # VectorPDF 使用手册
 
@@ -51,8 +51,8 @@ VectorPDF 是一款快速的 PDF 阅读器，适合阅读技术论文、规范�
 
 - [高亮、下划线和删除线](text-markup.md)
 - [绘图、添加便笺、文本和标注框](draw-and-notes.md)
-- [图章和签名](stamps.md)
-- [进行数字签名和检查数字签名](digital-signatures.md)
+- [签署文稿](stamps.md)
+- [检查数字签名](digital-signatures.md)
 - [填写表单](forms.md)
 
 ## 测量图纸

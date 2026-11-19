@@ -1,5 +1,5 @@
 <!-- keywords: 양식, 서식, 작성, 입력, 필드, 체크상자, 라디오 버튼, 서명, 재설정, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # 양식 작성하기
 
@@ -8,7 +8,7 @@ VectorPDF는 대화형 PDF 양식(AcroForms)을 지원합니다. 필드가 페�
 - **텍스트 필드:** 클릭하여 입력합니다.
 - **체크상자 및 라디오 버튼:** 클릭하여 선택합니다.
 - **팝업 메뉴 및 목록:** 클릭하여 항목을 선택합니다.
-- **서명 필드:** **Sign**을 클릭한 다음 [스탬프](stamps.md)를 만들거나 선택합니다.
+- **서명 필드:** **Sign**을 클릭한 다음 손글씨 서명 또는 디지털 서명을 선택합니다. [문서에 서명하기](stamps.md)를 참조하십시오.
 
 작성한 양식을 [저장](save.md)하려면 ⌘S 키를 누릅니다.
 

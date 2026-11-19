@@ -1,5 +1,5 @@
 <!-- keywords: 설정, 환경설정, 옵션, 업데이트, 업데이트 확인, 브라우저, 작성자, 주석 작성자, 저장 공간, 디스크 공간, 지우기, 데이터 제거, 데이터 삭제, 제거, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, 일반, 고급, 데이터, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
-<!-- source: 8d8c6240dea0 -->
+<!-- source: 04a3f97de4ba -->
 
 # 설정
 
@@ -10,7 +10,7 @@ VectorPDF > Settings를 선택하거나 ⌘, 키를 누릅니다. 설정에는 �
 | 설정 | 기능 |
 | --- | --- |
 | Annotation Author | 주석과 답글에 저장되는 이름입니다. 비어 있으면 VectorPDF는 Mac 사용자 이름을 사용합니다. |
-| Digital Stamp | [스탬프](stamps.md)를 만들거나 변경하거나 삭제합니다. |
+| Handwritten Signature | 페이지에 넣는 서명 그림을 만들거나 변경하거나 삭제합니다. [문서에 서명하기](stamps.md)를 참조하십시오. |
 | PDF Color | [페이지가 표시되는 방식](pdf-colors.md)을 Follow System, Light, Dark 또는 Sepia로 설정합니다. |
 | Open Links In | 웹 링크에 사용할 브라우저를 선택합니다. |
 | List form fields, links and destinations in the sidebar | 문서의 [양식 필드, 링크 및 이름 있는 대상](document-tab.md)을 Document 탭에 추가합니다. 그러면 이 중 하나라도 있는 문서에서도 Document 탭이 나타납니다. 켜기 전까지는 꺼져 있습니다. |

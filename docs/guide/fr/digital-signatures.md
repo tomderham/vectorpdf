@@ -1,9 +1,9 @@
-<!-- keywords: horodatage, serveur d’horodatage, certifier, verrouiller les champs, signature numérique, signatures numériques, signer, signer avec un certificat, certificat, trousseau, signé, signataire, certifié, certification, valide, non valide, vérifier, valider, confiance, identité, horodatage, falsifié, modifié, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, certificate, certified, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 5ae9b04ec005 -->
+<!-- keywords: vérifier des signatures numériques, horodatage, serveur d’horodatage, certifier, verrouiller les champs, signature numérique, signatures numériques, signer, signer avec un certificat, certificat, trousseau, signé, signataire, certifié, certification, valide, non valide, vérifier, valider, confiance, identité, falsifié, modifié, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, certificate, certified, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
+<!-- source: 9299a883126e -->
 
-# Signer et vérifier des signatures numériques
+# Vérifier des signatures numériques
 
-Une signature numérique montre qui a signé un document et qu’il n’a pas changé depuis. Vous pouvez [signer un PDF](#sign) avec votre propre certificat. Lorsque vous ouvrez un PDF signé, VectorPDF vérifie ses signatures et indique ce qu’il a trouvé dans une barre au-dessus de la page :
+Une signature numérique indique qui a signé un document et qu’il n’a pas changé depuis. Pour signer un PDF avec votre propre certificat, consultez [Signer avec un certificat](stamps.md#sign). Quand vous ouvrez un PDF signé, VectorPDF vérifie ses signatures et affiche ce qu’il a trouvé dans une barre au-dessus de la page :
 
 - **La signature est valide :** le document n’a pas changé depuis sa signature, et le certificat du signataire a été émis par une autorité à laquelle votre Mac fait confiance.
 - **L’identité du signataire n’est pas vérifiée sur ce Mac :** le document n’a pas changé, mais rien ne garantit qui l’a signé. Consultez [Pourquoi l’identité d’un signataire peut ne pas être vérifiée](#signer-identity).
@@ -11,27 +11,7 @@ Une signature numérique montre qui a signé un document et qu’il n’a pas ch
 
 Cliquez sur **Signature Details** pour voir chaque signature dans l’onglet Document de la barre latérale. Pour masquer la barre, cliquez sur son bouton de fermeture.
 
-> **Remarque :** Un [tampon](stamps.md) est une image d’une signature, pas une signature numérique.
-
-## Signer avec un certificat {#sign}
-
-Pour signer, il vous faut un certificat de signature avec sa clé privée. Votre organisation ou une autorité de certification peut vous en fournir un, généralement sous forme de fichier .p12 ou .pfx protégé par un mot de passe. Les certificats de votre trousseau peuvent être utilisés directement.
-
-1. Choisissez Edit > Sign with Certificate, puis tracez un cadre sur la page à l’endroit où doit figurer la signature, ou cliquez pour un cadre de taille habituelle. Appuyez sur Esc pour arrêter. Si le document comporte un champ de signature vide, vous pouvez plutôt cliquer sur le champ et choisir Sign with Certificate.
-2. Choisissez votre certificat. Un aperçu montre à quoi ressemblera la signature. Pour utiliser un fichier, cliquez sur **Choose Certificate File**, puis saisissez son mot de passe. Le fichier n’est lu que pour cette signature et n’est pas ajouté à votre trousseau.
-3. Si vous le souhaitez, saisissez un motif (par exemple « J’approuve ce document ») et le lieu où vous signez. Si vous avez créé un [tampon](stamps.md), vous pouvez afficher votre signature manuscrite dans le champ. Sinon, votre nom est affiché.
-4. Si vous le souhaitez, choisissez sous After Signing :
-   - **Certify**, si personne n’a encore signé le document : indiquez quelles modifications le laissent valide désormais : remplir des formulaires, signer et ajouter des annotations ; remplir des formulaires et signer ; ou aucune. Un document certifié apparaît comme tel à quiconque le vérifie, et les modifications ultérieures qu’il n’autorise pas rendent votre signature non valide.
-   - **Lock form fields**, pour un formulaire : tous ses champs, ou ceux que vous choisissez, passent en lecture seule et gardent les valeurs que vous avez signées.
-5. Cliquez sur **Sign**.
-
-La signature enregistre le document : s’il contient des modifications non enregistrées, VectorPDF vous propose d’abord de les enregistrer. Elles font alors partie de ce que vous signez. macOS peut vous demander d’autoriser VectorPDF à utiliser la clé de votre certificat.
-
-Sauf si vous les verrouillez ou certifiez le document pour moins, la signature laisse les autres champs de formulaire du document tels quels, afin que d’autres personnes puissent encore les remplir, signer à leur tour ou ajouter des annotations sans rendre votre signature non valide. Chaque signature ultérieure est ajoutée après les précédentes de la même façon.
-
-Il s’agit d’une signature PKCS #7 avec SHA-256, qui contient votre certificat et ceux des autorités qui l’ont émis. Elle enregistre l’heure de votre Mac.
-
-Pour qu’un serveur d’horodatage garantisse le moment de votre signature, activez **Add a timestamp** et indiquez son adresse (votre organisation en a peut-être un ; il en existe de gratuits, comme celui de DigiCert, `http://timestamp.digicert.com`). Grâce à l’horodatage, votre signature peut être vérifiée telle qu’elle était au moment de la signature, même après l’expiration de votre certificat. Le serveur ne reçoit qu’une empreinte de la signature, rien du document. S’il est injoignable, rien n’est signé et le document reste tel qu’il était.
+> **Remarque :** Une [signature manuscrite](stamps.md) est une image de signature, pas une signature numérique.
 
 ## Ce que VectorPDF vérifie
 

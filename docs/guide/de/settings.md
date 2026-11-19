@@ -1,5 +1,5 @@
 <!-- keywords: Einstellungen, Optionen, Updates, Update, nach Updates suchen, Browser, Autor, Anmerkungsautor, Speicher, Speicherplatz, löschen, Daten entfernen, deinstallieren, settings, preferences, options, updates, update, check for updates, browser, author, annotation author, storage, disk space, clear, remove data, delete data, uninstall, Allgemein, Agent, Erweitert, Daten, iCloud, general, agent, advanced, data, LaTeX, SyncTeX, editor -->
-<!-- source: 8d8c6240dea0 -->
+<!-- source: 04a3f97de4ba -->
 
 # Einstellungen
 
@@ -10,7 +10,7 @@ Wähle VectorPDF > Settings oder drücke ⌘,. Die Einstellungen haben vier Tabs
 | Einstellung | Funktion |
 | --- | --- |
 | Annotation Author | Der Name, der mit deinen Anmerkungen und Antworten gesichert wird. Wenn das Feld leer ist, verwendet VectorPDF deinen Mac-Benutzernamen. |
-| Digital Stamp | Erstellt, ändert oder löscht deinen [Stempel](stamps.md). |
+| Handwritten Signature | Erstellt, ändert oder löscht das Bild deiner Unterschrift, das du auf Seiten platzierst. Siehe [Ein Dokument unterschreiben](stamps.md). |
 | PDF Color | Legt fest, [wie Seiten aussehen](pdf-colors.md): Follow System, Light, Dark oder Sepia. |
 | Open Links In | Legt den Browser für Weblinks fest. |
 | List form fields, links and destinations in the sidebar | Nimmt die [Formularfelder, Links und benannten Ziele](document-tab.md) eines Dokuments in den Tab „Document“ auf, der dann auch bei Dokumenten erscheint, die eines davon haben. Aus, bis du es einschaltest. |

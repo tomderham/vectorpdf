@@ -1,9 +1,9 @@
-<!-- keywords: sello de tiempo, servidor de sellado de tiempo, certificar, bloquear campos, firma digital, firmas digitales, firmar, firmar con certificado, certificado, llavero, firmado, firmante, certificado, certificación, válida, no válida, comprobar, verificar, confianza, identidad, sello de tiempo, manipulado, modificado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 5ae9b04ec005 -->
+<!-- keywords: comprobar firmas digitales, sello de tiempo, servidor de sellado de tiempo, certificar, bloquear campos, firma digital, firmas digitales, firmar, firmar con certificado, certificado, llavero, firmado, firmante, certificación, válida, no válida, comprobar, verificar, confianza, identidad, manipulado, modificado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
+<!-- source: 9299a883126e -->
 
-# Firmar y comprobar firmas digitales
+# Comprobar firmas digitales
 
-Una firma digital muestra quién firmó un documento y que no ha cambiado desde entonces. Puedes [firmar un PDF](#sign) con un certificado propio. Cuando abres un PDF firmado, VectorPDF comprueba sus firmas y muestra lo que ha encontrado en una barra sobre la página:
+Una firma digital muestra quién firmó un documento y que no ha cambiado desde entonces. Para firmar un PDF con un certificado propio, consulta [Firmar con un certificado](stamps.md#sign). Cuando abres un PDF firmado, VectorPDF comprueba sus firmas y muestra lo que encontró en una barra sobre la página:
 
 - **La firma es válida:** el documento no ha cambiado desde que se firmó, y el certificado del firmante lo emitió una autoridad en la que confía tu Mac.
 - **La identidad del firmante no está verificada en este Mac:** el documento no ha cambiado, pero nada garantiza quién lo firmó. Consulta [Por qué puede no estar verificada la identidad de un firmante](#signer-identity).
@@ -11,27 +11,7 @@ Una firma digital muestra quién firmó un documento y que no ha cambiado desde 
 
 Haz clic en **Signature Details** para ver cada firma en la pestaña Document de la barra lateral. Para ocultar la barra, haz clic en su botón de cerrar.
 
-> **Nota:** Un [sello](stamps.md) es una imagen de una firma, no una firma digital.
-
-## Firmar con un certificado {#sign}
-
-Para firmar necesitas un certificado de firma con su clave privada. Tu organización o una autoridad de certificación pueden darte uno, normalmente como archivo .p12 o .pfx con una contraseña. Los certificados de tu llavero se pueden usar directamente.
-
-1. Elige Edit > Sign with Certificate y arrastra un recuadro en la página donde debe ir la firma, o haz clic para uno del tamaño habitual. Pulsa Esc para dejarlo. Si el documento tiene un campo de firma vacío, puedes hacer clic en el campo y elegir Sign with Certificate.
-2. Elige tu certificado. Una vista previa muestra cómo se verá la firma. Para usar un archivo, haz clic en **Choose Certificate File** y escribe su contraseña. El archivo se lee solo para esta firma y no se añade a tu llavero.
-3. Si quieres, escribe un motivo (como “Apruebo este documento”) y el lugar donde firmas. Si has creado un [sello](stamps.md), puedes mostrar tu firma manuscrita en el campo. Si no, se muestra tu nombre.
-4. Si quieres, elige en After Signing:
-   - **Certify**, si nadie ha firmado aún el documento: indica qué cambios lo mantienen válido a partir de ahora: rellenar formularios, firmar y añadir anotaciones; rellenar formularios y firmar; o ninguno. Un documento certificado aparece como certificado para cualquiera que lo compruebe, y los cambios posteriores que no permite invalidan tu firma.
-   - **Lock form fields**, en un formulario: todos sus campos, o los que elijas, pasan a ser de solo lectura y conservan los valores que firmaste.
-5. Haz clic en **Sign**.
-
-Al firmar se guarda el documento, así que si tiene cambios sin guardar, VectorPDF te pregunta primero si quieres guardarlos. Pasan a formar parte de lo que firmas. Es posible que macOS te pida permitir que VectorPDF use la clave de tu certificado.
-
-Salvo que los bloquees o certifiques el documento para menos, la firma deja los demás campos de formulario del documento como estaban, para que otras personas puedan seguir rellenándolos, firmar también o añadir anotaciones sin invalidar tu firma. Cada firma posterior se añade después de las anteriores de la misma manera.
-
-La firma es una firma PKCS #7 con SHA-256 que incluye tu certificado y los de las autoridades que lo emitieron. Registra la hora de tu Mac.
-
-Para que un servidor de sellado de tiempo garantice cuándo firmaste, activa **Add a timestamp** e indica su dirección (tu organización puede tener uno; hay gratuitos, como el de DigiCert, `http://timestamp.digicert.com`). Con un sello de tiempo, tu firma puede comprobarse tal como era al firmar, incluso después de que caduque tu certificado. El servidor solo recibe una huella de la firma, nada del documento. Si no se puede contactar con él, no se firma nada y el documento queda como estaba.
+> **Nota:** Una [firma manuscrita](stamps.md) es una imagen de una firma, no una firma digital.
 
 ## Qué comprueba VectorPDF
 

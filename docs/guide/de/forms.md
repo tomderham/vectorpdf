@@ -1,5 +1,5 @@
 <!-- keywords: Formular, Formulare, ausfüllen, Feld, Felder, Markierungsfeld, Optionsfeld, unterschreiben, zurücksetzen, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # Formulare ausfüllen
 
@@ -8,7 +8,7 @@ VectorPDF unterstützt interaktive PDF-Formulare (AcroForms). Die Felder werden 
 - **Textfelder:** Klicke darauf und gib den Text ein.
 - **Markierungsfelder und Optionsfelder:** Klicke darauf, um sie auszuwählen.
 - **Einblendmenüs und Listen:** Klicke darauf und wähle ein Objekt aus.
-- **Unterschriftsfelder:** Klicke auf **Sign** und erstelle dann einen [Stempel](stamps.md) oder wähle einen aus.
+- **Signaturfelder:** Klicke auf **Sign** und wähle dann eine handschriftliche Unterschrift oder eine digitale Signatur. Siehe [Ein Dokument unterschreiben](stamps.md).
 
 Drücke ⌘S, um das ausgefüllte Formular zu [sichern](save.md).
 

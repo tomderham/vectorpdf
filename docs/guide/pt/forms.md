@@ -1,5 +1,5 @@
 <!-- keywords: formulário, formulários, preencher, campo, campos, caixa de seleção, botão de opção, assinar, redefinir, form, forms, fill in, fill out, AcroForm, field, fields, checkbox, radio button, sign, reset, PDF -->
-<!-- source: fdae91a03269 -->
+<!-- source: 3ce5b1293ddf -->
 
 # Preencher formulários
 
@@ -8,7 +8,7 @@ O VectorPDF funciona com formulários PDF interativos (AcroForms). Os campos apa
 - **Campos de texto:** clique e digite.
 - **Caixas de seleção e botões de opção:** clique para escolher.
 - **Menus pop-up e listas:** clique e escolha um item.
-- **Campos de assinatura:** clique em **Sign** e crie ou escolha um [carimbo](stamps.md).
+- **Campos de assinatura:** clique em **Sign** e escolha uma assinatura à mão ou uma digital. Consulte [Assinar um documento](stamps.md).
 
 Pressione ⌘S para [salvar](save.md) o formulário preenchido.
 
