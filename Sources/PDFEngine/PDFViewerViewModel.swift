@@ -537,6 +537,9 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var headingOutlineProposal: HeadingOutlineProposal? = nil
     /// Goes up when the outline is edited, for the sidebar to show it again.
     @Published public internal(set) var outlineRevision = 0
+    /// The outline entries left open when the outline last left the sidebar, for the file they're in,
+    /// so they open again when it's back.
+    var outlineOpenEntries: (file: String, entries: OutlineOpenEntries)?
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
 
     // Redaction, Callout & On-Device OCR

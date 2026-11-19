@@ -120,6 +120,11 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         )
     }
 
+    /// The outline leaves the sidebar when another tab or Thumbnails is chosen; what's open in it is kept.
+    public static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.saveOpenEntries()
+    }
+
     @MainActor
     public final class Coordinator: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
         var onSelect: (PDFOutlineNode) -> Void
@@ -137,6 +142,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         private var selectedNodeId: UUID?
         private var selectedNodePage: Int?
         private var searchWorkItem: DispatchWorkItem?
+        /// What was open before the outline was searched, to open again when the search is cleared.
+        private var openBeforeSearch: OutlineOpenEntries?
 
         init(viewModel: PDFViewerViewModel?, onSelect: @escaping (PDFOutlineNode) -> Void) {
             self.viewModel = viewModel
@@ -147,6 +154,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             let documentChanged = (documentIdentity != self.lastDocumentIdentity)
             let previousIdentity = self.lastDocumentIdentity
             let searchChanged = (searchQuery != self.lastSearchQuery)
+            let wasSearching = !(lastSearchQuery ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let pageChanged = (currentPage != self.currentPage)
             let sectionChanged = (readingSection != self.readingSection)
 
@@ -171,14 +179,30 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 let isSearching = !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 // The same document's outline, edited: what was open stays open.
                 let sameFile = previousIdentity.map { Self.file(of: $0) == Self.file(of: documentIdentity) } ?? false
-                rebuildDisplayedItems(expandAll: isSearching, scrollToActive: !sameFile, keepingOpen: sameFile && !isSearching ? openTitlePaths() : nil)
+                // Back in the sidebar: what was open when it left opens again.
+                var kept: OutlineOpenEntries?
+                if previousIdentity == nil, let saved = viewModel?.outlineOpenEntries, saved.file == Self.file(of: documentIdentity) {
+                    kept = saved.entries
+                } else if sameFile {
+                    kept = wasSearching ? openBeforeSearch : openEntries()
+                } else {
+                    openBeforeSearch = nil
+                }
+                if isSearching {
+                    openBeforeSearch = kept
+                    rebuildDisplayedItems(expandAll: true, scrollToActive: !sameFile)
+                } else {
+                    rebuildDisplayedItems(expandAll: false, scrollToActive: !sameFile, keepingOpen: kept)
+                }
             } else if searchChanged {
                 searchWorkItem?.cancel()
                 let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
-                    // Instant response when clearing search
-                    rebuildDisplayedItems(expandAll: false, scrollToActive: true)
+                    // Instant response when clearing search, with what was open before it open again
+                    rebuildDisplayedItems(expandAll: false, scrollToActive: true, keepingOpen: openBeforeSearch)
+                    openBeforeSearch = nil
                 } else {
+                    if !wasSearching { openBeforeSearch = openEntries() }
                     // 100ms debounce while user is typing
                     let workItem = DispatchWorkItem { [weak self] in
                         self?.rebuildDisplayedItems(expandAll: true, scrollToActive: false)
@@ -195,37 +219,45 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             identity.split(separator: "#").first ?? ""
         }
 
-        /// The entries that had entries inside them before an edit, by title path.
-        private var hadChildren = Set<[String]>()
+        /// Set while the outline view hasn't yet shown the entries last built, so what it has open isn't theirs.
+        private var rebuildPending = false
 
-        /// The entries open in the outline, each by its title and those of the entries it's in;
-        /// notes those with entries inside them in `hadChildren`.
-        private func openTitlePaths() -> Set<[String]> {
-            guard let outlineView else { return [] }
-            var open = Set<[String]>()
-            hadChildren = []
+        /// The entries open in the outline as it is now; only the whole outline's when it isn't filtered by a search.
+        private func openEntries() -> OutlineOpenEntries? {
+            guard let outlineView, !rebuildPending else { return nil }
+            var entries = OutlineOpenEntries()
             func visit(_ wrappers: [OutlineItemWrapper], _ titles: [String]) {
                 for wrapper in wrappers where !wrapper.children.isEmpty {
                     let path = titles + [wrapper.node.title]
-                    hadChildren.insert(path)
-                    if outlineView.isItemExpanded(wrapper) { open.insert(path) }
+                    entries.withChildren.insert(path)
+                    if outlineView.isItemExpanded(wrapper) { entries.open.insert(path) }
                     visit(wrapper.children, path)
                 }
             }
             visit(displayedWrappers, [])
-            return open
+            return entries
         }
 
-        private func rebuildDisplayedItems(expandAll: Bool, scrollToActive: Bool, keepingOpen: Set<[String]>? = nil) {
+        /// Keeps what's open in the view model while the outline is out of the sidebar.
+        func saveOpenEntries() {
+            let searching = !(lastSearchQuery ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            guard let viewModel, let identity = lastDocumentIdentity,
+                  let entries = searching ? openBeforeSearch : openEntries() else { return }
+            viewModel.outlineOpenEntries = (file: String(Self.file(of: identity)), entries: entries)
+        }
+
+        private func rebuildDisplayedItems(expandAll: Bool, scrollToActive: Bool, keepingOpen: OutlineOpenEntries? = nil) {
             let query = lastSearchQuery ?? ""
             let filteredNodes = PDFOutlineNode.filter(nodes: rawOutline, query: query)
             displayedWrappers = filteredNodes.map { OutlineItemWrapper(node: $0) }
 
             let isEmptyResult = displayedWrappers.isEmpty && !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             emptyLabel?.isHidden = !isEmptyResult
+            rebuildPending = true
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, let outlineView = self.outlineView else { return }
+                self.rebuildPending = false
                 outlineView.reloadData()
 
                 if expandAll {
@@ -242,11 +274,11 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             }
         }
 
-        /// Opens the entries in `keepingOpen`, and those just given entries inside them.
-        private func reopen(_ wrappers: [OutlineItemWrapper], titles: [String], keepingOpen: Set<[String]>, in outlineView: NSOutlineView) {
+        /// Opens the entries open in `keepingOpen`, and those given entries inside them since.
+        private func reopen(_ wrappers: [OutlineItemWrapper], titles: [String], keepingOpen: OutlineOpenEntries, in outlineView: NSOutlineView) {
             for wrapper in wrappers where !wrapper.children.isEmpty {
                 let path = titles + [wrapper.node.title]
-                if keepingOpen.contains(path) || !hadChildren.contains(path) {
+                if keepingOpen.open.contains(path) || !keepingOpen.withChildren.contains(path) {
                     outlineView.expandItem(wrapper)
                     reopen(wrapper.children, titles: path, keepingOpen: keepingOpen, in: outlineView)
                 }
@@ -714,6 +746,13 @@ extension NSPasteboard.PasteboardType {
 }
 
 /// Class wrapper around PDFOutlineNode for standard AppKit outline data source identity and parent tracking.
+/// The outline entries that are open, each by its title and those of the entries it's in.
+struct OutlineOpenEntries: Equatable {
+    var open = Set<[String]>()
+    /// The entries that had entries inside them; any given some later are new, and open.
+    var withChildren = Set<[String]>()
+}
+
 final class OutlineItemWrapper: NSObject {
     let node: PDFOutlineNode
     let children: [OutlineItemWrapper]
