@@ -167,6 +167,38 @@ import Testing
         #expect(!(marked.extractText(pageIndex: 0) ?? "").contains("機密"))
     }
 
+    /// Several files are marked in name order, Bates numbers running on from one to the next,
+    /// into copies; a file isn't saved over itself.
+    @Test func batesNumbersRunOnAcrossFiles() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let a = dir.appendingPathComponent("A.pdf"), b = dir.appendingPathComponent("B.pdf")
+        makeLabelledPDF(at: b, labels: ["One", "Two"])
+        makeLabelledPDF(at: a, labels: ["One", "Two", "Three"])
+        let before = try Data(contentsOf: a)
+        let out = dir.appendingPathComponent("Marked")
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        var settings = PageMarkSettings()
+        settings.header.texts[5] = "<<bates>>"
+        settings.bates.prefix = "ACME-"
+        settings.bates.digits = 4
+        settings.bates.start = 10
+        var steps: [Int] = []
+        let result = PageMarksBatch.mark([b, a], with: settings, into: out, progress: { steps.append($0) })
+        #expect(result.failed.isEmpty)
+        #expect(result.written.map(\.lastPathComponent) == ["A.pdf", "B.pdf"])
+        #expect(result.firstBates == "ACME-0010" && result.lastBates == "ACME-0014")
+        #expect(steps == [1, 2])
+        let markedB = try PDFDocumentCore(filePath: out.appendingPathComponent("B.pdf").path)
+        #expect(markedB.extractText(pageIndex: 0)?.contains("ACME-0013") == true)
+        #expect(markedB.extractText(pageIndex: 1)?.contains("ACME-0014") == true)
+        #expect(try Data(contentsOf: a) == before)
+
+        let same = PageMarksBatch.mark([a], with: settings, into: dir)
+        #expect(same.written.isEmpty && same.failed.count == 1)
+        #expect(try Data(contentsOf: a) == before)
+    }
+
     @Test func changingThemReplacesTheOldOnes() throws {
         let (doc, dir) = try document()
         defer { try? FileManager.default.removeItem(at: dir) }

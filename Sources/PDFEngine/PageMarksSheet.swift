@@ -133,6 +133,11 @@ struct PageMarksSheet: View {
 
             Divider()
             HStack {
+                Button("Apply to Other Files…") {
+                    viewModel.applyPageMarksToOtherFiles(settings)
+                }
+                .disabled(settings.isEmpty)
+                .help("Mark copies of other PDFs the same way, Bates numbers running on from one file to the next")
                 if hadMarks {
                     Button("Remove All") {
                         viewModel.applyPageMarks(PageMarkSettings())

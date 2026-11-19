@@ -370,6 +370,59 @@ private func withCStrings<R>(_ strings: [String], _ body: ([UnsafePointer<CChar>
     return body(pointers.map { $0.map { UnsafePointer($0) } })
 }
 
+/// Marks on several files at once, Bates numbers running on from one to the next.
+public enum PageMarksBatch {
+    public struct Result: Sendable {
+        /// The files written, in order.
+        public var written: [URL] = []
+        /// Files that couldn't be marked, with why.
+        public var failed: [(file: String, reason: String)] = []
+        /// The first and last Bates numbers used, if any pages were marked.
+        public var firstBates: String?
+        public var lastBates: String?
+    }
+
+    /// Marks each of `files`, in name order, with `settings`, writing a copy of each into
+    /// `folder` (never over the file itself); each file's Bates numbers start where the last
+    /// one's ended. `progress` is told after each file; `isCancelled` stops before the next.
+    public static func mark(_ files: [URL], with settings: PageMarkSettings, into folder: URL, date: Date = Date(),
+                            progress: (Int) -> Void = { _ in }, isCancelled: () -> Bool = { false }) -> Result {
+        var result = Result()
+        var next = settings.bates.start
+        let ordered = files.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        for (index, file) in ordered.enumerated() {
+            if isCancelled() { break }
+            defer { progress(index + 1) }
+            let destination = folder.appendingPathComponent(file.lastPathComponent)
+            guard destination.standardizedFileURL.path != file.standardizedFileURL.path else {
+                result.failed.append((file.lastPathComponent, "It would be saved over itself. Choose another folder."))
+                continue
+            }
+            do {
+                let doc = try PDFDocumentCore(filePath: file.path)
+                guard doc.isPDF else { throw PDFError.operationFailed("It isn't a PDF.") }
+                var own = settings
+                own.bates.start = next
+                // Its own marks, if it has some from VectorPDF, are replaced.
+                let marked = own.pages.indices(pageCount: doc.pageCount).count
+                try doc.applyPageMarks(own, date: date)
+                try doc.save(to: destination.path)
+                if marked > 0 {
+                    if result.firstBates == nil { result.firstBates = own.bates.number(0) }
+                    result.lastBates = own.bates.number(marked - 1)
+                }
+                next += marked
+                result.written.append(destination)
+            } catch PDFError.passwordRequired {
+                result.failed.append((file.lastPathComponent, "It needs a password."))
+            } catch {
+                result.failed.append((file.lastPathComponent, error.localizedDescription))
+            }
+        }
+        return result
+    }
+}
+
 /// Pictures of a page with marks on it, for the sheet's preview, made on a copy of the page so
 /// the document isn't changed.
 public final class PageMarksPreview: @unchecked Sendable {

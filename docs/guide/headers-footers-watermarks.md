@@ -44,6 +44,10 @@ A watermark is text or a picture. For text, type it; press Return for a second l
 - **First page marked is page:** the number Page Number gives the first page marked. The numbers go up by one for each page marked.
 - **Bates numbers:** a prefix, such as a case or company name, the number of digits, the number to start at, and a suffix. Bates numbers go up by one for each page marked, and are padded with zeros, such as ACME-000001. Insert Bates Number in a header or footer to show them.
 
+## Mark several files
+
+To number a set of documents for discovery, with Bates numbers running on from one file to the next, set up the marks, then click **Apply to Other Files**. Choose the PDFs, then a folder for the marked copies; the files themselves aren't changed. They're marked in order of their names, so name them in the order they should be numbered. When it's done, VectorPDF says which Bates numbers were used, and lists any file it couldn't mark, such as one that needs a password.
+
 ## Good to know
 
 - Headers, footers and watermarks are part of the page, not [comments](draw-and-notes.md), so they're printed and they show in other apps. They're marked as page decoration, which screen readers can skip. You can search and select their text.
