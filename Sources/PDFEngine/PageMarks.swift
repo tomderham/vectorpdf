@@ -353,6 +353,35 @@ extension PDFDocumentCore {
         return (marks, fonts, shapedWatermark)
     }
 
+    /// Headers, footers and watermarks other apps added: the pages with any, and which kinds
+    /// (header, footer, watermark) are found.
+    public func otherAppsMarks() -> (pages: [Int], header: Bool, footer: Bool, watermark: Bool) {
+        guard isPDF else { return ([], false, false, false) }
+        let found: [Int: Int32] = withLockedDocument { ctx, doc in
+            var found: [Int: Int32] = [:]
+            for page in 0..<pageCount {
+                let kinds = mupdf_page_foreign_marks(ctx, doc, Int32(page))
+                if kinds != 0 { found[page] = kinds }
+            }
+            return found
+        }
+        let all = found.values.reduce(Int32(0)) { $0 | $1 }
+        return (found.keys.sorted(), all & 1 != 0, all & 2 != 0, all & 4 != 0)
+    }
+
+    /// Takes off the headers, footers and watermarks other apps added to `pages`, leaving
+    /// VectorPDF's own.
+    public func removeOtherAppsMarks(pages: [Int]) throws {
+        try withLockedDocument { ctx, doc in
+            for page in pages {
+                var error: UnsafePointer<CChar>?
+                guard mupdf_page_remove_foreign_marks(ctx, doc, Int32(page), &error) == 0 else {
+                    throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The other app's marks can't be removed")
+                }
+            }
+        }
+    }
+
     /// The pages that have marks VectorPDF added.
     func pageMarkPages() -> Set<Int> {
         // Cheap enough to ask of every page only when there are marks at all.
@@ -455,8 +484,9 @@ public final class PageMarksPreview: @unchecked Sendable {
 
     /// The page with `settings`' marks as it would have them in the document (its own page and
     /// Bates numbers), `width` points wide; without marks if `settings` leave the page out.
-    public func image(_ settings: PageMarkSettings, width: CGFloat, date: Date = Date()) throws -> CGImage? {
+    public func image(_ settings: PageMarkSettings, width: CGFloat, removingOtherAppsMarks: Bool = false, date: Date = Date()) throws -> CGImage? {
         let doc = try PDFDocumentCore(filePath: copy.path)
+        if removingOtherAppsMarks { try doc.removeOtherAppsMarks(pages: [0]) }
         let shown = Self.settings(settings, forPage: pageIndex, of: pageCount)
         try doc.applyPageMarks(shown, date: date, pageCount: pageCount, fileName: fileName)
         guard let bounds = doc.pageBounds.first, bounds.width > 0,

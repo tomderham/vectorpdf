@@ -199,6 +199,64 @@ import Testing
         #expect(try Data(contentsOf: a) == before)
     }
 
+    /// A one-page PDF whose content has a header another app added, marked as a pagination
+    /// artifact as PDF says, and body text.
+    private func pdfWithOtherAppsHeader(at url: URL) throws {
+        let content = "/Artifact <</Type /Pagination /Subtype /Header>> BDC\nBT /F1 12 Tf 72 750 Td (Acme Draft Header) Tj ET\nEMC\nBT /F1 12 Tf 72 600 Td (The body stays) Tj ET\n"
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+            "<< /Length \(content.utf8.count) >>\nstream\n\(content)endstream",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        ]
+        var pdf = "%PDF-1.7\n"
+        var offsets: [Int] = []
+        for (i, object) in objects.enumerated() {
+            offsets.append(pdf.utf8.count)
+            pdf += "\(i + 1) 0 obj\n\(object)\nendobj\n"
+        }
+        let xref = pdf.utf8.count
+        pdf += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n" + offsets.map { String(format: "%010d 00000 n \n", $0) }.joined()
+        pdf += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
+        try Data(pdf.utf8).write(to: url)
+    }
+
+    /// Another app's header is found, shown gone in the preview, and taken off, leaving the
+    /// page's own text and VectorPDF's marks.
+    @Test func otherAppsHeadersCanBeRemoved() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Other.pdf")
+        try pdfWithOtherAppsHeader(at: url)
+        let doc = try PDFDocumentCore(filePath: url.path)
+        let found = doc.otherAppsMarks()
+        #expect(found.pages == [0] && found.header && !found.footer && !found.watermark)
+
+        var settings = PageMarkSettings()
+        settings.header.texts[4] = "Our footer"
+        try doc.applyPageMarks(settings)
+        // VectorPDF's own aren't another app's.
+        #expect(doc.otherAppsMarks().pages == [0])
+        let preview = try PageMarksPreview(document: doc, pageIndex: 0)
+        #expect(try preview.image(settings, width: 100, removingOtherAppsMarks: true) != nil)
+
+        try doc.removeOtherAppsMarks(pages: found.pages)
+        let saved = dir.appendingPathComponent("Cleaned.pdf")
+        try doc.save(to: saved.path)
+        let cleaned = try PDFDocumentCore(filePath: saved.path)
+        let text = try #require(cleaned.extractText(pageIndex: 0))
+        #expect(!text.contains("Acme Draft Header"), "\(text)")
+        #expect(text.contains("The body stays"))
+        #expect(text.contains("Our footer"))
+        #expect(cleaned.otherAppsMarks().pages.isEmpty)
+        #expect(cleaned.pageMarkKinds() == (true, false))
+        // And ours can still be changed and taken off.
+        try cleaned.applyPageMarks(PageMarkSettings())
+        #expect(!(cleaned.extractText(pageIndex: 0) ?? "").contains("Our footer"))
+        #expect((cleaned.extractText(pageIndex: 0) ?? "").contains("The body stays"))
+    }
+
     @Test func changingThemReplacesTheOldOnes() throws {
         let (doc, dir) = try document()
         defer { try? FileManager.default.removeItem(at: dir) }

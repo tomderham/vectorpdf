@@ -44,12 +44,18 @@ extension PDFViewerViewModel {
 
     /// Puts these headers, footers and watermark on the pages, in place of any VectorPDF added
     /// before; with empty settings, takes them off.
-    public func applyPageMarks(_ settings: PageMarkSettings) {
+    /// `removingOtherAppsMarks` also takes off those other apps added (see `otherAppsMarks`).
+    public func applyPageMarks(_ settings: PageMarkSettings, removingOtherAppsMarks: Bool = false) {
         guard let doc = document, !isReadOnlyDocument else { return }
         flushPendingFormEdits()
-        let changed: Set<Int>
+        var changed: Set<Int>
         do {
-            changed = try doc.applyPageMarks(settings)
+            var others: [Int] = []
+            if removingOtherAppsMarks {
+                others = doc.otherAppsMarks().pages
+                try doc.removeOtherAppsMarks(pages: others)
+            }
+            changed = try doc.applyPageMarks(settings).union(others)
         } catch {
             showErrorAlert(title: "Couldn't Change the Headers and Footers", message: error.localizedDescription)
             return

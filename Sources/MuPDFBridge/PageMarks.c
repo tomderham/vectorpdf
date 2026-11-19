@@ -786,3 +786,190 @@ int mupdf_pdf_set_page_marks_settings(fz_context *ctx, fz_document *doc, const c
     }
     return 0;
 }
+
+// MARK: Headers, footers and watermarks other apps added
+
+// They're marked content /Artifact <</Type /Pagination /Subtype /Header (or /Footer,
+// /Watermark)>> in the page's content, as PDF says they should be. Found by reading the
+// page's streams (not VectorPDF's own); taken off by filtering them, everything drawn inside
+// such marked content left out.
+
+static int foreign_kinds_in(fz_context *ctx, fz_buffer *buf) {
+    int kinds = 0;
+    unsigned char *data;
+    size_t len = fz_buffer_storage(ctx, buf, &data);
+    const char *p = (const char *)data, *end = p + len;
+    while ((p = memmem(p, end - p, "/Pagination", 11)) != NULL) {
+        // The marked content's properties, around the /Type: its /Subtype says which.
+        const char *from = p - 120 > (const char *)data ? p - 120 : (const char *)data;
+        const char *to = p + 120 < end ? p + 120 : end;
+        if (!memmem(from, to - from, "Artifact", 8)) { p += 11; continue; }
+        if (memmem(from, to - from, "/Header", 7)) kinds |= 1;
+        else if (memmem(from, to - from, "/Footer", 7)) kinds |= 2;
+        else if (memmem(from, to - from, "/Watermark", 10)) kinds |= 4;
+        else kinds |= 8;
+        p += 11;
+    }
+    return kinds;
+}
+
+int mupdf_page_foreign_marks(fz_context *ctx, fz_document *doc, int pageno) {
+    if (!ctx || !doc) return 0;
+    int kinds = 0;
+    fz_buffer *buf = NULL;
+    fz_var(buf);
+    fz_var(kinds);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (pdoc) {
+            pdf_obj *page = pdf_lookup_page_obj(ctx, pdoc, pageno);
+            pdf_obj *contents = pdf_dict_get(ctx, page, PDF_NAME(Contents));
+            int n = pdf_is_array(ctx, contents) ? pdf_array_len(ctx, contents) : 1;
+            for (int i = 0; i < n; i++) {
+                pdf_obj *stream = pdf_is_array(ctx, contents) ? pdf_array_get(ctx, contents, i) : contents;
+                if (!pdf_is_stream(ctx, stream) || mark_kind(ctx, stream)) continue;
+                buf = pdf_load_stream(ctx, stream);
+                kinds |= foreign_kinds_in(ctx, buf);
+                fz_drop_buffer(ctx, buf);
+                buf = NULL;
+            }
+        }
+    } fz_always(ctx) {
+        fz_drop_buffer(ctx, buf);
+    } fz_catch(ctx) {
+        fz_report_error(ctx);
+    }
+    return kinds;
+}
+
+typedef struct {
+    pdf_sanitize_filter_options sanitize;
+    unsigned char stack[256];
+    int depth;
+    int inside;  // how many of the marked contents open are pagination artifacts
+} vp_foreign_filter;
+
+static _Thread_local vp_foreign_filter *vp_foreign;
+static void (*vp_orig_BDC)(fz_context *, pdf_processor *, const char *, pdf_obj *, pdf_obj *);
+static void (*vp_orig_BMC)(fz_context *, pdf_processor *, const char *);
+static void (*vp_orig_EMC)(fz_context *, pdf_processor *);
+static void (*vp_orig_Do_form)(fz_context *, pdf_processor *, const char *, pdf_obj *);
+
+static void vp_foreign_push(int is) {
+    vp_foreign_filter *f = vp_foreign;
+    if (f->depth < (int)sizeof f->stack) f->stack[f->depth] = (unsigned char)is;
+    f->depth++;
+    f->inside += is;
+}
+
+static void vp_foreign_BDC(fz_context *ctx, pdf_processor *proc, const char *tag, pdf_obj *raw, pdf_obj *cooked) {
+    int is = tag && !strcmp(tag, "Artifact") && !strcmp(pdf_to_name(ctx, pdf_dict_get(ctx, cooked, PDF_NAME(Type))), "Pagination");
+    int was_inside = vp_foreign->inside > 0;
+    vp_foreign_push(is);
+    if (!was_inside && !is) __atomic_load_n(&vp_orig_BDC, __ATOMIC_ACQUIRE)(ctx, proc, tag, raw, cooked);
+}
+
+static void vp_foreign_BMC(fz_context *ctx, pdf_processor *proc, const char *tag) {
+    int was_inside = vp_foreign->inside > 0;
+    vp_foreign_push(0);
+    if (!was_inside) __atomic_load_n(&vp_orig_BMC, __ATOMIC_ACQUIRE)(ctx, proc, tag);
+}
+
+static void vp_foreign_EMC(fz_context *ctx, pdf_processor *proc) {
+    vp_foreign_filter *f = vp_foreign;
+    if (f->depth == 0) return;
+    f->depth--;
+    int is = f->depth < (int)sizeof f->stack ? f->stack[f->depth] : 0;
+    if (f->inside > 0) {
+        f->inside -= is;
+        return;
+    }
+    __atomic_load_n(&vp_orig_EMC, __ATOMIC_ACQUIRE)(ctx, proc);
+}
+
+static void vp_foreign_Do_form(fz_context *ctx, pdf_processor *proc, const char *name, pdf_obj *xobj) {
+    if (vp_foreign->inside > 0) return;
+    __atomic_load_n(&vp_orig_Do_form, __ATOMIC_ACQUIRE)(ctx, proc, name, xobj);
+}
+
+static int vp_foreign_cull(fz_context *ctx, void *opaque, fz_rect bbox, fz_cull_type type) {
+    // A clip on its own still applies to what follows.
+    if (type == FZ_CULL_CLIP_PATH_DROP) return 0;
+    return vp_foreign && vp_foreign->inside > 0;
+}
+
+static pdf_processor *vp_new_foreign_filter(fz_context *ctx, pdf_document *doc, pdf_processor *chain, int struct_parents,
+                                            fz_matrix transform, pdf_filter_options *options, void *factory_options) {
+    vp_foreign_filter *filter = factory_options;
+    pdf_processor *proc = pdf_new_sanitize_filter(ctx, doc, chain, struct_parents, transform, options, &filter->sanitize);
+    __atomic_store_n(&vp_orig_BDC, proc->op_BDC, __ATOMIC_RELEASE);
+    __atomic_store_n(&vp_orig_BMC, proc->op_BMC, __ATOMIC_RELEASE);
+    __atomic_store_n(&vp_orig_EMC, proc->op_EMC, __ATOMIC_RELEASE);
+    __atomic_store_n(&vp_orig_Do_form, proc->op_Do_form, __ATOMIC_RELEASE);
+    proc->op_BDC = vp_foreign_BDC;
+    proc->op_BMC = vp_foreign_BMC;
+    proc->op_EMC = vp_foreign_EMC;
+    proc->op_Do_form = vp_foreign_Do_form;
+    return proc;
+}
+
+int mupdf_page_remove_foreign_marks(fz_context *ctx, fz_document *doc, int pageno, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *page = NULL;
+    pdf_obj *ours = NULL;
+    fz_var(page);
+    fz_var(ours);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        if (mupdf_page_foreign_marks(ctx, doc, pageno)) {
+            page = pdf_load_page(ctx, pdoc, pageno);
+            // VectorPDF's own marks are taken off while the page is filtered, then put back.
+            pdf_obj *contents = contents_array(ctx, pdoc, page->obj);
+            ours = pdf_new_array(ctx, pdoc, 4);
+            for (int i = pdf_array_len(ctx, contents) - 1; i >= 0; i--) {
+                pdf_obj *stream = pdf_array_get(ctx, contents, i);
+                const char *kind = mark_kind(ctx, stream);
+                if (!kind) continue;
+                if (strcmp(kind, "Wrap")) pdf_array_insert(ctx, ours, stream, 0);
+                pdf_array_delete(ctx, contents, i);
+            }
+
+            vp_foreign_filter filter;
+            memset(&filter, 0, sizeof filter);
+            filter.sanitize.culler = vp_foreign_cull;
+            vp_foreign = &filter;
+            pdf_filter_factory factories[2] = { { vp_new_foreign_filter, &filter }, { NULL, NULL } };
+            pdf_filter_options options = { 0 };
+            options.filters = factories;
+            fz_try(ctx)
+                pdf_filter_page_contents(ctx, pdoc, page, &options);
+            fz_always(ctx)
+                vp_foreign = NULL;
+            fz_catch(ctx)
+                fz_rethrow(ctx);
+
+            // Ours back: behind the content, then over it with the content wrapped.
+            contents = contents_array(ctx, pdoc, page->obj);
+            int behind = 0;
+            for (int i = 0, n = pdf_array_len(ctx, ours); i < n; i++) {
+                pdf_obj *stream = pdf_array_get(ctx, ours, i);
+                if (!strcmp(mark_kind(ctx, stream), "WatermarkBehind")) pdf_array_insert(ctx, contents, stream, behind++);
+            }
+            if (pdf_array_len(ctx, ours) > behind) {
+                wrap_contents(ctx, pdoc, contents);
+                for (int i = 0, n = pdf_array_len(ctx, ours); i < n; i++) {
+                    pdf_obj *stream = pdf_array_get(ctx, ours, i);
+                    if (strcmp(mark_kind(ctx, stream), "WatermarkBehind")) pdf_array_push(ctx, contents, stream);
+                }
+            }
+        }
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, ours);
+        fz_drop_page(ctx, (fz_page *)page);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}

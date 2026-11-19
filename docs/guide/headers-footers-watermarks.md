@@ -52,5 +52,5 @@ To number a set of documents for discovery, with Bates numbers running on from o
 
 - Headers, footers and watermarks are part of the page, not [comments](draw-and-notes.md), so they're printed and they show in other apps. They're marked as page decoration, which screen readers can skip. You can search and select their text.
 - The margins are measured on the page as it's shown, so on a page that was rotated, the header is still at the top.
-- VectorPDF can change or remove only the headers, footers and watermarks it added. Those added by other apps are part of the page's content.
+- Headers, footers and watermarks added by other apps, such as Adobe Acrobat, can be taken off too, if the app marked them as such (most do): when VectorPDF finds some, **Remove them** appears under Pages & Numbers, and the preview shows the page without them. Once removed, they come back only if you revert to the saved document.
 - Adding them to a [digitally signed](digital-signatures.md) document changes what was signed, so its signatures become invalid.

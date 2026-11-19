@@ -623,6 +623,11 @@ typedef struct {
     const char *actual_text;  /* UTF-8, what the glyphs say */
 } mupdf_glyph_mark;
 int mupdf_page_add_glyph_mark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_glyph_mark *mark, const char **out_error);
+// Headers, footers and watermarks another app added to a page (its pagination artifacts):
+// bits 1 header, 2 footer, 4 watermark, 8 other; 0 for none.
+int mupdf_page_foreign_marks(fz_context *ctx, fz_document *doc, int pageno);
+// Takes them off the page, leaving VectorPDF's own.
+int mupdf_page_remove_foreign_marks(fz_context *ctx, fz_document *doc, int pageno, const char **out_error);
 // Adds an image (PNG, JPEG, …) to the document for watermarks, once; its object number.
 int mupdf_pdf_add_mark_image(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, int *out_objnum, const char **out_error);
 // A watermark of that image, `scale` of the page's width, with the watermark's opacity, angle

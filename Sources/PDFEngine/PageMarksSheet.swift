@@ -45,12 +45,16 @@ struct PageMarksSheet: View {
     /// Picture chosen as the watermark's kind, before a picture is.
     @State private var isChoosingImage = false
     @State private var previewPage = 0
+    /// Headers, footers and watermarks other apps added, and whether to take them off.
+    @State private var otherMarks: (pages: [Int], header: Bool, footer: Bool, watermark: Bool) = ([], false, false, false)
+    @State private var removeOtherMarks = false
     @State private var previewer: PageMarksPreview?
     @State private var previewImage: CGImage?
 
     private struct PreviewRequest: Equatable {
         var settings: PageMarkSettings
         var page: Int
+        var removeOthers: Bool
     }
 
     var body: some View {
@@ -91,7 +95,7 @@ struct PageMarksSheet: View {
         }
         .padding(12)
         .frame(width: 280)
-        .task(id: PreviewRequest(settings: settings, page: previewPage)) {
+        .task(id: PreviewRequest(settings: settings, page: previewPage, removeOthers: removeOtherMarks)) {
             await renderPreview()
         }
     }
@@ -100,11 +104,11 @@ struct PageMarksSheet: View {
         // Once the typing stops.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled, let doc = viewModel.document else { return }
-        let page = previewPage, settings = settings
+        let page = previewPage, settings = settings, removeOthers = removeOtherMarks
         let current = previewer?.pageIndex == page ? previewer : nil
         let result = await Task.detached(priority: .userInitiated) { () -> (PageMarksPreview?, CGImage?) in
             guard let maker = current ?? (try? PageMarksPreview(document: doc, pageIndex: page)) else { return (nil, nil) }
-            return (maker, try? maker.image(settings, width: 512))
+            return (maker, try? maker.image(settings, width: 512, removingOtherAppsMarks: removeOthers))
         }.value
         guard !Task.isCancelled else { return }
         previewer = result.0
@@ -149,11 +153,11 @@ struct PageMarksSheet: View {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button(hadMarks ? "Update" : "Add") {
-                    viewModel.applyPageMarks(settings)
+                    viewModel.applyPageMarks(settings, removingOtherAppsMarks: removeOtherMarks)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(settings.isEmpty && !hadMarks)
+                .disabled(settings.isEmpty && !hadMarks && !removeOtherMarks)
             }
             .padding(16)
         }
@@ -162,6 +166,7 @@ struct PageMarksSheet: View {
             settings = viewModel.initialPageMarkSettings()
             hadMarks = viewModel.hasPageMarks
             previewPage = min(max(0, viewModel.currentPageIndex), max(0, pageCount - 1))
+            otherMarks = viewModel.document?.otherAppsMarks() ?? ([], false, false, false)
         }
         .onChange(of: focus) { _, field in
             if let field, field != .batesPrefix, field != .batesSuffix { lastTextField = field }
@@ -313,8 +318,29 @@ struct PageMarksSheet: View {
 
     // MARK: - Pages and numbers
 
+    /// What other apps' marks were found, as "headers and footers on 12 pages".
+    private var otherMarksDescription: String {
+        var kinds: [String] = []
+        if otherMarks.header && otherMarks.footer { kinds.append("headers and footers") }
+        else if otherMarks.header { kinds.append("headers") }
+        else if otherMarks.footer { kinds.append("footers") }
+        if otherMarks.watermark { kinds.append("watermarks") }
+        if kinds.isEmpty { kinds.append("page marks") }
+        let count = otherMarks.pages.count
+        return "\(kinds.joined(separator: " and ").prefix(1).uppercased())\(kinds.joined(separator: " and ").dropFirst()) from another app on \(count == 1 ? "1 page" : "\(count) pages")"
+    }
+
     @ViewBuilder
     private var pagesAndNumbers: some View {
+        if !otherMarks.pages.isEmpty {
+            Section("Added by Another App") {
+                Toggle("Remove them", isOn: $removeOtherMarks)
+                Text("\(otherMarksDescription). The preview shows a page without them. Once removed, they can only be brought back by reverting to the saved document.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
         Section("Pages") {
             Picker("Pages", selection: $settings.pages.which) {
                 Text("All").tag(PageMarkSettings.PageChoice.Which.all)
