@@ -1,5 +1,5 @@
-<!-- keywords: 测量, 长度, 距离, 尺寸, 周长, 面积, 角度, 正交, 吸附, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 编辑, 更改, 移动, 控制点, 偏移, edit, change, move, reshape, handle, offset, 计数, 清点, 统计, 符号, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: 矩形, 圆形, 半径, 直径, 圆弧, 弧长, 测量, 长度, 距离, 尺寸, 周长, 面积, 角度, 正交, 吸附, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 编辑, 更改, 移动, 控制点, 偏移, edit, change, move, reshape, handle, offset, 计数, 清点, 统计, 符号, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # 测量长度、面积和角度，以及计数
 
@@ -14,6 +14,9 @@
 | Linear Dimension | 从一点拖移到另一点。 |
 | Perimeter | 沿路径点按每个点。按下 Return 键或连按两下以完成。 |
 | Polygon Area | 点按每个角。按下 Return 键、连按两下或点按第一个点以闭合形状。 |
+| Rectangle Area | 从一个角拖移到对角。 |
+| Circle | 从圆心拖移到边缘。标签会显示面积和直径，[状态栏](rulers-and-inspector.md)还会显示半径和周长。 |
+| Arc Length | 依次点按圆弧的起点、圆弧上的一点和终点。标签会显示沿圆弧的长度及其半径。 |
 | Vertex Angle | 点按第一条线上的一点，然后点按顶点，再点按第二条线上的一点。 |
 | Count | 在组框中输入要计数的对象，例如插座，然后逐个点按。 |
 
@@ -48,12 +51,14 @@
 
 若要选择面积，请点按它的边缘：点按其内部会选择那里的文本。
 
+更改矩形、圆形或圆弧时，其形状会保持不变：拖移矩形的角、圆的圆心或边缘，或圆弧三个点中的任意一个。它们会存储为沿其轮廓的面积或长度，因此读取 PDF 测量的其他 App 也会将其显示为测量，并给出各自对轮廓的数值（对于圆形和圆弧，与 VectorPDF 的数值相差不到 0.05%）。
+
 ## 更改测量结果的外观
 
 测量之前，请先在 Measurement 工具栏中使用颜色按钮和线宽框。选取以磅为单位的粗细，或输入 0.1 到 72 磅之间的值。新的测量结果为灰色、1.5 磅粗，除非你另行选取。VectorPDF 会记住你的选择，Markup 工具栏则保留自己的颜色和粗细。若要更改已创建的测量结果的颜色或粗细，请将其选中，然后在 Measurement 工具栏中选取颜色或粗细。粗细会存储在 PDF 中。
 
 ## 保留或移除测量结果
 
-测量结果属于注释，会在你[存储](save.md)时保存在 PDF 中。若要删除测量结果，请右键点按它，然后选取相应的删除命令，例如 Delete Dimension、Delete Area Takeoff 或 Delete Count Marker。
+测量是注释，会在你[存储](save.md)时保存在 PDF 中。若要删除测量，请右键点按它，然后选取删除命令，例如 Delete Dimension、Delete Area Takeoff、Delete Circle Measurement 或 Delete Count Marker。
 
 若要列出所有测量结果，请参阅[工程量表](takeoff.md)。

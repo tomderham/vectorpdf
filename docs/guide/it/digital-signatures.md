@@ -1,5 +1,5 @@
-<!-- keywords: firma digitale, firme digitali, firmare, firmare con certificato, certificato, portachiavi, firmato, firmatario, certificato, certificazione, valida, non valida, verificare, convalidare, attendibilità, identità, marca temporale, manomesso, modificato, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 3d32c92200ad -->
+<!-- keywords: marca temporale, server di marcatura temporale, certificare, bloccare i campi, firma digitale, firme digitali, firmare, firmare con certificato, certificato, portachiavi, firmato, firmatario, certificato, certificazione, valida, non valida, verificare, convalidare, attendibilità, identità, marca temporale, manomesso, modificato, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
+<!-- source: 5ae9b04ec005 -->
 
 # Firmare e verificare le firme digitali
 
@@ -17,16 +17,21 @@ Fai clic su **Signature Details** per vedere ogni firma nel pannello Document de
 
 Per firmare ti serve un certificato di firma con la sua chiave privata. La tua organizzazione o un’autorità di certificazione può fornirtene uno, di solito come file .p12 o .pfx con una password. I certificati nel tuo portachiavi si possono usare direttamente.
 
-1. Scegli Edit > Sign with Certificate, quindi fai clic sulla pagina nel punto in cui deve andare la firma. Premi Esc per smettere. Se il documento ha un campo firma vuoto, puoi invece fare clic sul campo e scegliere Sign with Certificate.
-2. Scegli il tuo certificato. Per usare un file, fai clic su **Choose Certificate File**, quindi digita la sua password. Il file viene letto solo per questa firma e non viene aggiunto al tuo portachiavi.
+1. Scegli Edit > Sign with Certificate, quindi trascina un riquadro sulla pagina nel punto in cui deve andare la firma, oppure fai clic per uno della dimensione abituale. Premi Esc per smettere. Se il documento ha un campo firma vuoto, puoi invece fare clic sul campo e scegliere Sign with Certificate.
+2. Scegli il tuo certificato. Un’anteprima mostra come apparirà la firma. Per usare un file, fai clic su **Choose Certificate File**, quindi digita la sua password. Il file viene letto solo per questa firma e non viene aggiunto al tuo portachiavi.
 3. Se vuoi, digita un motivo (ad esempio “Approvo questo documento”) e il luogo in cui firmi. Se hai creato un [timbro](stamps.md), puoi mostrare la tua firma autografa nel campo. Altrimenti viene mostrato il tuo nome.
-4. Fai clic su **Sign**.
+4. Se vuoi, scegli in After Signing:
+   - **Certify**, se nessuno ha ancora firmato il documento: indica quali modifiche lo lasciano valido d’ora in poi: compilare moduli, firmare e aggiungere annotazioni; compilare moduli e firmare; oppure nessuna. Un documento certificato appare come tale a chiunque lo verifichi, e le modifiche successive che non consente rendono non valida la tua firma.
+   - **Lock form fields**, per un modulo: tutti i suoi campi, o quelli che scegli, diventano di sola lettura e mantengono i valori che hai firmato.
+5. Fai clic su **Sign**.
 
 Firmare salva il documento, quindi se ci sono modifiche non salvate VectorPDF ti chiede prima di salvarle. Entrano a far parte di ciò che firmi. macOS potrebbe chiederti di consentire a VectorPDF di usare la chiave del tuo certificato.
 
-La firma lascia gli altri campi modulo del documento come erano, così altre persone possono ancora compilarli, firmare a loro volta o aggiungere annotazioni senza rendere non valida la tua firma. Ogni firma successiva viene aggiunta dopo le precedenti nello stesso modo.
+A meno che tu non li blocchi o certifichi il documento per meno, la firma lascia gli altri campi modulo del documento come erano, così altre persone possono ancora compilarli, firmare a loro volta o aggiungere annotazioni senza rendere non valida la tua firma. Ogni firma successiva viene aggiunta dopo le precedenti nello stesso modo.
 
-La firma è una firma PKCS #7 con SHA-256 che contiene il tuo certificato e quelli delle autorità che lo hanno emesso. Registra l’ora del tuo Mac. Non ha ancora una marca temporale di un’autorità di marcatura temporale.
+La firma è una firma PKCS #7 con SHA-256 che contiene il tuo certificato e quelli delle autorità che lo hanno emesso. Registra l’ora del tuo Mac.
+
+Perché un server di marcatura temporale garantisca quando hai firmato, attiva **Add a timestamp** e indica il suo indirizzo (la tua organizzazione potrebbe averne uno; ne esistono di gratuiti, come quello di DigiCert, `http://timestamp.digicert.com`). Con una marca temporale, la tua firma può essere verificata com’era al momento della firma, anche dopo la scadenza del tuo certificato. Il server riceve solo un’impronta della firma, nulla del documento. Se non è raggiungibile, non viene firmato nulla e il documento resta com’era.
 
 ## Cosa verifica VectorPDF
 
@@ -35,7 +40,7 @@ Per ogni firma, l’elenco nel pannello Document mostra:
 - Se le parti del file che ha firmato sono esattamente come quando sono state firmate.
 - Se il file è stato salvato di nuovo dopo la firma, e se quelle modifiche sono tra quelle che la firma consente. Compilare campi modulo, aggiungere firme e aggiungere o modificare annotazioni di solito è consentito. Una firma di certificazione può consentire meno modifiche. Se dopo la firma sono state aggiunte annotazioni, l’elenco lo indica: un’annotazione può coprire ciò che è stato firmato.
 - Chi l’ha firmata, con il nome nel suo certificato, e chi ha emesso il certificato. Viene mostrato anche il nome che il software di firma ha scritto nel documento, quando è diverso.
-- Quando è stata firmata. Un’ora fornita da un’autorità di marcatura temporale è garantita. Un’ora presa dal computer del firmatario no.
+- Quando è stata firmata. Un’ora fornita da un’autorità di marcatura temporale è garantita se la marca è di questa firma e il tuo Mac si fida della sua autorità; altrimenti l’elenco indica perché non conta. Un’ora presa dal computer del firmatario non è garantita.
 - Il motivo e il luogo indicati dal firmatario, se presenti.
 
 Fai clic su una firma per andare a essa nella pagina. Per vederne i certificati, fai clic su **Show Certificate**, oppure fai clic con il tasto destro sulla firma e scegli Show Certificate.

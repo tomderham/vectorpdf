@@ -1,5 +1,5 @@
-<!-- keywords: firma digital, firmas digitales, firmar, firmar con certificado, certificado, llavero, firmado, firmante, certificado, certificación, válida, no válida, comprobar, verificar, confianza, identidad, sello de tiempo, manipulado, modificado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 3d32c92200ad -->
+<!-- keywords: sello de tiempo, servidor de sellado de tiempo, certificar, bloquear campos, firma digital, firmas digitales, firmar, firmar con certificado, certificado, llavero, firmado, firmante, certificado, certificación, válida, no válida, comprobar, verificar, confianza, identidad, sello de tiempo, manipulado, modificado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
+<!-- source: 5ae9b04ec005 -->
 
 # Firmar y comprobar firmas digitales
 
@@ -17,16 +17,21 @@ Haz clic en **Signature Details** para ver cada firma en la pestaña Document de
 
 Para firmar necesitas un certificado de firma con su clave privada. Tu organización o una autoridad de certificación pueden darte uno, normalmente como archivo .p12 o .pfx con una contraseña. Los certificados de tu llavero se pueden usar directamente.
 
-1. Elige Edit > Sign with Certificate y haz clic en el lugar de la página donde debe ir la firma. Pulsa Esc para dejarlo. Si el documento tiene un campo de firma vacío, puedes hacer clic en el campo y elegir Sign with Certificate.
-2. Elige tu certificado. Para usar un archivo, haz clic en **Choose Certificate File** y escribe su contraseña. El archivo se lee solo para esta firma y no se añade a tu llavero.
+1. Elige Edit > Sign with Certificate y arrastra un recuadro en la página donde debe ir la firma, o haz clic para uno del tamaño habitual. Pulsa Esc para dejarlo. Si el documento tiene un campo de firma vacío, puedes hacer clic en el campo y elegir Sign with Certificate.
+2. Elige tu certificado. Una vista previa muestra cómo se verá la firma. Para usar un archivo, haz clic en **Choose Certificate File** y escribe su contraseña. El archivo se lee solo para esta firma y no se añade a tu llavero.
 3. Si quieres, escribe un motivo (como “Apruebo este documento”) y el lugar donde firmas. Si has creado un [sello](stamps.md), puedes mostrar tu firma manuscrita en el campo. Si no, se muestra tu nombre.
-4. Haz clic en **Sign**.
+4. Si quieres, elige en After Signing:
+   - **Certify**, si nadie ha firmado aún el documento: indica qué cambios lo mantienen válido a partir de ahora: rellenar formularios, firmar y añadir anotaciones; rellenar formularios y firmar; o ninguno. Un documento certificado aparece como certificado para cualquiera que lo compruebe, y los cambios posteriores que no permite invalidan tu firma.
+   - **Lock form fields**, en un formulario: todos sus campos, o los que elijas, pasan a ser de solo lectura y conservan los valores que firmaste.
+5. Haz clic en **Sign**.
 
 Al firmar se guarda el documento, así que si tiene cambios sin guardar, VectorPDF te pregunta primero si quieres guardarlos. Pasan a formar parte de lo que firmas. Es posible que macOS te pida permitir que VectorPDF use la clave de tu certificado.
 
-La firma deja los demás campos de formulario del documento como estaban, para que otras personas puedan seguir rellenándolos, firmar también o añadir anotaciones sin invalidar tu firma. Cada firma posterior se añade después de las anteriores de la misma manera.
+Salvo que los bloquees o certifiques el documento para menos, la firma deja los demás campos de formulario del documento como estaban, para que otras personas puedan seguir rellenándolos, firmar también o añadir anotaciones sin invalidar tu firma. Cada firma posterior se añade después de las anteriores de la misma manera.
 
-La firma es una firma PKCS #7 con SHA-256 que incluye tu certificado y los de las autoridades que lo emitieron. Registra la hora de tu Mac. Todavía no lleva un sello de tiempo de una autoridad de sellado de tiempo.
+La firma es una firma PKCS #7 con SHA-256 que incluye tu certificado y los de las autoridades que lo emitieron. Registra la hora de tu Mac.
+
+Para que un servidor de sellado de tiempo garantice cuándo firmaste, activa **Add a timestamp** e indica su dirección (tu organización puede tener uno; hay gratuitos, como el de DigiCert, `http://timestamp.digicert.com`). Con un sello de tiempo, tu firma puede comprobarse tal como era al firmar, incluso después de que caduque tu certificado. El servidor solo recibe una huella de la firma, nada del documento. Si no se puede contactar con él, no se firma nada y el documento queda como estaba.
 
 ## Qué comprueba VectorPDF
 
@@ -35,7 +40,7 @@ Para cada firma, la lista de la pestaña Document muestra:
 - Si las partes del archivo que firmó están exactamente como cuando se firmaron.
 - Si el archivo se volvió a guardar después de firmarse y si esos cambios son de los que la firma permite. Rellenar campos de formulario, añadir firmas y añadir o cambiar anotaciones suele estar permitido. Una firma de certificación puede permitir menos cambios. Si se añadieron anotaciones después de firmar, la lista lo indica: una anotación puede tapar lo que se firmó.
 - Quién la firmó, por el nombre de su certificado, y quién emitió el certificado. También se muestra el nombre que el software de firma escribió en el documento cuando es distinto.
-- Cuándo se firmó. Una hora de una autoridad de sellado de tiempo está garantizada. Una hora del propio ordenador del firmante no lo está.
+- Cuándo se firmó. Una hora de una autoridad de sellado de tiempo está garantizada si el sello es de esta firma y tu Mac confía en su autoridad; si no, la lista indica por qué no cuenta. Una hora del propio ordenador del firmante no está garantizada.
 - El motivo y el lugar que indicó el firmante, si los hay.
 
 Haz clic en una firma para ir a ella en la página. Para ver sus certificados, haz clic en **Show Certificate**, o haz clic con el botón derecho en ella y elige Show Certificate.

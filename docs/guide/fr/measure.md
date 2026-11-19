@@ -1,5 +1,5 @@
-<!-- keywords: mesurer, mesure, mesures, longueur, cote, périmètre, surface, aire, orthogonal, magnétisme, accrochage, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, modifier, déplacer, poignée, décalage, edit, change, move, reshape, handle, offset, compter, comptage, décompte, symboles, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: rectangle, cercle, rayon, diamètre, arc, longueur d’arc, mesurer, mesure, mesures, longueur, cote, périmètre, surface, aire, orthogonal, magnétisme, accrochage, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, modifier, déplacer, poignée, décalage, edit, change, move, reshape, handle, offset, compter, comptage, décompte, symboles, count, counting, tally, symbols, circle, radius, diameter, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # Mesurer des longueurs, des surfaces et des angles, et compter
 
@@ -14,6 +14,9 @@ Pour plus de précision, zoomez avant de mesurer. Appuyez sur Escape pour annule
 | Linear Dimension | Faites glisser le pointeur d’un point à l’autre. |
 | Perimeter | Cliquez sur chaque point du tracé. Appuyez sur Return ou double-cliquez pour terminer. |
 | Polygon Area | Cliquez sur chaque angle. Appuyez sur Return, double-cliquez ou cliquez sur le premier point pour fermer la forme. |
+| Rectangle Area | Faites glisser d’un coin au coin opposé. |
+| Circle | Faites glisser du centre jusqu’au bord. L’étiquette indique l’aire et le diamètre, et la [barre d’état](rulers-and-inspector.md) indique aussi le rayon et la circonférence. |
+| Arc Length | Cliquez au début de l’arc, sur un point de l’arc, puis à sa fin. L’étiquette indique la longueur le long de l’arc et son rayon. |
 | Vertex Angle | Cliquez sur un point de la première ligne, puis sur le sommet, puis sur un point de la seconde ligne. |
 | Count | Saisissez ce que vous comptez dans la case de groupe, par exemple Prises, puis cliquez sur chacun. |
 
@@ -48,12 +51,14 @@ La valeur est recalculée pendant que vous faites glisser. Faites glisser au-del
 
 Pour sélectionner une surface, cliquez sur son bord : un clic à l’intérieur sélectionne le texte qui s’y trouve.
 
+Un rectangle, un cercle ou un arc garde sa forme quand vous le modifiez : faites glisser un coin du rectangle, le centre ou le bord du cercle, ou l’un des trois points de l’arc. Ils sont enregistrés comme une aire ou une longueur suivant leur contour : les autres apps qui lisent les mesures PDF les affichent donc aussi comme des mesures, avec leurs propres valeurs pour le contour (à moins de 0,05 % de celles de VectorPDF pour un cercle ou un arc).
+
 ## Modifier l’apparence des mesures
 
 Utilisez le bouton de couleur et la case d’épaisseur de la barre d’outils Measurement avant de mesurer. Choisissez une épaisseur en points, ou saisissez-en une, de 0,1 à 72 points. Les nouvelles mesures sont grises, de 1,5 point d’épaisseur, tant que vous ne choisissez pas autre chose. VectorPDF mémorise votre choix, et la barre Markup garde ses propres couleurs et épaisseurs. Pour changer la couleur ou l’épaisseur d’une mesure déjà faite, sélectionnez-la, puis choisissez une couleur ou une épaisseur dans la barre Measurement. L’épaisseur est enregistrée dans le PDF.
 
 ## Conserver ou supprimer des mesures
 
-Les mesures sont des annotations, enregistrées dans le PDF lorsque vous [enregistrez](save.md). Pour en supprimer une, cliquez dessus avec le bouton droit, puis choisissez la commande de suppression, comme Delete Dimension, Delete Area Takeoff ou Delete Count Marker.
+Les mesures sont des annotations, enregistrées dans le PDF lorsque vous l’[enregistrez](save.md). Pour en supprimer une, cliquez dessus avec le bouton droit, puis choisissez la commande de suppression, par exemple Delete Dimension, Delete Area Takeoff, Delete Circle Measurement ou Delete Count Marker.
 
 Pour obtenir la liste de toutes vos mesures, consultez le [tableau de métré](takeoff.md).

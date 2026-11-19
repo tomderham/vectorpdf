@@ -1,5 +1,5 @@
-<!-- keywords: modifier le plan, ajouter un signet, plan à partir des titres, titres, créer une table des matières, renommer, mettre en retrait, plan, table des matières, sommaire, signets, vignette, vignettes, barre latérale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: vérifier les titres, modifier le plan, ajouter un signet, plan à partir des titres, titres, créer une table des matières, renommer, mettre en retrait, plan, table des matières, sommaire, signets, vignette, vignettes, barre latérale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # Plan et vignettes
 
@@ -31,15 +31,15 @@ Pour le reste, cliquez avec le bouton droit sur une entrée :
 | La placer dans l’entrée au-dessus, ou la sortir de celle où elle se trouve | Indent ou Outdent |
 | La supprimer, avec les entrées qu’elle contient | Delete Entry |
 
-Vous pouvez aussi faire glisser une entrée pour la déplacer, ou la déposer sur une autre entrée pour la placer à l’intérieur. Les entrées qu’elle contient se déplacent avec elle. Tant que le plan est filtré par le champ « Search outline », les entrées ne peuvent pas être modifiées. Edit > Undo (⌘Z) annule les modifications du plan, une à une.
+Vous pouvez aussi faire glisser une entrée pour la déplacer, ou la déposer sur une autre entrée pour la placer à l’intérieur. Les entrées qu’elle contient se déplacent avec elle. Tant que le plan est filtré par le champ « Search outline », les entrées ne peuvent pas être déplacées : Move Up, Move Down, Indent et Outdent ne figurent pas dans le menu et les entrées ne peuvent pas être glissées ; les autres commandes fonctionnent. Edit > Undo (⌘Z) annule les modifications du plan, une à une.
 
 ### Créer un plan à partir des titres
 
-Choisissez Edit > Build Outline from Headings pour créer en une seule étape un plan à partir des titres du document. La commande se trouve aussi dans le menu contextuel d’une entrée du plan. Si le document a déjà un plan, une confirmation vous est demandée avant qu’il soit remplacé ; Edit > Undo le rétablit.
+Choisissez Edit > Build Outline from Headings pour créer un plan à partir des titres du document. La commande se trouve aussi dans le menu contextuel d’une entrée du plan. Une liste des titres trouvés s’ouvre d’abord : décochez ceux qui n’en sont pas, cliquez sur un titre pour le modifier, et utilisez les boutons de retrait pour monter ou descendre un titre d’un niveau. Cliquez sur la flèche à côté d’un titre pour le voir sur la page. Cliquez ensuite sur **Create Outline**, ou sur **Replace Outline** si le document a déjà un plan ; Edit > Undo rétablit l’ancien plan.
 
 Dans un PDF balisé, les titres sont ceux que marquent ses balises. Dans les autres PDF, VectorPDF recherche les lignes qui se distinguent du corps du texte : plus grandes, ou en gras là où le texte ne l’est pas. Un style plus grand correspond à un niveau plus élevé qu’un style plus petit, et les numéros de section comme 3.2.1 donnent les niveaux au sein d’un même style. Les en-têtes et pieds de page courants, les légendes de figures et de tableaux et les lignes d’une table des matières sont ignorés.
 
-Vérifiez le résultat : les styles d’un document n’indiquent pas toujours quelles lignes sont des titres. Renommez, déplacez ou supprimez les entrées comme indiqué ci-dessus. Les titres des pages numérisées ne sont pas trouvés, même une fois leur texte reconnu.
+Les styles d’un document n’indiquent pas toujours quelles lignes sont des titres : vérifiez donc la liste. Les titres des pages numérisées ne sont pas trouvés, même une fois leur texte reconnu. Dans certains PDF balisés, les numéros de section sont dessinés de façon à ne pas faire partie du texte, et les entrées n’en ont pas.
 
 ## Vignettes
 

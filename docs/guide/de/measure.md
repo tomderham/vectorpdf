@@ -1,5 +1,5 @@
-<!-- keywords: messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset, zählen, Zählung, Strichliste, Symbole, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: Rechteck, Kreis, Radius, Durchmesser, Bogen, Bogenlänge, messen, Messung, Messungen, Länge, Abstand, Maß, Umfang, Fläche, Winkel, Einrasten, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, bearbeiten, ändern, verschieben, Ziehpunkt, Versatz, edit, change, move, reshape, handle, offset, zählen, Zählung, Strichliste, Symbole, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # Längen, Flächen und Winkel messen und zählen
 
@@ -14,6 +14,9 @@ Zoome für mehr Genauigkeit in die Zeichnung, bevor du misst. Mit der Escape-Tas
 | Linear Dimension | Ziehe von einem Punkt zum anderen. |
 | Perimeter | Klicke auf jeden Punkt entlang des Pfads. Drücke zum Abschließen die Return-Taste oder doppelklicke. |
 | Polygon Area | Klicke auf jede Ecke. Drücke die Return-Taste, doppelklicke oder klicke auf den ersten Punkt, um die Form zu schließen. |
+| Rectangle Area | Ziehe von einer Ecke zur gegenüberliegenden. |
+| Circle | Ziehe von der Mitte zum Rand. Das Etikett zeigt die Fläche und den Durchmesser, und die [Statusleiste](rulers-and-inspector.md) zeigt auch Radius und Umfang. |
+| Arc Length | Klicke auf den Anfang des Bogens, auf einen Punkt darauf und dann auf sein Ende. Das Etikett zeigt die Länge entlang des Bogens und seinen Radius. |
 | Vertex Angle | Klicke auf einen Punkt der ersten Linie, dann auf die Ecke und dann auf einen Punkt der zweiten Linie. |
 | Count | Gib im Gruppenfeld ein, was du zählst, etwa Steckdosen, und klicke dann auf jedes Exemplar. |
 
@@ -48,12 +51,14 @@ Der Wert wird beim Ziehen neu berechnet. Ziehe über den Fensterrand hinaus, um 
 
 Um eine Fläche auszuwählen, klicke auf ihren Rand: Ein Klick in die Fläche wählt den Text dort aus.
 
+Ein Rechteck, Kreis oder Bogen behält seine Form, wenn du ihn änderst: Ziehe eine Ecke des Rechtecks, die Mitte oder den Rand des Kreises oder einen der drei Punkte des Bogens. Sie werden als Fläche oder Länge entlang ihres Umrisses gesichert, sodass andere Apps, die PDF-Messungen lesen, sie ebenfalls als Messungen zeigen, mit eigenen Werten für den Umriss (bei Kreis und Bogen bis auf 0,05 % die von VectorPDF).
+
 ## Das Aussehen von Messungen ändern
 
 Verwende vor dem Messen die Farbtaste und das Feld für die Linienstärke in der Symbolleiste „Measurement“. Wähle eine Stärke in Punkt oder gib eine ein, von 0,1 bis 72 Punkt. Neue Messungen sind grau und 1,5 Punkt stark, bis du etwas anderes wählst. VectorPDF merkt sich deine Wahl, und die Symbolleiste „Markup“ behält ihre eigenen Farben und Stärken. Um die Farbe oder Stärke einer bereits erstellten Messung zu ändern, wähle sie aus und wähle dann in der Symbolleiste „Measurement“ eine Farbe oder Stärke. Die Stärke wird im PDF gesichert.
 
 ## Messungen behalten oder entfernen
 
-Messungen sind Anmerkungen, die beim [Sichern](save.md) im PDF gespeichert werden. Um eine Messung zu löschen, klicke mit der rechten Maustaste darauf und wähle dann den Löschbefehl, zum Beispiel „Delete Dimension“, „Delete Area Takeoff“ oder „Delete Count Marker“.
+Messungen sind Anmerkungen, die im PDF gespeichert werden, wenn du [sicherst](save.md). Um eine zu löschen, klicke mit der rechten Maustaste darauf und wähle den Befehl zum Löschen, etwa Delete Dimension, Delete Area Takeoff, Delete Circle Measurement oder Delete Count Marker.
 
 Eine Liste aller deiner Messungen findest du in der [Takeoff-Tabelle](takeoff.md).

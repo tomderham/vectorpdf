@@ -1,5 +1,5 @@
-<!-- keywords: editar sumário, adicionar marcador, sumário a partir dos títulos, títulos, criar índice, renomear, recuar, sumário, índice, conteúdo, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: conferir títulos, editar sumário, adicionar marcador, sumário a partir dos títulos, títulos, criar índice, renomear, recuar, sumário, índice, conteúdo, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # Sumário e miniaturas
 
@@ -31,15 +31,15 @@ Para todo o resto, clique com o botão direito em uma entrada:
 | Colocá-la dentro da entrada acima ou tirá-la da entrada em que está | Indent ou Outdent |
 | Apagá-la, com as entradas que estão dentro dela | Delete Entry |
 
-Você também pode arrastar uma entrada para movê-la, ou soltá-la sobre outra entrada para colocá-la dentro. As entradas dentro dela se movem junto. Enquanto o sumário está filtrado pelo campo “Search outline”, as entradas não podem ser editadas. Edit > Undo (⌘Z) desfaz as alterações no sumário, uma de cada vez.
+Você também pode arrastar uma entrada para movê-la, ou soltá-la sobre outra entrada para colocá-la dentro. As entradas dentro dela se movem junto. Enquanto o sumário está filtrado pelo campo “Search outline”, as entradas não podem ser movidas: Move Up, Move Down, Indent e Outdent não aparecem no menu e as entradas não podem ser arrastadas; os outros comandos funcionam. Edit > Undo (⌘Z) desfaz as alterações no sumário, uma de cada vez.
 
 ### Criar um sumário a partir dos títulos
 
-Escolha Edit > Build Outline from Headings para criar em uma só etapa um sumário com os títulos do documento. O comando também está no menu de contexto de uma entrada do sumário. Se o documento já tem um sumário, você é perguntado antes de ele ser substituído; Edit > Undo o traz de volta.
+Escolha Edit > Build Outline from Headings para criar um sumário com os títulos do documento. O comando também está no menu de contexto de uma entrada do sumário. Primeiro abre uma lista dos títulos encontrados: desmarque os que não forem títulos, clique em um título para alterá-lo e use os botões de recuo para subir ou descer um título de nível. Clique na seta ao lado de um título para vê-lo na página. Depois clique em **Create Outline**, ou em **Replace Outline** se o documento já tiver um; Edit > Undo traz de volta o sumário anterior.
 
 Em um PDF com tags, os títulos são os marcados pelas tags. Em outros PDFs, o VectorPDF procura linhas que se destacam do texto: maiores, ou em negrito onde o texto não está. Um estilo maior é um nível mais alto que um menor, e números de seção como 3.2.1 dão os níveis dentro de um mesmo estilo. Cabeçalhos e rodapés repetidos, legendas de figuras e tabelas e as linhas de um índice são deixados de fora.
 
-Confira o resultado: os estilos de um documento nem sempre dizem quais linhas são títulos. Renomeie, mova ou apague entradas como descrito acima. Títulos em páginas digitalizadas não são encontrados, mesmo depois que o texto delas é reconhecido.
+Os estilos de um documento nem sempre dizem quais linhas são títulos, então confira a lista. Títulos em páginas digitalizadas não são encontrados, mesmo depois que o texto delas é reconhecido. Em alguns PDFs com tags, os números de seção são desenhados de modo a não fazer parte do texto, e as entradas ficam sem eles.
 
 ## Miniaturas
 

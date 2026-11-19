@@ -1,5 +1,5 @@
-<!-- keywords: editar esquema, añadir marcador, esquema a partir de encabezados, encabezados, crear índice, cambiar nombre, sangrar, esquema, tabla de contenido, índice, contenido, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: revisar encabezados, editar esquema, añadir marcador, esquema a partir de encabezados, encabezados, crear índice, cambiar nombre, sangrar, esquema, tabla de contenido, índice, contenido, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # Esquema y miniaturas
 
@@ -31,15 +31,15 @@ Para todo lo demás, haz clic con el botón derecho en una entrada:
 | Ponerla dentro de la entrada de arriba o sacarla de la entrada en la que está | Indent o Outdent |
 | Eliminarla, con las entradas que contiene | Delete Entry |
 
-También puedes arrastrar una entrada para moverla, o soltarla sobre otra entrada para ponerla dentro. Las entradas que contiene se mueven con ella. Mientras el esquema está filtrado con el campo “Search outline”, no se pueden editar las entradas. Edit > Undo (⌘Z) deshace los cambios del esquema de uno en uno.
+También puedes arrastrar una entrada para moverla, o soltarla sobre otra entrada para ponerla dentro. Las entradas que contiene se mueven con ella. Mientras el esquema está filtrado con el campo “Search outline”, las entradas no se pueden mover: Move Up, Move Down, Indent y Outdent no aparecen en el menú y no se pueden arrastrar; los demás comandos funcionan. Edit > Undo (⌘Z) deshace los cambios del esquema de uno en uno.
 
 ### Crear un esquema a partir de los encabezados
 
-Elige Edit > Build Outline from Headings para crear en un solo paso un esquema con los encabezados del documento. También está en el menú contextual de una entrada del esquema. Si el documento ya tiene un esquema, se te pregunta antes de sustituirlo; Edit > Undo lo recupera.
+Elige Edit > Build Outline from Headings para crear un esquema con los encabezados del documento. También está en el menú contextual de una entrada del esquema. Primero se abre una lista de los encabezados encontrados: desmarca los que no lo sean, haz clic en un título para cambiarlo y usa los botones de sangría para subir o bajar un encabezado de nivel. Haz clic en la flecha junto a un encabezado para verlo en la página. Después haz clic en **Create Outline**, o en **Replace Outline** si el documento ya tiene uno; Edit > Undo recupera el esquema anterior.
 
 En un PDF etiquetado, los encabezados son los que marcan sus etiquetas. En otros PDF, VectorPDF busca líneas que se distinguen del texto: más grandes, o en negrita donde el texto no lo está. Un estilo más grande es un nivel más alto que uno más pequeño, y los números de sección como 3.2.1 dan los niveles dentro de un mismo estilo. Se omiten los encabezados y pies de página repetidos, los pies de figuras y tablas y las líneas de un índice.
 
-Revisa el resultado: los estilos de un documento no siempre indican qué líneas son encabezados. Cambia el nombre de las entradas, muévelas o elimínalas como se explica arriba. No se encuentran los encabezados de las páginas escaneadas, ni siquiera cuando se ha reconocido su texto.
+Los estilos de un documento no siempre indican qué líneas son encabezados, así que revisa la lista. No se encuentran los encabezados de las páginas escaneadas, ni siquiera cuando se ha reconocido su texto. En algunos PDF etiquetados, los números de sección se dibujan de forma que no forman parte del texto, y las entradas salen sin ellos.
 
 ## Miniaturas
 

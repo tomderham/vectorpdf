@@ -1,5 +1,5 @@
-<!-- keywords: medir, medición, mediciones, medida, medidas, longitud, distancia, cota, dimensión, perímetro, área, ángulo, orto, ajuste, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, cambiar, mover, tirador, desplazamiento, edit, change, move, reshape, handle, offset, contar, recuento, conteo, símbolos, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: rectángulo, círculo, radio, diámetro, arco, longitud de arco, medir, medición, mediciones, medida, medidas, longitud, distancia, cota, dimensión, perímetro, área, ángulo, orto, ajuste, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, cambiar, mover, tirador, desplazamiento, edit, change, move, reshape, handle, offset, contar, recuento, conteo, símbolos, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # Medir longitudes, áreas y ángulos, y contar
 
@@ -14,6 +14,9 @@ Amplía la vista antes de medir para ganar precisión. Al pulsar Escape se cance
 | Linear Dimension | Arrastra de un punto al otro. |
 | Perimeter | Haz clic en cada punto del recorrido. Pulsa Return o haz doble clic para terminar. |
 | Polygon Area | Haz clic en cada esquina. Pulsa Return, haz doble clic o haz clic en el primer punto para cerrar la forma. |
+| Rectangle Area | Arrastra de una esquina a la opuesta. |
+| Circle | Arrastra del centro al borde. La etiqueta muestra el área y el diámetro, y la [barra de estado](rulers-and-inspector.md) muestra también el radio y la circunferencia. |
+| Arc Length | Haz clic donde empieza el arco, en un punto del arco y donde termina. La etiqueta muestra la longitud a lo largo del arco y su radio. |
 | Vertex Angle | Haz clic en un punto de la primera línea, luego en la esquina y después en un punto de la segunda línea. |
 | Count | Escribe lo que cuentas en el cuadro de grupo, como Enchufes, y haz clic en cada uno. |
 
@@ -48,12 +51,14 @@ El valor se vuelve a calcular mientras arrastras. Arrastra más allá del borde 
 
 Para seleccionar un área, haz clic en su borde: al hacer clic dentro se selecciona el texto que hay ahí.
 
+Un rectángulo, círculo o arco conserva su forma al cambiarlo: arrastra una esquina del rectángulo, el centro o el borde del círculo, o cualquiera de los tres puntos del arco. Se guardan como un área o una longitud a lo largo de su contorno, así que otras apps que leen mediciones PDF también los muestran como mediciones, con sus propias cifras para el contorno (a menos del 0,05 % de las de VectorPDF en un círculo o un arco).
+
 ## Cambiar el aspecto de las mediciones
 
 Usa el botón de color y el cuadro de grosor de línea de la barra de herramientas Measurement antes de medir. Elige un grosor en puntos o escribe uno, de 0,1 a 72 puntos. Las mediciones nuevas son grises, de 1,5 puntos, hasta que elijas otra cosa. VectorPDF recuerda lo que eliges, y la barra Markup conserva sus propios colores y grosores. Para cambiar el color o el grosor de una medición que ya has hecho, selecciónala y elige un color o grosor en la barra Measurement. El grosor se guarda en el PDF.
 
 ## Conservar o eliminar mediciones
 
-Las mediciones son anotaciones que se guardan en el PDF al [guardarlo](save.md). Para eliminar una, haz clic en ella con el botón derecho y elige el comando de eliminación, como Delete Dimension, Delete Area Takeoff o Delete Count Marker.
+Las mediciones son anotaciones que se guardan en el PDF cuando lo [guardas](save.md). Para eliminar una, haz clic con el botón derecho en ella y elige el comando de eliminar, como Delete Dimension, Delete Area Takeoff, Delete Circle Measurement o Delete Count Marker.
 
 Para ver una lista de todas tus mediciones, consulta la [tabla de mediciones](takeoff.md).

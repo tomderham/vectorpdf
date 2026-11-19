@@ -1,9 +1,9 @@
-<!-- keywords: 머리말, 꼬리말, 머리글, 바닥글, 페이지 번호, 페이지 번호 매기기, 베이츠, 베이츠 번호, 워터마크, 초안, 기밀, 법률, header, headers, footer, footers, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF -->
-<!-- source: 7e05ab7492d9 -->
+<!-- keywords: 로고, 그림 워터마크, 여러 파일, 중국어, 힌디어, 아랍어, 머리말, 꼬리말, 머리글, 바닥글, 페이지 번호, 페이지 번호 매기기, 베이츠, 베이츠 번호, 워터마크, 초안, 기밀, 법률, header, headers, footer, footers, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF, Chinese, Japanese, Korean, Hindi, Arabic, any language, logo, picture watermark, image watermark -->
+<!-- source: 05436b7b8113 -->
 
 # 머리말, 꼬리말, 베이츠 번호 및 워터마크
 
-페이지의 위와 아래에 제목, 페이지 번호, 베이츠 번호 같은 텍스트를 넣고, 페이지 전체에 초안이나 기밀 같은 워터마크를 넣을 수 있습니다. Edit > Headers, Footers and Watermark를 선택하고 원하는 부분을 채운 다음 **Add**를 클릭합니다.
+페이지의 위와 아래에 제목, 페이지 번호, 베이츠 번호 같은 텍스트를 넣고, 페이지 전체에 초안이나 기밀 같은 워터마크를 넣을 수 있습니다. Edit > Headers, Footers and Watermark를 선택하고 원하는 부분을 채운 다음 **Add**를 클릭합니다. 설정 옆의 미리 보기에는 읽고 있는 페이지가 해당 페이지의 페이지 번호와 베이츠 번호와 함께 완성된 모습으로 표시됩니다. 아래의 화살표로 다른 페이지를 볼 수 있습니다.
 
 VectorPDF는 선택한 내용을 문서에 보관하므로, 나중에 머리말, 꼬리말, 워터마크를 변경하거나 제거할 수 있습니다. Edit > Headers, Footers and Watermark를 다시 선택하고 변경한 다음 **Update**를 클릭합니다. 모두 제거하려면 **Remove All**을 클릭합니다.
 
@@ -27,9 +27,11 @@ VectorPDF는 선택한 내용을 문서에 보관하므로, 나중에 머리말,
 
 텍스트의 서체, 크기, 색상과 여백, 즉 머리말과 페이지 위쪽, 꼬리말과 페이지 아래쪽, 그리고 둘 다와 양옆 사이의 거리를 포인트 단위(72포인트가 1인치)로 선택할 수 있습니다.
 
+텍스트는 중국어, 힌디어, 아랍어 등 어떤 언어든 될 수 있습니다. 선택한 서체에 없는 문자에는 그 문자가 있는 Mac의 서체가 사용되며, 사용된 문자는 문서에 저장되므로 어디서나 똑같이 보입니다.
+
 ## 워터마크
 
-워터마크 텍스트를 입력합니다. 두 번째 줄을 넣으려면 Return 키를 누릅니다. 그런 다음 다음을 선택합니다.
+워터마크는 텍스트 또는 그림입니다. 텍스트는 입력하면 되며, 두 번째 줄을 넣으려면 Return 키를 누릅니다. 로고 같은 그림의 경우 **Picture**를 선택하고 **Choose Picture**를 클릭한 다음, 페이지 폭에 대한 비율로 너비를 설정합니다. 그런 다음 다음을 선택합니다.
 
 - **Font** 및 **Color**.
 - **As large as fits the page** 또는 원하는 크기.
@@ -43,9 +45,13 @@ VectorPDF는 선택한 내용을 문서에 보관하므로, 나중에 머리말,
 - **First page marked is page:** Page Number가 처음 표시한 페이지에 매기는 번호. 번호는 표시한 페이지마다 1씩 늘어납니다.
 - **Bates numbers:** 사건 이름이나 회사 이름 같은 접두사, 자릿수, 시작 번호, 접미사. 베이츠 번호는 표시한 페이지마다 1씩 늘어나며 ACME-000001처럼 0으로 자릿수를 채웁니다. 표시하려면 머리말이나 꼬리말에 Bates Number를 삽입합니다.
 
+## 여러 파일에 표시하기
+
+소송 자료처럼 여러 문서에 베이츠 번호를 파일에서 파일로 이어지게 매기려면, 표시를 설정한 다음 **Apply to Other Files**를 클릭합니다. PDF를 선택한 다음 표시한 사본을 저장할 폴더를 선택합니다. 원본 파일은 변경되지 않습니다. 파일은 이름 순서로 표시되므로 번호를 매길 순서대로 이름을 지정하십시오. 완료되면 VectorPDF가 사용된 베이츠 번호를 알려 주고, 암호가 필요한 파일처럼 표시하지 못한 파일을 나열합니다.
+
 ## 알아 두면 좋은 사항
 
 - 머리말, 꼬리말, 워터마크는 [주석](draw-and-notes.md)이 아니라 페이지의 일부이므로 인쇄되며 다른 앱에서도 보입니다. 페이지 장식으로 표시되어 있어 화면 읽기 프로그램이 건너뛸 수 있습니다. 텍스트는 검색하고 선택할 수 있습니다.
 - 여백은 표시된 페이지를 기준으로 측정되므로, 회전한 페이지에서도 머리말은 위쪽에 있습니다.
-- VectorPDF는 직접 추가한 머리말, 꼬리말, 워터마크만 변경하거나 제거할 수 있습니다. 다른 앱에서 추가한 것은 페이지 내용의 일부입니다.
+- Adobe Acrobat 같은 다른 앱이 추가한 머리말, 꼬리말, 워터마크도 그 앱이 그렇게 표시해 두었다면(대부분 그렇게 합니다) 제거할 수 있습니다. VectorPDF가 이를 찾으면 Pages & Numbers에 **Remove them**이 나타나고, 미리 보기에 이를 제거한 페이지가 표시됩니다. 한 번 제거하면 저장된 문서로 되돌리지 않는 한 다시 생기지 않습니다.
 - [디지털 서명](digital-signatures.md)된 문서에 추가하면 서명된 내용이 바뀌므로, 문서의 서명이 유효하지 않게 됩니다.

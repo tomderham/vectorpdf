@@ -1,5 +1,5 @@
-<!-- keywords: 编辑大纲, 添加书签, 根据标题创建大纲, 标题, 创建目录, 重新命名, 缩进, 取消缩进, 大纲, 目录, 内容, 书签, 缩略图, 边栏, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: 检查标题, 编辑大纲, 添加书签, 根据标题创建大纲, 标题, 创建目录, 重新命名, 缩进, 取消缩进, 大纲, 目录, 内容, 书签, 缩略图, 边栏, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # 大纲和缩略图
 
@@ -31,15 +31,15 @@
 | 把它放进上方的条目，或从所在的条目中移出 | Indent 或 Outdent |
 | 删除它及其中的条目 | Delete Entry |
 
-你也可以拖移条目来移动它，或将它拖放到另一个条目上以放入其中。其中的条目会随之移动。在用“Search outline”栏过滤大纲时，无法编辑条目。Edit > Undo (⌘Z) 可以逐个撤销对大纲的更改。
+你也可以拖移条目来移动它，或将它拖放到另一个条目上以放入其中。其中的条目会随之移动。在用“Search outline”栏过滤大纲时，条目无法移动：菜单中没有 Move Up、Move Down、Indent 和 Outdent，条目也不能拖移；其他命令可以使用。Edit > Undo (⌘Z) 可以逐个撤销对大纲的更改。
 
 ### 根据标题创建大纲
 
-选取 Edit > Build Outline from Headings，即可一步用文稿的标题创建大纲。大纲条目的右键菜单中也有此命令。如果文稿已有大纲，替换前会先询问你；Edit > Undo 可以恢复原来的大纲。
+选取 Edit > Build Outline from Headings，即可用文稿的标题创建大纲。大纲条目的右键菜单中也有此命令。首先会打开找到的标题列表：取消勾选不是标题的项，点按标题可以更改它，使用缩进按钮可以将标题上移或下移一级。点按标题旁的箭头可以在页面上查看它。然后点按 **Create Outline**，如果文稿已有大纲，则点按 **Replace Outline**；Edit > Undo 可以恢复原来的大纲。
 
 在带标签的 PDF 中，标题就是其标签所标记的内容。在其他 PDF 中，VectorPDF 会查找与正文不同的行：比正文大，或在正文不是粗体时为粗体。较大的样式比较小的样式级别更高，而在同一样式中，3.2.1 这样的章节编号决定级别。重复出现的页眉和页脚、图表标题以及目录中的行会被排除。
 
-请检查结果：文稿的样式并不总能说明哪些行是标题。可以按照上文所述给条目重新命名、移动或删除条目。扫描页面中的标题不会被找到，即使其文本已被识别也是如此。
+文稿的样式并不总能说明哪些行是标题，因此请检查列表。扫描页面中的标题不会被找到，即使其文本已被识别也是如此。在某些带标签的 PDF 中，章节编号的绘制方式使其不属于文本，因此条目中不带编号。
 
 ## 缩略图
 

@@ -1,5 +1,5 @@
-<!-- keywords: digitale Signatur, digitale Signaturen, signieren, mit Zertifikat signieren, Zertifikat, Schlüsselbund, signiert, Unterzeichner, beglaubigt, Beglaubigung, gültig, ungültig, prüfen, Vertrauen, Identität, Zeitstempel, manipuliert, geändert, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 3d32c92200ad -->
+<!-- keywords: Zeitstempel, Zeitstempelserver, beglaubigen, Felder sperren, digitale Signatur, digitale Signaturen, signieren, mit Zertifikat signieren, Zertifikat, Schlüsselbund, signiert, Unterzeichner, beglaubigt, Beglaubigung, gültig, ungültig, prüfen, Vertrauen, Identität, Zeitstempel, manipuliert, geändert, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
+<!-- source: 5ae9b04ec005 -->
 
 # Digitale Signaturen erstellen und prüfen
 
@@ -17,16 +17,21 @@ Klicke auf **Signature Details**, um jede Signatur im Tab „Document“ der Sei
 
 Zum Signieren brauchst du ein Zertifikat zum Signieren mit seinem privaten Schlüssel. Deine Organisation oder eine Zertifizierungsstelle kann dir eines geben, meist als .p12- oder .pfx-Datei mit einem Passwort. Zertifikate in deinem Schlüsselbund kannst du direkt verwenden.
 
-1. Wähle Edit > Sign with Certificate und klicke dann auf die Stelle der Seite, an der die Signatur stehen soll. Drücke Esc, um abzubrechen. Wenn das Dokument ein leeres Signaturfeld hat, kannst du stattdessen auf das Feld klicken und Sign with Certificate wählen.
-2. Wähle dein Zertifikat. Um eine Datei zu verwenden, klicke auf **Choose Certificate File** und gib dann ihr Passwort ein. Die Datei wird nur für diese Signatur gelesen und nicht zu deinem Schlüsselbund hinzugefügt.
+1. Wähle Edit > Sign with Certificate und ziehe dann auf der Seite einen Rahmen an der Stelle auf, an der die Signatur stehen soll, oder klicke für einen in der üblichen Größe. Drücke Esc, um abzubrechen. Wenn das Dokument ein leeres Signaturfeld hat, kannst du stattdessen auf das Feld klicken und Sign with Certificate wählen.
+2. Wähle dein Zertifikat. Eine Vorschau zeigt, wie die Signatur aussehen wird. Um eine Datei zu verwenden, klicke auf **Choose Certificate File** und gib dann ihr Passwort ein. Die Datei wird nur für diese Signatur gelesen und nicht zu deinem Schlüsselbund hinzugefügt.
 3. Wenn du möchtest, gib einen Grund ein (etwa „Ich genehmige dieses Dokument“) und den Ort, an dem du signierst. Wenn du einen [Stempel](stamps.md) erstellt hast, kannst du deine handschriftliche Unterschrift im Feld zeigen. Andernfalls wird dein Name angezeigt.
-4. Klicke auf **Sign**.
+4. Wenn du möchtest, wähle unter „After Signing“:
+   - **Certify**, wenn noch niemand das Dokument signiert hat: Lege fest, welche Änderungen es von nun an gültig lassen: Formulare ausfüllen, signieren und Anmerkungen; Formulare ausfüllen und signieren; oder keine. Ein beglaubigtes Dokument wird jedem, der es prüft, als beglaubigt angezeigt, und spätere Änderungen, die es nicht erlaubt, machen deine Signatur ungültig.
+   - **Lock form fields**, bei einem Formular: Alle seine Felder oder die, die du auswählst, werden schreibgeschützt, sodass sie die Werte behalten, die du signiert hast.
+5. Klicke auf **Sign**.
 
 Beim Signieren wird das Dokument gesichert. Hat es ungesicherte Änderungen, fragt VectorPDF daher zuerst, ob sie gesichert werden sollen. Sie werden Teil dessen, was du signierst. macOS fragt eventuell, ob VectorPDF den Schlüssel deines Zertifikats verwenden darf.
 
-Die Signatur lässt die anderen Formularfelder des Dokuments, wie sie sind, sodass andere sie weiterhin ausfüllen, ebenfalls signieren oder Anmerkungen hinzufügen können, ohne deine Signatur ungültig zu machen. Jede spätere Signatur wird auf dieselbe Weise nach den früheren angefügt.
+Sofern du sie nicht sperrst oder das Dokument für weniger beglaubigst, lässt die Signatur die anderen Formularfelder des Dokuments, wie sie sind, sodass andere sie weiterhin ausfüllen, ebenfalls signieren oder Anmerkungen hinzufügen können, ohne deine Signatur ungültig zu machen. Jede spätere Signatur wird auf dieselbe Weise nach den früheren angefügt.
 
-Die Signatur ist eine PKCS-#7-Signatur mit SHA-256 und enthält dein Zertifikat und die der Stellen, die es ausgestellt haben. Sie hält die Uhrzeit auf deinem Mac fest. Einen Zeitstempel von einer Zeitstempelstelle hat sie noch nicht.
+Die Signatur ist eine PKCS-#7-Signatur mit SHA-256 und enthält dein Zertifikat und die der Stellen, die es ausgestellt haben. Sie hält die Uhrzeit auf deinem Mac fest.
+
+Damit ein Zeitstempelserver bestätigt, wann du signiert hast, schalte **Add a timestamp** ein und gib seine Adresse an (deine Organisation betreibt vielleicht einen; kostenlose gibt es etwa von DigiCert, `http://timestamp.digicert.com`). Mit einem Zeitstempel kann deine Signatur so geprüft werden, wie sie beim Signieren war, auch nachdem dein Zertifikat abgelaufen ist. Der Server erhält nur einen Fingerabdruck der Signatur, nichts vom Dokument. Ist er nicht erreichbar, wird nichts signiert und das Dokument bleibt, wie es war.
 
 ## Was VectorPDF prüft
 
@@ -35,7 +40,7 @@ Für jede Signatur zeigt die Liste im Tab „Document“:
 - Ob die Teile der Datei, die sie signiert hat, genau so sind, wie sie signiert wurden.
 - Ob die Datei nach dem Signieren erneut gesichert wurde und ob diese Änderungen solche sind, die die Signatur erlaubt. Formularfelder ausfüllen, Signaturen hinzufügen und Anmerkungen hinzufügen oder ändern sind meist erlaubt. Eine beglaubigende Signatur kann weniger Änderungen erlauben. Wurden nach dem Signieren Anmerkungen hinzugefügt, sagt die Liste das: Eine Anmerkung kann verdecken, was signiert wurde.
 - Wer sie signiert hat, mit dem Namen in seinem Zertifikat, und wer das Zertifikat ausgestellt hat. Der Name, den die Signatursoftware in das Dokument geschrieben hat, wird ebenfalls angezeigt, wenn er abweicht.
-- Wann sie signiert wurde. Für eine Zeit von einer Zeitstempelstelle wird gebürgt. Für eine Zeit vom eigenen Computer des Unterzeichners nicht.
+- Wann sie signiert wurde. Für eine Zeit von einer Zeitstempelstelle wird gebürgt, wenn der Zeitstempel zu dieser Signatur gehört und seiner Stelle auf deinem Mac vertraut wird; andernfalls sagt die Liste, warum er nicht zählt. Für eine Zeit vom eigenen Computer des Unterzeichners wird nicht gebürgt.
 - Den Grund und den Ort, die der Unterzeichner angegeben hat, falls vorhanden.
 
 Klicke auf eine Signatur, um auf der Seite zu ihr zu gehen. Um ihre Zertifikate zu sehen, klicke auf **Show Certificate**, oder klicke mit der rechten Maustaste darauf und wähle Show Certificate.

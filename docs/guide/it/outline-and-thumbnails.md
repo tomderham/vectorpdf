@@ -1,5 +1,5 @@
-<!-- keywords: modificare la struttura, aggiungere segnalibro, struttura dai titoli, titoli, creare sommario, rinominare, rientro, struttura, indice, sommario, contenuti, segnalibri, miniatura, miniature, barra laterale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: controllare i titoli, modificare la struttura, aggiungere segnalibro, struttura dai titoli, titoli, creare sommario, rinominare, rientro, struttura, indice, sommario, contenuti, segnalibri, miniatura, miniature, barra laterale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # Struttura e miniature
 
@@ -31,15 +31,15 @@ Per tutto il resto, fai clic con il tasto destro su una voce:
 | Metterla dentro la voce sopra, o toglierla da quella in cui si trova | Indent o Outdent |
 | Eliminarla, con le voci che contiene | Delete Entry |
 
-Puoi anche trascinare una voce per spostarla, o rilasciarla su un’altra voce per metterla al suo interno. Le voci che contiene si spostano con lei. Mentre la struttura è filtrata dal campo “Search outline”, le voci non possono essere modificate. Edit > Undo (⌘Z) annulla le modifiche alla struttura, una alla volta.
+Puoi anche trascinare una voce per spostarla, o rilasciarla su un’altra voce per metterla al suo interno. Le voci che contiene si spostano con lei. Mentre la struttura è filtrata dal campo “Search outline”, le voci non possono essere spostate: Move Up, Move Down, Indent e Outdent non sono nel menu e le voci non si possono trascinare; gli altri comandi funzionano. Edit > Undo (⌘Z) annulla le modifiche alla struttura, una alla volta.
 
 ### Creare una struttura dai titoli
 
-Scegli Edit > Build Outline from Headings per creare in un solo passaggio una struttura con i titoli del documento. Il comando si trova anche nel menu contestuale di una voce della struttura. Se il documento ha già una struttura, ti viene chiesta conferma prima di sostituirla; Edit > Undo la ripristina.
+Scegli Edit > Build Outline from Headings per creare una struttura con i titoli del documento. Il comando si trova anche nel menu contestuale di una voce della struttura. Prima si apre un elenco dei titoli trovati: deseleziona quelli che non lo sono, fai clic su un titolo per cambiarlo e usa i pulsanti di rientro per spostare un titolo su o giù di un livello. Fai clic sulla freccia accanto a un titolo per vederlo nella pagina. Poi fai clic su **Create Outline**, o su **Replace Outline** se il documento ne ha già una; Edit > Undo ripristina la struttura precedente.
 
 In un PDF con tag, i titoli sono quelli indicati dai suoi tag. Negli altri PDF, VectorPDF cerca le righe che si distinguono dal testo: più grandi, o in grassetto dove il testo non lo è. Uno stile più grande è un livello più alto di uno più piccolo, e i numeri di sezione come 3.2.1 danno i livelli all’interno di uno stesso stile. Intestazioni e piè di pagina ripetuti, didascalie di figure e tabelle e le righe di un sommario vengono esclusi.
 
-Controlla il risultato: gli stili di un documento non dicono sempre quali righe sono titoli. Rinomina, sposta o elimina le voci come descritto sopra. I titoli delle pagine scansionate non vengono trovati, neanche dopo che il loro testo è stato riconosciuto.
+Gli stili di un documento non dicono sempre quali righe sono titoli, quindi controlla l’elenco. I titoli delle pagine scansionate non vengono trovati, neanche dopo che il loro testo è stato riconosciuto. In alcuni PDF con tag, i numeri di sezione sono disegnati in modo da non far parte del testo, e le voci ne sono prive.
 
 ## Miniature
 

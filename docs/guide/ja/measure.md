@@ -1,5 +1,5 @@
-<!-- keywords: 測定, 計測, 長さ, 距離, 寸法, 周長, 面積, 角度, 直交, スナップ, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 編集, 変更, 移動, ハンドル, オフセット, edit, change, move, reshape, handle, offset, 数える, カウント, 集計, 記号, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: 長方形, 円, 半径, 直径, 円弧, 円弧の長さ, 測定, 計測, 長さ, 距離, 寸法, 周長, 面積, 角度, 直交, スナップ, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 編集, 変更, 移動, ハンドル, オフセット, edit, change, move, reshape, handle, offset, 数える, カウント, 集計, 記号, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # 長さ、面積、角度を測定し、数を数える
 
@@ -14,6 +14,9 @@
 | Linear Dimension | 一方の点からもう一方の点までドラッグします。 |
 | Perimeter | 経路に沿って各点をクリックします。Return キーを押すかダブルクリックすると終了します。 |
 | Polygon Area | 各角をクリックします。Return キーを押すか、ダブルクリックするか、最初の点をクリックすると図形が閉じます。 |
+| Rectangle Area | 角から反対側の角までドラッグします。 |
+| Circle | 中心から縁までドラッグします。ラベルには面積と直径が表示され、[ステータスバー](rulers-and-inspector.md)には半径と円周も表示されます。 |
+| Arc Length | 円弧の始点、円弧上の点、終点を順にクリックします。ラベルには円弧に沿った長さと半径が表示されます。 |
 | Vertex Angle | 1 本目の線上の点、角、2 本目の線上の点の順にクリックします。 |
 | Count | グループのボックスに数える対象(例: コンセント)を入力してから、1 つずつクリックします。 |
 
@@ -48,12 +51,14 @@ Measurement ツールバーの先頭にある矢印の **Select** を選ぶか�
 
 面積を選択するには、その縁をクリックします。内側をクリックすると、そこにあるテキストが選択されます。
 
+長方形、円、円弧は、変更しても形が保たれます。長方形の角、円の中心または縁、円弧の 3 つの点のいずれかをドラッグします。これらは輪郭に沿った面積または長さとして保存されるため、PDF の測定値を読み取るほかの App でも測定値として表示され、輪郭について独自の値が示されます（円と円弧では VectorPDF の値との差は 0.05% 未満）。
+
 ## 測定値の見た目を変更する
 
 計測する前に、Measurement ツールバーのカラーボタンと線の太さのボックスを設定してください。ポイント単位の太さを選ぶか、0.1〜72 ポイントの値を入力します。新しい測定値は、変更するまで灰色で太さ 1.5 ポイントです。選んだ設定は VectorPDF に記憶され、Markup ツールバーは独自の色と太さを保持します。すでに作成した測定値の色や太さを変更するには、その測定値を選択してから、Measurement ツールバーで色や太さを選択します。太さは PDF に保存されます。
 
 ## 測定値を残す、または削除する
 
-測定値は注釈であり、[保存](save.md)すると PDF に記録されます。削除するには、測定値を右クリックして、Delete Dimension、Delete Area Takeoff、Delete Count Marker などの削除コマンドを選択します。
+測定値は注釈であり、[保存](save.md)すると PDF に保存されます。削除するには、右クリックして Delete Dimension、Delete Area Takeoff、Delete Circle Measurement、Delete Count Marker などの削除コマンドを選択します。
 
 すべての測定値を一覧表示するには、[拾い出し表](takeoff.md)を参照してください。

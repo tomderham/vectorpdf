@@ -1,5 +1,5 @@
-<!-- keywords: medir, medida, medição, medições, comprimento, distância, dimensão, perímetro, área, ângulo, orto, encaixe, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, alterar, mover, alça, deslocamento, edit, change, move, reshape, handle, offset, contar, contagem, símbolos, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: retângulo, círculo, raio, diâmetro, arco, comprimento de arco, medir, medida, medição, medições, comprimento, distância, dimensão, perímetro, área, ângulo, orto, encaixe, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, editar, alterar, mover, alça, deslocamento, edit, change, move, reshape, handle, offset, contar, contagem, símbolos, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # Medir comprimentos, áreas e ângulos, e contar
 
@@ -14,6 +14,9 @@ Aumente o zoom antes de medir para ter mais precisão. Pressionar Escape cancela
 | Linear Dimension | Arraste de um ponto ao outro. |
 | Perimeter | Clique em cada ponto ao longo do caminho. Pressione Return ou clique duas vezes para terminar. |
 | Polygon Area | Clique em cada canto. Pressione Return, clique duas vezes ou clique no primeiro ponto para fechar a forma. |
+| Rectangle Area | Arraste de um canto até o canto oposto. |
+| Circle | Arraste do centro até a borda. O rótulo mostra a área e o diâmetro, e a [barra de status](rulers-and-inspector.md) mostra também o raio e a circunferência. |
+| Arc Length | Clique onde o arco começa, em um ponto do arco e onde ele termina. O rótulo mostra o comprimento ao longo do arco e o raio dele. |
 | Vertex Angle | Clique em um ponto da primeira linha, depois no canto e, por fim, em um ponto da segunda linha. |
 | Count | Digite o que está contando na caixa de grupo, como Tomadas, e clique em cada um. |
 
@@ -48,12 +51,14 @@ O valor é calculado de novo enquanto você arrasta. Arraste além da borda da j
 
 Para selecionar uma área, clique na borda dela: clicar dentro dela seleciona o texto que está ali.
 
+Um retângulo, círculo ou arco mantém a forma quando você o altera: arraste um canto do retângulo, o centro ou a borda do círculo, ou qualquer um dos três pontos do arco. Eles são salvos como uma área ou um comprimento ao longo do contorno, então outros apps que leem medições de PDF também os mostram como medições, com seus próprios valores para o contorno (a menos de 0,05% dos do VectorPDF para um círculo ou arco).
+
 ## Alterar a aparência das medições
 
 Use o botão de cor e a caixa de espessura na barra de ferramentas Measurement antes de medir. Escolha uma espessura em pontos ou digite uma, de 0,1 a 72 pontos. As novas medições são cinza, com 1,5 ponto de espessura, até você escolher outra coisa. O VectorPDF se lembra da sua escolha, e a barra Markup mantém suas próprias cores e espessuras. Para alterar a cor ou a espessura de uma medição que você já fez, selecione-a e escolha uma cor ou espessura na barra Measurement. A espessura é salva no PDF.
 
 ## Manter ou remover medições
 
-As medições são anotações, armazenadas no PDF quando você [salva](save.md). Para apagar uma medição, clique nela com o botão direito e escolha o comando de apagar, como Delete Dimension, Delete Area Takeoff ou Delete Count Marker.
+Medições são anotações, salvas no PDF quando você [salva](save.md). Para apagar uma, clique nela com o botão direito e escolha o comando de apagar, como Delete Dimension, Delete Area Takeoff, Delete Circle Measurement ou Delete Count Marker.
 
 Para listar todas as suas medições, consulte a [tabela de levantamento](takeoff.md).

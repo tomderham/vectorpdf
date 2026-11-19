@@ -1,5 +1,5 @@
-<!-- keywords: 개요 편집, 책갈피 추가, 제목으로 개요, 제목, 목차 만들기, 이름 변경, 들여쓰기, 내어쓰기, 개요, 목차, 책갈피, 축소판, 썸네일, 사이드바, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4dd1a582a981 -->
+<!-- keywords: 제목 확인, 개요 편집, 책갈피 추가, 제목으로 개요, 제목, 목차 만들기, 이름 변경, 들여쓰기, 내어쓰기, 개요, 목차, 책갈피, 축소판, 썸네일, 사이드바, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
+<!-- source: 4e321771b823 -->
 
 # 개요 및 축소판
 
@@ -31,15 +31,15 @@
 | 위의 항목 안에 넣거나, 들어 있는 항목에서 빼기 | Indent 또는 Outdent |
 | 안의 항목과 함께 삭제하기 | Delete Entry |
 
-항목을 드래그하여 이동하거나, 다른 항목 위에 놓아 그 안에 넣을 수도 있습니다. 안에 있는 항목도 함께 이동합니다. “Search outline” 필드로 개요를 필터링하는 동안에는 항목을 편집할 수 없습니다. Edit > Undo(⌘Z)로 개요 변경 사항을 하나씩 되돌릴 수 있습니다.
+항목을 드래그하여 이동하거나, 다른 항목 위에 놓아 그 안에 넣을 수도 있습니다. 안에 있는 항목도 함께 이동합니다. “Search outline” 필드로 개요를 필터링하는 동안에는 항목을 이동할 수 없으므로 Move Up, Move Down, Indent, Outdent가 메뉴에 없고 항목을 드래그할 수 없습니다. 다른 명령은 사용할 수 있습니다. Edit > Undo(⌘Z)로 개요 변경 사항을 하나씩 되돌릴 수 있습니다.
 
 ### 제목으로 개요 만들기
 
-Edit > Build Outline from Headings를 선택하면 문서의 제목으로 개요를 한 번에 만들 수 있습니다. 이 명령은 개요 항목의 오른쪽 클릭 메뉴에도 있습니다. 문서에 이미 개요가 있으면 바꾸기 전에 확인을 요청합니다. Edit > Undo로 되돌릴 수 있습니다.
+Edit > Build Outline from Headings를 선택하면 문서의 제목으로 개요를 만들 수 있습니다. 이 명령은 개요 항목의 오른쪽 클릭 메뉴에도 있습니다. 먼저 찾은 제목 목록이 열립니다. 제목이 아닌 것은 선택을 해제하고, 제목을 클릭하여 바꾸고, 들여쓰기 버튼으로 제목의 수준을 올리거나 내립니다. 제목 옆의 화살표를 클릭하면 페이지에서 제목을 볼 수 있습니다. 그런 다음 **Create Outline**을, 문서에 이미 개요가 있으면 **Replace Outline**을 클릭합니다. Edit > Undo로 이전 개요를 되돌릴 수 있습니다.
 
 태그가 있는 PDF에서는 태그로 표시된 제목이 사용됩니다. 다른 PDF에서는 VectorPDF가 본문과 구별되는 줄, 즉 본문보다 크거나 본문이 굵지 않은데 굵게 된 줄을 찾습니다. 큰 스타일이 작은 스타일보다 높은 수준이 되며, 같은 스타일 안에서는 3.2.1과 같은 섹션 번호로 수준이 정해집니다. 반복되는 머리말과 꼬리말, 그림과 표의 캡션, 목차의 줄은 제외됩니다.
 
-결과를 확인하십시오. 문서의 스타일만으로 어떤 줄이 제목인지 항상 알 수 있는 것은 아닙니다. 위의 방법으로 항목의 이름을 변경하거나 이동하거나 삭제하십시오. 스캔한 페이지의 제목은 텍스트가 인식된 후에도 찾지 못합니다.
+문서의 스타일만으로 어떤 줄이 제목인지 항상 알 수 있는 것은 아니므로 목록을 확인하십시오. 스캔한 페이지의 제목은 텍스트가 인식된 후에도 찾지 못합니다. 일부 태그가 있는 PDF에서는 섹션 번호가 텍스트의 일부가 아닌 방식으로 그려져 있어, 항목에 번호가 붙지 않습니다.
 
 ## 축소판
 

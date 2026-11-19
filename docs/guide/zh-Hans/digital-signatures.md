@@ -1,5 +1,5 @@
-<!-- keywords: 数字签名, 签名, 使用证书签名, 证书, 钥匙串, 已签名, 签名人, 认证, 有效, 无效, 检查, 验证, 信任, 身份, 时间戳, 篡改, 更改, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
-<!-- source: 3d32c92200ad -->
+<!-- keywords: 时间戳, 时间戳服务器, 认证, 锁定栏位, 数字签名, 签名, 使用证书签名, 证书, 钥匙串, 已签名, 签名人, 认证, 有效, 无效, 检查, 验证, 信任, 身份, 时间戳, 篡改, 更改, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
+<!-- source: 5ae9b04ec005 -->
 
 # 进行数字签名和检查数字签名
 
@@ -17,16 +17,21 @@
 
 若要签名，你需要一个带有私钥的签名证书。你的组织或证书颁发机构可以为你提供，通常是带密码的 .p12 或 .pfx 文件。钥匙串中的证书可以直接使用。
 
-1. 选取 Edit > Sign with Certificate，然后点按页面上要放置签名的位置。按下 Esc 键可停止。如果文稿有空的签名栏位，你也可以点按该栏位并选取 Sign with Certificate。
-2. 选取你的证书。若要使用文件，请点按 **Choose Certificate File**，然后输入它的密码。该文件只为这次签名读取，不会添加到你的钥匙串。
+1. 选取 Edit > Sign with Certificate，然后在页面上要放置签名的位置拖出一个框，或点按以放置常规大小的框。按下 Esc 键可停止。如果文稿有空的签名栏位，你也可以点按该栏位并选取 Sign with Certificate。
+2. 选取你的证书。预览会显示签名的样子。若要使用文件，请点按 **Choose Certificate File**，然后输入它的密码。该文件只为这次签名读取，不会添加到你的钥匙串。
 3. 如有需要，输入原因（例如“我批准此文稿”）和签名地点。如果你创建了[图章](stamps.md)，可以在栏位中显示你的手写签名。否则会显示你的姓名。
-4. 点按 **Sign**。
+4. 如有需要，在 After Signing 下选取：
+   - **Certify**（文稿尚无人签名时）：指定今后哪些更改仍让文稿保持有效：填写表单、签名和添加注释；填写表单和签名；或不允许任何更改。经认证的文稿会向每位检查者显示为已认证，不被允许的后续更改会使你的签名失效。
+   - **Lock form fields**（适用于表单）：所有栏位或你选取的栏位会变为只读，保持你签名时的值。
+5. 点按 **Sign**。
 
 签名会存储文稿，因此如果文稿有未存储的更改，VectorPDF 会先询问是否存储。这些更改会成为你所签内容的一部分。macOS 可能会要求你允许 VectorPDF 使用证书的密钥。
 
-签名不会改变文稿中的其他表单栏位，因此其他人仍可填写它们、同样进行签名或添加注释，而不会使你的签名失效。之后的每个签名也会以同样方式添加在之前的签名之后。
+除非你锁定栏位或将文稿认证为允许更少的更改，签名不会改变文稿中的其他表单栏位，因此其他人仍可填写它们、同样进行签名或添加注释，而不会使你的签名失效。之后的每个签名也会以同样方式添加在之前的签名之后。
 
-该签名是使用 SHA-256 的 PKCS #7 签名，包含你的证书以及颁发它的机构的证书。它记录你的 Mac 上的时间。目前还不包含时间戳机构提供的时间戳。
+该签名是使用 SHA-256 的 PKCS #7 签名，包含你的证书以及颁发它的机构的证书。它记录你的 Mac 上的时间。
+
+若要让时间戳服务器担保你签名的时间，请打开 **Add a timestamp** 并输入其地址（你的组织可能有自己的服务器；也有免费的，例如 DigiCert 的 `http://timestamp.digicert.com`）。有了时间戳，即使你的证书过期，也能按签名时的状态检查你的签名。服务器只会收到签名的指纹，不会收到文稿的任何内容。如果无法连接服务器，则不会签名，文稿保持原样。
 
 ## VectorPDF 检查的内容
 
@@ -35,7 +40,7 @@
 - 它所签署的文件部分是否与签署时完全一致。
 - 文件在签署后是否再次存储过，以及这些更改是否属于签名允许的更改。填写表单栏位、添加签名以及添加或更改注释通常是允许的。认证签名可能允许较少的更改。如果签署后添加了注释，列表会注明：注释可能会遮盖已签署的内容。
 - 签名人（按其证书中的姓名）以及证书的颁发者。如果签名软件写入文稿的姓名与之不同，也会一并显示。
-- 签署时间。来自时间戳机构的时间是有担保的，来自签名人自己电脑的时间则没有。
+- 签署时间。如果时间戳属于此签名且你的 Mac 信任其机构，来自时间戳机构的时间是有担保的；否则列表会说明它为何不计入。来自签名人自己电脑的时间则没有担保。
 - 签名人填写的原因和地点（如有）。
 
 点按签名可前往它在页面上的位置。若要查看其证书，请点按 **Show Certificate**，或右键点按签名并选取 Show Certificate。

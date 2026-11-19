@@ -1,5 +1,5 @@
-<!-- keywords: 측정, 길이, 거리, 치수, 둘레, 면적, 각도, 직교, 스냅, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 편집, 변경, 이동, 핸들, 오프셋, edit, change, move, reshape, handle, offset, 개수 세기, 집계, 기호, count, counting, tally, symbols -->
-<!-- source: 105c5177cf19 -->
+<!-- keywords: 사각형, 원, 반지름, 지름, 호, 호 길이, 측정, 길이, 거리, 치수, 둘레, 면적, 각도, 직교, 스냅, measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, ortho, snap, snapping, 편집, 변경, 이동, 핸들, 오프셋, edit, change, move, reshape, handle, offset, 개수 세기, 집계, 기호, count, counting, tally, symbols, rectangle, circle, radius, diameter, arc, arc length, curve -->
+<!-- source: fea799877718 -->
 
 # 길이, 면적 및 각도 측정하기 및 개수 세기
 
@@ -14,6 +14,9 @@
 | Linear Dimension | 한 지점에서 다른 지점으로 드래그합니다. |
 | Perimeter | 경로를 따라 각 지점을 클릭합니다. 완료하려면 Return 키를 누르거나 이중 클릭합니다. |
 | Polygon Area | 각 모서리를 클릭합니다. 도형을 닫으려면 Return 키를 누르거나, 이중 클릭하거나, 첫 번째 지점을 클릭합니다. |
+| Rectangle Area | 한 모서리에서 반대쪽 모서리까지 드래그합니다. |
+| Circle | 중심에서 가장자리까지 드래그합니다. 레이블에는 면적과 지름이 표시되고, [상태 막대](rulers-and-inspector.md)에는 반지름과 원둘레도 표시됩니다. |
+| Arc Length | 호가 시작하는 곳, 호 위의 한 점, 호가 끝나는 곳을 차례로 클릭합니다. 레이블에는 호를 따른 길이와 반지름이 표시됩니다. |
 | Vertex Angle | 첫 번째 선의 한 지점, 꼭짓점, 두 번째 선의 한 지점을 차례로 클릭합니다. |
 | Count | 그룹 상자에 셀 대상(예: 콘센트)을 입력한 다음 하나씩 클릭합니다. |
 
@@ -48,12 +51,14 @@ Measurement 도구 막대 맨 앞에 있는 화살표인 **Select**를 선택하
 
 면적을 선택하려면 가장자리를 클릭합니다. 안쪽을 클릭하면 그곳의 텍스트가 선택됩니다.
 
+사각형, 원, 호는 변경해도 모양이 유지됩니다. 사각형의 모서리, 원의 중심이나 가장자리, 호의 세 점 중 하나를 드래그하십시오. 이들은 윤곽을 따른 면적 또는 길이로 저장되므로, PDF 측정을 읽는 다른 앱에서도 측정으로 표시되며 윤곽에 대한 자체 값이 표시됩니다(원과 호의 경우 VectorPDF의 값과 0.05% 미만 차이).
+
 ## 측정 표시 모양 변경하기
 
 측정하기 전에 Measurement 도구 막대의 색상 버튼과 선 굵기 상자를 사용합니다. 포인트 단위의 굵기를 선택하거나 0.1~72포인트 사이의 값을 입력합니다. 새 측정은 다른 값을 선택할 때까지 회색, 1.5포인트 굵기입니다. VectorPDF는 선택한 값을 기억하며, Markup 도구 막대는 별도의 색상과 굵기를 유지합니다. 이미 만든 측정의 색상이나 굵기를 변경하려면 측정을 선택한 다음 Measurement 도구 막대에서 색상이나 굵기를 선택합니다. 굵기는 PDF에 저장됩니다.
 
 ## 측정 유지 또는 제거하기
 
-측정은 주석이며 [저장](save.md)할 때 PDF에 저장됩니다. 측정을 삭제하려면 해당 측정을 오른쪽 클릭한 다음 Delete Dimension, Delete Area Takeoff 또는 Delete Count Marker와 같은 삭제 명령을 선택합니다.
+측정은 주석이며 [저장](save.md)할 때 PDF에 저장됩니다. 삭제하려면 측정을 오른쪽 클릭한 다음 Delete Dimension, Delete Area Takeoff, Delete Circle Measurement 또는 Delete Count Marker와 같은 삭제 명령을 선택합니다.
 
 모든 측정을 목록으로 보려면 [물량 산출표](takeoff.md)를 참조하십시오.
