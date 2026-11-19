@@ -17,6 +17,7 @@
 
 import AppKit
 import Foundation
+import ImageIO
 import MuPDFBridge
 
 /// Headers, footers (with page and Bates numbers) and a watermark, as chosen in the Headers,
@@ -183,10 +184,13 @@ extension PDFDocumentCore {
     /// Takes off the headers, footers and watermark VectorPDF added, and puts on these instead
     /// (none if `settings` is empty). Returns the pages changed.
     @discardableResult
-    public func applyPageMarks(_ settings: PageMarkSettings, date: Date = Date()) throws -> Set<Int> {
+    /// `pageCount` and `fileName`, if given, are what the page count and file name tokens show
+    /// (for a preview on a copy of one page).
+    public func applyPageMarks(_ settings: PageMarkSettings, date: Date = Date(), pageCount shownCount: Int? = nil, fileName shownName: String? = nil) throws -> Set<Int> {
         guard isPDF else { throw PDFError.operationFailed("Only PDFs can have headers and footers") }
-        let fileName = (filePath as NSString).lastPathComponent
+        let fileName = shownName ?? (filePath as NSString).lastPathComponent
         let count = pageCount
+        let shownPageCount = shownCount ?? count
         let before = pageMarkPages()
         let pages = settings.isEmpty ? [] : settings.pages.indices(pageCount: count)
         let json = settings.isEmpty ? nil : String(data: try JSONEncoder().encode(settings), encoding: .utf8)
@@ -198,7 +202,7 @@ extension PDFDocumentCore {
             for (index, page) in pages.enumerated() {
                 if !settings.watermark.isEmpty {
                     let wm = settings.watermark
-                    let text = settings.expand(wm.text, index: index, pageCount: count, date: date, fileName: fileName)
+                    let text = settings.expand(wm.text, index: index, pageCount: shownPageCount, date: date, fileName: fileName)
                     let ok = text.withCString { cText -> Bool in
                         var mark = mupdf_watermark()
                         mark.text = cText
@@ -214,7 +218,7 @@ extension PDFDocumentCore {
                 }
                 if !settings.header.isEmpty {
                     let hf = settings.header
-                    let texts = hf.texts.map { settings.expand($0, index: index, pageCount: count, date: date, fileName: fileName) }
+                    let texts = hf.texts.map { settings.expand($0, index: index, pageCount: shownPageCount, date: date, fileName: fileName) }
                     let ok = withCStrings(texts) { pointers -> Bool in
                         var mark = mupdf_header_footer()
                         mark.text = (pointers[0], pointers[1], pointers[2], pointers[3], pointers[4], pointers[5])
@@ -252,4 +256,47 @@ private func withCStrings<R>(_ strings: [String], _ body: ([UnsafePointer<CChar>
     while pointers.count < 6 { pointers.append(nil) }
     defer { pointers.forEach { free($0) } }
     return body(pointers.map { $0.map { UnsafePointer($0) } })
+}
+
+/// Pictures of a page with marks on it, for the sheet's preview, made on a copy of the page so
+/// the document isn't changed.
+public final class PageMarksPreview: @unchecked Sendable {
+    public let pageIndex: Int
+    private let copy: URL
+    private let pageCount: Int
+    private let fileName: String
+
+    /// Copies page `pageIndex` of `document`, as it is (unsaved changes included).
+    public init(document: PDFDocumentCore, pageIndex: Int) throws {
+        self.pageIndex = pageIndex
+        pageCount = document.pageCount
+        fileName = (document.filePath as NSString).lastPathComponent
+        copy = FileManager.default.temporaryDirectory.appendingPathComponent("VectorPDF-marks-preview-\(UUID().uuidString).pdf")
+        try document.extractPages([pageIndex], to: copy)
+    }
+
+    deinit { try? FileManager.default.removeItem(at: copy) }
+
+    /// `settings` for a copy of page `pageIndex` alone, numbered as that page is among the
+    /// `pageCount` pages; empty if it isn't marked.
+    static func settings(_ settings: PageMarkSettings, forPage pageIndex: Int, of pageCount: Int) -> PageMarkSettings {
+        guard let position = settings.pages.indices(pageCount: pageCount).firstIndex(of: pageIndex) else { return PageMarkSettings() }
+        var shown = settings
+        shown.pages = PageMarkSettings.PageChoice()
+        shown.firstPageNumber = settings.firstPageNumber + position
+        shown.bates.start = settings.bates.start + position
+        return shown
+    }
+
+    /// The page with `settings`' marks as it would have them in the document (its own page and
+    /// Bates numbers), `width` points wide; without marks if `settings` leave the page out.
+    public func image(_ settings: PageMarkSettings, width: CGFloat, date: Date = Date()) throws -> CGImage? {
+        let doc = try PDFDocumentCore(filePath: copy.path)
+        let shown = Self.settings(settings, forPage: pageIndex, of: pageCount)
+        try doc.applyPageMarks(shown, date: date, pageCount: pageCount, fileName: fileName)
+        guard let bounds = doc.pageBounds.first, bounds.width > 0,
+              let data = doc.renderPageRect(pageIndex: 0, rect: bounds, scale: width / bounds.width) else { return nil }
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    }
 }

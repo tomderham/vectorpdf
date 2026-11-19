@@ -2,7 +2,7 @@
 
 # Headers, footers, Bates numbers and watermarks
 
-You can put text at the top and bottom of pages, such as a title, page numbers or Bates numbers, and a watermark such as DRAFT or CONFIDENTIAL across them. Choose Edit > Headers, Footers and Watermark, fill in the parts you want, then click **Add**.
+You can put text at the top and bottom of pages, such as a title, page numbers or Bates numbers, and a watermark such as DRAFT or CONFIDENTIAL across them. Choose Edit > Headers, Footers and Watermark, fill in the parts you want, then click **Add**. A preview beside the settings shows the page you're reading as it will look, with its own page and Bates numbers; use the arrows under it to see other pages.
 
 VectorPDF keeps what you chose in the document, so you can change the headers, footers and watermark later or take them off. Choose Edit > Headers, Footers and Watermark again, make your changes, then click **Update**. To take them all off, click **Remove All**.
 

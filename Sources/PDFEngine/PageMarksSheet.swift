@@ -41,7 +41,75 @@ struct PageMarksSheet: View {
 
     private var pageCount: Int { viewModel.document?.pageCount ?? 1 }
 
+    // The preview: of the page being read at first, stepping through the others.
+    @State private var previewPage = 0
+    @State private var previewer: PageMarksPreview?
+    @State private var previewImage: CGImage?
+
+    private struct PreviewRequest: Equatable {
+        var settings: PageMarkSettings
+        var page: Int
+    }
+
     var body: some View {
+        HStack(spacing: 0) {
+            form
+            Divider()
+            preview
+        }
+        .frame(width: 880)
+    }
+
+    private var preview: some View {
+        VStack(spacing: 8) {
+            Text("Preview").font(.caption).foregroundStyle(.secondary)
+            ZStack {
+                Rectangle().fill(Color(nsColor: .underPageBackgroundColor))
+                if let previewImage {
+                    Image(decorative: previewImage, scale: 2)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .shadow(radius: 2)
+                        .padding(8)
+                } else {
+                    ProgressView().controlSize(.small)
+                }
+            }
+            .frame(maxHeight: .infinity)
+            HStack {
+                Button { previewPage = max(0, previewPage - 1) } label: { Image(systemName: "chevron.left") }
+                    .disabled(previewPage == 0)
+                Text("Page \(viewModel.document?.displayLabel(forPage: previewPage) ?? "\(previewPage + 1)")")
+                    .font(.callout.monospacedDigit())
+                    .frame(minWidth: 70)
+                Button { previewPage = min(pageCount - 1, previewPage + 1) } label: { Image(systemName: "chevron.right") }
+                    .disabled(previewPage >= pageCount - 1)
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(12)
+        .frame(width: 280)
+        .task(id: PreviewRequest(settings: settings, page: previewPage)) {
+            await renderPreview()
+        }
+    }
+
+    private func renderPreview() async {
+        // Once the typing stops.
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled, let doc = viewModel.document else { return }
+        let page = previewPage, settings = settings
+        let current = previewer?.pageIndex == page ? previewer : nil
+        let result = await Task.detached(priority: .userInitiated) { () -> (PageMarksPreview?, CGImage?) in
+            guard let maker = current ?? (try? PageMarksPreview(document: doc, pageIndex: page)) else { return (nil, nil) }
+            return (maker, try? maker.image(settings, width: 512))
+        }.value
+        guard !Task.isCancelled else { return }
+        previewer = result.0
+        previewImage = result.1
+    }
+
+    private var form: some View {
         VStack(spacing: 0) {
             Picker("Part", selection: $part) {
                 ForEach(Part.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -86,6 +154,7 @@ struct PageMarksSheet: View {
         .onAppear {
             settings = viewModel.initialPageMarkSettings()
             hadMarks = viewModel.hasPageMarks
+            previewPage = min(max(0, viewModel.currentPageIndex), max(0, pageCount - 1))
         }
         .onChange(of: focus) { _, field in
             if let field, field != .batesPrefix, field != .batesSuffix { lastTextField = field }

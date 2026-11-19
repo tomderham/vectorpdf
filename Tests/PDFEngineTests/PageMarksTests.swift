@@ -67,6 +67,27 @@ import Testing
         #expect(marked.pageMarkKinds() == (true, false))
     }
 
+    /// The preview is of a copy of one page, numbered as that page would be; the document isn't
+    /// changed.
+    @Test func thePreviewNumbersThePageAsTheDocumentWould() throws {
+        let (doc, dir) = try document()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var settings = PageMarkSettings()
+        settings.header.texts[4] = "Page <<page>> of <<pages>> <<bates>>"
+        settings.pages.which = .odd
+        settings.firstPageNumber = 5
+        settings.bates.start = 100
+        // Pages 1 and 3 are marked; page 3 is the second of them.
+        let third = PageMarksPreview.settings(settings, forPage: 2, of: 3)
+        #expect(third.expand(third.header.texts[4], index: 0, pageCount: 3, date: Date(), fileName: "") == "Page 6 of 3 000101")
+        #expect(PageMarksPreview.settings(settings, forPage: 1, of: 3).isEmpty)
+
+        let preview = try PageMarksPreview(document: doc, pageIndex: 2)
+        let image = try #require(try preview.image(settings, width: 200))
+        #expect(image.width == 200)
+        #expect(doc.pageMarkKinds() == (false, false))
+    }
+
     @Test func changingThemReplacesTheOldOnes() throws {
         let (doc, dir) = try document()
         defer { try? FileManager.default.removeItem(at: dir) }
