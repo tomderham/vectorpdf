@@ -238,6 +238,28 @@ struct TestSigner {
         #expect(result.signerName == "Signing Test Person")
     }
 
+    /// A box dragged out is where the field goes; the sheet's preview is drawn at its size.
+    @Test func aDraggedBoxIsTheFieldAndItsPreviewIsDrawn() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["One"])
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        vm.canvasMode = .placeSignatureField
+        vm.placeCertificateSignature(page: 0, in: CGRect(x: 100, y: 500, width: 240, height: 80))
+        let placement = try #require(vm.certificateSignaturePlacement)
+        #expect(placement.rect == CGRect(x: 100, y: 500, width: 240, height: 80))
+        #expect(vm.canvasMode == .select)
+        // Too small a box is made big enough.
+        vm.placeCertificateSignature(page: 0, in: CGRect(x: 100, y: 500, width: 10, height: 5))
+        #expect(vm.certificateSignaturePlacement?.rect.size == CGSize(width: 60, height: 20))
+
+        let image = try #require(vm.document?.signaturePreview(size: placement.rect.size, scale: 2, name: "Signing Test Person",
+                                                               appearance: .init(reason: "Approved")))
+        #expect(image.width == 480 && image.height == 160)
+    }
+
     /// A field that can't be signed leaves the file as it was.
     @Test func aFailedSignatureLeavesTheFileAlone() async throws {
         let dir = try makeScratchDirectory()

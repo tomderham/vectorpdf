@@ -56,6 +56,20 @@ extension PDFViewerViewModel {
                       width: size.width, height: size.height)
     }
 
+    /// A box dragged out while placing a new field (kept on the page, and no smaller than
+    /// 60 × 20 points): the sheet to sign it opens.
+    func placeCertificateSignature(page: Int, in rect: CGRect) {
+        canvasMode = .select
+        guard let doc = document, page >= 0, page < doc.pageBounds.count else { return }
+        let bounds = doc.pageBounds[page]
+        var box = rect.standardized
+        box.size.width = max(box.width, 60)
+        box.size.height = max(box.height, 20)
+        box = box.intersection(bounds)
+        guard !box.isNull, box.width >= 20, box.height >= 10 else { return }
+        certificateSignaturePlacement = CertificateSignaturePlacement(page: page, widgetIndex: nil, rect: box)
+    }
+
     /// A click while placing a new field: the sheet to sign it opens.
     func placeCertificateSignature(page: Int, at point: CGPoint) {
         canvasMode = .select

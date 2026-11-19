@@ -355,3 +355,40 @@ int mupdf_page_widget_is_signed(fz_context *ctx, fz_document *doc, int pageno, i
     }
     return is_signed;
 }
+
+fz_pixmap *mupdf_signature_preview(fz_context *ctx, float width, float height, float scale, const char *name,
+                                   const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location,
+                                   int flags, const char **out_error) {
+    if (!ctx || width <= 0 || height <= 0) return NULL;
+    fz_display_list *list = NULL;
+    fz_image *graphic = NULL;
+    fz_buffer *buf = NULL;
+    char *info = NULL;
+    fz_pixmap *pix = NULL;
+    fz_var(list);
+    fz_var(graphic);
+    fz_var(buf);
+    fz_var(info);
+    fz_var(pix);
+    fz_try(ctx) {
+        if (graphic_png && graphic_len > 0) {
+            buf = fz_new_buffer_from_copied_data(ctx, graphic_png, graphic_len);
+            graphic = fz_new_image_from_buffer(ctx, buf);
+        }
+        // As sign_widget draws it.
+        info = pdf_signature_info(ctx, (flags & PDF_SIGNATURE_SHOW_TEXT_NAME) ? name : NULL, NULL, reason, location,
+                                  (flags & PDF_SIGNATURE_SHOW_DATE) ? time(NULL) : -1, (flags & PDF_SIGNATURE_SHOW_LABELS) ? 1 : 0);
+        list = pdf_signature_appearance_signed(ctx, fz_make_rect(0, 0, width, height), FZ_LANG_UNSET, graphic,
+                                               graphic ? NULL : ((flags & PDF_SIGNATURE_SHOW_GRAPHIC_NAME) ? name : NULL), info, 0);
+        pix = fz_new_pixmap_from_display_list(ctx, list, fz_scale(scale, scale), fz_device_rgb(ctx), 1);
+    } fz_always(ctx) {
+        fz_drop_display_list(ctx, list);
+        fz_drop_image(ctx, graphic);
+        fz_drop_buffer(ctx, buf);
+        fz_free(ctx, info);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return NULL;
+    }
+    return pix;
+}

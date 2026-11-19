@@ -334,6 +334,11 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
                    const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location, int flags,
                    int certify, int lock, const char *const *lock_fields, int n_lock_fields,
                    const char **out_error);
+// A picture of a signature field as mupdf_pdf_sign would draw it, `width` × `height` points at
+// `scale` pixels a point, transparent where nothing's drawn. Drop with fz_drop_pixmap.
+fz_pixmap *mupdf_signature_preview(fz_context *ctx, float width, float height, float scale, const char *name,
+                                   const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location,
+                                   int flags, const char **out_error);
 // Whether the page's widget_index'th widget is a signed signature field.
 int mupdf_page_widget_is_signed(fz_context *ctx, fz_document *doc, int pageno, int widget_index);
 int mupdf_pdf_rename_outline_items(fz_context *ctx, fz_document *doc, const char *title, const char *new_title, const char **out_error);

@@ -730,14 +730,24 @@ extension PDFCanvasView {
                 boxBorder.stroke()
             }
 
-            // Where a new signature field goes, while placing one.
+            // Where a new signature field goes, while placing one: the box being dragged, or
+            // one of the usual size under the pointer.
+            let draggedSignatureBox: CGRect? = {
+                guard viewModel.canvasMode == .placeSignatureField, currentMeasurePage == pageIdx,
+                      let start = currentMeasurePoints.first, let end = currentMeasureCandidatePoint,
+                      hypot(end.x - start.x, end.y - start.y) > 8 else { return nil }
+                return CGRect(enclosing: [start, end])
+            }()
             if viewModel.canvasMode == .placeSignatureField,
-               let hoverCanvasPt = currentHoverCanvasPoint,
-               case let hoverPt = geometry.layoutPoint(forCanvasPoint: hoverCanvasPt),
-               pFrame.contains(hoverPt) {
+               let rect = draggedSignatureBox ?? currentHoverCanvasPoint.flatMap({ hoverCanvasPt -> CGRect? in
+                   let hoverPt = geometry.layoutPoint(forCanvasPoint: hoverCanvasPt)
+                   guard pFrame.contains(hoverPt) else { return nil }
+                   let zoom = viewModel.effectiveZoom
+                   let pagePoint = CGPoint(x: pBounds.minX + (hoverPt.x - pFrame.minX) / zoom, y: pBounds.minY + (hoverPt.y - pFrame.minY) / zoom)
+                   return viewModel.certificateSignatureRect(page: pageIdx, at: pagePoint)
+               }) {
                 let zoom = viewModel.effectiveZoom
-                let pagePoint = CGPoint(x: pBounds.minX + (hoverPt.x - pFrame.minX) / zoom, y: pBounds.minY + (hoverPt.y - pFrame.minY) / zoom)
-                if let rect = viewModel.certificateSignatureRect(page: pageIdx, at: pagePoint) {
+                do {
                     let box = NSRect(x: pFrame.minX + (rect.minX - pBounds.minX) * zoom, y: pFrame.minY + (rect.minY - pBounds.minY) * zoom,
                                      width: rect.width * zoom, height: rect.height * zoom)
                     let path = NSBezierPath(roundedRect: box, xRadius: 3, yRadius: 3)

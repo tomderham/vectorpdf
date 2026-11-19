@@ -76,11 +76,14 @@ extension PDFCanvasView {
             return
         }
 
-        // Placing a signature field: the sheet to sign it opens.
+        // Placing a signature field: dragged out, or clicked for one of the usual size; the
+        // sheet to sign it opens on mouse up.
         if viewModel.canvasMode == .placeSignatureField {
             if let (pageIdx, _, pagePoint) = pageInfo(at: point) {
                 currentHoverCanvasPoint = nil
-                viewModel.placeCertificateSignature(page: pageIdx, at: pagePoint)
+                currentMeasurePage = pageIdx
+                currentMeasurePoints = [pagePoint]
+                currentMeasureCandidatePoint = pagePoint
                 needsDisplay = true
             }
             return
@@ -712,6 +715,22 @@ extension PDFCanvasView {
             currentCalloutPage = nil
             currentCalloutStart = nil
             currentCalloutEnd = nil
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .placeSignatureField {
+            if let page = currentMeasurePage, let start = currentMeasurePoints.first {
+                let end = currentMeasureCandidatePoint ?? start
+                if hypot(end.x - start.x, end.y - start.y) > 8 {
+                    viewModel.placeCertificateSignature(page: page, in: CGRect(enclosing: [start, end]))
+                } else {
+                    viewModel.placeCertificateSignature(page: page, at: start)
+                }
+            }
+            currentMeasurePage = nil
+            currentMeasurePoints = []
+            currentMeasureCandidatePoint = nil
             needsDisplay = true
             return
         }

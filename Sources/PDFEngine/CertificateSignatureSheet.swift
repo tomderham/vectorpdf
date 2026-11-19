@@ -46,6 +46,11 @@ struct CertificateSignatureSheet: View {
     @State private var lockable: [String] = []
     @State private var chosenFields = Set<String>()
     private var canCertify: Bool { viewModel.documentContentsSummary.signatureCount == 0 }
+    @State private var previewImage: CGImage?
+
+    private struct PreviewKey: Equatable {
+        var name: String, reason: String, location: String, handwriting: Bool
+    }
 
     private var choices: [SigningIdentity] { (fileIdentity.map { [$0] } ?? []) + identities }
     private var chosen: SigningIdentity? { choices.first { $0.id == selection } }
@@ -89,6 +94,18 @@ struct CertificateSignatureSheet: View {
                     Button("Choose Certificate File…", action: chooseFile)
                 }
                 Section {
+                    if let previewImage {
+                        HStack {
+                            Spacer()
+                            Image(decorative: previewImage, scale: 2)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 320, maxHeight: 120)
+                                .background(Color.white)
+                                .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 0.5))
+                            Spacer()
+                        }
+                    }
                     TextField("Reason", text: $reason, prompt: Text("Optional, such as “I approve this document”"))
                     TextField("Location", text: $location, prompt: Text("Optional"))
                     if placement.rect.width > 0, signatureStore.savedSignatureData != nil {
@@ -149,6 +166,10 @@ struct CertificateSignatureSheet: View {
             .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 500)
+        .task(id: PreviewKey(name: chosen?.name ?? "", reason: reason, location: location, handwriting: showsHandwriting)) {
+            guard let doc = viewModel.document, let name = chosen?.name else { previewImage = nil; return }
+            previewImage = doc.signaturePreview(size: placement.rect.size, scale: 2, name: name, appearance: appearance())
+        }
         .task {
             let found = await Task.detached(priority: .userInitiated) { SigningIdentity.keychainIdentities() }.value
             identities = found
@@ -195,16 +216,21 @@ struct CertificateSignatureSheet: View {
         }
     }
 
-    private func sign() {
-        guard let identity = chosen else { return }
-        isSigning = true
-        if identity.id != fileIdentity?.id { lastCertificate = identity.id.base64EncodedString() }
+    /// What the field will show, as chosen so far.
+    private func appearance() -> PDFDocumentCore.SignatureAppearance {
         let trimmed = { (s: String) -> String? in
             let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
             return t.isEmpty ? nil : t
         }
         let graphic = placement.rect.width > 0 && showsHandwriting ? signatureStore.savedSignatureData : nil
-        let appearance = PDFDocumentCore.SignatureAppearance(reason: trimmed(reason), location: trimmed(location), graphic: graphic)
+        return PDFDocumentCore.SignatureAppearance(reason: trimmed(reason), location: trimmed(location), graphic: graphic)
+    }
+
+    private func sign() {
+        guard let identity = chosen else { return }
+        isSigning = true
+        if identity.id != fileIdentity?.id { lastCertificate = identity.id.base64EncodedString() }
+        let appearance = appearance()
         let lock: PDFDocumentCore.SigningPermissions.FieldLock
         switch lockChoice {
         case .none: lock = .none

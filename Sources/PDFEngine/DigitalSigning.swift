@@ -240,6 +240,33 @@ extension PDFDocumentCore {
         }
     }
 
+    /// What signing draws in a field `size` points big, at `scale` pixels a point.
+    public func signaturePreview(size: CGSize, scale: CGFloat, name: String, appearance: SignatureAppearance) -> CGImage? {
+        try? withLockedDocument { ctx, doc -> CGImage? in
+            let flags = Self.signatureFlags(hasGraphic: appearance.graphic != nil)
+            let graphic = appearance.graphic ?? Data()
+            let pix = graphic.withUnsafeBytes { png in
+                mupdf_signature_preview(ctx, Float(size.width), Float(size.height), Float(scale), name,
+                                        appearance.graphic == nil ? nil : png.bindMemory(to: UInt8.self).baseAddress, png.count,
+                                        appearance.reason, appearance.location, flags, nil)
+            }
+            guard let pix else { return nil }
+            defer { mupdf_pixmap_drop(ctx, pix) }
+            let width = Int(mupdf_pixmap_width(pix)), height = Int(mupdf_pixmap_height(pix))
+            let stride = Int(mupdf_pixmap_stride(pix))
+            guard width > 0, height > 0, mupdf_pixmap_n(pix) == 4, let samples = mupdf_pixmap_samples(pix),
+                  let provider = CGDataProvider(data: Data(bytes: samples, count: stride * height) as CFData) else { return nil }
+            return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: stride,
+                           space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                           provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+        } ?? nil
+    }
+
+    static func signatureFlags(hasGraphic: Bool) -> Int32 {
+        Int32(PDF_SIGNATURE_SHOW_LABELS | PDF_SIGNATURE_SHOW_TEXT_NAME | PDF_SIGNATURE_SHOW_DATE)
+            | (hasGraphic ? 0 : Int32(PDF_SIGNATURE_SHOW_GRAPHIC_NAME))
+    }
+
     /// Whether the page's `widgetIndex`'th widget is a signature field signed already.
     public func isSignedSignatureField(page: Int, widgetIndex: Int) -> Bool {
         guard isPDF else { return false }
@@ -270,8 +297,7 @@ extension PDFDocumentCore {
             }
             defer { mupdf_drop_signer(ctx, pkcs7) }
             var error: UnsafePointer<CChar>?
-            let flags = Int32(PDF_SIGNATURE_SHOW_LABELS | PDF_SIGNATURE_SHOW_TEXT_NAME | PDF_SIGNATURE_SHOW_DATE)
-                | (appearance.graphic == nil ? Int32(PDF_SIGNATURE_SHOW_GRAPHIC_NAME) : 0)
+            let flags = Self.signatureFlags(hasGraphic: appearance.graphic != nil)
             let box = fz_rect(x0: Float(rect.minX), y0: Float(rect.minY), x1: Float(rect.maxX), y1: Float(rect.maxY))
             let lockCode: Int32
             var lockNames: [String] = []

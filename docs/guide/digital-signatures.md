@@ -16,8 +16,8 @@ Click **Signature Details** to see each signature in the Document tab of the sid
 
 To sign, you need a certificate for signing with its private key. Your organization or a certificate authority can give you one, usually as a .p12 or .pfx file with a password. Certificates in your keychain can be used directly.
 
-1. Choose Edit > Sign with Certificate, then click the page where the signature should go. Press Esc to stop. If the document has an empty signature field, you can click the field instead and choose Sign with Certificate.
-2. Choose your certificate. To use a file, click **Choose Certificate File**, then type its password. The file is read for this signature only and isn't added to your keychain.
+1. Choose Edit > Sign with Certificate, then drag out a box on the page where the signature should go, or click for one of the usual size. Press Esc to stop. If the document has an empty signature field, you can click the field instead and choose Sign with Certificate.
+2. Choose your certificate. A preview shows how the signature will look. To use a file, click **Choose Certificate File**, then type its password. The file is read for this signature only and isn't added to your keychain.
 3. If you like, type a reason (such as "I approve this document") and where you're signing. If you've made a [stamp](stamps.md), you can show your handwritten signature in the field. Otherwise your name is shown.
 4. If you like, choose under After Signing:
    - **Certify**, if no one has signed the document yet: say which changes keep it valid from now on: form filling, signing and comments; form filling and signing; or none. A certified document shows as certified to everyone who checks it, and later changes it doesn't allow make your signature invalid.
