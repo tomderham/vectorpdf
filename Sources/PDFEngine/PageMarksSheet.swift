@@ -42,6 +42,8 @@ struct PageMarksSheet: View {
     private var pageCount: Int { viewModel.document?.pageCount ?? 1 }
 
     // The preview: of the page being read at first, stepping through the others.
+    /// Picture chosen as the watermark's kind, before a picture is.
+    @State private var isChoosingImage = false
     @State private var previewPage = 0
     @State private var previewer: PageMarksPreview?
     @State private var previewImage: CGImage?
@@ -213,21 +215,55 @@ struct PageMarksSheet: View {
     @ViewBuilder
     private var watermark: some View {
         Section {
-            TextField("Text", text: $settings.watermark.text, prompt: Text("CONFIDENTIAL"), axis: .vertical)
-                .lineLimit(1...4)
-                .focused($focus, equals: .watermark)
-            insertMenu
-        }
-        Section("Text") {
-            fontPicker($settings.watermark.font)
-            Toggle("As large as fits the page", isOn: Binding(
-                get: { settings.watermark.size <= 0 },
-                set: { settings.watermark.size = $0 ? 0 : 72 }
-            ))
-            if settings.watermark.size > 0 {
-                sizeField("Size", value: $settings.watermark.size, range: 6...400)
+            Picker("Watermark", selection: Binding(
+                get: { settings.watermark.image != nil || isChoosingImage },
+                set: { usesImage in
+                    isChoosingImage = usesImage
+                    if !usesImage { settings.watermark.image = nil }
+                }
+            )) {
+                Text("Text").tag(false)
+                Text("Picture").tag(true)
             }
-            ColorPicker("Color", selection: colorBinding($settings.watermark.color), supportsOpacity: false)
+            .pickerStyle(.segmented)
+            if settings.watermark.image != nil || isChoosingImage {
+                HStack {
+                    if let data = settings.watermark.image, let image = NSImage(data: data) {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 64, height: 40)
+                    }
+                    Button(settings.watermark.image == nil ? "Choose Picture…" : "Change Picture…", action: chooseWatermarkImage)
+                }
+            } else {
+                TextField("Text", text: $settings.watermark.text, prompt: Text("CONFIDENTIAL"), axis: .vertical)
+                    .lineLimit(1...4)
+                    .focused($focus, equals: .watermark)
+                insertMenu
+            }
+        }
+        Section(settings.watermark.image == nil ? "Text" : "Picture") {
+            if settings.watermark.image == nil {
+                fontPicker($settings.watermark.font)
+                Toggle("As large as fits the page", isOn: Binding(
+                    get: { settings.watermark.size <= 0 },
+                    set: { settings.watermark.size = $0 ? 0 : 72 }
+                ))
+                if settings.watermark.size > 0 {
+                    sizeField("Size", value: $settings.watermark.size, range: 6...400)
+                }
+                ColorPicker("Color", selection: colorBinding($settings.watermark.color), supportsOpacity: false)
+            } else {
+                LabeledContent("Width") {
+                    HStack {
+                        Slider(value: Binding(get: { settings.watermark.imageScale ?? 0.5 }, set: { settings.watermark.imageScale = $0 }), in: 0.05...1)
+                        Text("\(Int(((settings.watermark.imageScale ?? 0.5) * 100).rounded()))% of the page")
+                            .monospacedDigit()
+                            .frame(width: 110, alignment: .trailing)
+                    }
+                }
+            }
             LabeledContent("Opacity") {
                 HStack {
                     Slider(value: $settings.watermark.opacity, in: 0.05...1)
@@ -245,6 +281,29 @@ struct PageMarksSheet: View {
             Toggle("Behind the page's content", isOn: $settings.watermark.behindContent)
                 .help("Drawn under the page's text and pictures. A page with a background, such as a scan, hides it.")
         }
+    }
+
+    /// Picks a picture for the watermark, kept as a PNG no larger than 2,000 pixels across.
+    private func chooseWatermarkImage() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.message = "Choose a picture for the watermark, such as a logo."
+        guard panel.runModal() == .OK, let url = panel.url, let image = NSImage(contentsOf: url),
+              let data = Self.watermarkPNG(image) else { return }
+        settings.watermark.image = data
+        isChoosingImage = false
+    }
+
+    static func watermarkPNG(_ image: NSImage, maxPixels: CGFloat = 2000) -> Data? {
+        guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let scale = min(1, maxPixels / CGFloat(max(cg.width, cg.height)))
+        let width = max(1, Int(CGFloat(cg.width) * scale)), height = max(1, Int(CGFloat(cg.height) * scale))
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.interpolationQuality = .high
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let scaled = context.makeImage() else { return nil }
+        return NSBitmapImageRep(cgImage: scaled).representation(using: .png, properties: [:])
     }
 
     // MARK: - Pages and numbers

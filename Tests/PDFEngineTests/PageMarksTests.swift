@@ -15,6 +15,7 @@
 // MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ARE DISCLAIMED.
 //
 
+import AppKit
 import Foundation
 import Testing
 @testable import PDFEngine
@@ -86,6 +87,44 @@ import Testing
         let image = try #require(try preview.image(settings, width: 200))
         #expect(image.width == 200)
         #expect(doc.pageMarkKinds() == (false, false))
+    }
+
+    /// A picture watermark is in the file once, drawn on every page marked, and comes back with
+    /// its settings; settings saved before pictures could be used still read.
+    @Test func aPictureWatermarkIsAddedOnce() throws {
+        let (doc, dir) = try document()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let logo = NSImage(size: NSSize(width: 40, height: 20), flipped: false) { rect in
+            NSColor.systemBlue.setFill()
+            rect.fill()
+            return true
+        }
+        var settings = PageMarkSettings()
+        settings.watermark.image = try #require(PageMarksSheet.watermarkPNG(logo))
+        settings.watermark.imageScale = 0.4
+        #expect(!settings.isEmpty)
+        try doc.applyPageMarks(settings)
+        let saved = dir.appendingPathComponent("Logo.pdf")
+        try doc.save(to: saved.path)
+
+        let bytes = try Data(contentsOf: saved)
+        let text = String(decoding: bytes, as: UTF8.self)
+        // The picture and its transparency (an /SMask), once each.
+        #expect(text.components(separatedBy: "/Subtype/Image").count - 1 == 2)
+        #expect(text.components(separatedBy: "/SMask").count - 1 == 1)
+        #expect(text.components(separatedBy: "/VPMarkIm").count - 1 >= 3)
+        let marked = try PDFDocumentCore(filePath: saved.path)
+        #expect(marked.pageMarkKinds() == (false, true))
+        #expect(marked.pageMarkSettings()?.watermark.image == settings.watermark.image)
+        // The picture is drawn: the middle of the page isn't white any more.
+        let middle = try #require(marked.renderPageRect(pageIndex: 0, rect: CGRect(x: 300, y: 390, width: 12, height: 12), scale: 1))
+        let image = try #require(NSBitmapImageRep(data: middle))
+        let color = try #require(image.colorAt(x: 6, y: 6))
+        #expect(color.blueComponent > color.redComponent + 0.1)
+
+        let old = #"{"header":{"texts":["","","","","",""],"font":0,"size":10,"color":{"red":0,"green":0,"blue":0},"marginTop":36,"marginBottom":30,"marginLeft":72,"marginRight":72},"watermark":{"text":"DRAFT","font":3,"size":0,"color":{"red":0.6,"green":0.6,"blue":0.6},"opacity":0.3,"rotation":45,"behindContent":false},"pages":{"which":"all"},"firstPageNumber":1,"bates":{"prefix":"","suffix":"","digits":6,"start":1}}"#
+        let decoded = try JSONDecoder().decode(PageMarkSettings.self, from: Data(old.utf8))
+        #expect(decoded.watermark.text == "DRAFT" && decoded.watermark.image == nil)
     }
 
     @Test func changingThemReplacesTheOldOnes() throws {

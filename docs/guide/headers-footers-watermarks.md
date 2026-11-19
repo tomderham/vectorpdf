@@ -1,4 +1,4 @@
-<!-- keywords: header, headers, footer, footers, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF -->
+<!-- keywords: header, headers, footer, footers, logo, picture watermark, image watermark, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF -->
 
 # Headers, footers, Bates numbers and watermarks
 
@@ -28,7 +28,7 @@ You can choose the font, size and color of the text, and the margins: how far th
 
 ## Watermark
 
-Type the watermark's text. Press Return for a second line. Then choose:
+A watermark is text or a picture. For text, type it; press Return for a second line. For a picture, such as a logo, choose **Picture**, click **Choose Picture**, then set its width as a share of the page's. Then choose:
 
 - **Font** and **Color**.
 - **As large as fits the page**, or a size of your own.

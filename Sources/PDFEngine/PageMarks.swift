@@ -62,7 +62,12 @@ public struct PageMarkSettings: Codable, Equatable, Sendable {
 
         public init() {}
 
-        public var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        /// A picture (PNG) to use instead of the text, such as a logo; and how much of the page's
+        /// width it takes (0.5 if not set).
+        public var image: Data?
+        public var imageScale: Double?
+
+        public var isEmpty: Bool { image == nil && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     public struct PageChoice: Codable, Equatable, Sendable {
@@ -199,8 +204,24 @@ extension PDFDocumentCore {
             guard mupdf_pdf_remove_page_marks(ctx, doc, MUPDF_PAGE_MARK_HEADER_FOOTER | MUPDF_PAGE_MARK_WATERMARK, &error) >= 0 else {
                 throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The old marks can't be removed")
             }
+            // A picture watermark is in the file once, drawn on each page.
+            var imageObject: Int32 = 0
+            if let image = settings.watermark.image, !pages.isEmpty {
+                guard image.withUnsafeBytes({ mupdf_pdf_add_mark_image(ctx, doc, $0.bindMemory(to: UInt8.self).baseAddress, $0.count, &imageObject, &error) }) == 0 else {
+                    throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The watermark's picture can't be added")
+                }
+            }
             for (index, page) in pages.enumerated() {
-                if !settings.watermark.isEmpty {
+                if imageObject > 0 {
+                    let wm = settings.watermark
+                    var mark = mupdf_watermark()
+                    mark.opacity = Float(wm.opacity)
+                    mark.rotation = Float(wm.rotation)
+                    mark.behind = wm.behindContent ? 1 : 0
+                    guard mupdf_page_add_image_watermark(ctx, doc, Int32(page), imageObject, Float(wm.imageScale ?? 0.5), &mark, &error) == 0 else {
+                        throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The watermark can't be added")
+                    }
+                } else if !settings.watermark.isEmpty {
                     let wm = settings.watermark
                     let text = settings.expand(wm.text, index: index, pageCount: shownPageCount, date: date, fileName: fileName)
                     let ok = text.withCString { cText -> Bool in

@@ -593,6 +593,11 @@ typedef struct {
 } mupdf_watermark;
 int mupdf_page_add_header_footer(fz_context *ctx, fz_document *doc, int pageno, const mupdf_header_footer *hf, const char **out_error);
 int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_watermark *wm, const char **out_error);
+// Adds an image (PNG, JPEG, …) to the document for watermarks, once; its object number.
+int mupdf_pdf_add_mark_image(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, int *out_objnum, const char **out_error);
+// A watermark of that image, `scale` of the page's width, with the watermark's opacity, angle
+// and place (its text, font, size and color aren't used).
+int mupdf_page_add_image_watermark(fz_context *ctx, fz_document *doc, int pageno, int image_objnum, float scale, const mupdf_watermark *wm, const char **out_error);
 // Which kinds of mark the document's pages have (MUPDF_PAGE_MARK_* bits).
 int mupdf_pdf_page_marks(fz_context *ctx, fz_document *doc);
 // Removes the marks of the kinds in `mask` from every page; returns how many were removed.

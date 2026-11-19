@@ -178,6 +178,110 @@ static void wrap_contents(fz_context *ctx, pdf_document *doc, pdf_obj *contents)
     }
 }
 
+// An ExtGState in `res` drawing at `opacity` (to the nearest 1%), named into `name`.
+static void alpha_state(fz_context *ctx, pdf_document *doc, pdf_obj *res, float opacity, char *name, size_t cap) {
+    int alpha = (int)lroundf(fminf(fmaxf(opacity, 0), 1) * 100);
+    fz_snprintf(name, cap, "VPMarkGS%d", alpha);
+    pdf_obj *states = resource_dict(ctx, doc, res, PDF_NAME(ExtGState));
+    if (pdf_dict_gets(ctx, states, name)) return;
+    pdf_obj *gs = pdf_new_dict(ctx, doc, 3);
+    fz_try(ctx) {
+        pdf_dict_put(ctx, gs, PDF_NAME(Type), PDF_NAME(ExtGState));
+        pdf_dict_put_real(ctx, gs, PDF_NAME(ca), alpha / 100.0);
+        pdf_dict_put_real(ctx, gs, PDF_NAME(CA), alpha / 100.0);
+        pdf_dict_puts_drop(ctx, states, name, pdf_add_object(ctx, doc, gs));
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, gs);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+}
+
+// Adds the mark's (or another) content stream to the page: behind its content, first; or
+// over it, with its content wrapped so it starts from a clean graphics state.
+static void add_mark_stream(fz_context *ctx, pdf_document *doc, pdf_page *page, fz_buffer *buf, int behind, const char *over_kind) {
+    pdf_obj *contents = contents_array(ctx, doc, page->obj);
+    if (behind) {
+        pdf_array_insert_drop(ctx, contents, new_mark_stream(ctx, doc, buf, "WatermarkBehind"), 0);
+    } else {
+        wrap_contents(ctx, doc, contents);
+        pdf_array_push_drop(ctx, contents, new_mark_stream(ctx, doc, buf, over_kind));
+    }
+}
+
+int mupdf_pdf_add_mark_image(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, int *out_objnum, const char **out_error) {
+    if (!ctx || !doc || !data || !len || !out_objnum) return -1;
+    fz_buffer *buf = NULL;
+    fz_image *image = NULL;
+    pdf_obj *ref = NULL;
+    fz_var(buf);
+    fz_var(image);
+    fz_var(ref);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        buf = fz_new_buffer_from_copied_data(ctx, data, len);
+        image = fz_new_image_from_buffer(ctx, buf);
+        ref = pdf_add_image(ctx, pdoc, image);
+        *out_objnum = pdf_to_num(ctx, ref);
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, ref);
+        fz_drop_image(ctx, image);
+        fz_drop_buffer(ctx, buf);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+int mupdf_page_add_image_watermark(fz_context *ctx, fz_document *doc, int pageno, int image_objnum, float scale, const mupdf_watermark *wm, const char **out_error) {
+    if (!ctx || !doc || !wm || image_objnum <= 0) return -1;
+    pdf_page *page = NULL;
+    fz_buffer *buf = NULL;
+    pdf_obj *image = NULL;
+    fz_var(page);
+    fz_var(buf);
+    fz_var(image);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        image = pdf_new_indirect(ctx, pdoc, image_objnum, 0);
+        float iw = pdf_dict_get_real(ctx, image, PDF_NAME(Width)), ih = pdf_dict_get_real(ctx, image, PDF_NAME(Height));
+        if (iw <= 0 || ih <= 0) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Not an image");
+        page = pdf_load_page(ctx, pdoc, pageno);
+        float width, height;
+        fz_matrix m = shown_page_space(ctx, page, &width, &height);
+        // `scale` of the page's width, kept inside it when turned.
+        float w = width * (scale > 0 && scale <= 1 ? scale : 0.5f), h = w * ih / iw;
+        float angle = wm->rotation * (float)M_PI / 180, c = fabsf(cosf(angle)), sn = fabsf(sinf(angle));
+        float fit = fminf(width / (c * w + sn * h), height / (sn * w + c * h));
+        if (fit < 1) { w *= fit; h *= fit; }
+
+        pdf_obj *res = own_resources(ctx, pdoc, page->obj);
+        char gs_name[32], im_name[32];
+        alpha_state(ctx, pdoc, res, wm->opacity, gs_name, sizeof gs_name);
+        fz_snprintf(im_name, sizeof im_name, "VPMarkIm%d", image_objnum);
+        pdf_dict_puts(ctx, resource_dict(ctx, pdoc, res, PDF_NAME(XObject)), im_name, image);
+
+        buf = fz_new_buffer(ctx, 256);
+        fz_append_string(ctx, buf, "/Artifact <</Type /Pagination /Subtype /Watermark>> BDC\nq\n");
+        append_matrix(ctx, buf, m);
+        fz_append_printf(ctx, buf, "/%s gs\n", gs_name);
+        append_matrix(ctx, buf, fz_concat(fz_rotate(wm->rotation), fz_translate(width / 2, height / 2)));
+        fz_append_printf(ctx, buf, "%g 0 0 %g %g %g cm\n/%s Do\nQ\nEMC\n", w, h, -w / 2, -h / 2, im_name);
+        add_mark_stream(ctx, pdoc, page, buf, wm->behind, "Watermark");
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, image);
+        fz_drop_buffer(ctx, buf);
+        fz_drop_page(ctx, (fz_page *)page);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
 int mupdf_page_add_header_footer(fz_context *ctx, fz_document *doc, int pageno, const mupdf_header_footer *hf, const char **out_error) {
     if (!ctx || !doc || !hf) return -1;
     pdf_page *page = NULL;
@@ -244,11 +348,9 @@ int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, cons
     pdf_page *page = NULL;
     fz_buffer *buf = NULL;
     fz_font *font = NULL;
-    pdf_obj *gs = NULL;
     fz_var(page);
     fz_var(buf);
     fz_var(font);
-    fz_var(gs);
     fz_try(ctx) {
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
@@ -291,16 +393,7 @@ int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, cons
         pdf_obj *res = own_resources(ctx, pdoc, page->obj);
         add_font_resource(ctx, pdoc, res, font_index);
         char gs_name[32];
-        int alpha = (int)lroundf(fminf(fmaxf(wm->opacity, 0), 1) * 100);
-        fz_snprintf(gs_name, sizeof gs_name, "VPMarkGS%d", alpha);
-        pdf_obj *states = resource_dict(ctx, pdoc, res, PDF_NAME(ExtGState));
-        if (!pdf_dict_gets(ctx, states, gs_name)) {
-            gs = pdf_new_dict(ctx, pdoc, 3);
-            pdf_dict_put(ctx, gs, PDF_NAME(Type), PDF_NAME(ExtGState));
-            pdf_dict_put_real(ctx, gs, PDF_NAME(ca), alpha / 100.0);
-            pdf_dict_put_real(ctx, gs, PDF_NAME(CA), alpha / 100.0);
-            pdf_dict_puts_drop(ctx, states, gs_name, pdf_add_object(ctx, pdoc, gs));
-        }
+        alpha_state(ctx, pdoc, res, wm->opacity, gs_name, sizeof gs_name);
 
         buf = fz_new_buffer(ctx, 256);
         fz_append_string(ctx, buf, "/Artifact <</Type /Pagination /Subtype /Watermark>> BDC\nq\n");
@@ -327,7 +420,6 @@ int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, cons
             pdf_array_push_drop(ctx, contents, new_mark_stream(ctx, pdoc, buf, "Watermark"));
         }
     } fz_always(ctx) {
-        pdf_drop_obj(ctx, gs);
         fz_drop_buffer(ctx, buf);
         fz_drop_font(ctx, font);
         fz_drop_page(ctx, (fz_page *)page);
