@@ -127,6 +127,46 @@ import Testing
         #expect(decoded.watermark.text == "DRAFT" && decoded.watermark.image == nil)
     }
 
+    /// Text in other scripts is laid out by Core Text and drawn in fonts embedded once, with
+    /// only the glyphs used; it's found as the text typed.
+    @Test func textInOtherScriptsIsEmbedded() throws {
+        let (doc, dir) = try document()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var settings = PageMarkSettings()
+        settings.header.texts[0] = "第 <<page>> 页"
+        settings.header.texts[1] = "क्षत्रिय"
+        settings.header.texts[2] = "Contract"
+        settings.header.texts[3] = "مرحبا"
+        settings.header.texts[4] = "पृष्ठ <<page>>"
+        settings.watermark.text = "機密"
+        try doc.applyPageMarks(settings)
+        let saved = dir.appendingPathComponent("Scripts.pdf")
+        try doc.save(to: saved.path)
+
+        let marked = try PDFDocumentCore(filePath: saved.path)
+        for page in 0..<3 {
+            let text = try #require(marked.extractText(pageIndex: page))
+            #expect(text.contains("第 \(page + 1) 页"), "\(text)")
+            #expect(text.contains("पृष्ठ \(page + 1)"), "\(text)")
+            #expect(text.contains("機密"))
+            #expect(text.contains("Contract"))
+            // A vowel sign drawn before its consonant is still read after it, once.
+            #expect(text.contains("क्षत्रिय") && !text.contains("क्षत्रियय"), "\(text)")
+            #expect(text.contains("مرحبا"))
+        }
+        #expect(marked.pageMarkKinds() == (true, true))
+        // Each font once for all three pages, subset: the file stays small.
+        let bytes = try Data(contentsOf: saved)
+        #expect(bytes.count < 400_000, "\(bytes.count) bytes")
+        let source = String(decoding: bytes, as: UTF8.self)
+        let fontFiles = source.components(separatedBy: "/FontFile").count - 1
+        #expect(fontFiles >= 2 && fontFiles <= 8, "\(fontFiles) embedded fonts")
+
+        // Taking them off takes these off too.
+        try marked.applyPageMarks(PageMarkSettings())
+        #expect(!(marked.extractText(pageIndex: 0) ?? "").contains("機密"))
+    }
+
     @Test func changingThemReplacesTheOldOnes() throws {
         let (doc, dir) = try document()
         defer { try? FileManager.default.removeItem(at: dir) }

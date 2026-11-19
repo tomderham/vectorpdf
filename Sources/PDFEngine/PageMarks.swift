@@ -199,6 +199,7 @@ extension PDFDocumentCore {
         let before = pageMarkPages()
         let pages = settings.isEmpty ? [] : settings.pages.indices(pageCount: count)
         let json = settings.isEmpty ? nil : String(data: try JSONEncoder().encode(settings), encoding: .utf8)
+        let bounds = pageBounds
         try withLockedDocument { ctx, doc in
             var error: UnsafePointer<CChar>?
             guard mupdf_pdf_remove_page_marks(ctx, doc, MUPDF_PAGE_MARK_HEADER_FOOTER | MUPDF_PAGE_MARK_WATERMARK, &error) >= 0 else {
@@ -211,7 +212,27 @@ extension PDFDocumentCore {
                     throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The watermark's picture can't be added")
                 }
             }
+            // Text the standard fonts can't show, laid out first so its fonts can be embedded
+            // once; again without any font that couldn't be.
+            var avoiding = Set<String>()
+            var embedded: [String: Int32] = [:]
+            var shaped = Self.shapedMarks(settings, pages: pages, bounds: bounds, pageCount: shownPageCount, date: date, fileName: fileName,
+                                          fonts: PageMarkShaping.Fonts(), avoiding: avoiding)
+            for _ in 0..<4 {
+                let failed = shaped.fonts.embed(ctx: ctx, doc: doc)
+                embedded = shaped.fonts.objects
+                guard !failed.isEmpty, !failed.isSubset(of: avoiding) else { break }
+                avoiding.formUnion(failed)
+                shaped = Self.shapedMarks(settings, pages: pages, bounds: bounds, pageCount: shownPageCount, date: date, fileName: fileName,
+                                          fonts: PageMarkShaping.Fonts(embedded: embedded), avoiding: avoiding)
+            }
+            if !shaped.fonts.allEmbedded { _ = shaped.fonts.embed(ctx: ctx, doc: doc) }
             for (index, page) in pages.enumerated() {
+                for mark in shaped.marks[page] ?? [] {
+                    try PageMarkShaping.addMark(ctx: ctx, doc: doc, page: page, fonts: shaped.fonts, lines: mark.lines, size: mark.size,
+                                                kind: mark.kind, artifact: mark.artifact, color: mark.color, opacity: mark.opacity,
+                                                matrix: mark.matrix, text: mark.text)
+                }
                 if imageObject > 0 {
                     let wm = settings.watermark
                     var mark = mupdf_watermark()
@@ -221,7 +242,7 @@ extension PDFDocumentCore {
                     guard mupdf_page_add_image_watermark(ctx, doc, Int32(page), imageObject, Float(wm.imageScale ?? 0.5), &mark, &error) == 0 else {
                         throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The watermark can't be added")
                     }
-                } else if !settings.watermark.isEmpty {
+                } else if !settings.watermark.isEmpty, !shaped.shapedWatermark.contains(page) {
                     let wm = settings.watermark
                     let text = settings.expand(wm.text, index: index, pageCount: shownPageCount, date: date, fileName: fileName)
                     let ok = text.withCString { cText -> Bool in
@@ -239,7 +260,9 @@ extension PDFDocumentCore {
                 }
                 if !settings.header.isEmpty {
                     let hf = settings.header
+                    // Slots laid out as shaped glyphs are left out here.
                     let texts = hf.texts.map { settings.expand($0, index: index, pageCount: shownPageCount, date: date, fileName: fileName) }
+                        .map { PageMarkShaping.fitsStandardFonts($0) ? $0 : "" }
                     let ok = withCStrings(texts) { pointers -> Bool in
                         var mark = mupdf_header_footer()
                         mark.text = (pointers[0], pointers[1], pointers[2], pointers[3], pointers[4], pointers[5])
@@ -260,6 +283,74 @@ extension PDFDocumentCore {
             }
         }
         return before.union(pages)
+    }
+
+    /// A mark in characters the standard fonts lack, laid out: lines with their origins in the
+    /// mark's space, placed on the page (as shown, bottom-up) by `matrix`.
+    struct ShapedMark {
+        var lines: [(PageMarkShaping.Line, CGPoint)]
+        var size: CGFloat
+        var kind: String
+        var artifact: String
+        var color: PageMarkSettings.MarkColor
+        var opacity: Double?
+        var matrix: CGAffineTransform
+        var text: String
+    }
+
+    /// The marks on `pages` whose text the standard fonts can't show, laid out as the C side
+    /// lays out the others, with the fonts they need.
+    static func shapedMarks(_ settings: PageMarkSettings, pages: [Int], bounds: [CGRect], pageCount: Int, date: Date, fileName: String,
+                            fonts: PageMarkShaping.Fonts, avoiding: Set<String>)
+        -> (marks: [Int: [ShapedMark]], fonts: PageMarkShaping.Fonts, shapedWatermark: Set<Int>) {
+        var marks: [Int: [ShapedMark]] = [:]
+        var shapedWatermark = Set<Int>()
+        for (index, page) in pages.enumerated() where page < bounds.count {
+            let width = bounds[page].width, height = bounds[page].height
+            let hf = settings.header
+            if !hf.isEmpty {
+                let size = CGFloat(hf.size > 0 ? hf.size : 10)
+                for slot in 0..<6 {
+                    let text = settings.expand(hf.texts[slot], index: index, pageCount: pageCount, date: date, fileName: fileName)
+                    guard !text.isEmpty, !PageMarkShaping.fitsStandardFonts(text) else { continue }
+                    let line = PageMarkShaping.shape(text, font: hf.font, size: size, avoiding: avoiding)
+                    fonts.add(line)
+                    let row = slot / 3, col = slot % 3
+                    let x = col == 0 ? CGFloat(hf.marginLeft) : col == 1 ? (width - line.width) / 2 : width - CGFloat(hf.marginRight) - line.width
+                    let y = row == 0 ? height - CGFloat(hf.marginTop) - size * 0.75 : CGFloat(hf.marginBottom)
+                    marks[page, default: []].append(ShapedMark(lines: [(line, .zero)], size: size, kind: "HeaderFooter", artifact: row == 0 ? "Header" : "Footer",
+                                                               color: hf.color, opacity: nil, matrix: CGAffineTransform(translationX: x, y: y), text: text))
+                }
+            }
+            let wm = settings.watermark
+            if wm.image == nil, !wm.isEmpty {
+                let text = settings.expand(wm.text, index: index, pageCount: pageCount, date: date, fileName: fileName)
+                guard !PageMarkShaping.fitsStandardFonts(text) else { continue }
+                let texts = Array(text.components(separatedBy: "\n").prefix(16))
+                var size = CGFloat(wm.size)
+                if size <= 0 {
+                    // As large as fits, as for the standard fonts: inside 80% of the page.
+                    let widest = texts.map { PageMarkShaping.shape($0, font: wm.font, size: 100, avoiding: avoiding).width / 100 }.max() ?? 1
+                    let angle = wm.rotation * .pi / 180, c = abs(cos(angle)), s = abs(sin(angle))
+                    let blockW = max(Double(widest), 0.01), blockH = Double(texts.count) * 1.2
+                    size = CGFloat(min(min(Double(width) * 0.8 / (c * blockW + s * blockH), Double(height) * 0.8 / (s * blockW + c * blockH)), 400))
+                }
+                let leading = size * 1.2
+                let top = CGFloat(texts.count - 1) * leading / 2 - size * 0.35
+                var lines: [(PageMarkShaping.Line, CGPoint)] = []
+                for (i, lineText) in texts.enumerated() {
+                    let line = PageMarkShaping.shape(lineText, font: wm.font, size: size, avoiding: avoiding)
+                    fonts.add(line)
+                    lines.append((line, CGPoint(x: -line.width / 2, y: top - CGFloat(i) * leading)))
+                }
+                let angle = wm.rotation * .pi / 180
+                let matrix = CGAffineTransform(a: CGFloat(cos(angle)), b: CGFloat(sin(angle)), c: CGFloat(-sin(angle)), d: CGFloat(cos(angle)), tx: width / 2, ty: height / 2)
+                marks[page, default: []].append(ShapedMark(lines: lines, size: size, kind: wm.behindContent ? "WatermarkBehind" : "Watermark", artifact: "Watermark",
+                                                           color: wm.color, opacity: wm.opacity, matrix: matrix, text: text))
+                shapedWatermark.insert(page)
+            }
+        }
+        return (marks, fonts, shapedWatermark)
     }
 
     /// The pages that have marks VectorPDF added.

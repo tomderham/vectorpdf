@@ -282,6 +282,250 @@ int mupdf_page_add_image_watermark(fz_context *ctx, fz_document *doc, int pageno
     return 0;
 }
 
+// MARK: Marks in any script: glyphs laid out by the app (Core Text), in fonts embedded here.
+
+int mupdf_pdf_add_mark_font(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, const int *gids, int n_gids, int *out_objnum, const char **out_error) {
+    if (!ctx || !doc || !data || !len || !out_objnum) return -1;
+    fz_buffer *buf = NULL, *subset = NULL;
+    fz_font *font = NULL;
+    pdf_obj *ref = NULL;
+    int *used = NULL;
+    fz_var(buf);
+    fz_var(subset);
+    fz_var(font);
+    fz_var(ref);
+    fz_var(used);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        buf = fz_new_buffer_from_copied_data(ctx, data, len);
+        // Only the glyphs used (and .notdef), at their own numbers: the text gives glyph numbers.
+        used = fz_malloc_array(ctx, n_gids + 1, int);
+        used[0] = 0;
+        for (int i = 0; i < n_gids; i++) used[i + 1] = gids[i];
+        fz_try(ctx)
+            subset = fz_subset_ttf_for_gids(ctx, buf, used, n_gids + 1, 0, 1);
+        fz_catch(ctx) {
+            // A font that can't be subset is embedded whole, if it isn't too large.
+            char why[256];
+            fz_strlcpy(why, fz_caught_message(ctx), sizeof why);
+            fz_report_error(ctx);
+            if (len > 8 * 1024 * 1024) fz_throw(ctx, FZ_ERROR_UNSUPPORTED, "The font for this text can't be embedded (%s)", why);
+            subset = fz_keep_buffer(ctx, buf);
+        }
+        font = fz_new_font_from_buffer(ctx, NULL, subset, 0, 0);
+        ref = pdf_add_cid_font(ctx, pdoc, font);
+        *out_objnum = pdf_to_num(ctx, ref);
+        // The font file deflated: a subset keeping glyph numbers has long runs of zeros.
+        pdf_obj *descriptor = pdf_dict_getp(ctx, pdf_array_get(ctx, pdf_dict_get(ctx, ref, PDF_NAME(DescendantFonts)), 0), "FontDescriptor");
+        pdf_obj *file = pdf_dict_get(ctx, descriptor, PDF_NAME(FontFile2));
+        if (!file) file = pdf_dict_get(ctx, descriptor, PDF_NAME(FontFile3));
+        if (pdf_is_stream(ctx, file) && !pdf_dict_get(ctx, file, PDF_NAME(Filter))) {
+            fz_buffer *raw = pdf_load_stream(ctx, file);
+            fz_buffer *packed = NULL;
+            fz_var(packed);
+            fz_try(ctx) {
+                size_t packed_len = 0;
+                unsigned char *data = fz_new_deflated_data_from_buffer(ctx, &packed_len, raw, FZ_DEFLATE_BEST);
+                packed = fz_new_buffer_from_data(ctx, data, packed_len);
+                pdf_update_stream(ctx, pdoc, file, packed, 1);
+                pdf_dict_put(ctx, file, PDF_NAME(Filter), PDF_NAME(FlateDecode));
+            } fz_always(ctx) {
+                fz_drop_buffer(ctx, packed);
+                fz_drop_buffer(ctx, raw);
+            } fz_catch(ctx) {
+                fz_rethrow(ctx);
+            }
+        }
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, ref);
+        fz_drop_font(ctx, font);
+        fz_drop_buffer(ctx, subset);
+        fz_drop_buffer(ctx, buf);
+        fz_free(ctx, used);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+// The text each glyph of a mark font stands for, as its ToUnicode map, in place of the one made
+// from the font's cmap: shaped glyphs (conjuncts, ligatures, joined forms) aren't in that.
+int mupdf_pdf_set_mark_font_text(fz_context *ctx, fz_document *doc, int font_objnum, const unsigned short *gids, const char *const *texts, int n, const char **out_error) {
+    if (!ctx || !doc || font_objnum <= 0 || n <= 0) return -1;
+    fz_buffer *buf = NULL;
+    pdf_obj *font = NULL;
+    fz_var(buf);
+    fz_var(font);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        buf = fz_new_buffer(ctx, 256 + n * 32);
+        fz_append_string(ctx, buf, "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n"
+            "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n"
+            "/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n"
+            "1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n");
+        for (int start = 0; start < n; start += 100) {
+            int count = n - start < 100 ? n - start : 100;
+            fz_append_printf(ctx, buf, "%d beginbfchar\n", count);
+            for (int i = start; i < start + count; i++) {
+                fz_append_printf(ctx, buf, "<%04X> <", gids[i]);
+                const char *t = texts[i] ? texts[i] : "";
+                while (*t) {
+                    int rune;
+                    t += fz_chartorune(&rune, t);
+                    if (rune >= 0x10000) {
+                        rune -= 0x10000;
+                        fz_append_printf(ctx, buf, "%04X%04X", 0xD800 + (rune >> 10), 0xDC00 + (rune & 0x3FF));
+                    } else {
+                        fz_append_printf(ctx, buf, "%04X", rune);
+                    }
+                }
+                fz_append_string(ctx, buf, ">\n");
+            }
+            fz_append_string(ctx, buf, "endbfchar\n");
+        }
+        fz_append_string(ctx, buf, "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
+        font = pdf_new_indirect(ctx, pdoc, font_objnum, 0);
+        pdf_dict_put_drop(ctx, font, PDF_NAME(ToUnicode), pdf_add_stream(ctx, pdoc, buf, NULL, 0));
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, font);
+        fz_drop_buffer(ctx, buf);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
+// The text as a PDF string in UTF-16BE with its byte order mark, for /ActualText.
+static void append_utf16_hex(fz_context *ctx, fz_buffer *buf, const char *utf8) {
+    fz_append_string(ctx, buf, "<FEFF");
+    while (*utf8) {
+        int rune;
+        utf8 += fz_chartorune(&rune, utf8);
+        if (rune >= 0x10000) {
+            rune -= 0x10000;
+            fz_append_printf(ctx, buf, "%04X%04X", 0xD800 + (rune >> 10), 0xDC00 + (rune & 0x3FF));
+        } else {
+            fz_append_printf(ctx, buf, "%04X", rune);
+        }
+    }
+    fz_append_byte(ctx, buf, '>');
+}
+
+int mupdf_page_add_glyph_mark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_glyph_mark *mark, const char **out_error) {
+    if (!ctx || !doc || !mark || !mark->kind || !mark->artifact) return -1;
+    pdf_page *page = NULL;
+    fz_buffer *buf = NULL, *body = NULL;
+    pdf_obj *form_res = NULL, *form = NULL;
+    fz_var(page);
+    fz_var(buf);
+    fz_var(body);
+    fz_var(form_res);
+    fz_var(form);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Document is not a PDF");
+        page = pdf_load_page(ctx, pdoc, pageno);
+        float width, height;
+        fz_matrix m = shown_page_space(ctx, page, &width, &height);
+        pdf_obj *res = own_resources(ctx, pdoc, page->obj);
+        // See-through text is drawn opaque in a group made see-through as a whole, so where
+        // glyphs overlap (Devanagari's headline) it isn't darker.
+        int group = mark->opacity >= 0 && mark->opacity < 1;
+        if (group) form_res = pdf_new_dict(ctx, pdoc, 1);
+        pdf_obj *fonts = resource_dict(ctx, pdoc, group ? form_res : res, PDF_NAME(Font));
+
+        body = fz_new_buffer(ctx, 512);
+        fz_matrix place = fz_make_matrix(mark->matrix[0], mark->matrix[1], mark->matrix[2], mark->matrix[3], mark->matrix[4], mark->matrix[5]);
+        append_matrix(ctx, body, place);
+        fz_append_printf(ctx, body, "%g %g %g rg\n", mark->color[0], mark->color[1], mark->color[2]);
+        fz_append_string(ctx, body, "BT\n");
+        for (int r = 0; r < mark->n_runs; r++) {
+            const mupdf_glyph_run *run = &mark->runs[r];
+            if (run->font_objnum <= 0 || run->n <= 0) continue;
+            char key[32];
+            fz_snprintf(key, sizeof key, "VPMarkU%d", run->font_objnum);
+            if (!pdf_dict_gets(ctx, fonts, key))
+                pdf_dict_puts_drop(ctx, fonts, key, pdf_new_indirect(ctx, pdoc, run->font_objnum, 0));
+            float size = run->size > 0 ? run->size : mark->size;
+            fz_append_printf(ctx, body, "/%s %g Tf\n", key, size);
+            // Stretch by stretch: one found as other text (Devanagari's vowel signs come before
+            // their consonant as glyphs, after it as text) is marked so.
+            int segment = 0;
+            for (int i = 0; i < run->n; segment++) {
+                int count = segment < run->n_segments ? run->segment_counts[segment] : run->n - i;
+                const char *actual = segment < run->n_segments && run->segment_texts ? run->segment_texts[segment] : NULL;
+                int end = count > 0 && i + count <= run->n ? i + count : run->n;
+                if (actual && *actual) {
+                    fz_append_string(ctx, body, "/Span <</ActualText ");
+                    append_utf16_hex(ctx, body, actual);
+                    fz_append_string(ctx, body, ">> BDC\n");
+                }
+                // Glyphs along one baseline in one TJ, the gaps between them as Core Text set
+                // them: readers take each TJ as one piece of text.
+                while (i < end) {
+                    float y = run->xy[2 * i + 1];
+                    fz_append_printf(ctx, body, "1 0 0 1 %g %g Tm [<%04X>", run->xy[2 * i], y, run->gids[i]);
+                    int j = i + 1;
+                    for (; j < end && fabsf(run->xy[2 * j + 1] - y) < 0.01f; j++) {
+                        float expected = run->xy[2 * (j - 1)] + (run->advances ? run->advances[j - 1] : 0);
+                        float shift = (expected - run->xy[2 * j]) * 1000 / size;
+                        if (fabsf(shift) > 0.05f) fz_append_printf(ctx, body, " %g ", shift);
+                        fz_append_printf(ctx, body, "<%04X>", run->gids[j]);
+                    }
+                    fz_append_string(ctx, body, "] TJ\n");
+                    i = j;
+                }
+                if (actual && *actual) fz_append_string(ctx, body, "EMC\n");
+            }
+        }
+        fz_append_string(ctx, body, "ET\n");
+
+        buf = fz_new_buffer(ctx, 256);
+        fz_append_printf(ctx, buf, "/Artifact <</Type /Pagination /Subtype /%s>> BDC\nq\n", mark->artifact);
+        append_matrix(ctx, buf, m);
+        if (group) {
+            char gs_name[32], fm_name[32];
+            alpha_state(ctx, pdoc, res, mark->opacity, gs_name, sizeof gs_name);
+            pdf_obj *dict = pdf_new_dict(ctx, pdoc, 5);
+            fz_try(ctx) {
+                pdf_dict_put(ctx, dict, PDF_NAME(Type), PDF_NAME(XObject));
+                pdf_dict_put(ctx, dict, PDF_NAME(Subtype), PDF_NAME(Form));
+                pdf_dict_put_rect(ctx, dict, PDF_NAME(BBox), fz_make_rect(0, 0, width, height));
+                pdf_dict_put(ctx, dict, PDF_NAME(Resources), form_res);
+                pdf_obj *g = pdf_dict_put_dict(ctx, dict, PDF_NAME(Group), 1);
+                pdf_dict_put(ctx, g, PDF_NAME(S), PDF_NAME(Transparency));
+                form = pdf_add_stream(ctx, pdoc, body, dict, 0);
+            } fz_always(ctx) {
+                pdf_drop_obj(ctx, dict);
+            } fz_catch(ctx) {
+                fz_rethrow(ctx);
+            }
+            fz_snprintf(fm_name, sizeof fm_name, "VPMarkFm%d", pdf_to_num(ctx, form));
+            pdf_dict_puts(ctx, resource_dict(ctx, pdoc, res, PDF_NAME(XObject)), fm_name, form);
+            fz_append_printf(ctx, buf, "/%s gs\n/%s Do\n", gs_name, fm_name);
+        } else {
+            fz_append_buffer(ctx, buf, body);
+        }
+        fz_append_string(ctx, buf, "Q\nEMC\n");
+        int behind = !strcmp(mark->kind, "WatermarkBehind");
+        add_mark_stream(ctx, pdoc, page, buf, behind, mark->kind);
+    } fz_always(ctx) {
+        pdf_drop_obj(ctx, form);
+        pdf_drop_obj(ctx, form_res);
+        fz_drop_buffer(ctx, body);
+        fz_drop_buffer(ctx, buf);
+        fz_drop_page(ctx, (fz_page *)page);
+    } fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
 int mupdf_page_add_header_footer(fz_context *ctx, fz_document *doc, int pageno, const mupdf_header_footer *hf, const char **out_error) {
     if (!ctx || !doc || !hf) return -1;
     pdf_page *page = NULL;

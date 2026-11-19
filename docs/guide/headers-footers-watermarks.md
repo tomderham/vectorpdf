@@ -1,4 +1,4 @@
-<!-- keywords: header, headers, footer, footers, logo, picture watermark, image watermark, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF -->
+<!-- keywords: header, headers, footer, footers, Chinese, Japanese, Korean, Hindi, Arabic, any language, logo, picture watermark, image watermark, page numbers, page numbering, Bates, Bates numbers, Bates numbering, watermark, watermarks, DRAFT, CONFIDENTIAL, stamp text, legal, discovery, PDF -->
 
 # Headers, footers, Bates numbers and watermarks
 
@@ -25,6 +25,8 @@ To add a page number or another value that changes from page to page, click in a
 Each appears in the box as a word in double angle brackets, such as `<<page>>`. For example, type `Page `, insert Page Number, type ` of `, then insert Page Count, to get "Page 3 of 12".
 
 You can choose the font, size and color of the text, and the margins: how far the header is from the top of the page, the footer from the bottom, and both from the sides, in points (72 points is an inch).
+
+Text can be in any language, such as Chinese, Hindi or Arabic. Where the chosen font doesn't have its characters, a font on your Mac that does is used, and the characters used are saved in the document so it looks the same everywhere.
 
 ## Watermark
 

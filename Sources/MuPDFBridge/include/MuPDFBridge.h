@@ -593,6 +593,36 @@ typedef struct {
 } mupdf_watermark;
 int mupdf_page_add_header_footer(fz_context *ctx, fz_document *doc, int pageno, const mupdf_header_footer *hf, const char **out_error);
 int mupdf_page_add_watermark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_watermark *wm, const char **out_error);
+// Marks in scripts the standard fonts don't have: glyphs the app lays out, in fonts embedded
+// once (subset to `gids`, at their own glyph numbers); the font's object number.
+int mupdf_pdf_add_mark_font(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, const int *gids, int n_gids, int *out_objnum, const char **out_error);
+typedef struct {
+    int font_objnum;   /* from mupdf_pdf_add_mark_font */
+    float size;
+    int n;
+    const unsigned short *gids;
+    const float *xy;   /* each glyph's origin, in the mark's space (y up) */
+    const float *advances;  /* each glyph's advance as the font gives it, at `size` */
+    /* The glyphs in stretches, `segment_counts[k]` glyphs each, found as `segment_texts[k]`
+       (UTF-8) where that isn't NULL: where the glyphs' order isn't the text's. */
+    int n_segments;
+    const int *segment_counts;
+    const char *const *segment_texts;
+} mupdf_glyph_run;
+// Sets the text each glyph of a mark font (from mupdf_pdf_add_mark_font) stands for, UTF-8.
+int mupdf_pdf_set_mark_font_text(fz_context *ctx, fz_document *doc, int font_objnum, const unsigned short *gids, const char *const *texts, int n, const char **out_error);
+typedef struct {
+    const char *kind;      /* "HeaderFooter", "Watermark" or "WatermarkBehind" */
+    const char *artifact;  /* "Header", "Footer" or "Watermark" */
+    float size;
+    float color[3];
+    float opacity;         /* below 1 to draw see-through; negative for opaque */
+    float matrix[6];       /* mark space to the page as shown (bottom-up, origin bottom left) */
+    int n_runs;
+    const mupdf_glyph_run *runs;
+    const char *actual_text;  /* UTF-8, what the glyphs say */
+} mupdf_glyph_mark;
+int mupdf_page_add_glyph_mark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_glyph_mark *mark, const char **out_error);
 // Adds an image (PNG, JPEG, …) to the document for watermarks, once; its object number.
 int mupdf_pdf_add_mark_image(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, int *out_objnum, const char **out_error);
 // A watermark of that image, `scale` of the page's width, with the watermark's opacity, angle
