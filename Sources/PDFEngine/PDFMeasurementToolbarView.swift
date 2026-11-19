@@ -72,6 +72,33 @@ public struct PDFMeasurementToolbarView: View {
                 }
 
                 PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .measureRectangle,
+                    helpText: "Rectangle Area Tool (Drag from one corner to the other)"
+                ) {
+                    viewModel.toggleTool(.measureRectangle)
+                } label: {
+                    Image(systemName: "rectangle.dashed")
+                }
+
+                PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .measureCircle,
+                    helpText: "Circle Tool (Drag from the centre: radius, diameter and area)"
+                ) {
+                    viewModel.toggleTool(.measureCircle)
+                } label: {
+                    Image(systemName: "circle.dashed")
+                }
+
+                PreviewToolbarButton(
+                    isSelected: viewModel.canvasMode == .measureArc,
+                    helpText: "Arc Length Tool (Click the start, a point along the arc, and its end)"
+                ) {
+                    viewModel.toggleTool(.measureArc)
+                } label: {
+                    Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
+                }
+
+                PreviewToolbarButton(
                     isSelected: viewModel.canvasMode == .measureAngle,
                     helpText: "Vertex Angle Inspector (Angle between intersecting lines)"
                 ) {

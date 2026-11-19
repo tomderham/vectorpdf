@@ -1,4 +1,4 @@
-<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, angle, count, counting, tally, symbols, ortho, snap, snapping, edit, change, move, reshape, handle, offset -->
+<!-- keywords: measure, measurement, measurements, length, distance, dimension, perimeter, area, rectangle, circle, radius, diameter, arc, arc length, curve, angle, count, counting, tally, symbols, ortho, snap, snapping, edit, change, move, reshape, handle, offset -->
 
 # Measure lengths, areas and angles, and count
 
@@ -13,6 +13,9 @@ Zoom in for accuracy before you measure. Pressing Escape cancels a measurement i
 | Linear Dimension | Drag from one point to the other. |
 | Perimeter | Click each point along the path. Press Return or double-click to finish. |
 | Polygon Area | Click each corner. Press Return, double-click, or click the first point to close the shape. |
+| Rectangle Area | Drag from one corner to the opposite one. |
+| Circle | Drag from the centre to the edge. The label shows the area and the diameter, and the [status bar](rulers-and-inspector.md) shows the radius and circumference too. |
+| Arc Length | Click where the arc starts, a point along it, then where it ends. The label shows the length along the arc and its radius. |
 | Vertex Angle | Click a point on the first line, then the corner, then a point on the second line. |
 | Count | Type what you're counting in the group box, such as Outlets, then click each one. |
 
@@ -47,12 +50,14 @@ The value is worked out again as you drag. Drag past the edge of the window to s
 
 To select an area, click its edge: clicking inside it selects the text there.
 
+A rectangle, circle or arc keeps its shape when you change it: drag a rectangle's corner, a circle's centre or edge, or any of an arc's three points. They're saved as an area or a length through the shape's outline, so other apps that read PDF measurements show them as measurements too, with their own figures for the outline (within 0.05% of VectorPDF's for a circle or arc).
+
 ## Change how measurements look
 
 Use the color button and line width box in the Measurement toolbar before you measure. Choose a width in points, or type one, from 0.1 to 72 points. New measurements are gray, 1.5 points wide, until you choose otherwise. VectorPDF remembers what you choose, and the Markup toolbar keeps its own colors and widths. To change the color or width of a measurement you've already made, select it, then choose a color or width in the Measurement toolbar. The width is saved in the PDF.
 
 ## Keep or remove measurements
 
-Measurements are annotations, stored in the PDF when you [save](save.md). To delete one, right-click it, then choose the delete command, such as Delete Dimension, Delete Area Takeoff or Delete Count Marker.
+Measurements are annotations, stored in the PDF when you [save](save.md). To delete one, right-click it, then choose the delete command, such as Delete Dimension, Delete Area Takeoff, Delete Circle Measurement or Delete Count Marker.
 
 To list all your measurements, see the [Takeoff table](takeoff.md).

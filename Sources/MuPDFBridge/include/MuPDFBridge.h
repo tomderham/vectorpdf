@@ -146,7 +146,14 @@ typedef struct {
     float leader;
     /* Its line width (/BS /W), or 0 if it has none. */
     float stroke_width;
+    /* The shape it was drawn as: 0 none, 1 rectangle, 2 circle, 3 arc; and its defining points,
+       in page (top-down) space (see mupdf_pdf_set_measurement_shape). */
+    int shape;
+    int n_shape_points;
+    float shape_xy[6];
 } mupdf_measurement_annot;
+int mupdf_pdf_set_measurement_shape(fz_context *ctx, fz_document *doc, int pageno, int objnum,
+                                    const char *shape, const fz_point *points, int n_points, const char **out_error);
 int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int pageno,
                                      mupdf_measurement_annot *out, int capacity, int *out_count,
                                      const char **out_error);

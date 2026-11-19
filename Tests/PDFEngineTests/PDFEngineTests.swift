@@ -2652,7 +2652,7 @@ func createFormSamplePDF(at fileURL: URL) {
     #expect(!inkAnnot.contains(pagePoint: CGPoint(x: 125, y: 150), tolerance: 3.0))
 
     // 3. Test CanvasMode enum
-    #expect(CanvasMode.allCases.count == 16) // 7 original, shapes, 6 measurement modes, placing a signature field
+    #expect(CanvasMode.allCases.count == 19) // 7 original, shapes, 9 measurement modes, placing a signature field
     #expect(CanvasMode.select.rawValue == "select")
     #expect(CanvasMode.draw.rawValue == "draw")
     #expect(CanvasMode.text.rawValue == "text")

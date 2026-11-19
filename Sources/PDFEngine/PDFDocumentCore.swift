@@ -1468,6 +1468,21 @@ public final class PDFDocumentCore: @unchecked Sendable {
             default:
                 return nil
             }
+            // Drawn as a shape here, and still that shape: valued as it.
+            var shape: MeasuredShape?
+            var measuredValue = value
+            if raw.shape > 0, raw.shape <= 3 {
+                let kind: MeasuredShape.Kind = raw.shape == 1 ? .rectangle : raw.shape == 2 ? .circle : .arc
+                let n = Int(raw.n_shape_points)
+                let defining: [CGPoint] = withUnsafeBytes(of: &raw.shape_xy) { bytes in
+                    let xy = bytes.bindMemory(to: Float.self)
+                    return (0..<n).map { CGPoint(x: CGFloat(xy[2 * $0]), y: CGFloat(xy[2 * $0 + 1])) }
+                }
+                if let candidate = MeasuredShape(kind: kind, points: defining), candidate.measurementType == type, candidate.matches(points) {
+                    shape = candidate
+                    measuredValue = candidate.value
+                }
+            }
             var annot = PDFAnnotation(
                 pageIndex: pageIndex,
                 type: type,
@@ -1475,14 +1490,30 @@ public final class PDFDocumentCore: @unchecked Sendable {
                 color: AnnotationColor.nearest(red: raw.r, green: raw.g, blue: raw.b),
                 text: text,
                 measurementPoints: points,
-                measurementValue: value,
+                measurementValue: measuredValue,
                 measurementText: text,
                 leaderOffset: CGFloat(raw.leader)
             )
             annot.documentObjectNumber = Int(raw.objnum)
             annot.layerObjectNumber = raw.layer > 0 ? Int(raw.layer) : nil
+            annot.measuredShape = shape
             return annot
         }
+    }
+
+    /// Records the shape a measurement (PDF object `objectNumber`) was drawn as, or with nil
+    /// takes it off.
+    public func setMeasurementShape(pageIndex: Int, objectNumber: Int, shape: MeasuredShape?) throws {
+        guard isPDF else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var error: UnsafePointer<CChar>?
+        let points = (shape?.points ?? []).map { fz_point(x: Float($0.x), y: Float($0.y)) }
+        let ret = points.withUnsafeBufferPointer {
+            mupdf_pdf_set_measurement_shape(ctx, doc, Int32(pageIndex), Int32(objectNumber), shape?.kind.rawValue,
+                                            $0.baseAddress, Int32($0.count), &error)
+        }
+        guard ret == 0 else { throw PDFError.saveFailed(error.map { String(cString: $0) } ?? "The measurement's shape couldn't be saved") }
     }
 
     /// Object number of the most recently added annotation on a page (see

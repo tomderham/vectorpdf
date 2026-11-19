@@ -358,6 +358,11 @@ public enum CanvasMode: String, CaseIterable, Sendable {
     case measureAngle
     /// Click each thing to count, in the group `countGroup`.
     case measureCount
+    /// Drag a rectangle, or a circle from its centre, to measure its area.
+    case measureRectangle
+    case measureCircle
+    /// Click an arc's start, a point along it and its end, to measure its length.
+    case measureArc
     case calibrateScale
     /// Click where a new signature field goes, to sign it with a certificate.
     case placeSignatureField
@@ -397,6 +402,9 @@ public struct PDFAnnotation: Identifiable, Codable, Sendable, Equatable {
     public var appearanceRevision = 0
     /// The object number of the layer it's on (its /OC), or nil when it isn't on one.
     public var layerObjectNumber: Int?
+    /// For a measurement drawn as a rectangle, circle or arc: the shape, whose outline its
+    /// `measurementPoints` are.
+    public var measuredShape: MeasuredShape?
 
     public var isFromFile: Bool { fileSubtype != nil }
 

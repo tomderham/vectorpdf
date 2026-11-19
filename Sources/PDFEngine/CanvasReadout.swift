@@ -192,6 +192,31 @@ public final class CanvasReadout: ObservableObject {
             }
             items.append(ReadoutItem("Segment", format(length(last, candidate))))
             return items
+        case .measureRectangle:
+            guard let shape = MeasuredShape(kind: .rectangle, points: [points[0], candidate]) else { return [] }
+            return [
+                ReadoutItem("Area", scale.formatArea(pointsSquared: shape.value)),
+                ReadoutItem("Width", format(Double(abs(candidate.x - points[0].x)))),
+                ReadoutItem("Height", format(Double(abs(candidate.y - points[0].y)))),
+            ]
+        case .measureCircle:
+            guard let shape = MeasuredShape(kind: .circle, points: [points[0], candidate]) else { return [] }
+            return [
+                ReadoutItem("Radius", format(Double(shape.radius))),
+                ReadoutItem("Diameter", format(Double(shape.radius) * 2)),
+                ReadoutItem("Area", scale.formatArea(pointsSquared: shape.value)),
+                ReadoutItem("Circumference", format(2 * .pi * Double(shape.radius))),
+            ]
+        case .measureArc:
+            guard points.count == 2, let shape = MeasuredShape(kind: .arc, points: points + [candidate]) else {
+                return [ReadoutItem("Chord", format(length(last, candidate)))]
+            }
+            var items = [ReadoutItem("Length", format(shape.value))]
+            if let circle = shape.arcCircle {
+                items.append(ReadoutItem("Radius", format(Double(circle.radius))))
+                items.append(ReadoutItem("Angle", scale.formatAngle(degrees: abs(circle.sweep) * 180 / .pi)))
+            }
+            return items
         case .measureAngle:
             if points.count >= 2 {
                 let apex = points[1], r1 = points[0]

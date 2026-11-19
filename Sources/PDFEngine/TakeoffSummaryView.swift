@@ -96,7 +96,7 @@ public struct TakeoffSummaryView: View {
                             Circle()
                                 .fill(Color(nsColor: item.annotation.color.nsColor))
                                 .frame(width: 8, height: 8)
-                            Text(typeName(for: item.annotation.type))
+                            Text(PDFViewerViewModel.takeoffTypeName(item.annotation))
                                 .font(.caption)
                         }
                     }
@@ -195,17 +195,6 @@ public struct TakeoffSummaryView: View {
         .frame(minWidth: 580, minHeight: 380)
         .onAppear {
             items = viewModel.takeoffEntries()
-        }
-    }
-
-    private func typeName(for type: PDFAnnotationType) -> String {
-        switch type {
-        case .measureLength: return "Linear Dimension"
-        case .measurePerimeter: return "Perimeter"
-        case .measureArea: return "Area Takeoff"
-        case .measureAngle: return "Angle"
-        case .measureCount: return "Count"
-        default: return "Measurement"
         }
     }
 }

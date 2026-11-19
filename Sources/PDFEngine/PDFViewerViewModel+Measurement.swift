@@ -73,11 +73,12 @@ extension PDFViewerViewModel {
         leaderOffset: CGFloat = 0.0,
         color: AnnotationColor? = nil,
         strokeWidth: CGFloat = 2.0,
-        label: String? = nil
+        label: String? = nil,
+        shape: MeasuredShape? = nil
     ) -> PDFAnnotation? {
         guard let doc = document, pageIndex >= 0, pageIndex < doc.pageCount, !points.isEmpty else { return nil }
         let annotColor = color ?? measurementColor
-        let annot = PDFAnnotation(
+        var annot = PDFAnnotation(
             pageIndex: pageIndex,
             type: type,
             strokeWidth: strokeWidth,
@@ -88,6 +89,7 @@ extension PDFViewerViewModel {
             measurementText: formattedText,
             leaderOffset: leaderOffset
         )
+        annot.measuredShape = shape
 
         // Write directly to PDF backend
         do {
@@ -162,6 +164,9 @@ extension PDFViewerViewModel {
         }
 
         let stored = recordAddedAnnotation(annot)
+        if let shape, let number = stored.documentObjectNumber {
+            try? doc.setMeasurementShape(pageIndex: pageIndex, objectNumber: number, shape: shape)
+        }
         isDocumentEdited = true
         currentWindow?.isDocumentEdited = true
         objectWillChange.send()
@@ -172,8 +177,9 @@ extension PDFViewerViewModel {
 
     /// The value and label of a measurement of `type` through `points` on page `pageIndex`, as
     /// the Measurement tools work them out.
-    func measured(_ type: PDFAnnotationType, points: [CGPoint], pageIndex: Int) -> (value: Double, text: String) {
+    func measured(_ type: PDFAnnotationType, points: [CGPoint], pageIndex: Int, shape: MeasuredShape? = nil) -> (value: Double, text: String) {
         let scale = scaleConfig(for: pageIndex)
+        if let shape { return (shape.value, shape.label(scale: scale)) }
         switch type {
         case .measureArea:
             let area = PDFMeasurementGeometry.shoelaceArea(points: points)
@@ -192,9 +198,12 @@ extension PDFViewerViewModel {
 
     /// `annot` with new points, dimension-line offset or color, its value and label worked out
     /// again. A label of its own, rather than its value, is kept.
-    func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil, strokeWidth: CGFloat? = nil) -> PDFAnnotation {
-        let points = points ?? annot.measurementPoints
-        let (value, text) = measured(annot.type, points: points, pageIndex: annot.pageIndex)
+    /// A measurement drawn as a shape changes through `shape`, whose outline its points become;
+    /// given points instead, it's no longer that shape.
+    func editedMeasurement(_ annot: PDFAnnotation, points: [CGPoint]? = nil, shape: MeasuredShape? = nil, leaderOffset: CGFloat? = nil, color: AnnotationColor? = nil, strokeWidth: CGFloat? = nil) -> PDFAnnotation {
+        let shape = shape ?? (points == nil ? annot.measuredShape : nil)
+        let points = shape?.outline ?? points ?? annot.measurementPoints
+        let (value, text) = measured(annot.type, points: points, pageIndex: annot.pageIndex, shape: shape)
         // A count marker's text is its group, whatever its point.
         let hasOwnLabel = annot.type == .measureCount || (!annot.text.isEmpty && annot.text != annot.measurementText)
         var edited = PDFAnnotation(
@@ -213,6 +222,7 @@ extension PDFViewerViewModel {
         edited.documentObjectNumber = annot.documentObjectNumber
         edited.layerObjectNumber = annot.layerObjectNumber
         edited.cameWithFile = annot.cameWithFile
+        edited.measuredShape = shape
         return edited
     }
 
@@ -227,7 +237,7 @@ extension PDFViewerViewModel {
             pageIndex: annot.pageIndex, type: annot.type, points: edited.measurementPoints,
             value: edited.measurementValue, formattedText: edited.measurementText,
             leaderOffset: edited.leaderOffset, color: edited.color, strokeWidth: edited.strokeWidth,
-            label: edited.text
+            label: edited.text, shape: edited.measuredShape
         )
     }
 
@@ -332,6 +342,16 @@ extension PDFViewerViewModel {
         return (linear, area)
     }
 
+    /// What a takeoff row is: its kind of measurement, or the shape it was drawn as.
+    static func takeoffTypeName(_ annot: PDFAnnotation) -> String {
+        switch annot.measuredShape?.kind {
+        case .rectangle: return "Rectangle Area"
+        case .circle: return "Circle Area"
+        case .arc: return "Arc Length"
+        case nil: return takeoffTypeName(annot.type)
+        }
+    }
+
     private static func takeoffTypeName(_ type: PDFAnnotationType) -> String {
         switch type {
         case .measureLength: return "Linear Dimension"
@@ -373,7 +393,7 @@ extension PDFViewerViewModel {
             md += "| Item | Type | Color | Measurement |" + (byLayer ? " Layer |" : "") + "\n"
             md += "| :--- | :--- | :--- | :--- |" + (byLayer ? " :--- |" : "") + "\n"
             for (idx, entry) in pageEntries.enumerated() {
-                md += "| #\(idx + 1) | \(Self.takeoffTypeName(entry.annotation.type)) | \(entry.annotation.color.displayName) | **\(entry.formattedValue)** |"
+                md += "| #\(idx + 1) | \(Self.takeoffTypeName(entry.annotation)) | \(entry.annotation.color.displayName) | **\(entry.formattedValue)** |"
                 md += byLayer ? " \(layerName(entry.annotation.layerObjectNumber) ?? "") |\n" : "\n"
             }
             md += "\n"
@@ -402,7 +422,7 @@ extension PDFViewerViewModel {
         var csv = "Page,Index,Type,Color,Measurement,Value,Unit,Scale" + (byLayer ? ",Layer" : "") + "\n"
         for (pageIndex, pageEntries) in Dictionary(grouping: takeoffEntries(), by: \.pageIndex).sorted(by: { $0.key < $1.key }) {
             for (idx, entry) in pageEntries.enumerated() {
-                csv += "\(pageIndex + 1),\(idx + 1),\(Self.takeoffTypeName(entry.annotation.type)),\(entry.annotation.color.displayName),\(quoted(entry.formattedValue)),\(String(format: "%.3f", entry.realValue)),\(quoted(entry.unitSymbol)),\(quoted(entry.scale.ratioString))"
+                csv += "\(pageIndex + 1),\(idx + 1),\(Self.takeoffTypeName(entry.annotation)),\(entry.annotation.color.displayName),\(quoted(entry.formattedValue)),\(String(format: "%.3f", entry.realValue)),\(quoted(entry.unitSymbol)),\(quoted(entry.scale.ratioString))"
                 csv += byLayer ? ",\(quoted(layerName(entry.annotation.layerObjectNumber) ?? ""))\n" : "\n"
             }
         }

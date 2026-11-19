@@ -307,7 +307,7 @@ public struct PDFMarkupToolbarView: View {
                         .foregroundStyle(.secondary)
                 }
 
-            case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount, .calibrateScale:
+            case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount, .measureRectangle, .measureCircle, .measureArc, .calibrateScale:
                 EmptyView()
             }
 

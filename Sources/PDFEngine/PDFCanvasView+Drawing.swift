@@ -530,7 +530,7 @@ extension PDFCanvasView {
                             default: drawMeasureAngle(annot: shown, pFrame: pFrame, pBounds: pBounds, isSelected: isSelected)
                             }
                             if isSelected {
-                                drawEndHandles(shown.measurementPoints.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) })
+                                drawEndHandles(measurementHandles(of: shown).map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) })
                             }
                         case .other:
                             break
@@ -793,8 +793,38 @@ extension PDFCanvasView {
                 outline.stroke()
             }
 
+            // A rectangle, circle or arc being drawn: its outline and value.
+            if currentMeasurePage == pageIdx, let shape = shapeInProgress() {
+                let color = viewModel.measurementColor.nsColor
+                let outline = shape.outline.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) }
+                let path = NSBezierPath()
+                path.lineWidth = max(viewModel.measurementStrokeWidth * viewModel.effectiveZoom, 1.5)
+                if let first = outline.first {
+                    path.move(to: first)
+                    outline.dropFirst().forEach { path.line(to: $0) }
+                }
+                if shape.kind != .arc {
+                    path.close()
+                    color.withAlphaComponent(0.18).setFill()
+                    path.fill()
+                }
+                color.setStroke()
+                path.stroke()
+                for pt in shape.points.dropLast() {
+                    let sp = canvasPoint(for: pt, pFrame: pFrame, pBounds: pBounds)
+                    let dot = NSBezierPath(ovalIn: NSRect(x: sp.x - 3.5, y: sp.y - 3.5, width: 7, height: 7))
+                    NSColor.white.setFill()
+                    dot.fill()
+                    color.setStroke()
+                    dot.stroke()
+                }
+                if let candidate = currentMeasureCandidatePoint {
+                    let sCand = canvasPoint(for: candidate, pFrame: pFrame, pBounds: pBounds)
+                    drawMeasurementTextPill(text: shape.label(scale: viewModel.scaleConfig(for: pageIdx)),
+                                            at: NSPoint(x: sCand.x + 14, y: sCand.y + 14), color: color, isSelected: false)
+                }
+            } else if currentMeasurePage == pageIdx, !currentMeasurePoints.isEmpty || currentMeasureCandidatePoint != nil {
             // 2.9 Live Measurement Drafting & Snapping in Progress
-            if currentMeasurePage == pageIdx, !currentMeasurePoints.isEmpty || currentMeasureCandidatePoint != nil {
                 let color = viewModel.measurementColor.nsColor
                 let pageScale = viewModel.scaleConfig(for: pageIdx)
 

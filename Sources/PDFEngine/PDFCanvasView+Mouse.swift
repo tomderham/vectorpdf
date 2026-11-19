@@ -249,9 +249,22 @@ extension PDFCanvasView {
                 let snappedPoint = applySnapping(to: rawPagePoint, fromPoint: prevPt, inPage: pageIdx, modifierFlags: event.modifierFlags)
 
                 switch viewModel.canvasMode {
-                case .measureLength:
+                case .measureLength, .measureRectangle, .measureCircle:
                     currentMeasurePage = pageIdx
                     currentMeasurePoints = [snappedPoint]
+                    currentMeasureCandidatePoint = snappedPoint
+                    needsDisplay = true
+
+                case .measureArc:
+                    if currentMeasurePage != pageIdx {
+                        currentMeasurePage = pageIdx
+                        currentMeasurePoints = [snappedPoint]
+                    } else {
+                        currentMeasurePoints.append(snappedPoint)
+                        if currentMeasurePoints.count == 3 {
+                            commitCurrentShape(.arc)
+                        }
+                    }
                     currentMeasureCandidatePoint = snappedPoint
                     needsDisplay = true
 
@@ -467,8 +480,9 @@ extension PDFCanvasView {
             let currentPagePoint = geometry.pagePoint(forCanvasPoint: currentCanvas)
             var dx = currentPagePoint.x - drag.startPagePoint.x
             var dy = currentPagePoint.y - drag.startPagePoint.y
-            // A measurement's point snaps, and keeps to Ortho Lock, as when it was drawn.
-            let points = drag.initialAnnotation.measurementPoints
+            // A measurement's point snaps, and keeps to Ortho Lock, as when it was drawn. A shape's
+            // points are those that define it.
+            let points = drag.initialAnnotation.measuredShape?.points ?? drag.initialAnnotation.measurementPoints
             if case .measurementPoint(let index) = drag.part, points.indices.contains(index) {
                 let moved = CGPoint(x: points[index].x + dx, y: points[index].y + dy)
                 let neighbour = points.count > 1 ? points[index == 0 ? 1 : index - 1] : nil
@@ -698,6 +712,18 @@ extension PDFCanvasView {
             currentCalloutPage = nil
             currentCalloutStart = nil
             currentCalloutEnd = nil
+            needsDisplay = true
+            return
+        }
+
+        if viewModel.canvasMode == .measureRectangle || viewModel.canvasMode == .measureCircle {
+            if let p0 = currentMeasurePoints.first, let p1 = currentMeasureCandidatePoint, hypot(p1.x - p0.x, p1.y - p0.y) > 4 {
+                currentMeasurePoints = [p0, p1]
+                commitCurrentShape(viewModel.canvasMode == .measureCircle ? .circle : .rectangle)
+            }
+            currentMeasurePage = nil
+            currentMeasurePoints = []
+            currentMeasureCandidatePoint = nil
             needsDisplay = true
             return
         }

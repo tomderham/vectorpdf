@@ -109,7 +109,7 @@ extension PDFCanvasView {
                 menu.addItem(layerItem)
                 menu.addItem(NSMenuItem.separator())
             }
-            let removeTitle: String
+            var removeTitle: String
             switch hitAnnot.type {
             case .highlight: removeTitle = "Remove Highlight"
             case .underline: removeTitle = "Remove Underline"
@@ -131,6 +131,12 @@ extension PDFCanvasView {
             case .measureArea: removeTitle = "Delete Area Takeoff"
             case .measureAngle: removeTitle = "Delete Angle Measurement"
             case .measureCount: removeTitle = "Delete Count Marker"
+            }
+            switch hitAnnot.measuredShape?.kind {
+            case .rectangle: removeTitle = "Delete Rectangle Area"
+            case .circle: removeTitle = "Delete Circle Measurement"
+            case .arc: removeTitle = "Delete Arc Length"
+            case nil: break
             }
             // One of several selected: commands for all of them.
             if isAnnotationSelected(hitAnnot.id), !groupSelection.isEmpty {

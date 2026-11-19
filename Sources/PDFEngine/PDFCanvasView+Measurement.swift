@@ -109,7 +109,9 @@ extension PDFCanvasView {
         color.setStroke()
         path.stroke()
 
-        for pt in screenPts {
+        // A shape's dots are its defining points, not every point of its outline.
+        let dots = annot.measuredShape.map { $0.points.map { canvasPoint(for: $0, pFrame: pFrame, pBounds: pBounds) } } ?? screenPts
+        for pt in dots {
             let dotRect = NSRect(x: pt.x - 3.0, y: pt.y - 3.0, width: 6.0, height: 6.0)
             NSColor.white.setFill()
             NSBezierPath(ovalIn: dotRect).fill()
@@ -122,7 +124,7 @@ extension PDFCanvasView {
         let midIdx = screenPts.count / 2
         let mid = screenPts[midIdx]
         let text = annot.measurementText.isEmpty ? annot.text : annot.measurementText
-        drawMeasurementTextPill(text: "Perimeter: \(text)", at: mid, color: color, isSelected: isSelected)
+        drawMeasurementTextPill(text: "\(annot.measuredShape?.kind == .arc ? "Arc" : "Perimeter"): \(text)", at: mid, color: color, isSelected: isSelected)
     }
 
     func drawMeasureArea(annot: PDFAnnotation, pFrame: NSRect, pBounds: CGRect, isSelected: Bool) {
@@ -431,6 +433,37 @@ extension PDFCanvasView {
         needsDisplay = true
     }
 
+    /// Adds the shape through the points clicked: a rectangle's corners, a circle's centre and
+    /// edge, or an arc's start, middle and end.
+    func commitCurrentShape(_ kind: MeasuredShape.Kind) {
+        defer {
+            currentMeasurePage = nil
+            currentMeasurePoints = []
+            currentMeasureCandidatePoint = nil
+            needsDisplay = true
+        }
+        guard let pIdx = currentMeasurePage, let shape = MeasuredShape(kind: kind, points: currentMeasurePoints) else { return }
+        let label = shape.label(scale: viewModel.scaleConfig(for: pIdx))
+        if let annot = viewModel.addMeasurementAnnotation(
+            pageIndex: pIdx, type: shape.measurementType, points: shape.outline, value: shape.value, formattedText: label,
+            color: viewModel.measurementColor, strokeWidth: viewModel.measurementStrokeWidth, shape: shape
+        ) {
+            selectedAnnotation = (id: annot.id, pageIndex: pIdx)
+        }
+    }
+
+    /// The shape being drawn, through the points so far and the pointer.
+    func shapeInProgress() -> MeasuredShape? {
+        guard let candidate = currentMeasureCandidatePoint, let first = currentMeasurePoints.first else { return nil }
+        switch viewModel.canvasMode {
+        case .measureRectangle: return MeasuredShape(kind: .rectangle, points: [first, candidate])
+        case .measureCircle: return MeasuredShape(kind: .circle, points: [first, candidate])
+        case .measureArc where currentMeasurePoints.count == 2:
+            return MeasuredShape(kind: .arc, points: currentMeasurePoints + [candidate])
+        default: return nil
+        }
+    }
+
     func commitCurrentAngle() {
         guard let pIdx = currentMeasurePage, currentMeasurePoints.count == 3 else { return }
         let r1 = currentMeasurePoints[0]
@@ -479,10 +512,11 @@ extension PDFCanvasView {
     /// length's dimension line (sideways), or all of it.
     func measurementDragPart(for annot: PDFAnnotation, at pagePoint: CGPoint) -> DraggingAnnotationPart {
         let reach = 8.0 / max(viewModel.effectiveZoom, 0.01)
-        if let index = annot.measurementPoints.indices.min(by: {
-            hypot(annot.measurementPoints[$0].x - pagePoint.x, annot.measurementPoints[$0].y - pagePoint.y)
-                < hypot(annot.measurementPoints[$1].x - pagePoint.x, annot.measurementPoints[$1].y - pagePoint.y)
-        }), hypot(annot.measurementPoints[index].x - pagePoint.x, annot.measurementPoints[index].y - pagePoint.y) <= reach {
+        // A shape's handles are the points that define it.
+        let handles = measurementHandles(of: annot)
+        if let index = handles.indices.min(by: {
+            hypot(handles[$0].x - pagePoint.x, handles[$0].y - pagePoint.y) < hypot(handles[$1].x - pagePoint.x, handles[$1].y - pagePoint.y)
+        }), hypot(handles[index].x - pagePoint.x, handles[index].y - pagePoint.y) <= reach {
             return .measurementPoint(index)
         }
         if annot.type == .measureLength, let (off0, off1) = dimensionLine(of: annot) {
@@ -498,6 +532,15 @@ extension PDFCanvasView {
     /// `annot` as dragging `part` by `delta` (page points) leaves it.
     func editedMeasurement(_ annot: PDFAnnotation, part: DraggingAnnotationPart, delta: CGSize) -> PDFAnnotation {
         let points = annot.measurementPoints
+        if let shape = annot.measuredShape {
+            var moved = shape
+            if case .measurementPoint(let index) = part, shape.points.indices.contains(index) {
+                moved.points[index] = CGPoint(x: shape.points[index].x + delta.width, y: shape.points[index].y + delta.height)
+            } else {
+                moved = shape.offset(by: delta)
+            }
+            return viewModel.editedMeasurement(annot, shape: moved)
+        }
         switch part {
         case .measurementPoint(let index) where points.indices.contains(index):
             var moved = points
@@ -512,6 +555,11 @@ extension PDFCanvasView {
         default:
             return viewModel.editedMeasurement(annot, points: points.map { CGPoint(x: $0.x + delta.width, y: $0.y + delta.height) })
         }
+    }
+
+    /// The points of a measurement that can be dragged: a shape's defining points, or its own.
+    func measurementHandles(of annot: PDFAnnotation) -> [CGPoint] {
+        annot.measuredShape?.points ?? annot.measurementPoints
     }
 
     /// A measurement as drawn: as the drag in progress leaves it, if it's being dragged.

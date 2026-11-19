@@ -386,7 +386,7 @@ extension PDFViewerViewModel {
         case .other:
             return nil
         case .measureLength, .measurePerimeter, .measureArea, .measureAngle, .measureCount:
-            return addMeasurementAnnotation(pageIndex: page, type: annot.type, points: annot.measurementPoints, value: annot.measurementValue, formattedText: annot.measurementText, leaderOffset: annot.leaderOffset, color: annot.color, strokeWidth: annot.strokeWidth, label: annot.text)
+            return addMeasurementAnnotation(pageIndex: page, type: annot.type, points: annot.measurementPoints, value: annot.measurementValue, formattedText: annot.measurementText, leaderOffset: annot.leaderOffset, color: annot.color, strokeWidth: annot.strokeWidth, label: annot.text, shape: annot.measuredShape)
         }
     }
 

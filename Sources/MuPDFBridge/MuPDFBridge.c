@@ -2356,6 +2356,48 @@ int mupdf_pdf_last_annot_objnum(fz_context *ctx, fz_document *doc, int pageno, i
     return 0;
 }
 
+/* The shape a measurement was drawn as (rectangle, circle or arc), with the points that define
+   it, kept beside its vertices in /VPShape and /VPShapePoints (PDF user space, so they follow
+   the page if it's turned). Points are in page (top-down) space; shape NULL removes them. */
+int mupdf_pdf_set_measurement_shape(fz_context *ctx, fz_document *doc, int pageno, int objnum,
+                                    const char *shape, const fz_point *points, int n_points, const char **out_error) {
+    if (!ctx || !doc) return -1;
+    pdf_page *ppage = NULL;
+    fz_var(ppage);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        if (!pdoc) fz_throw(ctx, FZ_ERROR_GENERIC, "Document is not a PDF");
+        ppage = pdf_load_page(ctx, pdoc, pageno);
+        pdf_annot *found = NULL;
+        for (pdf_annot *a = pdf_first_annot(ctx, ppage); a && !found; a = pdf_next_annot(ctx, a))
+            if (pdf_to_num(ctx, pdf_annot_obj(ctx, a)) == objnum) found = a;
+        if (!found) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such annotation on the page");
+        pdf_obj *obj = pdf_annot_obj(ctx, found);
+        if (!shape || !*shape || !points || n_points < 1) {
+            pdf_dict_dels(ctx, obj, "VPShape");
+            pdf_dict_dels(ctx, obj, "VPShapePoints");
+        } else {
+            fz_matrix inv = pdf_inverse_page_ctm(ctx, ppage);
+            pdf_dict_puts_drop(ctx, obj, "VPShape", pdf_new_name(ctx, shape));
+            pdf_obj *arr = pdf_new_array(ctx, pdoc, 2 * n_points);
+            pdf_dict_puts_drop(ctx, obj, "VPShapePoints", arr);
+            for (int i = 0; i < n_points; i++) {
+                fz_point p = fz_transform_point(points[i], inv);
+                pdf_array_push_real(ctx, arr, p.x);
+                pdf_array_push_real(ctx, arr, p.y);
+            }
+        }
+    }
+    fz_always(ctx) {
+        if (ppage) pdf_drop_page(ctx, ppage);
+    }
+    fz_catch(ctx) {
+        if (out_error) *out_error = fz_caught_message(ctx);
+        return -1;
+    }
+    return 0;
+}
+
 /* Deletes exactly the annotation whose dictionary is object `objnum` on a page. Returns 1 if it
  * was found and deleted, 0 if no annotation on the page has that object number, -1 on error. */
 int mupdf_pdf_delete_annot_by_objnum(fz_context *ctx, fz_document *doc, int pageno, int objnum, const char **out_error) {
@@ -3304,6 +3346,26 @@ int mupdf_pdf_get_measurement_annots(fz_context *ctx, fz_document *doc, int page
                         m->xy[2 * i + 1] = v.y;
                     }
                     m->n_points = n;
+                }
+                /* The shape it was drawn as, if VectorPDF drew it as one. */
+                if (kind == 2 || kind == 3) {
+                    pdf_obj *obj = pdf_annot_obj(ctx, a);
+                    pdf_obj *shape = pdf_dict_gets(ctx, obj, "VPShape");
+                    pdf_obj *pts = pdf_dict_gets(ctx, obj, "VPShapePoints");
+                    const char *name = pdf_to_name(ctx, shape);
+                    int code = !strcmp(name, "Rectangle") ? 1 : !strcmp(name, "Circle") ? 2 : !strcmp(name, "Arc") ? 3 : 0;
+                    int n = pdf_array_len(ctx, pts) / 2;
+                    if (code && n >= 2 && n <= 3) {
+                        fz_matrix ctm;
+                        pdf_page_transform(ctx, ppage, NULL, &ctm);
+                        m->shape = code;
+                        m->n_shape_points = n;
+                        for (int i = 0; i < n; i++) {
+                            fz_point p = fz_transform_point(fz_make_point(pdf_array_get_real(ctx, pts, 2 * i), pdf_array_get_real(ctx, pts, 2 * i + 1)), ctm);
+                            m->shape_xy[2 * i] = p.x;
+                            m->shape_xy[2 * i + 1] = p.y;
+                        }
+                    }
                 }
                 /* A count marker's text is its group, kept apart from /Contents. */
                 const char *group = kind == 5 ? pdf_to_text_string(ctx, pdf_dict_gets(ctx, pdf_annot_obj(ctx, a), "VPCount")) : NULL;
