@@ -125,6 +125,63 @@ struct TestSigner {
         #expect(results.contains { $0.signerName == "VectorPDF Test Signer" })
     }
 
+    /// A certifying signature allows what it says: form filling and signing here, so another
+    /// signature is fine and a comment isn't. Only a document's first signature can certify.
+    @Test func aCertificationAllowsWhatItSays() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let signer = try TestSigner(in: dir)
+        let url = dir.appendingPathComponent("Certified.pdf")
+        makeLabelledPDF(at: url, labels: ["One", "Two"])
+        let doc = try PDFDocumentCore(filePath: url.path)
+        try doc.sign(page: 0, rect: CGRect(x: 72, y: 100, width: 200, height: 60), with: signer.identity(),
+                     permissions: .init(certification: .formFillingAndSigning))
+        try doc.save(to: url.path)
+        let certified = try PDFDocumentCore(filePath: url.path)
+        let field = try #require(certified.formFieldEntries(pageIndex: 0).first { $0.type == .signature })
+        #expect(field.signature?.certification == .formFillingAndSigning)
+        #expect(throws: (any Error).self) {
+            try certified.sign(page: 1, rect: CGRect(x: 72, y: 100, width: 200, height: 60), with: signer.identity(),
+                               permissions: .init(certification: .noChanges))
+        }
+
+        // Another signature: allowed.
+        let again = try PDFDocumentCore(filePath: url.path)
+        try again.sign(page: 1, rect: CGRect(x: 72, y: 100, width: 200, height: 60), with: signer.identity())
+        try again.save(to: url.path)
+        var results = try PDFDocumentCore(filePath: url.path).validateSignatures(extraAnchors: [signer.authority])
+        #expect(results.first { $0.fieldName == "Signature1" }?.changes == .allowed)
+
+        // A comment: not.
+        let commented = try PDFDocumentCore(filePath: url.path)
+        try commented.addNote(pageIndex: 0, rect: CGRect(x: 300, y: 300, width: 20, height: 20), text: "Hmm", red: 1, green: 1, blue: 0)
+        try commented.save(to: url.path)
+        results = try PDFDocumentCore(filePath: url.path).validateSignatures(extraAnchors: [signer.authority])
+        #expect(results.first { $0.fieldName == "Signature1" }?.changes == .notAllowed)
+    }
+
+    /// A signature can lock the form's fields, all or those chosen: they become read-only.
+    @Test func aSignatureLocksTheFieldsChosen() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let signer = try TestSigner(in: dir)
+        let url = dir.appendingPathComponent("Form.pdf")
+        try FileManager.default.copyItem(at: Fixture.form1040, to: url)
+        let doc = try PDFDocumentCore(filePath: url.path)
+        let fields = doc.formFieldEntries(pageIndex: 0).filter { $0.type == .text && !$0.isReadOnly }
+        #expect(fields.count >= 3)
+        let chosen = Array(fields.prefix(2)).map(\.name)
+        try doc.sign(page: 0, rect: CGRect(x: 400, y: 20, width: 150, height: 40), with: signer.identity(),
+                     permissions: .init(lock: .fields(chosen)))
+        try doc.save(to: url.path)
+        let signed = try PDFDocumentCore(filePath: url.path)
+        let after = Dictionary(signed.formFieldEntries(pageIndex: 0).map { ($0.name, $0.isReadOnly) }, uniquingKeysWith: { a, _ in a })
+        #expect(chosen.allSatisfy { after[$0] == true })
+        #expect(after[fields[2].name] == false)
+        let result = try #require(signed.validateSignatures(extraAnchors: [signer.authority]).first { $0.signerName == "Signing Test Person" })
+        #expect(result.isIntact)
+    }
+
     /// Signed twice here: the first signature allows the second, and doesn't lock the form's
     /// other fields.
     @Test func aSecondSignatureIsAllowedByTheFirst() throws {

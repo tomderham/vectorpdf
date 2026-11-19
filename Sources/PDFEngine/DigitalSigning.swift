@@ -218,6 +218,28 @@ extension PDFDocumentCore {
         }
     }
 
+    /// What a signature allows of the document after it, besides its own appearance.
+    public struct SigningPermissions: Sendable, Equatable {
+        /// Certifying the document: the changes it allows from then on. Only its first signature can.
+        public enum Certification: Int, Sendable, CaseIterable {
+            case noChanges = 1, formFillingAndSigning = 2, formFillingSigningAndComments = 3
+        }
+        public enum FieldLock: Sendable, Equatable {
+            /// The form's other fields as they were (a field's own lock, if it has one, applies).
+            case none
+            case all
+            /// These fields, by full name.
+            case fields([String])
+        }
+        public var certification: Certification?
+        public var lock: FieldLock
+
+        public init(certification: Certification? = nil, lock: FieldLock = .none) {
+            self.certification = certification
+            self.lock = lock
+        }
+    }
+
     /// Whether the page's `widgetIndex`'th widget is a signature field signed already.
     public func isSignedSignatureField(page: Int, widgetIndex: Int) -> Bool {
         guard isPDF else { return false }
@@ -229,7 +251,8 @@ extension PDFDocumentCore {
     /// object says why, if it couldn't be.
     @discardableResult
     public func sign(page: Int, widgetIndex: Int? = nil, rect: CGRect = .zero, with signer: SigningIdentity,
-                     appearance: SignatureAppearance = SignatureAppearance()) throws -> CMSSignature {
+                     appearance: SignatureAppearance = SignatureAppearance(),
+                     permissions: SigningPermissions = SigningPermissions()) throws -> CMSSignature {
         guard isPDF else { throw PDFError.operationFailed("Only a PDF can be signed") }
         let signature = CMSSignature(signer: signer)
         try withLockedDocument { ctx, doc in
@@ -250,10 +273,23 @@ extension PDFDocumentCore {
             let flags = Int32(PDF_SIGNATURE_SHOW_LABELS | PDF_SIGNATURE_SHOW_TEXT_NAME | PDF_SIGNATURE_SHOW_DATE)
                 | (appearance.graphic == nil ? Int32(PDF_SIGNATURE_SHOW_GRAPHIC_NAME) : 0)
             let box = fz_rect(x0: Float(rect.minX), y0: Float(rect.minY), x1: Float(rect.maxX), y1: Float(rect.maxY))
+            let lockCode: Int32
+            var lockNames: [String] = []
+            switch permissions.lock {
+            case .none: lockCode = 0
+            case .all: lockCode = 1
+            case .fields(let names): lockCode = 2; lockNames = names
+            }
+            let names = lockNames.map { strdup($0) }
+            defer { names.forEach { free($0) } }
+            let namePointers = names.map { UnsafePointer($0) }
             let status = (appearance.graphic ?? Data()).withUnsafeBytes { png in
-                mupdf_pdf_sign(ctx, doc, Int32(page), Int32(widgetIndex ?? -1), box, pkcs7,
-                               appearance.graphic == nil ? nil : png.bindMemory(to: UInt8.self).baseAddress, png.count,
-                               appearance.reason, appearance.location, flags, &error)
+                namePointers.withUnsafeBufferPointer { lockFields in
+                    mupdf_pdf_sign(ctx, doc, Int32(page), Int32(widgetIndex ?? -1), box, pkcs7,
+                                   appearance.graphic == nil ? nil : png.bindMemory(to: UInt8.self).baseAddress, png.count,
+                                   appearance.reason, appearance.location, flags,
+                                   Int32(permissions.certification?.rawValue ?? 0), lockCode, lockFields.baseAddress, Int32(lockNames.count), &error)
+                }
             }
             guard status == 0 else {
                 throw PDFError.operationFailed(error.map { String(cString: $0) } ?? "The field couldn't be signed")

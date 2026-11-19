@@ -327,8 +327,12 @@ void mupdf_drop_signer(fz_context *ctx, pdf_pkcs7_signer *signer);
 // Signs the page's widget_index'th widget, a signature field, or with widget_index -1 a new
 // field at `rect`. The signature is made as the document is next saved. `graphic_png` (may be
 // NULL) is drawn on the left of the field; PDF_SIGNATURE_* flags say what text it shows.
+// `certify` 1-3 certifies the document (DocMDP P: no changes; filling in forms and signing;
+// those and comments), only as its first signature. `lock` 1 locks all the form's other
+// fields, 2 those in `lock_fields` (full names); 0 leaves the field's own /Lock, if any.
 int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_index, fz_rect rect, pdf_pkcs7_signer *signer,
                    const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location, int flags,
+                   int certify, int lock, const char *const *lock_fields, int n_lock_fields,
                    const char **out_error);
 // Whether the page's widget_index'th widget is a signed signature field.
 int mupdf_page_widget_is_signed(fz_context *ctx, fz_document *doc, int pageno, int widget_index);

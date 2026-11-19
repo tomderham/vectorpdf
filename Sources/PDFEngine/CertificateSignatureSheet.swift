@@ -39,6 +39,13 @@ struct CertificateSignatureSheet: View {
     @AppStorage("VectorPDF_SigningReason") private var reason = ""
     @AppStorage("VectorPDF_SigningLocation") private var location = ""
     @AppStorage("VectorPDF_SigningShowsHandwriting") private var showsHandwriting = true
+    /// Certifying (only a first signature can) and locking fields.
+    @State private var certification: PDFDocumentCore.SigningPermissions.Certification?
+    private enum LockChoice: Hashable { case none, all, chosen }
+    @State private var lockChoice = LockChoice.none
+    @State private var lockable: [String] = []
+    @State private var chosenFields = Set<String>()
+    private var canCertify: Bool { viewModel.documentContentsSummary.signatureCount == 0 }
 
     private var choices: [SigningIdentity] { (fileIdentity.map { [$0] } ?? []) + identities }
     private var chosen: SigningIdentity? { choices.first { $0.id == selection } }
@@ -87,6 +94,43 @@ struct CertificateSignatureSheet: View {
                     if placement.rect.width > 0, signatureStore.savedSignatureData != nil {
                         Toggle("Show my handwritten signature", isOn: $showsHandwriting)
                     }
+                }
+                if canCertify || !lockable.isEmpty {
+                    Section("After Signing") {
+                        if canCertify {
+                            Picker("Certify", selection: $certification) {
+                                Text("Don't certify").tag(PDFDocumentCore.SigningPermissions.Certification?.none)
+                                Text("Allow form filling, signing and comments").tag(Optional(PDFDocumentCore.SigningPermissions.Certification.formFillingSigningAndComments))
+                                Text("Allow form filling and signing").tag(Optional(PDFDocumentCore.SigningPermissions.Certification.formFillingAndSigning))
+                                Text("Allow no changes").tag(Optional(PDFDocumentCore.SigningPermissions.Certification.noChanges))
+                            }
+                            .help("Certifying says which changes keep the document valid. Only the first signature can certify.")
+                        }
+                        if !lockable.isEmpty {
+                            Picker("Lock form fields", selection: $lockChoice) {
+                                Text("None").tag(LockChoice.none)
+                                Text("All").tag(LockChoice.all)
+                                Text("Choose…").tag(LockChoice.chosen)
+                            }
+                            if lockChoice == .chosen {
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(lockable, id: \.self) { name in
+                                            Toggle(name, isOn: Binding(
+                                                get: { chosenFields.contains(name) },
+                                                set: { if $0 { chosenFields.insert(name) } else { chosenFields.remove(name) } }
+                                            ))
+                                            .toggleStyle(.checkbox)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(height: 110)
+                            }
+                        }
+                    }
+                }
+                Section {
                 } footer: {
                     Text("Signing saves the document. Anyone can then check that it hasn't changed since, and who signed it.")
                         .foregroundStyle(.secondary)
@@ -109,6 +153,7 @@ struct CertificateSignatureSheet: View {
             let found = await Task.detached(priority: .userInitiated) { SigningIdentity.keychainIdentities() }.value
             identities = found
             isLoading = false
+            lockable = viewModel.lockableFormFieldNames()
             if selection == nil {
                 selection = found.first { $0.id.base64EncodedString() == lastCertificate }?.id ?? found.first?.id
             }
@@ -160,7 +205,14 @@ struct CertificateSignatureSheet: View {
         }
         let graphic = placement.rect.width > 0 && showsHandwriting ? signatureStore.savedSignatureData : nil
         let appearance = PDFDocumentCore.SignatureAppearance(reason: trimmed(reason), location: trimmed(location), graphic: graphic)
+        let lock: PDFDocumentCore.SigningPermissions.FieldLock
+        switch lockChoice {
+        case .none: lock = .none
+        case .all: lock = .all
+        case .chosen: lock = chosenFields.isEmpty ? .none : .fields(lockable.filter(chosenFields.contains))
+        }
+        let permissions = PDFDocumentCore.SigningPermissions(certification: canCertify ? certification : nil, lock: lock)
         dismiss()
-        Task { await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance) }
+        Task { await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance, permissions: permissions) }
     }
 }

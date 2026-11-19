@@ -19,11 +19,14 @@ To sign, you need a certificate for signing with its private key. Your organizat
 1. Choose Edit > Sign with Certificate, then click the page where the signature should go. Press Esc to stop. If the document has an empty signature field, you can click the field instead and choose Sign with Certificate.
 2. Choose your certificate. To use a file, click **Choose Certificate File**, then type its password. The file is read for this signature only and isn't added to your keychain.
 3. If you like, type a reason (such as "I approve this document") and where you're signing. If you've made a [stamp](stamps.md), you can show your handwritten signature in the field. Otherwise your name is shown.
-4. Click **Sign**.
+4. If you like, choose under After Signing:
+   - **Certify**, if no one has signed the document yet: say which changes keep it valid from now on: form filling, signing and comments; form filling and signing; or none. A certified document shows as certified to everyone who checks it, and later changes it doesn't allow make your signature invalid.
+   - **Lock form fields**, for a form: all its fields, or those you choose, become read-only, so they keep the values you signed.
+5. Click **Sign**.
 
 Signing saves the document, so if it has unsaved changes, VectorPDF asks to save them first. They become part of what you sign. macOS may ask you to allow VectorPDF to use your certificate's key.
 
-The signature leaves the document's other form fields as they were, so others can still fill them in, sign too, or add comments without making your signature invalid. Each later signature is added after the earlier ones in the same way.
+Unless you lock them or certify the document for less, the signature leaves the document's other form fields as they were, so others can still fill them in, sign too, or add comments without making your signature invalid. Each later signature is added after the earlier ones in the same way.
 
 The signature is a PKCS #7 signature with SHA-256, carrying your certificate and those of the authorities that issued it. It records the time on your Mac. It doesn't have a timestamp from a timestamp authority yet.
 

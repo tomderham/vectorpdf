@@ -161,7 +161,7 @@ static void lock_fields(fz_context *ctx, pdf_obj *fields, pdf_obj *signature, pd
 // location in the signature dictionary too (as Acrobat writes them): MuPDF writes them only in
 // the appearance, and anything changed once a signature is recorded is saved after it.
 static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, pdf_pkcs7_signer *signer, fz_image *graphic,
-                        const char *reason, const char *location, int flags) {
+                        const char *reason, const char *location, int flags, int certify) {
     pdf_obj *field = pdf_annot_obj(ctx, widget);
     if (pdf_widget_is_readonly(ctx, widget)) fz_throw(ctx, FZ_ERROR_ARGUMENT, "The signature field is read-only");
     int64_t now = time(NULL);
@@ -218,9 +218,25 @@ static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, p
         if (name) pdf_dict_put_text_string(ctx, v, PDF_NAME(Name), name);
         if (reason && *reason) pdf_dict_put_text_string(ctx, v, PDF_NAME(Reason), reason);
         if (location && *location) pdf_dict_put_text_string(ctx, v, PDF_NAME(Location), location);
+        pdf_obj *reference = NULL;
+        if (certify >= 1 && certify <= 3) {
+            // A certification: which changes the document allows from now on (1 none, 2 filling
+            // in forms and signing, 3 those and comments), with the catalog pointing to it.
+            reference = pdf_dict_put_array(ctx, v, PDF_NAME(Reference), 2);
+            pdf_obj *sigref = pdf_array_push_dict(ctx, reference, 3);
+            pdf_dict_put(ctx, sigref, PDF_NAME(Type), PDF_NAME(SigRef));
+            pdf_dict_put(ctx, sigref, PDF_NAME(TransformMethod), PDF_NAME(DocMDP));
+            pdf_obj *params = pdf_dict_put_dict(ctx, sigref, PDF_NAME(TransformParams), 3);
+            pdf_dict_put(ctx, params, PDF_NAME(Type), PDF_NAME(TransformParams));
+            pdf_dict_put_int(ctx, params, PDF_NAME(P), certify);
+            pdf_dict_put(ctx, params, PDF_NAME(V), PDF_NAME(1_2));
+            pdf_obj *perms = pdf_dict_get(ctx, root, PDF_NAME(Perms));
+            if (!pdf_is_dict(ctx, perms)) perms = pdf_dict_put_dict(ctx, root, PDF_NAME(Perms), 1);
+            pdf_dict_put(ctx, perms, PDF_NAME(DocMDP), v);
+        }
         if (action) {
             // Which fields it locks, for readers to check later changes against.
-            pdf_obj *reference = pdf_dict_put_array(ctx, v, PDF_NAME(Reference), 1);
+            if (!reference) reference = pdf_dict_put_array(ctx, v, PDF_NAME(Reference), 1);
             pdf_obj *sigref = pdf_array_push_dict(ctx, reference, 4);
             pdf_dict_put(ctx, sigref, PDF_NAME(Type), PDF_NAME(SigRef));
             pdf_dict_put(ctx, sigref, PDF_NAME(TransformMethod), PDF_NAME(FieldMDP));
@@ -246,6 +262,7 @@ static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, p
 
 int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_index, fz_rect rect, pdf_pkcs7_signer *signer,
                    const unsigned char *graphic_png, size_t graphic_len, const char *reason, const char *location, int flags,
+                   int certify, int lock, const char *const *lock_fields, int n_lock_fields,
                    const char **out_error) {
     if (!ctx || !doc || !signer) return -1;
     pdf_page *page = NULL;
@@ -266,6 +283,8 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
             pdf_dict_put_drop(ctx, root, PDF_NAME(AcroForm), indirect);
             if (!pdf_dict_get(ctx, indirect, PDF_NAME(Fields))) pdf_dict_put_array(ctx, indirect, PDF_NAME(Fields), 1);
         }
+        if (certify && mupdf_pdf_list_signatures(ctx, doc, NULL, 0) > 0)
+            fz_throw(ctx, FZ_ERROR_ARGUMENT, "Only the first signature can certify a document");
         page = pdf_load_page(ctx, pdf, pageno);
         pdf_annot *widget = NULL;
         if (widget_index >= 0) {
@@ -287,11 +306,22 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
             // field one on all of them.
             pdf_dict_del(ctx, obj, PDF_NAME(Lock));
         }
+        // Fields to lock: all others, or those named (a field's own /Lock is kept otherwise).
+        if (lock == 1 || lock == 2) {
+            pdf_obj *obj = pdf_annot_obj(ctx, widget);
+            pdf_obj *dict = pdf_dict_put_dict(ctx, obj, PDF_NAME(Lock), 3);
+            pdf_dict_put_name(ctx, dict, PDF_NAME(Type), "SigFieldLock");
+            pdf_dict_put(ctx, dict, PDF_NAME(Action), lock == 1 ? PDF_NAME(All) : PDF_NAME(Include));
+            if (lock == 2) {
+                pdf_obj *names = pdf_dict_put_array(ctx, dict, PDF_NAME(Fields), n_lock_fields);
+                for (int i = 0; i < n_lock_fields; i++) pdf_array_push_text_string(ctx, names, lock_fields[i]);
+            }
+        }
         if (graphic_png && graphic_len > 0) {
             buf = fz_new_buffer_from_copied_data(ctx, graphic_png, graphic_len);
             graphic = fz_new_image_from_buffer(ctx, buf);
         }
-        sign_widget(ctx, pdf, widget, signer, graphic, reason, location, flags);
+        sign_widget(ctx, pdf, widget, signer, graphic, reason, location, flags, certify);
     } fz_always(ctx) {
         fz_drop_image(ctx, graphic);
         fz_drop_buffer(ctx, buf);

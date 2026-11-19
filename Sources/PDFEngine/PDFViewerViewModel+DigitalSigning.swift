@@ -83,7 +83,8 @@ extension PDFViewerViewModel {
     /// opened again too, without the unfinished signature. False then.
     @discardableResult
     public func completeCertificateSignature(_ placement: CertificateSignaturePlacement, with identity: SigningIdentity,
-                                             appearance: PDFDocumentCore.SignatureAppearance) async -> Bool {
+                                             appearance: PDFDocumentCore.SignatureAppearance,
+                                             permissions: PDFDocumentCore.SigningPermissions = .init()) async -> Bool {
         certificateSignaturePlacement = nil
         guard let doc = document, canSignWithCertificate else { return false }
         flushPendingFormEdits()
@@ -92,7 +93,7 @@ extension PDFViewerViewModel {
         fileChangeWatcher = nil
         do {
             let signature = try doc.sign(page: placement.page, widgetIndex: placement.widgetIndex, rect: placement.rect,
-                                         with: identity, appearance: appearance)
+                                         with: identity, appearance: appearance, permissions: permissions)
             do {
                 try doc.save(to: path)
             } catch {
@@ -110,5 +111,18 @@ extension PDFViewerViewModel {
             return false
         }
         return true
+    }
+
+    /// The form's fields a signature could lock, by full name: all but signature fields.
+    public func lockableFormFieldNames() -> [String] {
+        guard let doc = document else { return [] }
+        var names: [String] = []
+        var seen = Set<String>()
+        for page in 0..<doc.pageCount {
+            for field in doc.formFieldEntries(pageIndex: page) where field.type != .signature && !field.name.isEmpty {
+                if seen.insert(field.name).inserted { names.append(field.name) }
+            }
+        }
+        return names
     }
 }
