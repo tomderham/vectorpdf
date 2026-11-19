@@ -30,15 +30,15 @@ Right-click an entry for the rest:
 | Put it inside the entry above it, or take it out of the one it's in | Indent or Outdent |
 | Delete it, with the entries inside it | Delete Entry |
 
-You can also drag an entry to move it, or drop it on another entry to put it inside. The entries inside it move with it. While the outline is filtered by the “Search outline” field, entries can't be edited. Edit > Undo (⌘Z) takes back changes to the outline, one at a time.
+You can also drag an entry to move it, or drop it on another entry to put it inside. The entries inside it move with it. While the outline is filtered by the “Search outline” field, entries can't be moved, so Move Up, Move Down, Indent and Outdent aren't on the menu and entries can't be dragged; the other commands work. Edit > Undo (⌘Z) takes back changes to the outline, one at a time.
 
 ### Build an outline from headings
 
-Choose Edit > Build Outline from Headings to make an outline of the document's headings in one step. It's also on the right-click menu of an outline entry. If the document already has an outline, you're asked before it's replaced; Edit > Undo brings it back.
+Choose Edit > Build Outline from Headings to make an outline of the document's headings. It's also on the right-click menu of an outline entry. A list of the headings found opens first: uncheck any that aren't headings, click a title to change it, and use the indent buttons to move a heading up or down a level. Click the arrow beside a heading to see it on the page. Then click **Create Outline**, or **Replace Outline** if the document has one; Edit > Undo brings the old outline back.
 
 In a tagged PDF, the headings are those its tags mark. In other PDFs, VectorPDF looks for lines set apart from the body text: larger, or bold where the text isn't. A larger style is a higher level than a smaller one, and section numbers such as 3.2.1 give the levels within one style. Running headers and footers, figure and table captions and the lines of a table of contents are left out.
 
-Check the result: a document's styles don't always say which lines are headings. Rename, move or delete entries as above. Headings in scanned pages aren't found, even once their text is recognized.
+A document's styles don't always say which lines are headings, so check the list. Headings in scanned pages aren't found, even once their text is recognized. In some tagged PDFs, section numbers are drawn so that they aren't part of the text, and the entries come without them.
 
 ## Thumbnails
 

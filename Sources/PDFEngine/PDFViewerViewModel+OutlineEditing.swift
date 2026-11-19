@@ -61,7 +61,10 @@ extension PDFViewerViewModel {
         guard let doc = document else { return }
         let path: OutlinePath
         if let node, let at = doc.outline.path(of: node.id) {
-            path = asChild ? at + [node.children.count] : Array(at.dropLast()) + [at.last! + 1]
+            // The entry as the outline has it: `node` may come from a filtered outline, without
+            // all of its children.
+            let children = doc.outline.node(at: at)?.children.count ?? node.children.count
+            path = asChild ? at + [children] : Array(at.dropLast()) + [at.last! + 1]
         } else {
             path = [doc.outline.firstIndex { ($0.targetPage ?? -1) > page } ?? doc.outline.count]
         }
@@ -171,19 +174,12 @@ extension PDFViewerViewModel {
         currentWindow?.isDocumentEdited = true
     }
 
-    /// Replaces the outline with one built from the document's headings (see `HeadingOutline`),
-    /// after asking if it has one. Shows progress for a long document; one step for Undo.
+    /// Finds the document's headings (see `HeadingOutline`) and shows them in a sheet, where
+    /// they can be checked before they replace the outline (`applyHeadingOutline`). Shows
+    /// progress for a long document. Under tests, the headings found are used as they are.
     public func buildOutlineFromHeadings() async {
         guard canEditOutline, let doc = document else { return }
         flushPendingFormEdits()
-        if !doc.outline.isEmpty, !Self.isRunningTests {
-            let alert = NSAlert()
-            alert.messageText = "Replace the Outline?"
-            alert.informativeText = "The document's outline is replaced with one built from its headings. Choose Edit > Undo to get the outline back."
-            alert.addButton(withTitle: "Replace")
-            alert.addButton(withTitle: "Cancel")
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-        }
 
         let progress = RecognitionProgress(total: doc.pageCount)
         let cancelled = CancelFlag()
@@ -215,9 +211,20 @@ extension PDFViewerViewModel {
             }
             return
         }
+        if Self.isRunningTests {
+            applyHeadingOutline(found)
+        } else {
+            headingOutlineProposal = HeadingOutlineProposal(headings: found, replacesOutline: !doc.outline.isEmpty)
+        }
+    }
+
+    /// Replaces the outline with one of `headings`, as one step for Undo.
+    public func applyHeadingOutline(_ headings: [FoundHeading]) {
+        headingOutlineProposal = nil
+        guard canEditOutline, let doc = document, !headings.isEmpty else { return }
         let undo: [OutlineEdit]
         do {
-            undo = try doc.replaceOutline(with: found)
+            undo = try doc.replaceOutline(with: headings)
         } catch {
             showErrorAlert(title: "Couldn't Change the Outline", message: error.localizedDescription)
             return
@@ -255,4 +262,12 @@ private final class CancelFlag: Sendable {
     private let flag = Atomic<Bool>(false)
     var isCancelled: Bool { flag.load(ordering: .relaxed) }
     func cancel() { flag.store(true, ordering: .relaxed) }
+}
+
+/// The headings found for an outline, shown to be checked before they're used.
+public struct HeadingOutlineProposal: Identifiable {
+    public let id = UUID()
+    public let headings: [FoundHeading]
+    /// Whether the document has an outline they'd replace.
+    public let replacesOutline: Bool
 }

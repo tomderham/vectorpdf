@@ -129,4 +129,47 @@ import Testing
         let reopened = try PDFDocumentCore(filePath: url.path)
         #expect(reopened.outline.map(\.title) == doc.outline.map(\.title))
     }
+
+    /// What's checked, renamed and moved a level in the sheet is what the outline gets.
+    @Test func theCheckedHeadingsAreUsedAsChanged() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["One", "Two", "Three"])
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let headings = [
+            FoundHeading(level: 1, title: "Intro", page: 0, top: 50),
+            FoundHeading(level: 2, title: "Scope", page: 1, top: 80),
+            FoundHeading(level: 1, title: "Results", page: 2, top: 60),
+        ]
+        var edited = headings
+        edited[1].level = 1
+        edited[2].title = "Findings"
+        vm.applyHeadingOutline([edited[0], edited[2]])
+        #expect(vm.document?.outline.map(\.title) == ["Intro", "Findings"])
+        #expect(vm.headingOutlineProposal == nil)
+        vm.applyHeadingOutline(edited)
+        #expect(vm.document?.outline.map(\.title) == ["Intro", "Scope", "Findings"])
+        #expect(vm.document?.outline.allSatisfy { $0.children.isEmpty } == true)
+    }
+
+    /// An entry taken from a filtered outline, which shows only some of its children, still gets
+    /// a new entry after all of them.
+    @Test func addingInsideAFilteredEntryGoesAfterAllItsChildren() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["One", "Two"])
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let doc = try #require(vm.document)
+        try doc.addOutlineEntry(title: "Chapter", page: 0, y: 0, at: [0])
+        try doc.addOutlineEntry(title: "Apples", page: 0, y: 100, at: [0, 0])
+        try doc.addOutlineEntry(title: "Pears", page: 1, y: 100, at: [0, 1])
+        let filtered = try #require(PDFOutlineNode.filter(nodes: doc.outline, query: "apples").first)
+        #expect(filtered.children.map(\.title) == ["Apples"])
+        vm.promptToAddOutlineEntry(near: filtered, asChild: true)
+        #expect(doc.outline[0].children.map(\.title) == ["Apples", "Pears", "Page 1"])
+    }
 }

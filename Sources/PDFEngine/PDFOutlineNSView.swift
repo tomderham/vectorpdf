@@ -486,8 +486,10 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 menu.addItem(openLinkItem)
             }
 
-            // Editing, only on the whole outline: a filtered one hides where entries would go.
-            if viewModel.canEditOutline, (lastSearchQuery ?? "").isEmpty, !viewModel.isTransientWindow {
+            // Editing. While the outline is filtered, entries aren't moved: the filter hides the
+            // entries around them, and so where they'd go.
+            if viewModel.canEditOutline, !viewModel.isTransientWindow {
+                let isFiltered = !(lastSearchQuery ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 if !menu.items.isEmpty { menu.addItem(.separator()) }
                 func add(_ title: String, _ action: Selector, enabled: Bool = true) {
                     let item = NSMenuItem(title: title, action: enabled ? action : nil, keyEquivalent: "")
@@ -499,11 +501,13 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 add("Add Entry Inside", #selector(addInsideAction(_:)))
                 add("Rename…", #selector(renameAction(_:)))
                 add("Go Here Instead", #selector(repointAction(_:)))
-                menu.addItem(.separator())
-                add("Move Up", #selector(moveUpAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .up))
-                add("Move Down", #selector(moveDownAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .down))
-                add("Indent", #selector(indentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .indent))
-                add("Outdent", #selector(outdentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .outdent))
+                if !isFiltered {
+                    menu.addItem(.separator())
+                    add("Move Up", #selector(moveUpAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .up))
+                    add("Move Down", #selector(moveDownAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .down))
+                    add("Indent", #selector(indentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .indent))
+                    add("Outdent", #selector(outdentAction(_:)), enabled: viewModel.canMoveOutlineEntry(node, .outdent))
+                }
                 menu.addItem(.separator())
                 add("Delete Entry", #selector(deleteAction(_:)))
                 menu.addItem(.separator())

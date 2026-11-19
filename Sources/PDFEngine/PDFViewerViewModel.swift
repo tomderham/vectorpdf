@@ -618,6 +618,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var isShowingPageMarks: Bool = false
     /// Where a signature with a certificate is about to go, while its sheet is open.
     @Published public var certificateSignaturePlacement: CertificateSignaturePlacement? = nil
+    /// Headings found for an outline, while the sheet to check them is open.
+    @Published public var headingOutlineProposal: HeadingOutlineProposal? = nil
     /// Goes up when the outline is edited, for the sidebar to show it again.
     @Published public internal(set) var outlineRevision = 0
     @Published public var documentInspectionReport: PDFDocumentInspectionReport? = nil
