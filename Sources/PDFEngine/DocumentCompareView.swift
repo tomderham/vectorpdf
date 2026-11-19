@@ -468,7 +468,7 @@ public final class DocumentCompareSession: ObservableObject {
         // Heights at a zoom of 1 don't change with the zoom, so zooming doesn't rebuild the map;
         // laying the pages out differently does.
         let key: [CGFloat] = [original, revised].flatMap { pane in
-            [CGFloat(pane.viewRotationDegrees), pane.isTwoPageMode ? 1 : 0, pane.effectiveTotalHeight, CGFloat(pane.effectivePageYOffsets.count)]
+            [CGFloat(pane.viewRotationDegrees), pane.isTwoPageMode ? 1 : 0, pane.effectiveTotalHeight, CGFloat(pane.pageLayout.pageCount)]
         }
         if let scrollMap, scrollMap.key == key { return scrollMap.map }
         guard let originalOffsets = layoutOffsets(.original), let revisedOffsets = layoutOffsets(.revised) else { return nil }

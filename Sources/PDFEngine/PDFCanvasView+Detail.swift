@@ -100,14 +100,11 @@ extension PDFCanvasView {
         let visible = visibleRect
         guard visible.width > 0, visible.height > 0 else { return }
 
-        let firstPage = viewModel.effectivePageIndex(atYOffset: max(0, (visible.minY - 16) / zoom))
-        let lastPage = viewModel.effectivePageIndex(atYOffset: max(0, (visible.maxY - 16) / zoom))
-        let start = max(0, firstPage - 1), end = min(doc.pageCount - 1, lastPage + 1)
-        guard start <= end else { return }
+        guard let visiblePages = pages(in: visible) else { return }
 
         var showing = Set<Int>()
         var wanted: [(page: Int, rect: CGRect)] = []
-        for page in start...end {
+        for page in visiblePages {
             guard let geometry = pageGeometry(for: page), geometry.frame.intersects(visible), viewModel.hasCurrentRender(of: page) else { continue }
             let pBounds = doc.pageBounds[page]
             guard PDFRenderActor.clampsRender(scale: scale, pageBounds: pBounds) else { continue }

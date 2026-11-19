@@ -53,26 +53,8 @@ extension PDFViewerViewModel {
 
     public func zoomToFitWidth(viewportWidth: CGFloat? = nil) {
         guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
-        let sideways = isRotatedSideways
-        let pageW = sideways ? doc.pageBounds[currentPageIndex].height : doc.pageBounds[currentPageIndex].width
-        
-        let effectiveW: CGFloat
-        if isTwoPageMode {
-            let pageGap: CGFloat = 16.0
-            if currentPageIndex == 0 {
-                let leftW = doc.pageCount > 1 ? (sideways ? doc.pageBounds[1].height : doc.pageBounds[1].width) : pageW
-                effectiveW = leftW + pageGap + pageW
-            } else {
-                let isLeft = currentPageIndex % 2 == 1
-                let leftIdx = isLeft ? currentPageIndex : currentPageIndex - 1
-                let rightIdx = leftIdx + 1
-                let leftW = sideways ? doc.pageBounds[leftIdx].height : doc.pageBounds[leftIdx].width
-                let rightW = rightIdx < doc.pageCount ? (sideways ? doc.pageBounds[rightIdx].height : doc.pageBounds[rightIdx].width) : leftW
-                effectiveW = leftW + pageGap + rightW
-            }
-        } else {
-            effectiveW = pageW
-        }
+        // The page's row: the whole spread in Two-Page Mode.
+        guard let effectiveW = pageLayout.rowWidth(containing: currentPageIndex) else { return }
         
         // PDFVirtualizedScrollView applies 32pt padding on both left and right (total 64pt)
         let horizontalPadding: CGFloat = 64.0
@@ -96,27 +78,10 @@ extension PDFViewerViewModel {
 
     public func zoomToFitPage(viewportSize: CGSize? = nil) {
         guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
-        let sideways = isRotatedSideways
-        let pageW = sideways ? doc.pageBounds[currentPageIndex].height : doc.pageBounds[currentPageIndex].width
-        let pageH = sideways ? doc.pageBounds[currentPageIndex].width : doc.pageBounds[currentPageIndex].height
-        
-        let effectiveW: CGFloat
-        if isTwoPageMode {
-            let pageGap: CGFloat = 16.0
-            if currentPageIndex == 0 {
-                let leftW = doc.pageCount > 1 ? (sideways ? doc.pageBounds[1].height : doc.pageBounds[1].width) : pageW
-                effectiveW = leftW + pageGap + pageW
-            } else {
-                let isLeft = currentPageIndex % 2 == 1
-                let leftIdx = isLeft ? currentPageIndex : currentPageIndex - 1
-                let rightIdx = leftIdx + 1
-                let leftW = sideways ? doc.pageBounds[leftIdx].height : doc.pageBounds[leftIdx].width
-                let rightW = rightIdx < doc.pageCount ? (sideways ? doc.pageBounds[rightIdx].height : doc.pageBounds[rightIdx].width) : leftW
-                effectiveW = leftW + pageGap + rightW
-            }
-        } else {
-            effectiveW = pageW
-        }
+        // The page's row: the whole spread in Two-Page Mode.
+        guard let effectiveW = pageLayout.rowWidth(containing: currentPageIndex),
+              pageLayout.pageSizes.indices.contains(currentPageIndex) else { return }
+        let pageH = pageLayout.pageSizes[currentPageIndex].height
         
         let horizontalPadding: CGFloat = 64.0
         let verticalPadding: CGFloat = 48.0

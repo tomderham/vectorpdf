@@ -109,9 +109,12 @@ public final class PDFViewerViewModel: ObservableObject {
 
     /// Whole-document display-only rotation in 90-degree increments.
     @Published public private(set) var viewRotationDegrees: Int = 0
-    /// Per-page Y offsets and total content height adjusted for rotation and two-page mode.
-    @Published public private(set) var effectivePageYOffsets: [CGFloat] = []
-    @Published public private(set) var effectiveTotalHeight: CGFloat = 0
+    /// Where each page sits, for the rotation and Two-Page Mode: see `recomputeEffectiveLayout`.
+    @Published public private(set) var pageLayout = PageLayout.empty
+    /// Each page's top in `pageLayout`, at a zoom of 1.
+    public var effectivePageYOffsets: [CGFloat] { pageLayout.pageYOffsets }
+    /// The height of all the pages in `pageLayout`, at a zoom of 1.
+    public var effectiveTotalHeight: CGFloat { pageLayout.totalHeight }
 
     var isRotatedSideways: Bool { viewRotationDegrees == 90 || viewRotationDegrees == 270 }
 
@@ -211,108 +214,20 @@ public final class PDFViewerViewModel: ObservableObject {
 
     func recomputeEffectiveLayout() {
         guard let doc = document else {
-            effectivePageYOffsets = []
-            effectiveTotalHeight = 0
+            pageLayout = .empty
             return
         }
-        if isTwoPageMode {
-            // Book Mode (Cover Page Offset):
-            // Page 0 (Cover) sits alone on Row 0 on the right side of the spread (matching a physical
-            // closed book). Subsequent pages 1..N are paired as physical facing spreads: (1,2), (3,4), ...
-            // where odd indices (1, 3, 5...) are left-hand verso pages and even indices (2, 4, 6...)
-            // are right-hand recto pages, preserving author-intended two-page spreads.
-            let pageSpacing: CGFloat = 16.0
-            guard !doc.pageBounds.isEmpty else {
-                effectivePageYOffsets = []
-                effectiveTotalHeight = 0
-                return
-            }
-
-            var offsets = [CGFloat](repeating: 0, count: doc.pageBounds.count)
-            var currentY: CGFloat = 0
-
-            // Row 0: Standalone cover page
-            offsets[0] = currentY
-            currentY += doc.pageBounds[0].height + pageSpacing
-
-            // Rows 1..N: Facing page pairs (1,2), (3,4), ...
-            var i = 1
-            while i < doc.pageBounds.count {
-                let rightIndex = i + 1
-                let rowHeight = rightIndex < doc.pageBounds.count
-                    ? max(doc.pageBounds[i].height, doc.pageBounds[rightIndex].height)
-                    : doc.pageBounds[i].height
-                offsets[i] = currentY
-                if rightIndex < doc.pageBounds.count {
-                    offsets[rightIndex] = currentY
-                }
-                currentY += rowHeight + pageSpacing
-                i += 2
-            }
-            effectivePageYOffsets = offsets
-            effectiveTotalHeight = currentY
-            return
-        }
-        guard isRotatedSideways else {
-            effectivePageYOffsets = doc.pageYOffsets
-            effectiveTotalHeight = doc.totalHeight
-            return
-        }
-        // Mirrors PDFDocumentCore's own offset computation, just with each page's width standing
-        // in for its (now on-screen-vertical) height — see the property doc comment above.
-        let pageSpacing: CGFloat = 16.0
-        var offsets: [CGFloat] = []
-        offsets.reserveCapacity(doc.pageBounds.count)
-        var currentY: CGFloat = 0
-        for bounds in doc.pageBounds {
-            offsets.append(currentY)
-            currentY += bounds.width + pageSpacing
-        }
-        effectivePageYOffsets = offsets
-        effectiveTotalHeight = currentY
+        pageLayout = PageLayout(pageBounds: doc.pageBounds, rotation: viewRotationDegrees,
+                                arrangement: isTwoPageMode ? .spreads : .singlePages)
     }
 
-    /// Binary search over `effectivePageYOffsets` to find the page index at a given vertical offset,
-    /// accounting for rotation and layout mode.
+    /// The page at a vertical offset (at a zoom of 1) in the layout. In a spread that's the
+    /// current page if it's one of the spread's, or else its first page.
     public func effectivePageIndex(atYOffset y: CGFloat) -> Int {
-        guard let doc = document, !effectivePageYOffsets.isEmpty else { return 0 }
-        if isTwoPageMode {
-            var low = 0
-            var high = effectivePageYOffsets.count - 1
-            var rowStartPage = 0
-            while low <= high {
-                let mid = (low + high) / 2
-                if effectivePageYOffsets[mid] <= y {
-                    rowStartPage = mid
-                    low = mid + 1
-                } else {
-                    high = mid - 1
-                }
-            }
-            if rowStartPage == 0 {
-                return 0
-            }
-            let leftPage = (rowStartPage % 2 == 0) ? rowStartPage - 1 : rowStartPage
-            let rightPage = leftPage + 1
-            if currentPageIndex == leftPage || currentPageIndex == rightPage {
-                return currentPageIndex
-            }
-            return min(max(leftPage, 0), doc.pageCount - 1)
-        }
-
-        var low = 0
-        var high = effectivePageYOffsets.count - 1
-        var result = 0
-        while low <= high {
-            let mid = (low + high) / 2
-            if effectivePageYOffsets[mid] <= y {
-                result = mid
-                low = mid + 1
-            } else {
-                high = mid - 1
-            }
-        }
-        return min(max(result, 0), doc.pageCount - 1)
+        guard pageLayout.pageCount > 0 else { return 0 }
+        let page = pageLayout.lastPage(atOrAboveY: y)
+        guard let row = pageLayout.row(containing: page) else { return page }
+        return row.contains(currentPageIndex) ? currentPageIndex : row.lowerBound
     }
     
     // Page Metadata
@@ -1355,57 +1270,20 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public var canGoNextPage: Bool {
         guard let doc = document, doc.pageCount > 0 else { return false }
-        if isTwoPageMode {
-            if currentPageIndex == 0 {
-                return doc.pageCount > 1
-            }
-            let isLeft = currentPageIndex % 2 == 1
-            let spreadStart = isLeft ? currentPageIndex : currentPageIndex - 1
-            return spreadStart + 2 < doc.pageCount
-        } else {
-            return currentPageIndex < doc.pageCount - 1
-        }
+        return pageLayout.firstPageOfNextRow(after: currentPageIndex) != nil
     }
 
+    /// Turns to the next page, or in Two-Page Mode the next spread.
     public func nextPage() {
-        guard let doc = document, doc.pageCount > 0 else { return }
-        if isTwoPageMode {
-            if currentPageIndex == 0 {
-                if doc.pageCount > 1 {
-                    jumpToPage(1)
-                }
-            } else {
-                let isLeft = currentPageIndex % 2 == 1
-                let spreadStart = isLeft ? currentPageIndex : currentPageIndex - 1
-                let nextSpreadStart = spreadStart + 2
-                if nextSpreadStart < doc.pageCount {
-                    jumpToPage(nextSpreadStart)
-                }
-            }
-        } else {
-            guard currentPageIndex + 1 < doc.pageCount else { return }
-            jumpToPage(currentPageIndex + 1)
-        }
+        guard let doc = document, doc.pageCount > 0,
+              let next = pageLayout.firstPageOfNextRow(after: currentPageIndex) else { return }
+        jumpToPage(next)
     }
     
+    /// Turns to the previous page, or in Two-Page Mode the previous spread.
     public func previousPage() {
         guard let doc = document, doc.pageCount > 0, currentPageIndex > 0 else { return }
-        if isTwoPageMode {
-            if currentPageIndex <= 2 {
-                jumpToPage(0)
-            } else {
-                let isLeft = currentPageIndex % 2 == 1
-                let spreadStart = isLeft ? currentPageIndex : currentPageIndex - 1
-                let prevSpreadStart = spreadStart - 2
-                if prevSpreadStart >= 1 {
-                    jumpToPage(prevSpreadStart)
-                } else {
-                    jumpToPage(0)
-                }
-            }
-        } else {
-            jumpToPage(currentPageIndex - 1)
-        }
+        jumpToPage(pageLayout.firstPageOfPreviousRow(before: currentPageIndex) ?? 0)
     }
 
     public func goToFirstPage() {

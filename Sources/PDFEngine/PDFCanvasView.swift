@@ -544,49 +544,16 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     
     public func pageFrame(for pageIndex: Int) -> NSRect? {
         // The layout is rebuilt after the document changes, and can briefly be shorter than it.
-        guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount,
-              pageIndex < viewModel.effectivePageYOffsets.count else { return nil }
-        let pBounds = doc.pageBounds[pageIndex]
-        let y = 16 + (viewModel.effectivePageYOffsets[pageIndex] * viewModel.effectiveZoom)
+        guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
+        return viewModel.pageLayout.frame(for: pageIndex, zoom: viewModel.effectiveZoom, canvasWidth: bounds.width)
+    }
 
-        if viewModel.isTwoPageMode {
-            // Book Mode (Cover Page Offset):
-            // Page 0 (Cover) sits alone on Row 0, positioned on the right-hand side of the spread
-            // (aligned with the right-hand recto page column, spine down the center).
-            // Subsequent pages 1..N are paired (1,2), (3,4)... with odd indices on the Left (verso)
-            // and even indices on the Right (recto).
-            let pageGap: CGFloat = 16.0
-            let w = pBounds.width * viewModel.effectiveZoom
-            let h = pBounds.height * viewModel.effectiveZoom
-
-            if pageIndex == 0 {
-                let leftSlotWidth = (doc.pageCount > 1 ? doc.pageBounds[1].width : pBounds.width) * viewModel.effectiveZoom
-                let pairWidth = leftSlotWidth + pageGap + w
-                let pairX = max(32, (bounds.width - pairWidth) / 2)
-                let x = pairX + leftSlotWidth + pageGap
-                return NSRect(x: x, y: y, width: w, height: h)
-            } else {
-                let isLeft = pageIndex % 2 == 1
-                let pairStart = isLeft ? pageIndex : pageIndex - 1
-                let rightIndex = pairStart + 1
-                let hasRight = rightIndex < doc.pageCount
-                let leftWidth = doc.pageBounds[pairStart].width * viewModel.effectiveZoom
-                let rightSlotWidth = (hasRight ? doc.pageBounds[rightIndex].width : doc.pageBounds[pairStart].width) * viewModel.effectiveZoom
-                let pairWidth = leftWidth + pageGap + rightSlotWidth
-                let pairX = max(32, (bounds.width - pairWidth) / 2)
-                let x = isLeft ? pairX : pairX + leftWidth + pageGap
-                return NSRect(x: x, y: y, width: w, height: h)
-            }
-        }
-
-        // At 90°/270°, the page's on-screen footprint has width/height swapped from its native
-        // bounds — see effectivePageYOffsets's doc comment. viewRotationDegrees is 0 far more often
-        // than not, so this stays exactly the pre-rotation math in the common case.
-        let sideways = viewModel.viewRotationDegrees == 90 || viewModel.viewRotationDegrees == 270
-        let w = (sideways ? pBounds.height : pBounds.width) * viewModel.effectiveZoom
-        let h = (sideways ? pBounds.width : pBounds.height) * viewModel.effectiveZoom
-        let x = max(32, (bounds.width - w) / 2)
-        return NSRect(x: x, y: y, width: w, height: h)
+    /// The pages that may be in `rect` on the canvas, with one either side to spare.
+    func pages(in rect: CGRect) -> ClosedRange<Int>? {
+        guard let doc = viewModel.document, doc.pageCount > 0,
+              let range = viewModel.pageLayout.pages(fromCanvasY: rect.minY, to: rect.maxY, zoom: viewModel.effectiveZoom),
+              range.lowerBound < doc.pageCount else { return nil }
+        return range.clamped(to: 0...(doc.pageCount - 1))
     }
 
     /// Where page `pageIndex` sits on the canvas and how its page points map there, in every view
@@ -604,12 +571,8 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
 
     public func pageInfo(at canvasPoint: CGPoint) -> (pageIndex: Int, frame: NSRect, pagePoint: CGPoint)? {
-        guard let doc = viewModel.document else { return nil }
-        let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.effectiveZoom)
-        let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
-        // In two-page mode that's one page of the spread; the point may be on the other.
-        let candidates = viewModel.isTwoPageMode ? [pageIdx, pageIdx - 1, pageIdx + 1] : [pageIdx]
-        for idx in candidates where idx >= 0 && idx < doc.pageCount {
+        guard let candidates = pages(in: CGRect(origin: canvasPoint, size: .zero)) else { return nil }
+        for idx in candidates {
             guard let geometry = pageGeometry(for: idx), geometry.frame.contains(canvasPoint) else { continue }
             return (idx, geometry.frame, geometry.pagePoint(forCanvasPoint: canvasPoint))
         }
@@ -620,11 +583,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     /// moved onto its edge: a selection dragged off the side of a page or into the gap keeps going.
     func nearestPageInfo(at canvasPoint: CGPoint) -> (pageIndex: Int, pagePoint: CGPoint)? {
         if let hit = pageInfo(at: canvasPoint) { return (hit.pageIndex, hit.pagePoint) }
-        guard let doc = viewModel.document, doc.pageCount > 0 else { return nil }
-        let unscaledY = max(0, (canvasPoint.y - 16) / viewModel.effectiveZoom)
-        let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+        guard let candidates = pages(in: CGRect(origin: canvasPoint, size: .zero)) else { return nil }
         var nearest: (index: Int, point: CGPoint, distance: CGFloat)?
-        for idx in [pageIdx - 1, pageIdx, pageIdx + 1] where idx >= 0 && idx < doc.pageCount {
+        for idx in candidates {
             guard let frame = pageGeometry(for: idx)?.frame else { continue }
             let onPage = CGPoint(x: min(max(canvasPoint.x, frame.minX), frame.maxX),
                                  y: min(max(canvasPoint.y, frame.minY), frame.maxY))

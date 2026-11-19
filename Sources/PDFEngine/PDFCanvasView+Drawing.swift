@@ -40,17 +40,8 @@ extension PDFCanvasView {
         pruneThemedPageCache()
         defer { scheduleDetailRenders() }
 
-        // Determine visible page range intersecting dirtyRect via binary search
-        let unscaledMinY = max(0, (dirtyRect.minY - 16) / viewModel.effectiveZoom)
-        let unscaledMaxY = max(0, (dirtyRect.maxY - 16) / viewModel.effectiveZoom)
-        let firstPage = viewModel.effectivePageIndex(atYOffset: unscaledMinY)
-        let lastPage = viewModel.effectivePageIndex(atYOffset: unscaledMaxY)
-        
-        let start = max(0, firstPage - 1)
-        let end = min(doc.pageCount - 1, lastPage + 1)
-        guard start <= end else { return }
-        
-        for pageIdx in start...end {
+        guard let visiblePages = pages(in: dirtyRect) else { return }
+        for pageIdx in visiblePages {
             guard let canvasFrame = pageFrame(for: pageIdx) else { continue }
             guard canvasFrame.intersects(dirtyRect) else { continue }
             

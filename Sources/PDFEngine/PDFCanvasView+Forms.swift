@@ -38,18 +38,10 @@ extension PDFCanvasView {
         let visible = visibleRect
         guard visible.width > 0 && visible.height > 0 else { return }
         
-        let unscaledMinY = max(0, (visible.minY - 16) / viewModel.effectiveZoom)
-        let unscaledMaxY = max(0, (visible.maxY - 16) / viewModel.effectiveZoom)
-        let firstPage = viewModel.effectivePageIndex(atYOffset: unscaledMinY)
-        let lastPage = viewModel.effectivePageIndex(atYOffset: unscaledMaxY)
-        
-        let start = max(0, firstPage - 1)
-        let end = min(doc.pageCount - 1, lastPage + 1)
-        guard start <= end else { return }
-        
+        guard let visiblePages = pages(in: visible) else { return }
         var visibleKeys = Set<String>()
         
-        for pageIdx in start...end {
+        for pageIdx in visiblePages {
             guard let geometry = pageGeometry(for: pageIdx) else { continue }
             let pFrame = geometry.frame
             guard pFrame.intersects(visible) || abs(pFrame.midY - visible.midY) < visible.height else { continue }
