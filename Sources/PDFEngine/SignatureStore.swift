@@ -98,7 +98,7 @@ public struct SignatureCaptureView: View {
     public var body: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Create Stamp")
+                Text("Handwritten Signature")
                     .font(.headline)
                 Spacer()
                 Picker("", selection: $creationMode) {
@@ -160,7 +160,7 @@ public struct SignatureCaptureView: View {
                         Rectangle().stroke(Color.secondary.opacity(0.4))
 
                         if typedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Text("Stamp preview will appear here")
+                            Text("Your signature will appear here")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         } else {

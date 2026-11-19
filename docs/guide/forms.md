@@ -7,7 +7,7 @@ VectorPDF works with interactive PDF forms (AcroForms). Fields appear on the pag
 - **Text fields:** click and type.
 - **Checkboxes and radio buttons:** click to choose.
 - **Pop-up menus and lists:** click and choose an item.
-- **Signature fields:** click **Sign**, then create or choose a [stamp](stamps.md).
+- **Signature fields:** click **Sign**, then choose a handwritten signature or a digital one. See [Sign a document](stamps.md).
 
 Press ⌘S to [save](save.md) the completed form.
 

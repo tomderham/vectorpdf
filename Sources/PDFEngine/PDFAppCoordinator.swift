@@ -833,12 +833,12 @@ struct GeneralSettingsPane: View {
                     .controlSize(.small)
                 }
             } else {
-                Button("Create Stamp…") { isShowingSignatureEditor = true }
+                Button("Create Signature…") { isShowingSignatureEditor = true }
             }
         } label: {
             SettingsLabel(
-                "Digital Stamp",
-                detail: signatureStore.savedSignatureData == nil ? "No stamp saved." : nil
+                "Handwritten Signature",
+                detail: signatureStore.savedSignatureData == nil ? "None saved. It's a picture to put on pages, not a digital signature." : nil
             )
         }
     }

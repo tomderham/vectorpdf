@@ -1,8 +1,8 @@
-<!-- keywords: digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
+<!-- keywords: digital signature, digital signatures, check signature, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed -->
 
-# Sign and check digital signatures
+# Check digital signatures
 
-A digital signature shows who signed a document and that it hasn't changed since. You can [sign a PDF](#sign) with a certificate of your own. When you open a signed PDF, VectorPDF checks its signatures and shows what it found in a bar above the page:
+A digital signature shows who signed a document and that it hasn't changed since. To sign a PDF with a certificate of your own, see [Sign with a certificate](stamps.md#sign). When you open a signed PDF, VectorPDF checks its signatures and shows what it found in a bar above the page:
 
 - **The signature is valid:** the document is unchanged since it was signed, and the signer's certificate was issued by an authority your Mac trusts.
 - **The signer's identity isn't verified on this Mac:** the document is unchanged, but nothing vouches for who signed it. See [Why a signer's identity may not be verified](#signer-identity).
@@ -10,27 +10,7 @@ A digital signature shows who signed a document and that it hasn't changed since
 
 Click **Signature Details** to see each signature in the Document tab of the sidebar. To hide the bar, click its close button.
 
-> **Note:** A [stamp](stamps.md) is a picture of a signature, not a digital signature.
-
-## Sign with a certificate {#sign}
-
-To sign, you need a certificate for signing with its private key. Your organization or a certificate authority can give you one, usually as a .p12 or .pfx file with a password. Certificates in your keychain can be used directly.
-
-1. Choose Edit > Sign with Certificate, then drag out a box on the page where the signature should go, or click for one of the usual size. Press Esc to stop. If the document has an empty signature field, you can click the field instead and choose Sign with Certificate.
-2. Choose your certificate. A preview shows how the signature will look. To use a file, click **Choose Certificate File**, then type its password. The file is read for this signature only and isn't added to your keychain.
-3. If you like, type a reason (such as "I approve this document") and where you're signing. If you've made a [stamp](stamps.md), you can show your handwritten signature in the field. Otherwise your name is shown.
-4. If you like, choose under After Signing:
-   - **Certify**, if no one has signed the document yet: say which changes keep it valid from now on: form filling, signing and comments; form filling and signing; or none. A certified document shows as certified to everyone who checks it, and later changes it doesn't allow make your signature invalid.
-   - **Lock form fields**, for a form: all its fields, or those you choose, become read-only, so they keep the values you signed.
-5. Click **Sign**.
-
-Signing saves the document, so if it has unsaved changes, VectorPDF asks to save them first. They become part of what you sign. macOS may ask you to allow VectorPDF to use your certificate's key.
-
-Unless you lock them or certify the document for less, the signature leaves the document's other form fields as they were, so others can still fill them in, sign too, or add comments without making your signature invalid. Each later signature is added after the earlier ones in the same way.
-
-The signature is a PKCS #7 signature with SHA-256, carrying your certificate and those of the authorities that issued it. It records the time on your Mac.
-
-To have a timestamp server vouch for when you signed, turn on **Add a timestamp** and give its address (your organization may run one; free ones include DigiCert's, `http://timestamp.digicert.com`). A timestamp lets your signature be checked as it was when you signed, even after your certificate expires. The server is sent only a fingerprint of the signature, nothing of the document. If it can't be reached, nothing is signed and the document is left as it was.
+> **Note:** A [handwritten signature](stamps.md) is a picture of a signature, not a digital signature.
 
 ## What VectorPDF checks
 

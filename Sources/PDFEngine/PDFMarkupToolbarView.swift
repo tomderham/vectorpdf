@@ -115,14 +115,7 @@ public struct PDFMarkupToolbarView: View {
                     Image(systemName: "eraser")
                 }
 
-                PreviewToolbarButton(
-                    isSelected: viewModel.canvasMode == .stamp,
-                    helpText: "Stamp"
-                ) {
-                    viewModel.toggleTool(.stamp)
-                } label: {
-                    Image(systemName: "signature")
-                }
+                SignMenuButton(viewModel: viewModel)
             }
 
             // 2. Context-Sensitive Tool Controls
@@ -302,7 +295,7 @@ public struct PDFMarkupToolbarView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "signature")
                         .foregroundColor(.accentColor)
-                    Text("Click anywhere on the document to place stamp")
+                    Text("Click where your handwritten signature goes")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -386,3 +379,38 @@ public struct PDFMarkupToolbarView: View {
     }
 }
 
+/// Signing, in one place: a picture of your handwritten signature, or a digital signature with a
+/// certificate. They do different things, so each says what it is.
+struct SignMenuButton: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+
+    var body: some View {
+        Menu {
+            Button {
+                if viewModel.canvasMode != .stamp { viewModel.toggleTool(.stamp) }
+            } label: {
+                Text("Add Handwritten Signature")
+                Text("A picture of your signature. It doesn't prove who signed, or protect the document.")
+            }
+            Button {
+                viewModel.beginCertificateSignature()
+            } label: {
+                Text("Sign with Certificate…")
+                Text("A digital signature: shows who signed, and that the document hasn't changed since.")
+            }
+            .disabled(!viewModel.canSignWithCertificate)
+        } label: {
+            Image(systemName: "signature")
+                .font(.system(size: 13, weight: viewModel.canvasMode == .stamp ? .medium : .regular))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .frame(width: 28, height: 24)
+        .background(
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(viewModel.canvasMode == .stamp ? Color.primary.opacity(0.12) : Color.clear)
+        )
+        .help("Sign: add your handwritten signature, or sign with a certificate")
+    }
+}

@@ -72,7 +72,7 @@ extension PDFViewerViewModel {
                 case .ink:
                     md += "- **[Ink Drawing]** *(\(colorName))*: \(annot.inkPoints.count) points\n"
                 case .stamp:
-                    md += "- **[Signature / Stamp]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
+                    md += "- **[Handwritten Signature or Stamp]**: Area \(annot.rect.map { "(\(Int($0.minX)), \(Int($0.minY)), \(Int($0.width))x\(Int($0.height)))" } ?? "")\n"
                 case .note:
                     md += "- **[Note]** *(\(colorName))*: \(annot.text)\n"
                 case .cloud:

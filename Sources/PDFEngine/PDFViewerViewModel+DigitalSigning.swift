@@ -145,4 +145,20 @@ extension PDFViewerViewModel {
         }
         return names
     }
+
+    private static let handwritingHintKey = "VectorPDF_ShownHandwrittenSignatureHint"
+
+    /// After a handwritten signature is placed, the first time: says it's a picture, and how to
+    /// sign digitally instead.
+    func explainHandwrittenSignatureOnce() {
+        guard !Self.isRunningTests, !UserDefaults.standard.bool(forKey: Self.handwritingHintKey) else { return }
+        UserDefaults.standard.set(true, forKey: Self.handwritingHintKey)
+        let alert = NSAlert()
+        alert.messageText = "This Is a Picture of Your Signature"
+        alert.informativeText = "It shows on the page, but it doesn't prove who signed or stop the document being changed. To sign the document digitally, choose Sign with Certificate from the Sign button or the Edit menu."
+        alert.addButton(withTitle: "OK")
+        if canSignWithCertificate { alert.addButton(withTitle: "Sign with Certificate…") }
+        let response = alert.runModal()
+        if response == .alertSecondButtonReturn { beginCertificateSignature() }
+    }
 }

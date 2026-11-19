@@ -9,7 +9,7 @@ Choose VectorPDF > Settings, or press ⌘,. Settings has four tabs.
 | Setting | What it does |
 | --- | --- |
 | Annotation Author | The name saved on your annotations and replies. If it's empty, VectorPDF uses your Mac user name. |
-| Digital Stamp | Creates, changes or deletes your [stamp](stamps.md). |
+| Handwritten Signature | Creates, changes or deletes the picture of your signature that you put on pages. See [Sign a document](stamps.md). |
 | PDF Color | Sets [how pages look](pdf-colors.md): Follow System, Light, Dark or Sepia. |
 | Open Links In | Chooses the browser for web links. |
 | List form fields, links and destinations in the sidebar | Adds a document's [form fields, links and named destinations](document-tab.md) to the Document tab, which then also appears for documents that have any of them. Off unless you turn it on. |
