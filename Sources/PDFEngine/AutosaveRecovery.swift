@@ -157,9 +157,14 @@ public enum AutosaveRecovery {
 
 extension PDFViewerViewModel {
     /// Whether this document's unsaved changes are copied for recovery: not for one that's
-    /// password-protected (the copy would be unencrypted), read-only, or a transient view.
+    /// password-protected (the copy would be unencrypted), read-only, or a transient view. Nor
+    /// for a signed one: MuPDF counts a copy of it as a save, and every save of a signed document
+    /// stays in it as a revision, so the next real save would keep each copy's state (text since
+    /// deleted, say) in the file.
     var keepsRecoveryCopy: Bool {
-        document?.isPDF == true && !isReadOnlyDocument && currentDocumentPassword == nil && !isTransientWindow && !isComparePane
+        guard let doc = document, doc.isPDF, !isReadOnlyDocument, currentDocumentPassword == nil,
+              !isTransientWindow, !isComparePane else { return false }
+        return !doc.savesIncrementally
     }
 
     /// Called whenever the document is marked edited or saved.

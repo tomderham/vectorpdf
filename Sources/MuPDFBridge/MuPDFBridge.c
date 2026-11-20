@@ -3473,6 +3473,22 @@ int mupdf_pdf_page_has_stamp_near_rect(fz_context *ctx, fz_document *doc, int pa
     return 0;
 }
 
+// Whether saving adds the changes after the file's bytes, as for a signed document (see
+// mupdf_pdf_save). 0 if it can't tell.
+int mupdf_pdf_saves_incrementally(fz_context *ctx, fz_document *doc) {
+    if (!ctx || !doc) return 0;
+    int incremental = 0;
+    fz_var(incremental);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
+        incremental = pdoc && pdf_count_signatures(ctx, pdoc) > 0 && pdf_can_be_saved_incrementally(ctx, pdoc);
+    } fz_catch(ctx) {
+        fz_report_error(ctx);
+        incremental = 0;
+    }
+    return incremental;
+}
+
 int mupdf_pdf_save(fz_context *ctx, fz_document *doc, const char *path, const char **out_error) {
     if (!ctx || !doc || !path) return -1;
     fz_try(ctx) {

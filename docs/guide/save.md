@@ -28,7 +28,7 @@ While a document has unsaved changes, VectorPDF keeps a copy of it on your Mac, 
 - **Decide Later** keeps the copies and asks again next time.
 - **Discard Changes** deletes the copies.
 
-The copy is deleted when you save, revert or close the document without saving, and when you quit VectorPDF. Password-protected documents aren't copied, because the copy wouldn't be encrypted.
+The copy is deleted when you save, revert or close the document without saving, and when you quit VectorPDF. Password-protected documents aren't copied, because the copy wouldn't be encrypted. Digitally signed documents aren't copied either: each save of a signed document is kept in the file as a revision, so changes you made and then removed before saving would stay in it. Save a signed document yourself as you work.
 
 ## Share a document
 

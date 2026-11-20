@@ -102,4 +102,35 @@ import Foundation
         await vm.autosaveNow()
         #expect(AutosaveRecovery.records().isEmpty)
     }
+
+    /// A signed document isn't copied: the copy would be a revision of it, kept by the next save.
+    @Test func aSignedDocumentIsntCopied() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir); AutosaveRecovery.directoryOverride = nil }
+        AutosaveRecovery.directoryOverride = dir.appendingPathComponent("Recovery", isDirectory: true)
+        let url = dir.appendingPathComponent("Signed.pdf")
+        try FileManager.default.copyItem(at: Fixture.signedValid, to: url)
+        let eofs = { (data: Data) in data.ranges(of: Data("%%EOF".utf8)).count }
+        let before = eofs(try Data(contentsOf: url))
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let doc = try #require(vm.document)
+        #expect(doc.savesIncrementally)
+        _ = vm.addShapeAnnotation(pageIndex: 0, shape: .rectangle, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 200))
+        #expect(vm.isDocumentEdited)
+        #expect(!vm.keepsRecoveryCopy)
+        await vm.autosaveNow()
+        #expect(AutosaveRecovery.records().isEmpty)
+        // Saved, it has one revision more than it had: none for a copy.
+        try doc.save(to: url.path)
+        #expect(eofs(try Data(contentsOf: url)) == before + 1)
+    }
+
+    @Test func anUnsignedDocumentSavesAfresh() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["Alpha"])
+        #expect(try !PDFDocumentCore(filePath: url.path).savesIncrementally)
+    }
 }

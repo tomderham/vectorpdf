@@ -1797,6 +1797,13 @@ public final class PDFDocumentCore: @unchecked Sendable {
         }
     }
 
+    /// Whether saving adds the changes after the file's bytes rather than writing it afresh: a
+    /// signed PDF, so its signatures stay valid. Every save then stays in the file as a revision.
+    public var savesIncrementally: Bool {
+        guard isPDF else { return false }
+        return withLockedDocument { ctx, doc in mupdf_pdf_saves_incrementally(ctx, doc) != 0 }
+    }
+
     /// Saves the modified PDF, using atomic file swapping and NSFileCoordinator to ensure safe cloud sync.
     public func save(to path: String) throws {
         lock.lock()
