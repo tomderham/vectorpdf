@@ -57,13 +57,7 @@ struct SearchSidebarView: View {
                         .controlSize(.small)
                 }
 
-                SearchOptionsMenu(viewModel: viewModel)
-
-                Button(action: moveToOtherSide) {
-                    Image(systemName: viewModel.isSearchOnRight ? "sidebar.left" : "sidebar.right")
-                }
-                .buttonStyle(.borderless)
-                .help(viewModel.isSearchOnRight ? "Move Search to the Sidebar" : "Move Search to the Right, Beside the Contents")
+                SearchOptionsMenu(viewModel: viewModel, moveToOtherSide: moveToOtherSide)
 
                 if viewModel.isSearchOnRight {
                     // The right column has no button of its own to close it, as the sidebar has.

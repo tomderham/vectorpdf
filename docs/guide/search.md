@@ -22,9 +22,9 @@ Right-click a result to [create an anchor](anchors.md) from it, or to open it in
 
 ## See results beside the outline
 
-To see the results and the outline at the same time, click the move button (a sidebar icon) at the right of the search field. Search moves to the right side of the window and the sidebar shows the outline, or the page thumbnails if the document has no outline. Each outline entry with results shows how many it has, and the count for the section with the current result is highlighted. A section with its subsections hidden counts the results in them too.
+To see the results and the outline at the same time, click the options button beside the search field and choose Show Search on Right. Search moves to the right side of the window and the sidebar shows the outline, or the page thumbnails if the document has no outline. Each outline entry with results shows how many it has, and the count for the section with the current result is highlighted. A section with its subsections hidden counts the results in them too.
 
-Each document remembers which side you put Search on. To put it back in the sidebar, click the move button again. To hide it while it's on the right, click the close button (×) beside it; press ⌘F to show it again.
+Each document remembers which side you put Search on. To put it back in the sidebar, choose Show Search on Right again to turn it off. To hide it while it's on the right, click the close button (×) beside it; press ⌘F to show it again.
 
 Search shares the right side with the [Inspector](rulers-and-inspector.md#the-inspector). When both are open, switch between them with the Search and Inspector buttons at the top.
 
@@ -44,6 +44,7 @@ Click the options button beside the search field:
 - **Match Case:** finds only text with the same capitalization.
 - **Whole Word:** doesn't match inside longer words.
 - **Smart Search:** this is on unless you turn it off. Spaces, hyphens, dashes and line breaks match each other, so “end-to-end” also finds “end to end”, even across a line break. Straight and curly quotes match each other too.
+- **Show Search on Right:** moves Search out of the sidebar to the right of the window, so you can see it [beside the outline](#see-results-beside-the-outline).
 
 ## Ignore clutter in the text
 

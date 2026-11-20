@@ -1104,11 +1104,15 @@ struct SnapshotCardView: View {
 
 /// Popover menu of search matching toggles (case sensitivity, whole word, smart/fuzzy
 /// matching). Any change re-runs the active search immediately, same as editing the query.
+/// It also moves Search between the sidebar and the right of the window.
 public struct SearchOptionsMenu: View {
     @ObservedObject var viewModel: PDFViewerViewModel
+    /// Moves Search to the other side of the window.
+    let moveToOtherSide: () -> Void
 
-    public init(viewModel: PDFViewerViewModel) {
+    public init(viewModel: PDFViewerViewModel, moveToOtherSide: @escaping () -> Void) {
         self.viewModel = viewModel
+        self.moveToOtherSide = moveToOtherSide
     }
 
     private var isNonDefault: Bool {
@@ -1133,6 +1137,11 @@ public struct SearchOptionsMenu: View {
             // Spaces, hyphens, dashes and line breaks match each other, as do straight and curly
             // quotes, and ignored patterns (Settings) are looked past.
             Toggle("Smart Search", isOn: binding(for: \.smartSearch))
+            Divider()
+            Toggle("Show Search on Right", isOn: Binding(
+                get: { viewModel.isSearchOnRight },
+                set: { if $0 != viewModel.isSearchOnRight { moveToOtherSide() } }
+            ))
         } label: {
             Image(systemName: "slider.horizontal.3")
                 .symbolVariant(isNonDefault ? .fill : .none)
