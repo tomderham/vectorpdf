@@ -94,4 +94,16 @@ import Testing
         files.forEach(try makeList().note)
         #expect(names(try makeList().urls) == ["b.pdf", "a.pdf"])
     }
+
+    /// Files opened from Finder are added to the system's list from outside the app, which the
+    /// Dock then shows at the top of its menu; the app's own limit of 0 keeps them out.
+    @Test func limitsTheSystemListToNone() throws {
+        defer { cleanUp() }
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        _ = RecentDocuments(defaults: defaults, importingFrom: .shared, maximumCount: { 10 })
+        #expect(defaults.object(forKey: RecentDocuments.limitKey) as? Int == 0)
+        // Leaves this list its own size, from the system-wide setting.
+        #expect(RecentDocuments.systemLimit() == UserDefaults.standard
+            .persistentDomain(forName: UserDefaults.globalDomain)?[RecentDocuments.limitKey] as? Int ?? 10)
+    }
 }

@@ -23,6 +23,11 @@ import AppKit
 /// Kept here rather than in NSDocumentController's list: the Dock draws that list itself, flat at
 /// the top of the app's menu, where it can't be moved into a submenu. Each file is kept as a
 /// bookmark, so the list follows it when it's moved or renamed.
+///
+/// macOS adds to that list from outside the app, too: a file opened from Finder lands there
+/// without AppKit's `noteNewRecentDocumentURL` being called, and the app can't see it while it
+/// runs. So the app sets its own NSRecentDocumentsLimit to 0, which macOS respects, and the list
+/// stays empty; this list's size follows the system-wide setting instead.
 @MainActor
 public final class RecentDocuments {
     public static let shared = RecentDocuments(defaults: .standard)
@@ -31,19 +36,32 @@ public final class RecentDocuments {
     private let key: String
     private let maximumCount: () -> Int
 
-    /// `maximumCount` defaults to NSDocumentController's, which follows the "Recent documents,
-    /// apps and servers" setting in System Settings > Desktop & Dock (0 when it's off). The
-    /// first time, the files in `systemList` are taken over and it's emptied.
+    /// `maximumCount` defaults to the "Recent documents, apps and servers" setting in System
+    /// Settings > Desktop & Dock (0 when it's off). The first time, the files in `systemList` are
+    /// taken over; then the system's list is limited to none, so the Dock stops showing it.
     init(
         defaults: UserDefaults,
         key: String = "RecentDocuments",
         importingFrom systemList: NSDocumentController? = .shared,
-        maximumCount: @escaping () -> Int = { NSDocumentController.shared.maximumRecentDocumentCount }
+        maximumCount: @escaping () -> Int = RecentDocuments.systemLimit
     ) {
         self.defaults = defaults
         self.key = key
         self.maximumCount = maximumCount
-        if let systemList { importList(of: systemList) }
+        if let systemList {
+            importList(of: systemList)
+            defaults.set(0, forKey: Self.limitKey)
+        }
+    }
+
+    /// The key for how many recent documents macOS keeps: set system-wide by System Settings,
+    /// and for this app to 0 (see above).
+    nonisolated static let limitKey = "NSRecentDocumentsLimit"
+
+    /// The system-wide limit, read past the app's own 0. 10 when it's never been changed.
+    nonisolated static func systemLimit() -> Int {
+        let global = UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)
+        return (global?[limitKey] as? NSNumber)?.intValue ?? 10
     }
 
     /// The files that still exist, most recent first, at most the system's limit.
