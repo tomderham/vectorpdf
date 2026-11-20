@@ -23,6 +23,8 @@ import AppKit
 ///
 /// A window's row has the standard marks, as AppKit's own list does: a checkmark on the front
 /// window, a diamond on a minimized one, a dot on one with unsaved changes in any of its tabs.
+/// A window with tabs is named after the Tab Group it was opened from, or else by how many tabs
+/// it has; a checkmark marks its selected tab.
 /// Anchor (snapshot) windows aren't listed; they come forward with the tab they were opened from.
 ///
 /// AppKit's own list can't be used: it's kept in the Window menu, which SwiftUI replaces whenever
@@ -50,8 +52,8 @@ public enum DockMenu {
     }
 
     /// A row per document window, in the order they were opened, each marked as AppKit marks
-    /// windows. A window with more than one tab has its tabs listed under it, indented, and is
-    /// set off from the windows around it by separators.
+    /// windows. A window with more than one tab has its tabs listed under it, indented, the
+    /// selected one checked, and is set off from the windows around it by separators.
     static func items(from windows: [NSWindow]? = nil) -> [NSMenuItem] {
         let groups = windowGroups(from: windows ?? allWindows())
             .sorted { openingOrder(of: $0) < openingOrder(of: $1) }
@@ -68,7 +70,9 @@ public enum DockMenu {
             items.append(row)
             guard hasTabs else { continue }
             for tab in group {
-                items.append(item(title: displayTitle(for: tab), window: tab, indentation: 2))
+                let tabRow = item(title: displayTitle(for: tab), window: tab, indentation: 2)
+                if tab === selected { tabRow.state = .on }
+                items.append(tabRow)
             }
         }
         return items
@@ -159,7 +163,9 @@ public enum DockMenu {
         return ordered + NSApp.windows.filter { !ids.contains(ObjectIdentifier($0)) }
     }
 
-    /// The window's row: the name of the Tab Group it was opened from, or else its selected tab's.
+    /// The window's row: for a single tab, its name; for several, the name of the Tab Group they
+    /// were opened from, or else how many there are — not the selected tab's name, which is
+    /// listed under it.
     private static func windowTitle(for tabs: [NSWindow], selected: NSWindow) -> String {
         guard tabs.count > 1 else { return displayTitle(for: selected) }
         let coordinator = PDFViewerAppCoordinator.shared
@@ -167,7 +173,7 @@ public enum DockMenu {
             .compactMap { coordinator.viewModel(for: $0)?.groupOrigin }
             .compactMap { TabGroupManager.shared.group(withId: $0)?.name }
             .first
-        return groupName ?? displayTitle(for: selected)
+        return groupName ?? "\(tabs.count) Tabs"
     }
 
     /// The group holding the main window — or, when a snapshot window or none is main, the

@@ -54,16 +54,16 @@ import Testing
         let fileNames = tabs.map { $0.representedURL?.lastPathComponent }
         let selected = tabbed.tabGroup?.selectedWindow
 
-        // In the order they were opened, whatever is in front: the tabbed window — named after
-        // its selected tab — and its three tabs, indented; a separator; the single window.
+        // In the order they were opened, whatever is in front: the tabbed window — named by its
+        // number of tabs, not repeating its selected tab — and its three tabs, indented, the
+        // selected one checked; a separator; the single window.
         let items = DockMenu.items(from: [single, tabbed])
         #expect(items.map(\.isSeparatorItem) == [false, false, false, false, true, false])
         #expect(items.map(\.indentationLevel) == [0, 2, 2, 2, 0, 0])
-        #expect(items[0].title == selected?.representedURL?.lastPathComponent)
+        #expect(items[0].title == "3 Tabs")
         #expect(items[1...3].map(\.title) == fileNames)
         #expect(items[5].title == single.representedURL?.lastPathComponent)
-        // Marks are on windows, not tabs.
-        #expect(items[1...3].allSatisfy { $0.state == .off })
+        #expect(items[1...3].map { $0.state == .on } == tabs.map { $0 === selected })
     }
 
     @Test(.showsWindows) func marksWindowsAsAppKitDoes() async throws {

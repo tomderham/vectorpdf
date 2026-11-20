@@ -18,7 +18,7 @@ Keeping related documents as tabs of one window also lets VectorPDF [follow refe
 
 ## Find an open window
 
-The Window menu and the VectorPDF icon in the Dock list your open windows in the order you opened them, with the tabs of each one indented under it. A window with tabs has a line above and below it. Choose a window or a tab to bring it to the front. To open a new window, right-click the VectorPDF icon in the Dock, then choose New Window.
+The Window menu and the VectorPDF icon in the Dock list your open windows in the order you opened them, with the tabs of each one indented under it. A window with tabs has a line above and below it, and is shown by its number of tabs (or by the name of the [Tab Group](favorites-and-tab-groups.md) you opened it from); a checkmark marks its current tab. Choose a window or a tab to bring it to the front. To open a new window, right-click the VectorPDF icon in the Dock, then choose New Window.
 
 Next to a window:
 
