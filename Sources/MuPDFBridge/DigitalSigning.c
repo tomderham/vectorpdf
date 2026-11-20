@@ -21,6 +21,8 @@
 
 #include "MuPDFBridge.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 typedef struct {
@@ -157,6 +159,202 @@ static void lock_fields(fz_context *ctx, pdf_obj *fields, pdf_obj *signature, pd
     }
 }
 
+// The appearance of a signed field, as Acrobat lays one out: the graphic or the name on the left,
+// no larger than suits the details beside it, and the details on the right, left-aligned and
+// wrapped between words. MuPDF's own draws the name as large as its half of the field holds and
+// breaks the details mid-word.
+
+#define SIG_LINE_HEIGHT 1.2f
+#define SIG_MAX_LINES 32
+
+typedef struct { const char *a, *b; } sig_line;
+
+static float sig_advance(fz_context *ctx, fz_font *font, fz_text_language lang, const char *a, const char *b, float size) {
+    float w = 0;
+    while (a < b) {
+        int c;
+        a += fz_chartorune(&c, a);
+        fz_font *used;
+        int gid = fz_encode_character_with_fallback(ctx, font, c, 0, lang, &used);
+        w += fz_advance_glyph(ctx, used, gid, 0) * size;
+    }
+    return w;
+}
+
+// Breaks `str` into lines no wider than `width` at `size`, between words (and at newlines). The
+// number of lines, or -1 if a word is wider than the line or there are too many lines.
+static int sig_break(fz_context *ctx, fz_font *font, fz_text_language lang, const char *str, float size, float width, sig_line *lines) {
+    int n = 0;
+    const char *p = str;
+    while (1) {
+        const char *end = strchr(p, '\n');
+        if (!end) end = p + strlen(p);
+        const char *a = p;
+        do {
+            // As many words as fit from `a`.
+            const char *b = a, *fits = NULL;
+            while (b < end) {
+                const char *word = b;
+                while (word < end && *word != ' ') word++;
+                if (sig_advance(ctx, font, lang, a, word, size) > width) break;
+                fits = word;
+                b = word < end ? word + 1 : word;
+            }
+            if (!fits) return -1;
+            if (n == SIG_MAX_LINES) return -1;
+            lines[n].a = a;
+            lines[n].b = fits;
+            n++;
+            a = fits < end ? fits + 1 : end;
+        } while (a < end);
+        if (!*end) break;
+        p = end + 1;
+    }
+    return n;
+}
+
+// Lays out `str` in `box` at the largest size up to `max_size` that fits, centred vertically and,
+// if `centre`, horizontally. Its size goes in `out_size`. NULL if it doesn't fit at all.
+static fz_text *sig_layout(fz_context *ctx, fz_font *font, fz_text_language lang, const char *str, fz_rect box,
+                           float max_size, int centre, float *out_size) {
+    sig_line lines[SIG_MAX_LINES];
+    float width = box.x1 - box.x0, height = box.y1 - box.y0;
+    float lo = 1.0f, hi = max_size, size = 0;
+    int n = 0;
+    if (width <= 0 || height <= 0 || max_size < lo) return NULL;
+    // The largest size, to a tenth of a point, that fits.
+    for (int i = 0; i < 20 && hi - lo > 0.1f; i++) {
+        float mid = (lo + hi) / 2;
+        int count = sig_break(ctx, font, lang, str, mid, width, lines);
+        if (count > 0 && ((count - 1) * SIG_LINE_HEIGHT + 1) * mid <= height) lo = mid; else hi = mid;
+    }
+    {
+        int count = sig_break(ctx, font, lang, str, hi, width, lines);
+        size = (count > 0 && ((count - 1) * SIG_LINE_HEIGHT + 1) * hi <= height) ? hi : lo;
+    }
+    n = sig_break(ctx, font, lang, str, size, width, lines);
+    if (n <= 0 || ((n - 1) * SIG_LINE_HEIGHT + 1) * size > height) return NULL;
+    if (out_size) *out_size = size;
+
+    fz_text *text = fz_new_text(ctx);
+    fz_try(ctx) {
+        float block = ((n - 1) * SIG_LINE_HEIGHT + 1) * size;
+        float baseline = box.y0 + (height - block) / 2 + 0.8f * size;
+        for (int l = 0; l < n; l++, baseline += SIG_LINE_HEIGHT * size) {
+            float x = box.x0;
+            if (centre) x += (width - sig_advance(ctx, font, lang, lines[l].a, lines[l].b, size)) / 2;
+            fz_matrix trm = fz_make_matrix(size, 0, 0, -size, x, baseline);
+            for (const char *p = lines[l].a; p < lines[l].b;) {
+                int c;
+                p += fz_chartorune(&c, p);
+                fz_font *used;
+                int gid = fz_encode_character_with_fallback(ctx, font, c, 0, lang, &used);
+                fz_show_glyph(ctx, text, used, trm, gid, c, 0, 0, FZ_BIDI_LTR, lang);
+                trm = fz_pre_translate(trm, fz_advance_glyph(ctx, used, gid, 0), 0);
+            }
+        }
+    } fz_catch(ctx) {
+        fz_drop_text(ctx, text);
+        fz_rethrow(ctx);
+    }
+    return text;
+}
+
+// The details beside the name: who signed, why, where and when.
+static char *sig_info(fz_context *ctx, const char *name, const char *reason, const char *location, int64_t date, int labels) {
+    fz_buffer *buf = fz_new_buffer(ctx, 256);
+    char *out = NULL;
+    fz_try(ctx) {
+        if (name && *name) fz_append_printf(ctx, buf, labels ? "Digitally signed by %s\n" : "%s\n", name);
+        if (reason && *reason) fz_append_printf(ctx, buf, labels ? "Reason: %s\n" : "%s\n", reason);
+        if (location && *location) fz_append_printf(ctx, buf, labels ? "Location: %s\n" : "%s\n", location);
+        if (date >= 0) {
+            time_t t = (time_t)date;
+            struct tm tm;
+            localtime_r(&t, &tm);
+            char when[64], zone[8];
+            strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", &tm);
+            long offset = tm.tm_gmtoff / 60;
+            snprintf(zone, sizeof zone, "%c%02ld:%02ld", offset < 0 ? '-' : '+', labs(offset) / 60, labs(offset) % 60);
+            fz_append_printf(ctx, buf, labels ? "Date: %s %s\n" : "%s %s\n", when, zone);
+        }
+        // No newline at the end.
+        if (buf->len > 0 && buf->data[buf->len - 1] == '\n') buf->len--;
+        fz_terminate_buffer(ctx, buf);
+        out = fz_strdup(ctx, (const char *)buf->data);
+    } fz_always(ctx) {
+        fz_drop_buffer(ctx, buf);
+    } fz_catch(ctx) {
+        fz_rethrow(ctx);
+    }
+    return out;
+}
+
+static fz_display_list *sig_appearance(fz_context *ctx, fz_rect rect, fz_text_language lang, fz_image *graphic,
+                                       const char *name, int flags, const char *reason, const char *location, int64_t date) {
+    fz_display_list *list = NULL;
+    fz_device *dev = NULL;
+    fz_font *font = NULL;
+    fz_text *text = NULL;
+    char *info = NULL;
+    fz_var(list);
+    fz_var(dev);
+    fz_var(font);
+    fz_var(text);
+    fz_var(info);
+    fz_try(ctx) {
+        static const float black[3] = { 0, 0, 0 };
+        const char *left_name = graphic ? NULL : ((flags & PDF_SIGNATURE_SHOW_GRAPHIC_NAME) ? name : NULL);
+        info = sig_info(ctx, (flags & PDF_SIGNATURE_SHOW_TEXT_NAME) ? name : NULL, reason, location,
+                        (flags & PDF_SIGNATURE_SHOW_DATE) ? date : -1, (flags & PDF_SIGNATURE_SHOW_LABELS) ? 1 : 0);
+        int has_info = info && *info;
+        int has_left = graphic || (left_name && *left_name);
+
+        font = fz_new_base14_font(ctx, "Helvetica");
+        list = fz_new_display_list(ctx, rect);
+        dev = fz_new_list_device(ctx, list);
+
+        float w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
+        float pad = fz_max(1.0f, fz_min(w, h) * 0.06f);
+        fz_rect inner = fz_make_rect(rect.x0 + pad, rect.y0 + pad, rect.x1 - pad, rect.y1 - pad);
+        // The left takes a little over a third beside the details, which need the room more.
+        float split = has_left && has_info ? inner.x0 + (inner.x1 - inner.x0) * 0.36f : inner.x1;
+        fz_rect left = fz_make_rect(inner.x0, inner.y0, has_info ? split - pad / 2 : inner.x1, inner.y1);
+        fz_rect right = fz_make_rect(has_left ? split + pad / 2 : inner.x0, inner.y0, inner.x1, inner.y1);
+
+        float info_size = 0;
+        if (has_info) {
+            text = sig_layout(ctx, font, lang, info, right, 14, 0, &info_size);
+            if (text) fz_fill_text(ctx, dev, text, fz_identity, fz_device_rgb(ctx), black, 1, fz_default_color_params);
+            fz_drop_text(ctx, text);
+            text = NULL;
+        }
+        if (graphic) {
+            float lw = left.x1 - left.x0, lh = left.y1 - left.y0;
+            if (lw > 0 && lh > 0 && graphic->w > 0 && graphic->h > 0) {
+                float scale = fz_min(lw / graphic->w, lh / graphic->h);
+                float gw = graphic->w * scale, gh = graphic->h * scale;
+                fz_matrix ctm = fz_make_matrix(gw, 0, 0, gh, left.x0 + (lw - gw) / 2, left.y0 + (lh - gh) / 2);
+                fz_fill_image(ctx, dev, graphic, ctm, 1, fz_default_color_params);
+            }
+        } else if (left_name && *left_name) {
+            // Larger than the details, but not so much it shouts; without them, half the height.
+            float cap = info_size > 0 ? info_size * 1.5f : (left.y1 - left.y0) * 0.5f;
+            text = sig_layout(ctx, font, lang, left_name, left, cap, 1, NULL);
+            if (text) fz_fill_text(ctx, dev, text, fz_identity, fz_device_rgb(ctx), black, 1, fz_default_color_params);
+        }
+    } fz_always(ctx) {
+        fz_drop_text(ctx, text);
+        fz_drop_device(ctx, dev);
+        fz_drop_font(ctx, font);
+        fz_free(ctx, info);
+    } fz_catch(ctx) {
+        fz_drop_display_list(ctx, list);
+        fz_rethrow(ctx);
+    }
+    return list;
+}
+
 // Signs `widget` as pdf_sign_signature does, but with the signer's name, the reason and the
 // location in the signature dictionary too (as Acrobat writes them): MuPDF writes them only in
 // the appearance, and anything changed once a signature is recorded is saved after it.
@@ -167,12 +365,10 @@ static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, p
     int64_t now = time(NULL);
     pdf_pkcs7_distinguished_name *dn = NULL;
     fz_display_list *list = NULL;
-    char *info = NULL;
     char *zeros = NULL;
     pdf_obj *v = NULL;
     fz_var(dn);
     fz_var(list);
-    fz_var(info);
     fz_var(zeros);
     fz_var(v);
     fz_try(ctx) {
@@ -182,10 +378,7 @@ static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, p
         // Its appearance: the graphic or the name on the left, the text on the right.
         fz_rect rect = pdf_annot_rect(ctx, widget);
         if (!fz_is_empty_rect(rect)) {
-            info = pdf_signature_info(ctx, (flags & PDF_SIGNATURE_SHOW_TEXT_NAME) ? name : NULL, NULL, reason, location,
-                                      (flags & PDF_SIGNATURE_SHOW_DATE) ? now : -1, (flags & PDF_SIGNATURE_SHOW_LABELS) ? 1 : 0);
-            list = pdf_signature_appearance_signed(ctx, rect, pdf_annot_language(ctx, widget), graphic,
-                                                   graphic ? NULL : ((flags & PDF_SIGNATURE_SHOW_GRAPHIC_NAME) ? name : NULL), info, 0);
+            list = sig_appearance(ctx, rect, pdf_annot_language(ctx, widget), graphic, name, flags, reason, location, now);
             pdf_set_annot_appearance_from_display_list(ctx, widget, "N", NULL, fz_identity, list);
         }
         pdf_dirty_annot(ctx, widget);
@@ -252,7 +445,6 @@ static void sign_widget(fz_context *ctx, pdf_document *doc, pdf_annot *widget, p
     } fz_always(ctx) {
         pdf_drop_obj(ctx, v);
         fz_free(ctx, zeros);
-        fz_free(ctx, info);
         fz_drop_display_list(ctx, list);
         pdf_signature_drop_distinguished_name(ctx, dn);
     } fz_catch(ctx) {
@@ -363,12 +555,10 @@ fz_pixmap *mupdf_signature_preview(fz_context *ctx, float width, float height, f
     fz_display_list *list = NULL;
     fz_image *graphic = NULL;
     fz_buffer *buf = NULL;
-    char *info = NULL;
     fz_pixmap *pix = NULL;
     fz_var(list);
     fz_var(graphic);
     fz_var(buf);
-    fz_var(info);
     fz_var(pix);
     fz_try(ctx) {
         if (graphic_png && graphic_len > 0) {
@@ -376,16 +566,12 @@ fz_pixmap *mupdf_signature_preview(fz_context *ctx, float width, float height, f
             graphic = fz_new_image_from_buffer(ctx, buf);
         }
         // As sign_widget draws it.
-        info = pdf_signature_info(ctx, (flags & PDF_SIGNATURE_SHOW_TEXT_NAME) ? name : NULL, NULL, reason, location,
-                                  (flags & PDF_SIGNATURE_SHOW_DATE) ? time(NULL) : -1, (flags & PDF_SIGNATURE_SHOW_LABELS) ? 1 : 0);
-        list = pdf_signature_appearance_signed(ctx, fz_make_rect(0, 0, width, height), FZ_LANG_UNSET, graphic,
-                                               graphic ? NULL : ((flags & PDF_SIGNATURE_SHOW_GRAPHIC_NAME) ? name : NULL), info, 0);
+        list = sig_appearance(ctx, fz_make_rect(0, 0, width, height), FZ_LANG_UNSET, graphic, name, flags, reason, location, time(NULL));
         pix = fz_new_pixmap_from_display_list(ctx, list, fz_scale(scale, scale), fz_device_rgb(ctx), 1);
     } fz_always(ctx) {
         fz_drop_display_list(ctx, list);
         fz_drop_image(ctx, graphic);
         fz_drop_buffer(ctx, buf);
-        fz_free(ctx, info);
     } fz_catch(ctx) {
         if (out_error) *out_error = fz_caught_message(ctx);
         return NULL;

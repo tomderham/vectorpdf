@@ -160,6 +160,40 @@ struct CloudStorageAndCoordinationTests {
         watcher.cancel()
     }
 
+    /// A save in place is one change, and a watcher armed after it hears of none: the file
+    /// coordinator tells presenters about a save after it, and reloading on that armed another
+    /// watcher that heard of it too, reloading again and again. Attributes changing alone isn't a
+    /// change either, and a cancelled watcher stops.
+    @Test @MainActor func fileChangeWatcherReportsEachChangeOnce() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Watched.pdf")
+        makeLabelledPDF(at: url, labels: ["One"])
+        var changes = 0
+        let watcher = FileChangeWatcher(path: url.path, onChange: { changes += 1 })
+        defer { watcher.cancel() }
+
+        let doc = try PDFDocumentCore(filePath: url.path)
+        try doc.save(to: url.path)
+        var later = 0
+        let laterWatcher = FileChangeWatcher(path: url.path, onChange: { later += 1 })
+        defer { laterWatcher.cancel() }
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        #expect(changes == 1)
+        #expect(later == 0)
+
+        let value = Data("x".utf8)
+        _ = value.withUnsafeBytes { setxattr(url.path, "com.example.test", $0.baseAddress, $0.count, 0, 0) }
+        try await Task.sleep(nanoseconds: 800_000_000)
+        #expect(changes == 1)
+
+        watcher.cancel()
+        laterWatcher.cancel()
+        try doc.save(to: url.path)
+        try await Task.sleep(nanoseconds: 800_000_000)
+        #expect(changes == 1 && later == 0)
+    }
+
     @Test("SnapshotTarget thumbnail cache helper and recreation readiness")
     func testSnapshotTargetThumbnailCacheHelper() {
         let id = UUID()

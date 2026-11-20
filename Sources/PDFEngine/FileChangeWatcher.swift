@@ -23,10 +23,33 @@ import Foundation
 /// (guaranteeing that uncoordinated writes from arbitrary external tools, CLI scripts, or editors
 /// continue to be detected reliably).
 ///
+/// Only a change to the file itself counts: its modification date, size or identity (a file put in
+/// its place). Changes to its attributes alone, which cloud file providers make all the time and
+/// opening a file can make, don't: reloading on them reloads again and again.
+///
+/// The file coordinator keeps a presenter alive, so a watcher lasts until `cancel()`, which its
+/// owner calls when it's done with it.
+///
 /// `@unchecked Sendable`: internal state changes are dispatched to `DispatchQueue.main` or serialized
 /// on `presenterQueue`.
 public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Sendable {
+    /// What a change to the file changes.
+    struct Stamp: Equatable {
+        let modified: Date?
+        let size: Int64?
+        let fileNumber: Int?
+
+        init?(path: String) {
+            guard let attributes = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
+            modified = attributes[.modificationDate] as? Date
+            size = (attributes[.size] as? NSNumber)?.int64Value
+            fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue
+        }
+    }
+
     private var path: String
+    /// The file as it was last reported (or as it was when watching began).
+    private var stamp: Stamp?
     private let onChange: () -> Void
     private let onMove: ((URL) -> Void)?
     private var source: DispatchSourceFileSystemObject?
@@ -60,6 +83,7 @@ public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Send
         self.path = path
         self.onChange = onChange
         self.onMove = onMove
+        self.stamp = Stamp(path: path)
         super.init()
 
         NSFileCoordinator.addFilePresenter(self)
@@ -129,7 +153,7 @@ public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Send
             eventMask: [.write, .extend, .attrib, .delete, .rename],
             queue: .main
         )
-        newSource.setEventHandler { [weak self] in
+        newSource.setEventHandler { [weak self, unowned newSource] in
             guard let self, !self.isCancelled else { return }
             let flags = newSource.data
             if flags.contains(.delete) || flags.contains(.rename) {
@@ -155,6 +179,9 @@ public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Send
         debounceWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self, !self.isCancelled else { return }
+            // Missing (mid-replace, or deleted): the move or the next change says what happened.
+            guard let now = Stamp(path: self.path), now != self.stamp else { return }
+            self.stamp = now
             self.onChange()
         }
         debounceWorkItem = workItem

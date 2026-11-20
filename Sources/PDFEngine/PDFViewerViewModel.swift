@@ -638,8 +638,11 @@ public final class PDFViewerViewModel: ObservableObject {
     // Reused so the Agent tab's lazily-built index doesn't need to re-prompt for a password
     // already entered once to open the document (see promptForPasswordAndRetry).
     var currentDocumentPassword: String?
-    // Watches the open file for external changes and reloads it.
-    var fileChangeWatcher: FileChangeWatcher?
+    // Watches the open file for external changes and reloads it. One replaced or cleared is
+    // cancelled: the file coordinator keeps it alive, so it would go on watching otherwise.
+    var fileChangeWatcher: FileChangeWatcher? {
+        didSet { if oldValue !== fileChangeWatcher { oldValue?.cancel() } }
+    }
     var workingCopyPath: String?
 
     /// A fresh path for a working copy, in the temporary folder. PRIVACY.md documents the name, so
@@ -656,6 +659,7 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     isolated deinit {
+        fileChangeWatcher?.cancel()
         readingUserActivity?.invalidate()
         readingUserActivity = nil
         cleanupWorkingCopy()

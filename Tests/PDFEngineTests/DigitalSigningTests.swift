@@ -316,6 +316,23 @@ struct TestSigner {
         #expect(result.signerName == "Signing Test Person")
     }
 
+    /// The signed file is opened once, and then stays open: each reload used to set off another,
+    /// until the app ran out of files to open.
+    @Test func signingDoesNotKeepReloading() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let signer = try TestSigner(in: dir)
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["One"])
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let placement = CertificateSignaturePlacement(page: 0, widgetIndex: nil, rect: CGRect(x: 10, y: 10, width: 200, height: 60))
+        #expect(await vm.completeCertificateSignature(placement, with: try signer.identity(), appearance: .init()))
+        let signed = try #require(vm.document)
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        #expect(vm.document === signed)
+    }
+
     /// A box dragged out is where the field goes; the sheet's preview is drawn at its size.
     @Test func aDraggedBoxIsTheFieldAndItsPreviewIsDrawn() async throws {
         let dir = try makeScratchDirectory()
