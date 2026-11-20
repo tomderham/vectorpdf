@@ -692,8 +692,13 @@ public struct PDFViewerMainView: View {
         .onChange(of: viewModel.isTwoPageMode) { _, isTwoPage in
             // The view model hides the sidebar for spreads, and brings it back after.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                // Across the window, the pages' height fits instead.
                 if isTwoPage {
-                    viewModel.zoomToFitWidth()
+                    if viewModel.isHorizontalScrolling {
+                        viewModel.zoomToFitPage()
+                    } else {
+                        viewModel.zoomToFitWidth()
+                    }
                 }
             }
         }
@@ -1598,7 +1603,7 @@ public struct PDFViewerMainView: View {
             }
 
             PillToolbarItem {
-                ToolbarPillContainer {
+                AdaptiveToolbarPair {
                     PillBarButton(action: {
                         withAnimation(.easeInOut(duration: 0.15)) {
                             viewModel.toggleTwoPageMode()
@@ -1606,6 +1611,15 @@ public struct PDFViewerMainView: View {
                     }, isSelected: viewModel.isTwoPageMode, helpText: "Two-Page Mode — shows pages side by side in book spread format with cover page on the right.") {
                         Image(systemName: "rectangle.split.2x1")
                     }
+                } right: {
+                    PillBarButton(action: {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            viewModel.toggleHorizontalScrolling()
+                        }
+                    }, isSelected: viewModel.isHorizontalScrolling, helpText: "Horizontal Scrolling — lays pages out left to right, as many as fit the window.") {
+                        Image(systemName: "rectangle.split.3x1")
+                    }
+                    .disabled(viewModel.isComparePane)
                 }
                 .disabled(viewModel.document == nil)
             }

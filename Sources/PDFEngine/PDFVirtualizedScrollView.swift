@@ -110,7 +110,31 @@ public final class PDFScrollView: NSScrollView {
 
     public override func scrollWheel(with event: NSEvent) {
         lastUserScroll = Date()
-        super.scrollWheel(with: event)
+        super.scrollWheel(with: Self.wheelTurnedSideways(event, pagesRunAcross: coordinator?.viewModel.pageLayout.direction == .horizontal,
+                                                         fitsTheHeight: (documentView?.frame.height ?? 0) <= contentView.bounds.height + 1))
+    }
+
+    /// A mouse wheel only scrolls up and down, so with pages laid across the window and nothing
+    /// to scroll up or down, it scrolls across them instead. A trackpad swipes either way already.
+    static func wheelTurnedSideways(_ event: NSEvent, pagesRunAcross: Bool, fitsTheHeight: Bool) -> NSEvent {
+        guard pagesRunAcross, fitsTheHeight, !event.hasPreciseScrollingDeltas,
+              event.scrollingDeltaX == 0, event.scrollingDeltaY != 0,
+              let turned = event.cgEvent?.copy() else { return event }
+        let fields: [(vertical: CGEventField, horizontal: CGEventField)] = [
+            (.scrollWheelEventDeltaAxis1, .scrollWheelEventDeltaAxis2),
+            (.scrollWheelEventPointDeltaAxis1, .scrollWheelEventPointDeltaAxis2),
+            (.scrollWheelEventFixedPtDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis2),
+        ]
+        for (vertical, horizontal) in fields {
+            if vertical == .scrollWheelEventFixedPtDeltaAxis1 {
+                turned.setDoubleValueField(horizontal, value: turned.getDoubleValueField(vertical))
+                turned.setDoubleValueField(vertical, value: 0)
+            } else {
+                turned.setIntegerValueField(horizontal, value: turned.getIntegerValueField(vertical))
+                turned.setIntegerValueField(vertical, value: 0)
+            }
+        }
+        return NSEvent(cgEvent: turned) ?? event
     }
 }
 
@@ -174,6 +198,11 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var lastDisplayScale: CGFloat = 1.0
         private var lastNavigatedPage: Int = -1
         private var lastIsTwoPageMode: Bool = false
+        private var lastIsHorizontal: Bool = false
+        /// True while a page turn across the window animates, so the pages it passes don't become current.
+        private var isAnimatingPageTurn = false
+        /// Counts page turns, so a finished animation only clears `isAnimatingPageTurn` if it was the last.
+        private var pageTurnGeneration = 0
         private var lastViewRotationDegrees: Int = 0
         private var lastSearchMatchIndex: Int = -1
         private var lastScrolledTargetId: String? = nil
@@ -196,6 +225,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         init(viewModel: PDFViewerViewModel) {
             self.viewModel = viewModel
             self.lastIsTwoPageMode = viewModel.isTwoPageMode
+            self.lastIsHorizontal = viewModel.isHorizontalScrolling
             self.lastViewRotationDegrees = viewModel.viewRotationDegrees
         }
         
@@ -217,7 +247,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let clipView = scrollView.contentView
             viewModel.currentViewportSize = clipView.bounds.size
             let isNewDocument = (lastDocumentPath != doc.filePath)
-            let isLayoutModeChanged = (lastIsTwoPageMode != viewModel.isTwoPageMode || lastViewRotationDegrees != viewModel.viewRotationDegrees)
+            let isLayoutModeChanged = (lastIsTwoPageMode != viewModel.isTwoPageMode || lastIsHorizontal != viewModel.isHorizontalScrolling
+                                       || lastViewRotationDegrees != viewModel.viewRotationDegrees)
             let isZoomChanged = (abs(lastEffectiveZoom - viewModel.effectiveZoom) > 0.001)
             let isPageJump = (viewModel.currentPageIndex != lastNavigatedPage && !isProgrammaticScroll)
             let isMatchNavigation = (viewModel.searchJumpToken != lastSearchJumpToken && (!viewModel.searchResults.isEmpty || !viewModel.redactionMatches.isEmpty))
@@ -232,6 +263,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastEffectiveZoom = viewModel.effectiveZoom
                 lastDisplayScale = viewModel.displayScale
                 lastIsTwoPageMode = viewModel.isTwoPageMode
+                lastIsHorizontal = viewModel.isHorizontalScrolling
                 lastViewRotationDegrees = viewModel.viewRotationDegrees
                 lastSearchMatchIndex = -1
                 lastScrolledTargetId = nil
@@ -244,13 +276,14 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
 
             if isLayoutModeChanged {
                 lastIsTwoPageMode = viewModel.isTwoPageMode
+                lastIsHorizontal = viewModel.isHorizontalScrolling
                 lastViewRotationDegrees = viewModel.viewRotationDegrees
                 lastEffectiveZoom = viewModel.effectiveZoom
                 lastDisplayScale = viewModel.displayScale
             }
             
-            // 1. Calculate container bounds accounting for rotation and two-page mode.
-            let newCanvasFrame = NSRect(origin: .zero, size: viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportWidth: clipView.bounds.width))
+            // 1. Size the canvas to hold the pages as they're laid out.
+            let newCanvasFrame = NSRect(origin: .zero, size: viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportSize: clipView.bounds.size))
 
             if canvasView.frame != newCanvasFrame {
                 isProgrammaticScroll = true
@@ -265,9 +298,9 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastDisplayScale = viewModel.displayScale
                 let targetPage = viewModel.currentPageIndex
                 if let pFrame = canvasView.pageFrame(for: targetPage),
-                   let rowFrame = viewModel.pageLayout.rowFrame(containing: targetPage, zoom: viewModel.effectiveZoom, canvasWidth: canvasView.bounds.width) {
+                   let groupFrame = viewModel.pageLayout.groupFrame(containing: targetPage, zoom: viewModel.effectiveZoom, canvasSize: canvasView.bounds.size) {
                     // A spread stays centred on its spine.
-                    let targetMidX = rowFrame.midX
+                    let targetMidX = groupFrame.midX
                     let targetMidY = pFrame.midY
                     let maxScrollX = max(0, canvasView.frame.width - clipView.bounds.width)
                     let maxScrollY = max(0, canvasView.frame.height - clipView.bounds.height)
@@ -285,17 +318,20 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastNavigatedPage = viewModel.currentPageIndex
                 let targetPage = viewModel.currentPageIndex
                 if targetPage >= 0 && targetPage < doc.pageCount,
-                   let rowFrame = viewModel.pageLayout.rowFrame(containing: targetPage, zoom: viewModel.effectiveZoom, canvasWidth: canvasView.bounds.width) {
-                    let targetY = targetPage == 0 ? 0 : rowFrame.minY
-                    // A spread stays centred on its spine.
-                    let maxScrollX = max(0, canvasView.frame.width - clipView.bounds.width)
-                    let targetX = min(max(0, rowFrame.midX - (clipView.bounds.width / 2)), maxScrollX)
-                    let maxScrollY = max(0, canvasView.frame.height - clipView.bounds.height)
-                    let clampedY = min(max(0, targetY), maxScrollY)
-                    isProgrammaticScroll = true
-                    clipView.scroll(to: NSPoint(x: targetX, y: clampedY))
-                    scrollView.reflectScrolledClipView(clipView)
-                    isProgrammaticScroll = false
+                   let origin = viewModel.pageLayout.scrollOrigin(toShow: targetPage, zoom: viewModel.effectiveZoom,
+                                                                  canvasSize: canvasView.bounds.size, viewportSize: clipView.bounds.size) {
+                    // Across the window, a page turn slides the pages along.
+                    if isPageJump && !isNewDocument && !isLayoutModeChanged && viewModel.pageLayout.direction == .horizontal
+                        && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                        animateScroll(to: origin, clipView: clipView, scrollView: scrollView)
+                    } else {
+                        pageTurnGeneration += 1
+                        isAnimatingPageTurn = false
+                        isProgrammaticScroll = true
+                        clipView.scroll(to: origin)
+                        scrollView.reflectScrolledClipView(clipView)
+                        isProgrammaticScroll = false
+                    }
                 }
             }
             
@@ -351,6 +387,25 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             canvasView.syncFormControls()
         }
         
+        /// Slides the view to `origin`. The pages it passes on the way don't become current: the
+        /// page turned to already is.
+        private func animateScroll(to origin: CGPoint, clipView: NSClipView, scrollView: NSScrollView) {
+            pageTurnGeneration += 1
+            isAnimatingPageTurn = true
+            let generation = pageTurnGeneration
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.25
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                clipView.animator().setBoundsOrigin(origin)
+            } completionHandler: { [weak self, weak scrollView, weak clipView] in
+                Task { @MainActor in
+                    guard let self, self.pageTurnGeneration == generation else { return }
+                    self.isAnimatingPageTurn = false
+                    if let clipView { scrollView?.reflectScrolledClipView(clipView) }
+                }
+            }
+        }
+
         private func scrollToMatch(match: SearchResult, doc: PDFDocumentCore, clipView: NSClipView, scrollView: NSScrollView) {
             let pageIdx = match.pageIndex
             guard pageIdx >= 0 && pageIdx < doc.pageCount else { return }
@@ -409,9 +464,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
                 let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
                 
-                let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? viewModel.displayScale : 1.0)
-                let unscaledY = max(0, (effectiveCanvasY - 16) / (pinchBaseZoom * baseScale))
-                let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+                let pageIdx = viewModel.pageLayout.page(at: CGPoint(x: effectiveCanvasX, y: effectiveCanvasY),
+                                                        zoom: viewModel.effectiveZoom, canvasSize: canvasView.bounds.size)
                 pinchAnchorPage = pageIdx
                 
                 if let pFrame = canvasView.pageFrame(for: pageIdx) {
@@ -441,7 +495,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             lastEffectiveZoom = viewModel.effectiveZoom
             lastDisplayScale = viewModel.displayScale
             
-            let canvasSize = viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportWidth: clipView.bounds.width)
+            let canvasSize = viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportSize: clipView.bounds.size)
             let contentWidth = canvasSize.width, contentHeight = canvasSize.height
             let newCanvasFrame = NSRect(origin: .zero, size: canvasSize)
             if canvasView.frame != newCanvasFrame {
@@ -488,8 +542,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let effectiveCanvasX = clipView.bounds.origin.x + clampedViewportX
             let effectiveCanvasY = clipView.bounds.origin.y + clampedViewportY
             
-            let unscaledY = max(0, (effectiveCanvasY - 16) / viewModel.effectiveZoom)
-            let pageIdx = viewModel.effectivePageIndex(atYOffset: unscaledY)
+            let pageIdx = viewModel.pageLayout.page(at: CGPoint(x: effectiveCanvasX, y: effectiveCanvasY),
+                                                    zoom: viewModel.effectiveZoom, canvasSize: canvasView.bounds.size)
             
             let targetZoom: CGFloat = (abs(viewModel.zoomScale - 1.0) < 0.05) ? 2.0 : 1.0
             
@@ -501,7 +555,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 lastEffectiveZoom = viewModel.effectiveZoom
                 lastDisplayScale = viewModel.displayScale
                 
-                let canvasSize = viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportWidth: clipView.bounds.width)
+                let canvasSize = viewModel.pageLayout.canvasSize(zoom: viewModel.effectiveZoom, viewportSize: clipView.bounds.size)
                 let contentWidth = canvasSize.width, contentHeight = canvasSize.height
                 canvasView.frame = NSRect(origin: .zero, size: canvasSize)
                 
@@ -529,15 +583,15 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             guard viewModel.document != nil, let scrollView = self.scrollView else { return }
 
             let clipView = scrollView.contentView
-            let currentScrollY = max(0, clipView.bounds.origin.y - 16)
-            let unscaledY = currentScrollY / viewModel.effectiveZoom
-
-            // Rapid O(log N) binary search for active page
-            let activePage = viewModel.effectivePageIndex(atYOffset: unscaledY + 80)
+            let visible = clipView.bounds
+            let zoom = viewModel.effectiveZoom
+            let canvasSize = canvasView?.bounds.size ?? visible.size
+            guard let group = viewModel.pageLayout.leadingGroup(in: visible, zoom: zoom, canvasSize: canvasSize) else { return }
+            let activePage = viewModel.currentPage(reading: group)
             // Also after a programmatic scroll (a ToC or search jump), which sets the page itself.
-            updateReadingLine(onPage: activePage, canvasY: 16 + (unscaledY + 80) * viewModel.effectiveZoom)
+            updateReadingLine(onPage: activePage, canvasY: max(visible.minY, PageLayout.topMargin) + 80 * zoom)
             updateVisiblePageRect(page: activePage)
-            guard !isProgrammaticScroll else { return }
+            guard !isProgrammaticScroll, !isAnimatingPageTurn else { return }
             viewModel.currentViewportSize = clipView.bounds.size
             if activePage != viewModel.currentPageIndex {
                 lastNavigatedPage = activePage
@@ -591,9 +645,9 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
 
         /// Tells the view model which section is under the reading line, at canvas height
         /// `canvasY` on page `page`. Outline entries point at places on an upright page, so a
-        /// rotated view leaves the ToC to follow the page alone.
+        /// rotated view, or pages laid across the window, leave the ToC to follow the page alone.
         private func updateReadingLine(onPage page: Int, canvasY: CGFloat) {
-            guard viewModel.viewRotationDegrees == 0,
+            guard viewModel.viewRotationDegrees == 0, viewModel.pageLayout.direction == .vertical,
                   let geometry = canvasView?.pageGeometry(for: page) else {
                 viewModel.clearReadingLine()
                 return

@@ -109,7 +109,8 @@ public final class PDFViewerViewModel: ObservableObject {
 
     /// Whole-document display-only rotation in 90-degree increments.
     @Published public private(set) var viewRotationDegrees: Int = 0
-    /// Where each page sits, for the rotation and Two-Page Mode: see `recomputeEffectiveLayout`.
+    /// Where each page sits, for the rotation, Two-Page Mode and scrolling direction: see
+    /// `recomputeEffectiveLayout`.
     @Published public private(set) var pageLayout = PageLayout.empty
     /// Each page's top in `pageLayout`, at a zoom of 1.
     public var effectivePageYOffsets: [CGFloat] { pageLayout.pageYOffsets }
@@ -120,6 +121,9 @@ public final class PDFViewerViewModel: ObservableObject {
 
     /// Displays pages in side-by-side spreads when true.
     @Published public private(set) var isTwoPageMode: Bool = false
+
+    /// Lays pages out left to right, scrolling across, when true; down the window when false.
+    @Published public private(set) var isHorizontalScrolling: Bool = false
 
     /// The sidebar tab a document opens on (see `sidebarOpening`), read by the window when a
     /// document has opened.
@@ -212,22 +216,33 @@ public final class PDFViewerViewModel: ObservableObject {
         }
     }
 
+    /// Lays pages out across the window, or back down it, and fits their height to the window
+    /// when they go across. Not in a Compare Documents pane, which scrolls with the other pane.
+    public func toggleHorizontalScrolling() {
+        guard !isComparePane else { return }
+        let savedPage = currentPageIndex
+        isHorizontalScrolling.toggle()
+        recomputeEffectiveLayout()
+        currentPageIndex = savedPage
+        if isHorizontalScrolling {
+            zoomToFitPage()
+        }
+    }
+
     func recomputeEffectiveLayout() {
         guard let doc = document else {
             pageLayout = .empty
             return
         }
         pageLayout = PageLayout(pageBounds: doc.pageBounds, rotation: viewRotationDegrees,
-                                arrangement: isTwoPageMode ? .spreads : .singlePages)
+                                arrangement: isTwoPageMode ? .spreads : .singlePages,
+                                direction: isHorizontalScrolling ? .horizontal : .vertical)
     }
 
-    /// The page at a vertical offset (at a zoom of 1) in the layout. In a spread that's the
-    /// current page if it's one of the spread's, or else its first page.
-    public func effectivePageIndex(atYOffset y: CGFloat) -> Int {
-        guard pageLayout.pageCount > 0 else { return 0 }
-        let page = pageLayout.lastPage(atOrAboveY: y)
-        guard let row = pageLayout.row(containing: page) else { return page }
-        return row.contains(currentPageIndex) ? currentPageIndex : row.lowerBound
+    /// The page to call current while `group` is being read: the current page if it's in the
+    /// group (one page of a spread), or else the group's first page.
+    func currentPage(reading group: ClosedRange<Int>) -> Int {
+        group.contains(currentPageIndex) ? currentPageIndex : group.lowerBound
     }
     
     // Page Metadata
@@ -678,7 +693,13 @@ public final class PDFViewerViewModel: ObservableObject {
     public let textSelector = SpatialTextSelector()
 
     // Bounded cache capacity for rendered page bitmaps.
-    private var maxRenderedPageCache: Int { isTwoPageMode ? 12 : 4 }
+    /// Pages laid across the window can show many at once, and each must stay cached while it shows.
+    private var maxRenderedPageCache: Int {
+        if isHorizontalScrolling, let viewport = currentViewportSize {
+            return max(12, 2 * pageLayout.pagesInView(viewportSize: viewport, zoom: effectiveZoom))
+        }
+        return isTwoPageMode ? 12 : 4
+    }
     private let maxStructuredDataCache: Int = 6
     
     // Tab and Window Scoping
@@ -849,7 +870,7 @@ public final class PDFViewerViewModel: ObservableObject {
             // Reloading the same file (it changed on disk, as after a LaTeX build) keeps the view
             // as the user had it, rather than as for a newly opened document.
             let isReload = document?.filePath == actualPath
-            let keptLayout = (rotation: viewRotationDegrees, isTwoPage: isTwoPageMode,
+            let keptLayout = (rotation: viewRotationDegrees, isTwoPage: isTwoPageMode, isHorizontal: isHorizontalScrolling,
                               sidebarBeforeTwoPage: sidebarVisibleBeforeTwoPage, isSidebarVisible: isSidebarVisible)
             let modified = Self.modificationDate(ofFileAt: actualPath)
             let (doc, contentsSummary) = try await Task.detached(priority: .userInitiated) {
@@ -944,6 +965,7 @@ public final class PDFViewerViewModel: ObservableObject {
             // Reset rotation and spread layout for newly opened document.
             self.viewRotationDegrees = isReload ? keptLayout.rotation : 0
             self.isTwoPageMode = isReload && keptLayout.isTwoPage
+            self.isHorizontalScrolling = isReload && keptLayout.isHorizontal
             self.sidebarVisibleBeforeTwoPage = isReload ? keptLayout.sidebarBeforeTwoPage : nil
             self.recomputeEffectiveLayout()
             // The sidebar as the user last left it for this document, or as suits the document.
@@ -1277,20 +1299,20 @@ public final class PDFViewerViewModel: ObservableObject {
 
     public var canGoNextPage: Bool {
         guard let doc = document, doc.pageCount > 0 else { return false }
-        return pageLayout.firstPageOfNextRow(after: currentPageIndex) != nil
+        return pageLayout.firstPageOfNextGroup(after: currentPageIndex) != nil
     }
 
     /// Turns to the next page, or in Two-Page Mode the next spread.
     public func nextPage() {
         guard let doc = document, doc.pageCount > 0,
-              let next = pageLayout.firstPageOfNextRow(after: currentPageIndex) else { return }
+              let next = pageLayout.firstPageOfNextGroup(after: currentPageIndex) else { return }
         jumpToPage(next)
     }
     
     /// Turns to the previous page, or in Two-Page Mode the previous spread.
     public func previousPage() {
         guard let doc = document, doc.pageCount > 0, currentPageIndex > 0 else { return }
-        jumpToPage(pageLayout.firstPageOfPreviousRow(before: currentPageIndex) ?? 0)
+        jumpToPage(pageLayout.firstPageOfPreviousGroup(before: currentPageIndex) ?? 0)
     }
 
     public func goToFirstPage() {

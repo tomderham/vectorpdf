@@ -17,7 +17,7 @@ From the keyboard:
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Previous or next page |
 | ⌘Up Arrow, ⌘Down Arrow | First or last page |
 
-In Two-Page Mode, these keys turn a whole spread.
+In Two-Page Mode, these keys turn a whole spread. With [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) on, Space, Page Down, ⇧Space and Page Up move a screenful of pages at a time.
 
 ## Go to a page
 

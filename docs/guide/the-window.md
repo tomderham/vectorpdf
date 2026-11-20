@@ -12,6 +12,7 @@ Each VectorPDF window has a toolbar, a sidebar and the document itself. Windows 
 | Zoom | The − and + buttons step the zoom. Click the percentage to type your own. |
 | Rotate Left and Rotate Right | Turn the view. This doesn't change the saved PDF. |
 | Two-Page Mode | Shows pages side by side, like an open book. |
+| Horizontal Scrolling | Lays the pages out left to right, as many as fit the window. |
 | Markup Toolbar | Shows the [markup tools](text-markup.md). |
 | Measurement Toolbar | Shows the [measurement tools](measure.md). |
 | Page | The arrows move a page at a time. Click the page number to type the page you want. |

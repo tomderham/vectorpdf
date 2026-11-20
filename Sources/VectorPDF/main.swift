@@ -858,6 +858,11 @@ struct VectorPDF: App {
             .keyboardShortcut("2", modifiers: [.command, .option])
             .disabled(!hasDocument)
 
+            Button((resolvedViewModel?.isHorizontalScrolling ?? false) ? "Vertical Scrolling" : "Horizontal Scrolling") {
+                resolvedViewModel?.toggleHorizontalScrolling()
+            }
+            .disabled(!hasDocument || (resolvedViewModel?.isComparePane ?? false))
+
             Divider()
 
             Picker("PDF Color", selection: $coordinator.pdfColorAppearance) {

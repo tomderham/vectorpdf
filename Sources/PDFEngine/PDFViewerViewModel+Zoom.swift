@@ -54,7 +54,7 @@ extension PDFViewerViewModel {
     public func zoomToFitWidth(viewportWidth: CGFloat? = nil) {
         guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
         // The page's row: the whole spread in Two-Page Mode.
-        guard let effectiveW = pageLayout.rowWidth(containing: currentPageIndex) else { return }
+        guard let effectiveW = pageLayout.groupWidth(containing: currentPageIndex) else { return }
         
         // PDFVirtualizedScrollView applies 32pt padding on both left and right (total 64pt)
         let horizontalPadding: CGFloat = 64.0
@@ -79,7 +79,7 @@ extension PDFViewerViewModel {
     public func zoomToFitPage(viewportSize: CGSize? = nil) {
         guard let doc = document, doc.pageBounds.indices.contains(currentPageIndex) else { return }
         // The page's row: the whole spread in Two-Page Mode.
-        guard let effectiveW = pageLayout.rowWidth(containing: currentPageIndex),
+        guard let effectiveW = pageLayout.groupWidth(containing: currentPageIndex),
               pageLayout.pageSizes.indices.contains(currentPageIndex) else { return }
         let pageH = pageLayout.pageSizes[currentPageIndex].height
         
@@ -101,10 +101,19 @@ extension PDFViewerViewModel {
             availW = 700
             availH = 900
         }
+        let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? displayScale : 1.0)
+        if pageLayout.direction == .horizontal {
+            // Across the window, every page's height fits, and as many pages show as fit the width.
+            // Rounded down, so the pages never need scrolling up and down.
+            let fitHeight = (availH + verticalPadding - 2 * PageLayout.topMargin) / max(1, pageLayout.contentSize.height)
+            let targetZoom = fitHeight / max(baseScale, 0.1)
+            let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
+            setZoom(floor(clamped * 100) / 100)
+            return
+        }
         let scaleX = availW / effectiveW
         let scaleY = availH / pageH
         let targetEffectiveZoom = min(scaleX, scaleY)
-        let baseScale = (PDFViewerAppCoordinator.shared.scaleMode == .physical ? displayScale : 1.0)
         let targetZoom = targetEffectiveZoom / max(baseScale, 0.1)
         let clamped = min(max(targetZoom, PDFViewerAppCoordinator.minZoomScale), PDFViewerAppCoordinator.maxZoomScale)
         setZoom(round(clamped * 100) / 100)

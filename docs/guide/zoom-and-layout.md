@@ -1,4 +1,4 @@
-<!-- keywords: zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
+<!-- keywords: zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view, horizontal, horizontal scrolling, side by side, sheet music, score, widescreen, page turner, pedal -->
 
 # Zoom, rotate and page layout
 
@@ -31,4 +31,14 @@ Click Rotate Left or Rotate Right in the toolbar. This only changes how you see 
 
 Click Two-Page Mode in the toolbar, or choose View > Two Pages (⌥⌘2). Pages appear in pairs with the cover page on its own, like an open book, and the spread is zoomed to fit the window. To go back, click the button again or choose View > Single Page.
 
-> **Note:** Selecting text, links, search, the markup and measurement tools and forms all work while the view is rotated or in Two-Page Mode. What you add goes on the page itself, so it stays in place when you turn the view back.
+## Horizontal Scrolling
+
+Click Horizontal Scrolling in the toolbar, or choose View > Horizontal Scrolling, to lay the pages out left to right instead of down the window. The zoom changes so the pages fit the window's height, and as many pages show as fit its width: more on a wide display, or when you zoom out. It's handy for sheet music.
+
+Swipe left or right on a trackpad to scroll along the pages. A mouse wheel scrolls them across too, as long as they fit the window's height. Right Arrow and Left Arrow slide the next or previous page to the left of the window. Space and Page Down move on a screenful, so the first page that wasn't wholly in view comes first. ⇧Space and Page Up move back a screenful. Bluetooth page turners and foot pedals usually send these keys, so they work as well.
+
+Use it with Two-Page Mode to show spreads side by side, with a wider gap between spreads than between the two pages of a spread. The arrow keys then turn a spread at a time. Zoom to Fit Window fits the pages' height while Horizontal Scrolling is on.
+
+To go back, click the button again or choose View > Vertical Scrolling. Your annotations show and stay editable in either layout. Compare Documents always scrolls down the window.
+
+> **Note:** Selecting text, links, search, the markup and measurement tools and forms all work while the view is rotated, in Two-Page Mode or scrolling horizontally. What you add goes on the page itself, so it stays in place when you turn the view back.

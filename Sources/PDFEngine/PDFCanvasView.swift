@@ -545,13 +545,13 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     public func pageFrame(for pageIndex: Int) -> NSRect? {
         // The layout is rebuilt after the document changes, and can briefly be shorter than it.
         guard let doc = viewModel.document, pageIndex >= 0, pageIndex < doc.pageCount else { return nil }
-        return viewModel.pageLayout.frame(for: pageIndex, zoom: viewModel.effectiveZoom, canvasWidth: bounds.width)
+        return viewModel.pageLayout.frame(for: pageIndex, zoom: viewModel.effectiveZoom, canvasSize: bounds.size)
     }
 
     /// The pages that may be in `rect` on the canvas, with one either side to spare.
     func pages(in rect: CGRect) -> ClosedRange<Int>? {
         guard let doc = viewModel.document, doc.pageCount > 0,
-              let range = viewModel.pageLayout.pages(fromCanvasY: rect.minY, to: rect.maxY, zoom: viewModel.effectiveZoom),
+              let range = viewModel.pageLayout.pages(in: rect, zoom: viewModel.effectiveZoom, canvasSize: bounds.size),
               range.lowerBound < doc.pageCount else { return nil }
         return range.clamped(to: 0...(doc.pageCount - 1))
     }

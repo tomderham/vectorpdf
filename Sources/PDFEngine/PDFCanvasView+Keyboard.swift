@@ -232,6 +232,17 @@ extension PDFCanvasView {
                     viewModel.nextPage()
                     return
                 }
+                // Pages laid across the window: Page Down / Space and Page Up move a screenful
+                if viewModel.pageLayout.direction == .horizontal {
+                    if event.keyCode == 121 || event.specialKey == .pageDown || event.keyCode == 49 /* Space */ {
+                        turnScreen(forward: true)
+                        return
+                    }
+                    if event.keyCode == 116 || event.specialKey == .pageUp {
+                        turnScreen(forward: false)
+                        return
+                    }
+                }
                 // Two-Page Mode (fitted spreads): Up / Down / PageUp / PageDown / Space flip facing spreads
                 if viewModel.isTwoPageMode {
                     if event.keyCode == 126 || event.specialKey == .upArrow || event.keyCode == 116 || event.specialKey == .pageUp {
@@ -312,9 +323,13 @@ extension PDFCanvasView {
                     }
                 }
             } else if flags == .shift {
-                // Shift + Space: Previous Page / Spread
+                // Shift + Space: Previous Page / Spread, or screenful across the window
                 if event.keyCode == 49 /* Space */ {
-                    viewModel.previousPage()
+                    if viewModel.pageLayout.direction == .horizontal {
+                        turnScreen(forward: false)
+                    } else {
+                        viewModel.previousPage()
+                    }
                     return
                 }
             }
@@ -384,5 +399,19 @@ extension PDFCanvasView {
             return viewModel.document != nil
         }
         return true
+    }
+
+    /// With pages laid across the window, moves on a screenful, so the first page that wasn't
+    /// wholly in view comes first; or back one, so the pages before the current one fill the view.
+    func turnScreen(forward: Bool) {
+        guard let clip = enclosingScrollView?.contentView else {
+            forward ? viewModel.nextPage() : viewModel.previousPage()
+            return
+        }
+        let layout = viewModel.pageLayout, zoom = viewModel.effectiveZoom
+        let page = forward
+            ? layout.pageAfterScreen(clip.bounds, from: viewModel.currentPageIndex, zoom: zoom, canvasSize: bounds.size)
+            : layout.pageBeforeScreen(from: viewModel.currentPageIndex, viewportWidth: clip.bounds.width, zoom: zoom, canvasSize: bounds.size)
+        if let page { viewModel.jumpToPage(page) }
     }
 }
