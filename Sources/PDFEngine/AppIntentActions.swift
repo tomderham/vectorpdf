@@ -278,7 +278,15 @@ extension PDFViewerAppCoordinator {
                 if let group = window.tabGroup, group.selectedWindow !== window {
                     group.selectedWindow = window
                 }
-                if inBackground { window.orderFront(nil) } else { window.makeKeyAndOrderFront(nil) }
+                if inBackground {
+                    window.orderFront(nil)
+                } else {
+                    // Its window minimized: restored, from whichever of its tabs is minimized.
+                    if let minimized = window.isMiniaturized ? window : window.tabGroup?.windows.first(where: \.isMiniaturized) {
+                        minimized.deminiaturize(nil)
+                    }
+                    window.makeKeyAndOrderFront(nil)
+                }
             }
             return open
         }

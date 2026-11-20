@@ -185,7 +185,10 @@ extension SyncTeXForwardRequest {
                 default: return .invalid("Unknown option \(argument)")
                 }
             } else {
+                // Options come before LINE, as Skim's displayline takes them: after it, a name
+                // starting with - is a file's.
                 positional.append(argument)
+                optionsEnded = true
             }
         }
         guard (2...3).contains(positional.count) else { return .invalid("Expected LINE PDFFILE [TEXSOURCEFILE]") }

@@ -58,13 +58,21 @@ extension PDFViewerViewModel {
     /// rewritten the file. With `waitingForBuild`, a build still writing it is given a few seconds
     /// to finish. Nil when there's no SyncTeX file, or it was left by a different document.
     func currentSyncTeXIndex(waitingForBuild: Bool) async -> SyncTeXIndex? {
-        guard let doc = document, refreshSyncTeXAvailability() else { return nil }
+        guard let doc = document, !isComparePane else { return nil }
         let pdfPath = doc.filePath
+        // A first build may still be writing it, with no finished one yet.
+        guard refreshSyncTeXAvailability() || (waitingForBuild && SyncTeXFile.isBeingWritten(forPDF: pdfPath)) else { return nil }
 
         if waitingForBuild {
             let pdfModified = loadedFileModificationDate ?? .distantPast
             let deadline = Date().addingTimeInterval(Self.syncTeXBuildAllowance)
-            while Date() < deadline, let file = SyncTeXFile.find(forPDF: pdfPath) {
+            while Date() < deadline {
+                guard let file = SyncTeXFile.find(forPDF: pdfPath) else {
+                    // None yet: wait only while one is being written.
+                    guard SyncTeXFile.isBeingWritten(forPDF: pdfPath) else { break }
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    continue
+                }
                 // Busy: TeX is writing it now. Older than a PDF just written: the build hasn't got
                 // to it yet. (Older than a PDF saved long ago is fine: saving annotations rewrites
                 // the PDF but leaves its text where TeX put it.)
@@ -75,6 +83,7 @@ extension PDFViewerViewModel {
             }
         }
 
+        guard document === doc, refreshSyncTeXAvailability() else { return nil }
         if let index = syncTeXIndex, index.pdfPath == pdfPath, index.isCurrent {
             return index
         }
@@ -82,9 +91,9 @@ extension PDFViewerViewModel {
         let index = await Task.detached(priority: .userInitiated) {
             SyncTeXIndex(file: file, pdfPath: pdfPath)
         }.value
-        // The document may have changed while it parsed.
-        guard document?.filePath == pdfPath else { return nil }
-        guard let index, index.matches(pageCount: doc.pageCount) else {
+        // The document may have changed while it parsed, or been reloaded with other pages.
+        guard let current = document, current.filePath == pdfPath else { return nil }
+        guard let index, index.matches(pageCount: current.pageCount) else {
             syncTeXIndex = nil
             return nil
         }
@@ -191,7 +200,7 @@ extension PDFViewerAppCoordinator {
         let path = request.pdfPath
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), !isDirectory.boolValue,
-              SyncTeXFile.find(forPDF: path) != nil else { return }
+              SyncTeXFile.find(forPDF: path) != nil || SyncTeXFile.isBeingWritten(forPDF: path) else { return }
 
         guard let target = await showDocument(atPath: path, inBackground: request.inBackground) else { return }
         if !request.inBackground { NSApp.activate(ignoringOtherApps: true) }

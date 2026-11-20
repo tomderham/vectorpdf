@@ -155,11 +155,27 @@ public enum EditorLauncher {
     public static func arguments(for command: String, location: SyncTeXSourceLocation) throws -> [String] {
         let words = try split(command)
         guard !words.isEmpty else { throw LaunchError.emptyCommand }
-        return words.map { word in
-            word.replacingOccurrences(of: "%file", with: location.file)
-                .replacingOccurrences(of: "%line", with: String(location.line))
-                .replacingOccurrences(of: "%column", with: String(location.column ?? 0))
+        let values = ["%file": location.file, "%line": String(location.line), "%column": String(location.column ?? 0)]
+        return words.map { substitute(values, in: $0) }
+    }
+
+    /// `word` with each placeholder in `values` replaced, in one pass: a value isn't looked in
+    /// again (a file whose path has "%line" in it keeps it).
+    static func substitute(_ values: [String: String], in word: String) -> String {
+        var out = ""
+        var rest = word[...]
+        while let percent = rest.firstIndex(of: "%") {
+            out += rest[..<percent]
+            rest = rest[percent...]
+            if let (key, value) = values.first(where: { rest.hasPrefix($0.key) }) {
+                out += value
+                rest = rest.dropFirst(key.count)
+            } else {
+                out += "%"
+                rest = rest.dropFirst()
+            }
         }
+        return out + rest
     }
 
     /// Folders GUI apps don't have on PATH but command-line tools are usually installed in.
@@ -181,20 +197,38 @@ public enum EditorLauncher {
     /// The login shell's PATH, read once: GUI apps start with a minimal one, without the folders
     /// a user's shell profile adds (Homebrew, TeX, ~/.local/bin).
     static let loginShellPath: [String] = {
-        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        // `printenv`, a program, prints PATH as the environment has it, joined by colons, from
+        // any shell (fish joins its own $PATH with spaces). Shells that don't take -l -c (csh,
+        // tcsh) or that aren't known: zsh's, the default, instead.
+        let posix: Set<String> = ["zsh", "bash", "sh", "ksh", "dash", "fish"]
+        var shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        if !posix.contains((shell as NSString).lastPathComponent) || !FileManager.default.isExecutableFile(atPath: shell) {
+            shell = "/bin/zsh"
+        }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: shell)
-        process.arguments = ["-l", "-c", "printf %s \"$PATH\""]
+        process.arguments = ["-l", "-c", "/usr/bin/printenv PATH"]
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
         process.standardInput = FileHandle.nullDevice
         guard (try? process.run()) != nil else { return [] }
-        let deadline = Date().addingTimeInterval(3)
-        while process.isRunning && Date() < deadline { usleep(20_000) }
-        if process.isRunning { process.terminate(); return [] }
-        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        return output.split(separator: ":").map(String.init).filter { $0.hasPrefix("/") }
+        // Read while it runs: a profile that prints a lot would otherwise fill the pipe and wait.
+        let output = PipeOutput()
+        let read = DispatchGroup()
+        read.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            output.data = pipe.fileHandleForReading.readDataToEndOfFile()
+            read.leave()
+        }
+        guard read.wait(timeout: .now() + 3) == .success else {
+            process.terminate()
+            return []
+        }
+        // The last line: what a profile prints comes before it.
+        let text = String(data: output.data, encoding: .utf8) ?? ""
+        let line = text.split(whereSeparator: \.isNewline).last.map(String.init) ?? ""
+        return line.split(separator: ":").map(String.init).filter { $0.hasPrefix("/") }
     }()
 
     /// Opens `location` with `command` (the one chosen in Settings by default). Throws when there's
@@ -227,4 +261,9 @@ public enum EditorLauncher {
             throw LaunchError.couldNotStart(error.localizedDescription)
         }
     }
+}
+
+/// What a process wrote, read on another thread.
+private final class PipeOutput: @unchecked Sendable {
+    var data = Data()
 }

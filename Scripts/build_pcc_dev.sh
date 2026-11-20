@@ -87,7 +87,10 @@ apply_provisioning_profile "${APP_NAME}.app" "$PROFILE" "$WORK_DIR"
 
 echo "Signing $APP_NAME as $BUNDLE_ID..."
 codesign --force --options runtime -s "$SIGNING_IDENTITY" "${APP_NAME}.app/Contents/Helpers/displayline"
-codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
+# Not --deep: it would sign the helper again with the app's entitlements, which a profile's
+# restricted ones make it unable to launch. The helper, the only code inside, is signed above.
+codesign --force --options runtime --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
+codesign --verify --deep --strict "${APP_NAME}.app"
 codesign -d --entitlements - "${APP_NAME}.app" 2>/dev/null | grep -q private-cloud-compute
 
 echo "Done: $(pwd)/${APP_NAME}.app (runs only on the Macs in the profile)"

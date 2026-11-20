@@ -402,6 +402,7 @@ PLIST
 
 echo "Signing (ad-hoc with entitlements)..."
 codesign --force -s - "$APP_BUNDLE/Contents/Helpers/displayline"
-codesign --force --deep --entitlements Resources/VectorPDF.entitlements -s - "$APP_BUNDLE"
+# Not --deep, which would give the helper (signed above, the only code inside) the app's entitlements.
+codesign --force --entitlements Resources/VectorPDF.entitlements -s - "$APP_BUNDLE"
 
 echo "Done: $(pwd)/$APP_BUNDLE"

@@ -30,7 +30,7 @@ Your editor asks VectorPDF to show a line by running `displayline`, which comes 
 
 VectorPDF brings the PDF forward, opening it if it isn't open, and highlights the line in red for a moment. It scrolls only if the line isn't already on screen. Add `-g` before LINE to leave VectorPDF behind your editor.
 
-`displayline` takes the same arguments as Skim's. If your editor has a setting for Skim, use VectorPDF's `displayline` in its place.
+`displayline` takes the same arguments as Skim's. If your editor has a setting for Skim, use VectorPDF's `displayline` in its place. Options such as `-g` go before LINE: after it, a file name that starts with `-` is read as a file.
 
 ### Visual Studio Code
 

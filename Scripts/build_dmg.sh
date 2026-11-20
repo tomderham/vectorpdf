@@ -55,7 +55,10 @@ fi
 
 echo "=== 1b. Signing $APP_NAME with Developer ID and hardened runtime ==="
 codesign --force --options runtime --timestamp -s "$SIGNING_IDENTITY" "${APP_NAME}.app/Contents/Helpers/displayline"
-codesign --force --deep --options runtime --timestamp --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
+# Not --deep: it would sign the helper again with the app's entitlements, which a profile's
+# restricted ones make it unable to launch. The helper, the only code inside, is signed above.
+codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" -s "$SIGNING_IDENTITY" "${APP_NAME}.app"
+codesign --verify --deep --strict "${APP_NAME}.app"
 codesign -d --entitlements - "${APP_NAME}.app"
 
 echo "=== 2. Preparing DMG staging ==="

@@ -222,6 +222,9 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
         if newWindow == nil {
             stopAutoscroll()
             hoverWorkItem?.cancel()
+            syncTeXHighlightTimer?.invalidate()
+            syncTeXHighlightTimer = nil
+            syncTeXHighlight = nil
         }
         linkPeek.dismiss()
         referenceSearchTask?.cancel()

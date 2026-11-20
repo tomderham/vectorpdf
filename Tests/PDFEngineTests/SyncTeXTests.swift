@@ -310,6 +310,9 @@ enum SyncTeXFixture {
         #expect(SyncTeXForwardRequest.parseCommandLine(["-r", "-b", "-g", "7:4", "/tmp/out/paper"], currentDirectory: cwd)
                 == .request(SyncTeXForwardRequest(pdfPath: "/tmp/out/paper.pdf", line: 7, column: 4, inBackground: true, reloads: true)!))
         #expect(SyncTeXForwardRequest.parseCommandLine(["-h"], currentDirectory: cwd) == .help)
+        // After LINE, a name starting with - is a file's.
+        #expect(SyncTeXForwardRequest.parseCommandLine(["42", "-draft.pdf"], currentDirectory: cwd)
+                == .request(SyncTeXForwardRequest(pdfPath: "/Users/example/Papers/-draft.pdf", line: 42)!))
         for bad in [[], ["12"], ["x", "a.pdf"], ["-z", "1", "a.pdf"], ["0", "a.pdf"], ["1:y", "a.pdf"], ["1", "a.pdf", "b.tex", "c"]] {
             guard case .invalid = SyncTeXForwardRequest.parseCommandLine(bad, currentDirectory: cwd) else {
                 Issue.record("\(bad) should be refused")
@@ -557,5 +560,24 @@ enum SyncTeXFixture {
     static func sameFile(_ a: String, _ b: String) -> Bool {
         var x = stat(), y = stat()
         return stat(a, &x) == 0 && stat(b, &y) == 0 && x.st_dev == y.st_dev && x.st_ino == y.st_ino
+    }
+
+    /// Placeholders are replaced once: a path with "%line" in it keeps it.
+    @Test func placeholdersAreReplacedInOnePass() throws {
+        let location = SyncTeXSourceLocation(file: "/Users/example/%line notes/%column.tex", line: 12, column: 3)
+        #expect(try EditorLauncher.arguments(for: "code -g %file:%line:%column", location: location)
+                == ["code", "-g", "/Users/example/%line notes/%column.tex:12:3"])
+        #expect(EditorLauncher.substitute(["%line": "7"], in: "%%line %x %") == "%7 %x %")
+    }
+
+    /// On a first build, before there's a finished SyncTeX file, its busy one says one is coming.
+    @Test func aFirstBuildsBusyFileIsSeen() throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let pdf = dir.appendingPathComponent("paper.pdf").path
+        #expect(!SyncTeXFile.isBeingWritten(forPDF: pdf))
+        try Data().write(to: dir.appendingPathComponent("paper.synctex(busy)"))
+        #expect(SyncTeXFile.find(forPDF: pdf) == nil)
+        #expect(SyncTeXFile.isBeingWritten(forPDF: pdf))
     }
 }

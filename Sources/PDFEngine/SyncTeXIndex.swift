@@ -48,14 +48,29 @@ public struct SyncTeXFile: Equatable, Sendable {
     /// Folders besides the PDF's own where builds commonly put the SyncTeX file, relative to it.
     static let buildDirectories = ["build", "out", "output", "aux", ".aux"]
 
-    /// The SyncTeX file for the PDF at `pdfPath`, if there is one.
-    public static func find(forPDF pdfPath: String) -> SyncTeXFile? {
+    /// The folders and names (without extension) the SyncTeX file for `pdfPath` can have.
+    private static func places(forPDF pdfPath: String) -> (folders: [URL], names: [String]) {
         let pdf = URL(fileURLWithPath: pdfPath)
         let base = pdf.deletingPathExtension().lastPathComponent
         // TeX quotes a job name with spaces in it: "my paper".synctex.gz.
         let names = [base, "\"\(base)\""]
         let folders = [pdf.deletingLastPathComponent()]
             + buildDirectories.map { pdf.deletingLastPathComponent().appendingPathComponent($0, isDirectory: true) }
+        return (folders, names)
+    }
+
+    /// Whether TeX is writing a SyncTeX file for the PDF at `pdfPath` now: on a first build, before
+    /// there's a finished one for `find` to find.
+    public static func isBeingWritten(forPDF pdfPath: String) -> Bool {
+        let (folders, names) = places(forPDF: pdfPath)
+        return folders.contains { folder in
+            names.contains { FileManager.default.fileExists(atPath: folder.appendingPathComponent("\($0).synctex(busy)").path) }
+        }
+    }
+
+    /// The SyncTeX file for the PDF at `pdfPath`, if there is one.
+    public static func find(forPDF pdfPath: String) -> SyncTeXFile? {
+        let (folders, names) = places(forPDF: pdfPath)
         let fm = FileManager.default
         for folder in folders {
             for name in names {
@@ -159,11 +174,16 @@ public final class SyncTeXIndex: @unchecked Sendable {
     /// (same device and inode), whatever the path to it.
     private func recordedName(sameFileAs path: String) -> String? {
         guard let wanted = Self.fileIdentity(path) else { return nil }
-        var tag: Int32 = 1
-        while tag <= 100_000, let name = synctex_scanner_get_name(scanner, tag) {
-            let recorded = String(cString: name)
-            if Self.fileIdentity(resolve(recorded)) == wanted { return recorded }
-            tag += 1
+        // The inputs in a list of their own: their tags needn't run 1, 2, 3 without a gap.
+        var input = synctex_scanner_input(scanner)
+        var seen = 0
+        while let node = input, seen < 100_000 {
+            if let name = synctex_scanner_get_name(scanner, synctex_node_tag(node)) {
+                let recorded = String(cString: name)
+                if Self.fileIdentity(resolve(recorded)) == wanted { return recorded }
+            }
+            input = synctex_node_sibling(node)
+            seen += 1
         }
         return nil
     }

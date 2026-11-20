@@ -107,11 +107,13 @@ struct LaTeXSetupView: View {
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer()
-                Button("Copy") {
+                // The program's path alone: editors take it and its arguments in fields of their own.
+                Button("Copy Path") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(Self.displaylinePath, forType: .string)
                 }
                 .controlSize(.small)
+                .help("Copy the path of displayline, the program to give your editor")
             }
 
             HStack {

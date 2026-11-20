@@ -35,10 +35,10 @@ extension PDFCanvasView {
         syncTeXHighlight = (reveal.pageIndex, reveal.rects, Date())
         syncTeXHighlightTimer?.invalidate()
         needsDisplay = true
-        let timer = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.advanceSyncTeXHighlight()
-            }
+        let timer = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] timer in
+            // Gone (its tab closed while the highlight showed): nothing to fade, ever again.
+            guard self != nil else { timer.invalidate(); return }
+            MainActor.assumeIsolated { self?.advanceSyncTeXHighlight() }
         }
         RunLoop.main.add(timer, forMode: .common)
         syncTeXHighlightTimer = timer
