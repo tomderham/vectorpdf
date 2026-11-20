@@ -416,11 +416,15 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     private var speechCancellable: AnyCancellable?
     private var selCancellable: AnyCancellable?
 
-    /// Registers `url` with the system's shared recent-documents list (File > Open Recent, and
-    /// the Dock icon's right-click menu) — the same list every other recent-items-aware app uses,
-    /// so it inherits its size limit from AppKit/system configuration rather than us imposing one.
+    /// Puts `url` at the top of the recent files (File > Open Recent, the Dock icon's Open Recent
+    /// submenu and the Start screen).
     public func noteRecentDocument(_ url: URL) {
-        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        RecentDocuments.shared.note(url)
+        recentDocumentsRevision += 1
+    }
+
+    public func clearRecentDocuments() {
+        RecentDocuments.shared.clear()
         recentDocumentsRevision += 1
     }
     

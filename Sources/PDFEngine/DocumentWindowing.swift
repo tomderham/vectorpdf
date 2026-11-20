@@ -446,6 +446,18 @@ public enum DocumentWindowing {
         }
     }
 
+    /// Brings forward the window or tab already showing `url`, or opens it as
+    /// `openDocumentHandlingEmptyStart` does — for files opened from the Dock, Finder or
+    /// Open Recent, which show a file that's open rather than open it twice.
+    @discardableResult
+    public static func showOrOpenDocument(url: URL) -> NSWindow {
+        if let existing = DockMenu.window(showing: url) {
+            DockMenu.activate(existing)
+            return existing
+        }
+        return openDocumentHandlingEmptyStart(url: url)
+    }
+
     /// Handles opening a document from an external system event (e.g. Finder double-click or CLI open).
     /// If `preferredWindow` (or the key/main window) is a standalone empty Start Screen window,
     /// this loads directly into it (or cleanly replaces it); otherwise it opens in a new window.

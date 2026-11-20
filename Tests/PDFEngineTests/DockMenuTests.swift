@@ -43,7 +43,7 @@ import Testing
         })
     }
 
-    @Test(.showsWindows) func groupsTabsUnderTheirWindow() {
+    @Test(.showsWindows) func listsTabsUnderTheirWindow() {
         let (tabbed, single, cleanup) = makeWindows()
         defer { cleanup() }
         let tabs = tabbed.tabGroup?.windows ?? []
@@ -52,17 +52,77 @@ import Testing
         // What SwiftUI's empty navigationTitle does to a live document window.
         for window in tabs + [single] { window.title = "" }
         let fileNames = tabs.map { $0.representedURL?.lastPathComponent }
+        let selected = tabbed.tabGroup?.selectedWindow
 
+        // In the order they were opened, whatever is in front: the tabbed window — named after
+        // its selected tab — and its three tabs, indented; a separator; the single window.
         let items = DockMenu.items(from: [single, tabbed])
-        // Front to back: the single window, a separator, then the header and three tabs.
-        #expect(items.map(\.isSeparatorItem) == [false, true, false, false, false, false])
-        #expect(items[0].title == single.representedURL?.lastPathComponent)
-        #expect(items[0].indentationLevel == 0)
-        #expect(items[2].title == "3 Tabs")
-        #expect(!items[2].isEnabled)
-        #expect(items[3...].map(\.title) == fileNames)
-        #expect(items[3...].allSatisfy { $0.indentationLevel == 1 })
-        #expect(items[3...].filter { $0.state == .on }.count == 1)
+        #expect(items.map(\.isSeparatorItem) == [false, false, false, false, true, false])
+        #expect(items.map(\.indentationLevel) == [0, 2, 2, 2, 0, 0])
+        #expect(items[0].title == selected?.representedURL?.lastPathComponent)
+        #expect(items[1...3].map(\.title) == fileNames)
+        #expect(items[5].title == single.representedURL?.lastPathComponent)
+        // Marks are on windows, not tabs.
+        #expect(items[1...3].allSatisfy { $0.state == .off })
+    }
+
+    @Test(.showsWindows) func marksWindowsAsAppKitDoes() async throws {
+        let (tabbed, single, cleanup) = makeWindows()
+        defer { cleanup() }
+        let tabs = try #require(tabbed.tabGroup?.windows)
+
+        // Unsaved changes in a background tab mark its window with a dot.
+        tabs[0].isDocumentEdited = true
+        single.makeKeyAndOrderFront(nil)
+        var items = DockMenu.items(from: [single, tabbed])
+        var tabbedRow = items[0]
+        #expect(tabbedRow.state == .on)
+        #expect(tabbedRow.onStateImage?.name() == "NSMenuItemBullet")
+        tabs[0].isDocumentEdited = false
+
+        // A minimized window gets a diamond.
+        single.miniaturize(nil)
+        for _ in 0..<50 where !single.isMiniaturized { try await Task.sleep(for: .milliseconds(50)) }
+        try #require(single.isMiniaturized)
+        items = DockMenu.items(from: [tabbed, single])
+        let singleRow = try #require(items.last)
+        #expect(singleRow.state == .on)
+        #expect(singleRow.onStateImage?.name() == "NSMenuItemDiamond")
+        tabbedRow = items[0]
+        #expect(tabbedRow.onStateImage?.name() != "NSMenuItemBullet")
+        #expect(tabbedRow.onStateImage?.name() != "NSMenuItemDiamond")
+    }
+
+    @Test(.showsWindows) func addsNewWindowAndOpenRecent() throws {
+        let (tabbed, single, cleanup) = makeWindows()
+        defer { cleanup() }
+        let recents = [URL(fileURLWithPath: "/Users/example/a.pdf"), URL(fileURLWithPath: "/Users/example/b.pdf")]
+
+        let menu = DockMenu.make(from: [single, tabbed], recents: recents)
+        let openRecent = try #require(menu.items.last)
+        #expect(openRecent.title == "Open Recent")
+        #expect(menu.items[menu.items.count - 2].title == "New Window")
+        let titles = openRecent.submenu?.items.map(\.title)
+        #expect(titles == ["a.pdf", "b.pdf", "", "Clear Menu"])
+
+        // Nothing recent: no submenu.
+        let titles2 = DockMenu.make(from: [single, tabbed], recents: []).items.map(\.title)
+        #expect(!titles2.contains("Open Recent"))
+        #expect(titles2.last == "New Window")
+    }
+
+    @Test(.showsWindows) func showsAnOpenFileRatherThanOpeningItAgain() throws {
+        let (tabbed, single, cleanup) = makeWindows()
+        defer { cleanup() }
+        let tabs = try #require(tabbed.tabGroup?.windows)
+        let url = try #require(tabs[0].representedURL)
+        let windowCount = NSApp.windows.count
+
+        single.makeKeyAndOrderFront(nil)
+        let shown = DocumentWindowing.showOrOpenDocument(url: url)
+        #expect(shown === tabs[0])
+        #expect(tabbed.tabGroup?.selectedWindow === tabs[0])
+        #expect(NSApp.windows.count == windowCount)
     }
 
     @Test(.showsWindows) func leavesOutSnapshotWindowsAndBringsThemForward() throws {
@@ -78,9 +138,10 @@ import Testing
         #expect(snapshot.isExcludedFromWindowsMenu)
         #expect(tabs.allSatisfy { $0.isExcludedFromWindowsMenu })
 
-        // The single window and the three tabs; nothing for the snapshot.
+        // The two windows and the three tabs; nothing for the snapshot.
         let items = DockMenu.items(from: [snapshot, single, tabbed])
-        #expect(items.filter { $0.action != nil }.count == 4)
+        #expect(items.filter { !$0.isSeparatorItem }.count == 5)
+        #expect(!items.contains { $0.title.contains("Figure 1") })
 
         // Another tab of the same window leaves the snapshot behind `single`.
         single.makeKeyAndOrderFront(nil)
@@ -131,7 +192,7 @@ import Testing
         #expect(titles.contains(url.lastPathComponent))
     }
 
-    @Test(.showsWindows) func countsSnapshotsAndRestoresMinimizedOnes() async throws {
+    @Test(.showsWindows) func restoresMinimizedSnapshotsWithTheirTab() async throws {
         let (tabbed, single, cleanup) = makeWindows()
         defer { cleanup() }
         let tabs = try #require(tabbed.tabGroup?.windows)
@@ -146,15 +207,15 @@ import Testing
         for _ in 0..<50 where !snapshot.isMiniaturized { try await Task.sleep(for: .milliseconds(50)) }
         try #require(snapshot.isMiniaturized)
 
-        // Not listed itself; its tab's row counts it.
+        // Not listed itself.
         let items = DockMenu.items(from: [single, tabbed])
-        #expect(!items.contains { $0.title == "Figure 1" })
-        let tabIndex = try #require(items.firstIndex { $0.title == "\(DockMenu.displayTitle(for: tabs[1])) (+1 window)" })
+        #expect(!items.contains { $0.title.contains("Figure 1") })
+        let tabIndex = try #require(items.lastIndex { $0.title == DockMenu.displayTitle(for: tabs[1]) })
 
         // Choosing another tab of the same window leaves it minimized.
         let menu = NSMenu()
         items.forEach(menu.addItem)
-        let otherTabIndex = try #require(items.firstIndex { $0.title == DockMenu.displayTitle(for: tabs[2]) })
+        let otherTabIndex = try #require(items.lastIndex { $0.title == DockMenu.displayTitle(for: tabs[2]) })
         menu.performActionForItem(at: otherTabIndex)
         try await Task.sleep(for: .milliseconds(500))
         #expect(snapshot.isMiniaturized)

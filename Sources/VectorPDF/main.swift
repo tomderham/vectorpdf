@@ -101,8 +101,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NotificationCenter.default.post(name: .openFilePathCommand, object: url.path)
             }
         } else {
-            // Warm start: if current window has a single empty tab, open into that, else open in a new window
-            DocumentWindowing.openDocumentHandlingEmptyStart(url: url)
+            // Warm start: show the file if it's open; else if the current window has a single
+            // empty tab, open into that, else open in a new window.
+            DocumentWindowing.showOrOpenDocument(url: url)
         }
     }
 
@@ -368,16 +369,17 @@ struct VectorPDF: App {
             .keyboardShortcut("d", modifiers: [.command, .shift])
             .disabled(!canEditDocument)
 
-            // Reads NSDocumentController recent documents list directly.
             Menu("Open Recent") {
                 let _ = coordinator.recentDocumentsRevision
-                let recents = NSDocumentController.shared.recentDocumentURLs
+                let recents = RecentDocuments.shared.urls
                 if recents.isEmpty {
                     Text("No Recent Documents")
                 } else {
                     ForEach(recents, id: \.self) { url in
                         Button(url.lastPathComponent) {
-                            if let vm = resolvedViewModel {
+                            if let window = DockMenu.window(showing: url) {
+                                DockMenu.activate(window)
+                            } else if let vm = resolvedViewModel {
                                 vm.openDocumentPreferringNewWindow(atPath: url.path)
                             } else {
                                 DocumentWindowing.openNewWindow(url: url)
@@ -386,8 +388,7 @@ struct VectorPDF: App {
                     }
                     Divider()
                     Button("Clear Menu") {
-                        NSDocumentController.shared.clearRecentDocuments(nil)
-                        coordinator.recentDocumentsRevision += 1
+                        coordinator.clearRecentDocuments()
                     }
                 }
             }

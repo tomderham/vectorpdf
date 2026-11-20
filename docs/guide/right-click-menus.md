@@ -50,5 +50,6 @@ In a document with [layers](layers.md), the menu for an annotation also has **La
 | --- | --- |
 | The document's title, or an empty part of the toolbar | Add to or remove from Favorites, Save All Open Tabs as a Group, Update Group “name” with Open Tabs, Compare With (see [Compare two documents](compare-documents.md)), and your Tab Groups and Favorites |
 | A row on the Start screen | Open, Open in New Tab, Open in New Window, Show in Finder, and Remove or Delete |
+| The VectorPDF icon in the Dock | Your open windows and their tabs (see [Find an open window](tabs-and-windows.md#find-an-open-window)), New Window, and Open Recent |
 
 Some commands appear only when they apply. For example, Save All Open Tabs as a Group needs more than one tab, and anchor commands aren't available in a window opened from an anchor.

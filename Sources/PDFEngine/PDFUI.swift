@@ -327,7 +327,7 @@ public struct PDFViewerMainView: View {
         let recentURLs: [URL] = {
             guard totalItems <= 4 else { return [] }
             let favPaths = Set(favoritesManager.favorites.map(\.path))
-            return NSDocumentController.shared.recentDocumentURLs
+            return RecentDocuments.shared.urls
                 .filter { OpenableDocumentTypes.canOpen($0) && !favPaths.contains($0.path) }
                 .prefix(3)
                 .map { $0 }

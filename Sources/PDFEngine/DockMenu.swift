@@ -18,7 +18,12 @@
 import AppKit
 
 /// The list of open document windows shown in the Dock icon's menu and at the bottom of the
-/// Window menu — one section per window, its tabs listed under it.
+/// Window menu: a row per window, its tabs indented under it. The Dock's menu adds New Window
+/// and an Open Recent submenu.
+///
+/// A window's row has the standard marks, as AppKit's own list does: a checkmark on the front
+/// window, a diamond on a minimized one, a dot on one with unsaved changes in any of its tabs.
+/// Anchor (snapshot) windows aren't listed; they come forward with the tab they were opened from.
 ///
 /// AppKit's own list can't be used: it's kept in the Window menu, which SwiftUI replaces whenever
 /// the menu commands rebuild, leaving windows already open out of the new one (and so out of the
@@ -28,35 +33,51 @@ import AppKit
 @MainActor
 public enum DockMenu {
     /// The Dock icon's menu (see AppDelegate.applicationDockMenu).
-    public static func make(from windows: [NSWindow]? = nil) -> NSMenu {
+    public static func make(from windows: [NSWindow]? = nil, recents: [URL]? = nil) -> NSMenu {
         let menu = NSMenu()
         for item in items(from: windows) {
             menu.addItem(item)
         }
+        if !menu.items.isEmpty { menu.addItem(.separator()) }
+        let newWindow = NSMenuItem(title: "New Window", action: #selector(Handler.newWindow(_:)), keyEquivalent: "")
+        newWindow.target = Handler.shared
+        menu.addItem(newWindow)
+        let recents = recents ?? RecentDocuments.shared.urls
+        if !recents.isEmpty {
+            menu.addItem(openRecentItem(for: recents))
+        }
         return menu
     }
 
-    /// One section per document window, front to back, separated by separator items. A
-    /// single-tab window is one row; a multi-tab window gets a disabled header row followed by
-    /// its tabs, indented, the selected one checked. Snapshot windows aren't listed; a row
-    /// notes how many were opened from that tab, and choosing it brings them forward too.
+    /// A row per document window, in the order they were opened, each marked as AppKit marks
+    /// windows. A window with more than one tab has its tabs listed under it, indented, and is
+    /// set off from the windows around it by separators.
     static func items(from windows: [NSWindow]? = nil) -> [NSMenuItem] {
+        let groups = windowGroups(from: windows ?? allWindows())
+            .sorted { openingOrder(of: $0) < openingOrder(of: $1) }
+        let front = frontGroupIndex(in: groups)
         var items: [NSMenuItem] = []
-        for group in windowGroups(from: windows ?? allWindows()) {
-            if !items.isEmpty { items.append(.separator()) }
-            guard group.count > 1 else {
-                items.append(row(for: group[0], indentation: 0, isSelected: false))
-                continue
-            }
-            let header = NSMenuItem(title: headerTitle(for: group), action: nil, keyEquivalent: "")
-            header.isEnabled = false
-            items.append(header)
-            let selected = group[0].tabGroup?.selectedWindow
+        var previousHadTabs = false
+        for (index, group) in groups.enumerated() {
+            let hasTabs = group.count > 1
+            if !items.isEmpty && (hasTabs || previousHadTabs) { items.append(.separator()) }
+            previousHadTabs = hasTabs
+            let selected = group.first { $0.tabGroup?.selectedWindow === $0 } ?? group[0]
+            let row = item(title: windowTitle(for: group, selected: selected), window: selected, indentation: 0)
+            setMark(on: row, for: group, isFront: index == front)
+            items.append(row)
+            guard hasTabs else { continue }
             for tab in group {
-                items.append(row(for: tab, indentation: 1, isSelected: tab === selected))
+                items.append(item(title: displayTitle(for: tab), window: tab, indentation: 2))
             }
         }
         return items
+    }
+
+    /// When the window was opened: the lowest window number among its tabs. The list keeps this
+    /// order, as AppKit's does, rather than moving the front window to the top.
+    private static func openingOrder(of tabs: [NSWindow]) -> Int {
+        tabs.map(\.windowNumber).filter { $0 > 0 }.min() ?? .max
     }
 
     /// Document windows grouped by tab group, frontmost group first, tabs in tab order.
@@ -73,9 +94,17 @@ public enum DockMenu {
         return groups
     }
 
+    /// The open document window or tab showing `url`, if any.
+    public static func window(showing url: URL) -> NSWindow? {
+        let path = url.standardizedFileURL.resolvingSymlinksInPath().path
+        return windowGroups(from: NSApp.windows).joined().first { window in
+            window.representedURL?.standardizedFileURL.resolvingSymlinksInPath().path == path
+        }
+    }
+
     /// Brings `tab`'s window forward with `tab` selected, along with the snapshot windows opened
-    /// from `tab` (the ones its menu row counts), restored if minimized and placed just above it
-    /// as they were when opened. Other tabs' snapshot windows are left where they are.
+    /// from `tab`, restored if minimized and placed just above it as they were when opened.
+    /// Other tabs' snapshot windows are left where they are.
     public static func activate(_ tab: NSWindow) {
         NSApp.activate()
         if tab.isMiniaturized { tab.deminiaturize(nil) }
@@ -130,13 +159,66 @@ public enum DockMenu {
         return ordered + NSApp.windows.filter { !ids.contains(ObjectIdentifier($0)) }
     }
 
-    private static func headerTitle(for tabs: [NSWindow]) -> String {
+    /// The window's row: the name of the Tab Group it was opened from, or else its selected tab's.
+    private static func windowTitle(for tabs: [NSWindow], selected: NSWindow) -> String {
+        guard tabs.count > 1 else { return displayTitle(for: selected) }
         let coordinator = PDFViewerAppCoordinator.shared
         let groupName = tabs.lazy
             .compactMap { coordinator.viewModel(for: $0)?.groupOrigin }
             .compactMap { TabGroupManager.shared.group(withId: $0)?.name }
             .first
-        return groupName.map { "\($0) (\(tabs.count) Tabs)" } ?? "\(tabs.count) Tabs"
+        return groupName ?? displayTitle(for: selected)
+    }
+
+    /// The group holding the main window — or, when a snapshot window or none is main, the
+    /// frontmost group on screen.
+    private static func frontGroupIndex(in groups: [[NSWindow]]) -> Int? {
+        if let main = NSApp.mainWindow, let index = groups.firstIndex(where: { $0.contains(main) }) {
+            return index
+        }
+        for window in NSApp.orderedWindows where !window.isMiniaturized {
+            if let index = groups.firstIndex(where: { $0.contains(window) }) { return index }
+        }
+        return nil
+    }
+
+    /// AppKit's marks: a diamond when minimized, else a checkmark on the front window, else a dot
+    /// when any tab has unsaved changes.
+    private static func setMark(on item: NSMenuItem, for tabs: [NSWindow], isFront: Bool) {
+        if tabs.contains(where: \.isMiniaturized) {
+            item.state = .on
+            item.onStateImage = markImage(named: "NSMenuItemDiamond", fallbackSymbol: "diamond.fill")
+        } else if isFront {
+            item.state = .on
+        } else if tabs.contains(where: \.isDocumentEdited) {
+            item.state = .on
+            item.onStateImage = markImage(named: "NSMenuItemBullet", fallbackSymbol: "circle.fill")
+        }
+    }
+
+    private static func markImage(named name: String, fallbackSymbol: String) -> NSImage? {
+        if let image = NSImage(named: name) { return image }
+        let config = NSImage.SymbolConfiguration(pointSize: 6, weight: .regular)
+        return NSImage(systemSymbolName: fallbackSymbol, accessibilityDescription: nil)?.withSymbolConfiguration(config)
+    }
+
+    private static func openRecentItem(for urls: [URL]) -> NSMenuItem {
+        let submenu = NSMenu(title: "Open Recent")
+        for url in urls {
+            let item = NSMenuItem(title: url.lastPathComponent, action: #selector(Handler.openRecent(_:)), keyEquivalent: "")
+            item.target = Handler.shared
+            item.representedObject = url
+            item.image = NSWorkspace.shared.icon(forFile: url.path)
+            item.image?.size = NSSize(width: 16, height: 16)
+            submenu.addItem(item)
+        }
+        submenu.addItem(.separator())
+        let clear = NSMenuItem(title: "Clear Menu", action: #selector(Handler.clearRecents(_:)), keyEquivalent: "")
+        clear.target = Handler.shared
+        submenu.addItem(clear)
+        let item = NSMenuItem(title: "Open Recent", action: nil, keyEquivalent: "")
+        item.submenu = submenu
+        return item
     }
 
     /// The name shown on the window's tab. SwiftUI's empty `.navigationTitle` often leaves
@@ -146,16 +228,11 @@ public enum DockMenu {
         return candidates.compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } ?? "VectorPDF"
     }
 
-    private static func row(for window: NSWindow, indentation: Int, isSelected: Bool) -> NSMenuItem {
-        var title = displayTitle(for: window)
-        if window.isDocumentEdited { title += " — Edited" }
-        let snapshots = SnapshotWindowManager.shared.windows(openedFrom: [window]).count
-        if snapshots > 0 { title += " (+\(snapshots) \(snapshots == 1 ? "window" : "windows"))" }
+    private static func item(title: String, window: NSWindow, indentation: Int) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: #selector(Handler.activateWindow(_:)), keyEquivalent: "")
         item.target = Handler.shared
         item.representedObject = WeakWindow(window)
         item.indentationLevel = indentation
-        item.state = isSelected ? .on : .off
         return item
     }
 
@@ -170,6 +247,21 @@ public enum DockMenu {
         @objc func activateWindow(_ sender: NSMenuItem) {
             guard let window = (sender.representedObject as? WeakWindow)?.window else { return }
             DockMenu.activate(window)
+        }
+
+        @objc func openRecent(_ sender: NSMenuItem) {
+            guard let url = sender.representedObject as? URL else { return }
+            NSApp.activate()
+            DocumentWindowing.showOrOpenDocument(url: url)
+        }
+
+        @objc func newWindow(_ sender: NSMenuItem) {
+            NSApp.activate()
+            DocumentWindowing.openNewEmptyWindow()
+        }
+
+        @objc func clearRecents(_ sender: NSMenuItem) {
+            PDFViewerAppCoordinator.shared.clearRecentDocuments()
         }
     }
 }

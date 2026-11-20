@@ -8,7 +8,7 @@
 - **In a new tab:** choose File > Open PDF in New Tab, or press ⌥⌘O.
 - **From the Finder:** right-click a PDF, then choose Open With > VectorPDF. To open all PDFs in VectorPDF, select a PDF, choose File > Get Info in the Finder, change “Open with”, then click Change All.
 - **By dragging:** drag a PDF onto the Start screen to open it there, or onto an open document to open it in a new tab.
-- **From a list:** choose File > Open Recent, or use the [Favorites](favorites-and-tab-groups.md) menu. On the Start screen, right-click a document to open it in a new tab or window.
+- **From a list:** choose File > Open Recent, or Open Recent in the menu of the VectorPDF icon in the Dock, or use the [Favorites](favorites-and-tab-groups.md) menu. On the Start screen, right-click a document to open it in a new tab or window.
 
 ## E-books, comics and XPS documents
 
