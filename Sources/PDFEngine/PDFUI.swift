@@ -692,13 +692,8 @@ public struct PDFViewerMainView: View {
         .onChange(of: viewModel.isTwoPageMode) { _, isTwoPage in
             // The view model hides the sidebar for spreads, and brings it back after.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                // Across the window, the pages' height fits instead.
                 if isTwoPage {
-                    if viewModel.isHorizontalScrolling {
-                        viewModel.zoomToFitPage()
-                    } else {
-                        viewModel.zoomToFitWidth()
-                    }
+                    viewModel.zoomToFitWidth()
                 }
             }
         }

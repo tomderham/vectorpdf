@@ -27,7 +27,7 @@ struct RotatedAndTwoPageViewTests {
 
     /// The views a page can be shown in.
     enum View: CaseIterable, CustomStringConvertible {
-        case single, twoPage, rotated90, rotated180, rotated270, across, acrossTwoPage
+        case single, twoPage, rotated90, rotated180, rotated270, across
         var description: String {
             switch self {
             case .single: "single page"
@@ -36,7 +36,6 @@ struct RotatedAndTwoPageViewTests {
             case .rotated180: "rotated 180°"
             case .rotated270: "rotated 270°"
             case .across: "across the window"
-            case .acrossTwoPage: "two pages across the window"
             }
         }
     }
@@ -116,7 +115,7 @@ struct RotatedAndTwoPageViewTests {
     }
 
     @MainActor
-    @Test(arguments: [View.rotated90, .rotated180, .rotated270, .twoPage, .across, .acrossTwoPage])
+    @Test(arguments: [View.rotated90, .rotated180, .rotated270, .twoPage, .across])
     func shapeLandsWhereItWasDragged(in view: View) async throws {
         let fixture = try await CanvasFixture(view: view)
         defer { fixture.close() }
@@ -227,7 +226,6 @@ final class CanvasFixture {
         case .rotated180: vm.rotateClockwise(); vm.rotateClockwise()
         case .rotated270: vm.rotateCounterclockwise()
         case .across: vm.toggleHorizontalScrolling()
-        case .acrossTwoPage: vm.toggleTwoPageMode(); vm.toggleHorizontalScrolling()
         }
         vm.setZoom(1)
         layOut()

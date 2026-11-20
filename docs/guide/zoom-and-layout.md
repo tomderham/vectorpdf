@@ -37,7 +37,7 @@ Click Horizontal Scrolling in the toolbar, or choose View > Horizontal Scrolling
 
 Swipe left or right on a trackpad to scroll along the pages. A mouse wheel scrolls them across too, as long as they fit the window's height. Right Arrow and Left Arrow slide the next or previous page to the left of the window. Space and Page Down move on a screenful, so the first page that wasn't wholly in view comes first. ⇧Space and Page Up move back a screenful. Bluetooth page turners and foot pedals usually send these keys, so they work as well.
 
-Use it with Two-Page Mode to show spreads side by side, with a wider gap between spreads than between the two pages of a spread. The arrow keys then turn a spread at a time. Zoom to Fit Window fits the pages' height while Horizontal Scrolling is on.
+Horizontal Scrolling and Two-Page Mode replace each other: turning one on turns the other off. Zoom to Fit Window fits the pages' height while Horizontal Scrolling is on.
 
 To go back, click the button again or choose View > Vertical Scrolling. Your annotations show and stay editable in either layout. Compare Documents always scrolls down the window.
 

@@ -747,19 +747,19 @@ struct VectorPDF: App {
         }
         
         CommandGroup(replacing: .toolbar) {
-            Button((resolvedViewModel?.isMarkupBarVisible ?? false) ? "Hide Markup Toolbar" : "Show Markup Toolbar") {
+            Button(coordinator.activeViewState.isMarkupBarVisible ? "Hide Markup Toolbar" : "Show Markup Toolbar") {
                 resolvedViewModel?.isMarkupBarVisible.toggle()
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
             .disabled(!canEditDocument)
 
-            Button((resolvedViewModel?.isMeasurementBarVisible ?? false) ? "Hide Measurement Toolbar" : "Show Measurement Toolbar") {
+            Button(coordinator.activeViewState.isMeasurementBarVisible ? "Hide Measurement Toolbar" : "Show Measurement Toolbar") {
                 resolvedViewModel?.toggleMeasurementBar()
             }
             .keyboardShortcut("m", modifiers: [.command, .shift])
             .disabled(!canEditDocument)
 
-            Button((resolvedViewModel?.isRedactionBarVisible ?? false) ? "Hide Redact Toolbar" : "Show Redact Toolbar") {
+            Button(coordinator.activeViewState.isRedactionBarVisible ? "Hide Redact Toolbar" : "Show Redact Toolbar") {
                 resolvedViewModel?.toggleRedactionBar()
             }
             .keyboardShortcut("r", modifiers: [.command, .option])
@@ -812,7 +812,7 @@ struct VectorPDF: App {
                 .disabled(resolvedViewModel?.pageGuides.isEmpty ?? true)
             }
 
-            Button((resolvedViewModel?.isInspectorVisible ?? false) ? "Hide Inspector" : "Show Inspector") {
+            Button(coordinator.activeViewState.isInspectorVisible ? "Hide Inspector" : "Show Inspector") {
                 resolvedViewModel?.toggleInspector()
             }
             .keyboardShortcut("i", modifiers: [.command, .control])
@@ -852,13 +852,13 @@ struct VectorPDF: App {
 
             Divider()
 
-            Button((resolvedViewModel?.isTwoPageMode ?? false) ? "Single Page" : "Two Pages") {
+            Button(coordinator.activeViewState.isTwoPageMode ? "Single Page" : "Two Pages") {
                 resolvedViewModel?.toggleTwoPageMode()
             }
             .keyboardShortcut("2", modifiers: [.command, .option])
             .disabled(!hasDocument)
 
-            Button((resolvedViewModel?.isHorizontalScrolling ?? false) ? "Vertical Scrolling" : "Horizontal Scrolling") {
+            Button(coordinator.activeViewState.isHorizontalScrolling ? "Vertical Scrolling" : "Horizontal Scrolling") {
                 resolvedViewModel?.toggleHorizontalScrolling()
             }
             .disabled(!hasDocument || (resolvedViewModel?.isComparePane ?? false))

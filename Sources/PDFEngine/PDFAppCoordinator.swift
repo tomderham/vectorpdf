@@ -111,6 +111,9 @@ public final class PDFViewerAppCoordinator: ObservableObject {
     /// Whether the active document is a PDF with scanned pages, for File > Save with Recognized Text.
     @Published public var canSaveActiveRecognizedText: Bool = false
     @Published public var isSpeaking: Bool = false
+    /// The active document's view settings that View menu items are named for ("Hide Markup
+    /// Toolbar", "Single Page"), so the menu follows changes made from the toolbar.
+    @Published public private(set) var activeViewState = ActiveViewState()
     /// Published live anchors list of the active document, updating SwiftUI Commands immediately.
     @Published public var activeAnchors: [SnapshotTarget] = []
     /// Bumped whenever a document is opened to signal SwiftUI Commands to refresh recent documents.
@@ -482,6 +485,10 @@ public final class PDFViewerAppCoordinator: ObservableObject {
                 if self.canSaveActiveRecognizedText != vm.canSaveRecognizedText {
                     self.canSaveActiveRecognizedText = vm.canSaveRecognizedText
                 }
+                let viewState = ActiveViewState(vm)
+                if self.activeViewState != viewState {
+                    self.activeViewState = viewState
+                }
             }
     }
 
@@ -501,6 +508,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
         self.hasActiveSelection = (activeViewModel?.activeSelection != nil)
         self.hasActiveLayers = !(activeViewModel?.annotationLayers.isEmpty ?? true)
         self.canSaveActiveRecognizedText = activeViewModel?.canSaveRecognizedText ?? false
+        self.activeViewState = activeViewModel.map(ActiveViewState.init) ?? ActiveViewState()
     }
 
     // MARK: - Document View Model Registry
@@ -1139,3 +1147,24 @@ public final class FavoritesManager: ObservableObject {
     }
 }
 
+/// The view settings of the active document that View menu items are named for.
+public struct ActiveViewState: Equatable, Sendable {
+    public var isMarkupBarVisible = false
+    public var isMeasurementBarVisible = false
+    public var isRedactionBarVisible = false
+    public var isInspectorVisible = false
+    public var isTwoPageMode = false
+    public var isHorizontalScrolling = false
+
+    public init() {}
+
+    @MainActor
+    init(_ viewModel: PDFViewerViewModel) {
+        isMarkupBarVisible = viewModel.isMarkupBarVisible
+        isMeasurementBarVisible = viewModel.isMeasurementBarVisible
+        isRedactionBarVisible = viewModel.isRedactionBarVisible
+        isInspectorVisible = viewModel.isInspectorVisible
+        isTwoPageMode = viewModel.isTwoPageMode
+        isHorizontalScrolling = viewModel.isHorizontalScrolling
+    }
+}

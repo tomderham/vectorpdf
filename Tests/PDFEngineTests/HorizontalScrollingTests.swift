@@ -51,18 +51,35 @@ import Testing
         #expect(vm.currentPageIndex == 3)
     }
 
-    @Test func withTwoPagesItTurnsASpreadAtATime() async {
+    @Test func itAndTwoPageModeReplaceEachOther() async {
         let (vm, url) = await open(pages: 6)
         defer { try? FileManager.default.removeItem(at: url) }
+        #expect(vm.isSidebarVisible)
         vm.toggleTwoPageMode()
+        #expect(!vm.isSidebarVisible)
+        // Turning it on ends Two-Page Mode, bringing the sidebar back.
         vm.toggleHorizontalScrolling()
-        #expect(vm.pageLayout == PageLayout(pageBounds: vm.document!.pageBounds, rotation: 0, arrangement: .spreads, direction: .horizontal))
-        vm.nextPage()
-        #expect(vm.currentPageIndex == 1)
-        vm.nextPage()
-        #expect(vm.currentPageIndex == 3)
-        vm.previousPage()
-        #expect(vm.currentPageIndex == 1)
+        #expect(vm.isHorizontalScrolling && !vm.isTwoPageMode)
+        #expect(vm.isSidebarVisible)
+        #expect(vm.pageLayout.arrangement == .singlePages && vm.pageLayout.direction == .horizontal)
+        // And Two-Page Mode ends it.
+        vm.toggleTwoPageMode()
+        #expect(vm.isTwoPageMode && !vm.isHorizontalScrolling)
+        #expect(vm.pageLayout.arrangement == .spreads && vm.pageLayout.direction == .vertical)
+    }
+
+    /// The View menu's items are named from this, which the app coordinator keeps for the active
+    /// document. (The coordinator is shared with tests running alongside, so it isn't checked here.)
+    @Test func theViewMenuIsNamedForTheDocumentsLayout() async {
+        let (vm, url) = await open(pages: 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(ActiveViewState(vm) == ActiveViewState())
+        vm.toggleHorizontalScrolling()
+        vm.isMarkupBarVisible = true
+        var expected = ActiveViewState()
+        expected.isHorizontalScrolling = true
+        expected.isMarkupBarVisible = true
+        #expect(ActiveViewState(vm) == expected)
     }
 
     @Test func rotatingKeepsThePagesAcross() async {

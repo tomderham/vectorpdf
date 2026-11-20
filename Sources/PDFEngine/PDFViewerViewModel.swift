@@ -203,7 +203,9 @@ public final class PDFViewerViewModel: ObservableObject {
         if isTwoPageMode {
             leaveTwoPageMode()
         } else {
-            // A spread needs the window's width; the sidebar comes back after.
+            // A spread needs the window's width; the sidebar comes back after. Spreads run down
+            // the window: they replace Horizontal Scrolling.
+            isHorizontalScrolling = false
             isTwoPageMode = true
             sidebarVisibleBeforeTwoPage = isSidebarVisible
             isSidebarVisible = false
@@ -217,10 +219,12 @@ public final class PDFViewerViewModel: ObservableObject {
     }
 
     /// Lays pages out across the window, or back down it, and fits their height to the window
-    /// when they go across. Not in a Compare Documents pane, which scrolls with the other pane.
+    /// when they go across. It replaces Two-Page Mode. Not in a Compare Documents pane, which
+    /// scrolls with the other pane.
     public func toggleHorizontalScrolling() {
         guard !isComparePane else { return }
         let savedPage = currentPageIndex
+        if !isHorizontalScrolling { leaveTwoPageMode() }
         isHorizontalScrolling.toggle()
         recomputeEffectiveLayout()
         currentPageIndex = savedPage
