@@ -474,6 +474,7 @@ extension PDFCanvasView {
     @objc private func inspectAction(_ sender: NSMenuItem) {
         guard let (pageIdx, _, pagePoint) = pageInfo(at: lastContextMenuLocation) else { return }
         viewModel.isInspectorVisible = true
+        viewModel.rightColumnPane = .inspector
         viewModel.inspectContent(pageIndex: pageIdx, at: pagePoint)
     }
 

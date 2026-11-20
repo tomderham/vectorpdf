@@ -61,7 +61,7 @@ extension PDFViewerViewModel {
         let sections = document?.outlineSections ?? OutlineSections(outline: [])
         var groups: [SearchSectionGroup] = []
         for match in searchResults {
-            let section = sections.isEmpty ? nil : sections.section(page: match.pageIndex, y: match.highlightQuads.isEmpty ? nil : match.boundingRect.midY)
+            let section = sections.isEmpty ? nil : Self.section(of: match, in: sections)
             if groups.isEmpty || groups[groups.count - 1].section != section {
                 groups.append(SearchSectionGroup(section: section, pages: []))
             }
@@ -73,6 +73,35 @@ extension PDFViewerViewModel {
             }
         }
         return groups
+    }
+
+    /// The outline section a result is in, by where on its page it is.
+    static func section(of match: SearchResult, in sections: OutlineSections) -> OutlineSections.Section? {
+        sections.section(page: match.pageIndex, y: match.highlightQuads.isEmpty ? nil : match.boundingRect.midY)
+    }
+
+    /// How many results each outline entry's own section holds, by entry, for the outline to
+    /// mark beside Search on the right; the same sections the results list is grouped by. Kept
+    /// until the results or the outline change, since results stream in and the view asks often.
+    public var searchHitsBySection: [UUID: Int] {
+        guard let doc = document, !searchResults.isEmpty, !doc.outlineSections.isEmpty else { return [:] }
+        let key = SearchHitsKey(document: ObjectIdentifier(doc), outlineRevision: outlineRevision, pagesVersion: thumbnailVersion, count: searchResults.count,
+                                first: searchResults.first?.id, last: searchResults.last?.id)
+        if let cached = searchHitsCache, cached.key == key { return cached.hits }
+        var hits: [UUID: Int] = [:]
+        for match in searchResults {
+            if let section = Self.section(of: match, in: doc.outlineSections) {
+                hits[section.nodeId, default: 0] += 1
+            }
+        }
+        searchHitsCache = (key, hits)
+        return hits
+    }
+
+    /// The outline entry whose section holds the current result.
+    public var activeSearchSectionId: UUID? {
+        guard let doc = document, activeSearchMatchIndex < searchResults.count else { return nil }
+        return Self.section(of: searchResults[activeSearchMatchIndex], in: doc.outlineSections)?.nodeId
     }
 
     public func matches(on pageIndex: Int) -> [SearchResult] {

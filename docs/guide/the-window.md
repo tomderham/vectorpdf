@@ -24,7 +24,7 @@ See [Zoom, rotate and page layout](zoom-and-layout.md) for more about these cont
 The tabs at the top of the sidebar switch between:
 
 - **Outline & Thumbnails:** the [table of contents, or a thumbnail of each page](outline-and-thumbnails.md).
-- **Search:** [results for the current document](search.md).
+- **Search:** [results for the current document](search.md). You can move Search to the right side of the window, to see it [beside the outline](search.md#see-results-beside-the-outline).
 - **Anchors:** [the places you've saved](anchors.md).
 - **Document:** what the document holds besides its pages: its [layers](layers.md), [attachments](attachments.md), [digital signatures](digital-signatures.md), and, if you turn them on in Settings, its [form fields, links and destinations](document-tab.md). Choose which from the menu at the top of the tab. This tab appears only when the document has at least one of these.
 - **Comments:** [every annotation, with its replies and status](draw-and-notes.md#see-all-annotations).

@@ -45,6 +45,35 @@ struct InspectorView: View {
     }
 }
 
+/// The column on the window's right: the Inspector, Search when the document keeps it there, or
+/// both, with a control to switch between them.
+struct RightColumnView: View {
+    @ObservedObject var viewModel: PDFViewerViewModel
+    /// Moves Search back to the sidebar.
+    let moveSearchToSidebar: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if viewModel.isRightColumnShared {
+                Picker("Show", selection: $viewModel.rightColumnPane) {
+                    Text("Search").tag(RightColumnPane.search)
+                    Text("Inspector").tag(RightColumnPane.inspector)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 10)
+                .frame(height: 36)
+                Divider()
+            }
+            if viewModel.isRightSearchOnScreen {
+                SearchSidebarView(viewModel: viewModel, moveToOtherSide: moveSearchToSidebar)
+            } else {
+                InspectorView(viewModel: viewModel)
+            }
+        }
+    }
+}
+
 /// A heading and rows of label and value.
 struct InspectorSection<Content: View>: View {
     let title: String

@@ -302,9 +302,14 @@ public struct PDFViewerMainView: View {
                     StatusBarView(viewModel: viewModel)
                 }
             }
-            .inspector(isPresented: $viewModel.isInspectorVisible) {
-                InspectorView(viewModel: viewModel)
-                    .inspectorColumnWidth(min: 220, ideal: 260, max: 380)
+            .inspector(isPresented: Binding(
+                get: { viewModel.isRightColumnShown },
+                set: { if !$0 { viewModel.closeRightColumn() } }
+            )) {
+                RightColumnView(viewModel: viewModel) {
+                    moveSearch(toRight: false)
+                }
+                .inspectorColumnWidth(min: 220, ideal: 260, max: 420)
             }
             .toolbarBackground(Color(nsColor: .topWindowBarColor), for: .windowToolbar)
             .toolbarBackground(.visible, for: .windowToolbar)
@@ -663,6 +668,10 @@ public struct PDFViewerMainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .focusSearchCommand)) { _ in
             guard viewModel.currentWindow?.isKeyWindow == true || viewModel.currentWindow == nil else { return }
+            if viewModel.isSearchOnRight {
+                viewModel.showRightSearch()
+                return
+            }
             sidebarVisibility = .all
             viewModel.isSidebarVisible = true
             selectedSidebarTab = 1
@@ -766,10 +775,12 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(0)
                             .help("Outline & Thumbnails")
-                        Image(systemName: "magnifyingglass")
-                            .imageScale(.medium)
-                            .tag(1)
-                            .help("Search Document (Cmd+F)")
+                        if !viewModel.isSearchOnRight {
+                            Image(systemName: "magnifyingglass")
+                                .imageScale(.medium)
+                                .tag(1)
+                                .help("Search Document (Cmd+F)")
+                        }
                         if viewModel.compareSession != nil {
                             Image(systemName: "plus.forwardslash.minus")
                                 .imageScale(.medium)
@@ -804,12 +815,12 @@ public struct PDFViewerMainView: View {
                     .pickerStyle(.segmented)
                     .controlSize(.regular)
                     .segmentedControlTooltips(viewModel.compareSession != nil
-                        ? ["Outline & Thumbnails of the Revised Document", "Search the Revised Document (Cmd+F)", "Changes"]
-                        : [
-                        "Outline & Thumbnails",
-                        "Search Document (Cmd+F)",
-                        "Anchors"
-                    ] + (viewModel.documentSidebarSections.isEmpty ? [] : [documentTabTooltip])
+                        ? ["Outline & Thumbnails of the Revised Document"]
+                          + (viewModel.isSearchOnRight ? [] : ["Search the Revised Document (Cmd+F)"]) + ["Changes"]
+                        : ["Outline & Thumbnails"]
+                          + (viewModel.isSearchOnRight ? [] : ["Search Document (Cmd+F)"])
+                          + ["Anchors"]
+                          + (viewModel.documentSidebarSections.isEmpty ? [] : [documentTabTooltip])
                       + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
                       + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
                     .onChange(of: selectedSidebarTab) { _, newValue in
@@ -835,13 +846,20 @@ public struct PDFViewerMainView: View {
                             selectedSidebarTab = 0
                         }
                     }
+                    .onChange(of: viewModel.isSearchOnRight) { _, isOnRight in
+                        // Another document opened that keeps Search on the right.
+                        if isOnRight && selectedSidebarTab == 1 {
+                            selectedSidebarTab = 0
+                        }
+                    }
                     .onChange(of: appCoordinator.showAgentTab) { _, stillShown in
                         // Fall back to Table of Contents if selected sidebar tab becomes unavailable.
                         if !stillShown && selectedSidebarTab == 3 {
                             selectedSidebarTab = 0
                         }
                     }
-                    .id(sidebarModePickerRenderKey)
+                    // Rebuilt when Search moves, so the segments' images and tooltips match.
+                    .id("\(sidebarModePickerRenderKey)-\(viewModel.isSearchOnRight)")
                     .onAppear {
                         guard !hasScheduledSidebarModePickerRebuild else { return }
                         hasScheduledSidebarModePickerRebuild = true
@@ -920,6 +938,9 @@ public struct PDFViewerMainView: View {
                                         searchQuery: tocSearchQuery,
                                         currentPage: viewModel.currentPageIndex,
                                         readingSection: viewModel.readingSection,
+                                        // Marked only while the results show beside the outline.
+                                        searchHits: viewModel.isRightSearchOnScreen ? viewModel.searchHitsBySection : [:],
+                                        activeSearchSection: viewModel.isRightSearchOnScreen ? viewModel.activeSearchSectionId : nil,
                                         viewModel: viewModel
                                     ) { node in
                                         viewModel.jumpToOutlineEntry(node)
@@ -937,7 +958,9 @@ public struct PDFViewerMainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 } else if selectedSidebarTab == 1 {
-                    SearchSidebarView(viewModel: viewModel)
+                    SearchSidebarView(viewModel: viewModel) {
+                        moveSearch(toRight: true)
+                    }
                 } else if selectedSidebarTab == 2 {
                     // Anchors Tab
                     VStack(spacing: 0) {
@@ -1305,6 +1328,19 @@ public struct PDFViewerMainView: View {
         case .attachments:
             viewModel.documentSidebarSection = .attachments
             selectedSidebarTab = 5
+        }
+    }
+
+    /// Moves Search between the sidebar and the column on the window's right. Moving it right
+    /// leaves the sidebar open on the outline, or the thumbnails when there's no outline, so the
+    /// two show together; moving it back opens the sidebar on Search.
+    private func moveSearch(toRight: Bool) {
+        viewModel.moveSearch(toRight: toRight)
+        if toRight {
+            if selectedSidebarTab == 1 { selectedSidebarTab = 0 }
+        } else {
+            selectedSidebarTab = 1
+            viewModel.isSidebarVisible = true
         }
     }
 

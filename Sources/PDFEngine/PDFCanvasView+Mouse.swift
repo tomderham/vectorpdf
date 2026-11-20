@@ -51,7 +51,7 @@ extension PDFCanvasView {
         }
 
         // With the Inspector open, a click in Select mode shows what the page draws there.
-        if viewModel.isInspectorVisible, viewModel.canvasMode == .select, let (pageIdx, _, pagePoint) = pageInfo(at: point) {
+        if viewModel.isInspectorOnScreen, viewModel.canvasMode == .select, let (pageIdx, _, pagePoint) = pageInfo(at: point) {
             viewModel.inspectContent(pageIndex: pageIdx, at: pagePoint)
         }
 

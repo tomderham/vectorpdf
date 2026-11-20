@@ -200,9 +200,13 @@ extension PDFAnnotation {
 }
 
 extension PDFViewerViewModel {
-    /// Shows or hides the Inspector.
+    /// Shows or hides the Inspector. With Search in front of it on the right, brings it forward.
     public func toggleInspector() {
-        isInspectorVisible.toggle()
+        if isInspectorVisible && !isInspectorOnScreen {
+            rightColumnPane = .inspector
+        } else {
+            isInspectorVisible.toggle()
+        }
     }
 
     /// Looks at what the page draws at `point`, for the Inspector, off the main thread.

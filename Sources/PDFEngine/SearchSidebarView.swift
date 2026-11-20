@@ -18,9 +18,12 @@
 import SwiftUI
 
 /// The Search tab: the search field, OCR notices, the result count with previous and next, and
-/// the results by outline section and page.
+/// the results by outline section and page. It shows in the sidebar, or in the column on the
+/// window's right when the document keeps Search there (see PDFViewerViewModel.isSearchOnRight).
 struct SearchSidebarView: View {
     @ObservedObject var viewModel: PDFViewerViewModel
+    /// Moves Search to the other side of the window.
+    let moveToOtherSide: () -> Void
     /// The search results list, which takes keyboard focus when a result is clicked so the arrow
     /// keys step through results instead of moving the cursor in the search field.
     @FocusState private var isSearchResultsFocused: Bool
@@ -55,6 +58,23 @@ struct SearchSidebarView: View {
                 }
 
                 SearchOptionsMenu(viewModel: viewModel)
+
+                Button(action: moveToOtherSide) {
+                    Image(systemName: viewModel.isSearchOnRight ? "sidebar.left" : "sidebar.right")
+                }
+                .buttonStyle(.borderless)
+                .help(viewModel.isSearchOnRight ? "Move Search to the Sidebar" : "Move Search to the Right, Beside the Contents")
+
+                if viewModel.isSearchOnRight {
+                    // The right column has no button of its own to close it, as the sidebar has.
+                    Button {
+                        viewModel.closeRightSearch()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Hide Search (⌘F shows it again)")
+                }
             }
             .padding(.horizontal, 8)
             .padding(.top, 4)

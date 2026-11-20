@@ -1,10 +1,10 @@
-<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
+<!-- keywords: search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, right side, beside the outline, move search, PDF -->
 
 # Search a document
 
 ## Find text
 
-1. Press ⌘F. VectorPDF shows the Search tab in the sidebar.
+1. Press ⌘F. VectorPDF shows the Search tab in the sidebar, or on the right of the window if you've [moved it there](#see-results-beside-the-outline).
 2. Type what you're looking for. Results appear as they're found, starting from the page you're on.
 
 Results are listed by page, each with the text around it, and every match is highlighted in the document. In a document with an [outline](outline-and-thumbnails.md), results are also grouped by the section they're in. The section's name stays at the top of the list while you scroll through its results. To see which larger sections it's part of, hold the pointer over it.
@@ -19,6 +19,14 @@ Results are listed by page, each with the text around it, and every match is hig
 | Step through the list | Click a result, then press the arrow keys |
 
 Right-click a result to [create an anchor](anchors.md) from it, or to open it in a new window.
+
+## See results beside the outline
+
+To see the results and the outline at the same time, click the move button (a sidebar icon) at the right of the search field. Search moves to the right side of the window and the sidebar shows the outline, or the page thumbnails if the document has no outline. Each outline entry with results shows how many it has, and the count for the section with the current result is highlighted. A section with its subsections hidden counts the results in them too.
+
+Each document remembers which side you put Search on. To put it back in the sidebar, click the move button again. To hide it while it's on the right, click the close button (×) beside it; press ⌘F to show it again.
+
+Search shares the right side with the [Inspector](rulers-and-inspector.md#the-inspector). When both are open, switch between them with the Search and Inspector buttons at the top.
 
 ## Search again for something you searched before
 

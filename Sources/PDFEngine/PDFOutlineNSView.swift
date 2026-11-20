@@ -27,6 +27,11 @@ public struct PDFOutlineNSView: NSViewRepresentable {
     let currentPage: Int
     /// The section under the reading line, which is followed in preference to the page alone.
     let readingSection: PDFViewerViewModel.ReadingSection?
+    /// How many search results each entry's own section holds, to mark beside the entries while
+    /// Search shows beside the outline; empty otherwise.
+    let searchHits: [UUID: Int]
+    /// The entry whose section holds the current search result.
+    let activeSearchSection: UUID?
     let viewModel: PDFViewerViewModel?
     let onSelect: (PDFOutlineNode) -> Void
 
@@ -36,6 +41,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         searchQuery: String = "",
         currentPage: Int = 0,
         readingSection: PDFViewerViewModel.ReadingSection? = nil,
+        searchHits: [UUID: Int] = [:],
+        activeSearchSection: UUID? = nil,
         viewModel: PDFViewerViewModel? = nil,
         onSelect: @escaping (PDFOutlineNode) -> Void
     ) {
@@ -44,10 +51,27 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         self.searchQuery = searchQuery
         self.currentPage = currentPage
         self.readingSection = readingSection
+        self.searchHits = searchHits
+        self.activeSearchSection = activeSearchSection
         self.viewModel = viewModel
         self.onSelect = onSelect
     }
     
+    /// The search results an entry's row shows: its own section's when it's open or has nothing
+    /// in it, and when it's closed, those of the entries in it too.
+    nonisolated static func searchMark(for node: PDFOutlineNode, isOpen: Bool, hits: [UUID: Int], activeSection: UUID?) -> (count: Int, holdsActive: Bool) {
+        if isOpen { return (hits[node.id] ?? 0, node.id == activeSection) }
+        var count = 0
+        var holdsActive = false
+        func add(_ entry: PDFOutlineNode) {
+            count += hits[entry.id] ?? 0
+            if entry.id == activeSection { holdsActive = true }
+            entry.children.forEach(add)
+        }
+        add(node)
+        return (count, holdsActive)
+    }
+
     public func makeCoordinator() -> Coordinator {
         Coordinator(viewModel: viewModel, onSelect: onSelect)
     }
@@ -104,6 +128,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             currentPage: currentPage,
             readingSection: readingSection
         )
+        context.coordinator.updateSearchHits(searchHits, activeSection: activeSearchSection)
 
         return scrollView
     }
@@ -118,6 +143,7 @@ public struct PDFOutlineNSView: NSViewRepresentable {
             currentPage: currentPage,
             readingSection: readingSection
         )
+        context.coordinator.updateSearchHits(searchHits, activeSection: activeSearchSection)
     }
 
     /// The outline leaves the sidebar when another tab or Thumbnails is chosen; what's open in it is kept.
@@ -144,6 +170,9 @@ public struct PDFOutlineNSView: NSViewRepresentable {
         private var searchWorkItem: DispatchWorkItem?
         /// What was open before the outline was searched, to open again when the search is cleared.
         private var openBeforeSearch: OutlineOpenEntries?
+        /// Search results by the entry whose own section holds them (see PDFOutlineNSView.searchHits).
+        private var searchHits: [UUID: Int] = [:]
+        private var activeSearchSection: UUID?
 
         init(viewModel: PDFViewerViewModel?, onSelect: @escaping (PDFOutlineNode) -> Void) {
             self.viewModel = viewModel
@@ -212,6 +241,33 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 }
             } else if pageChanged || sectionChanged {
                 refreshActiveIndicators(scrollToVisible: true)
+            }
+        }
+
+        /// Marks the entries holding search results, on the rows on screen; rows made later are
+        /// marked as they're made.
+        func updateSearchHits(_ hits: [UUID: Int], activeSection: UUID?) {
+            guard hits != searchHits || activeSection != activeSearchSection else { return }
+            searchHits = hits
+            activeSearchSection = activeSection
+            refreshSearchMarks()
+        }
+
+        /// The results an entry's row counts: its own section's, and while it's closed, those of
+        /// the entries in it too, so results in a closed chapter aren't missed.
+        private func searchMark(for wrapper: OutlineItemWrapper, in outlineView: NSOutlineView) -> (count: Int, holdsActive: Bool) {
+            guard !searchHits.isEmpty else { return (0, false) }
+            return PDFOutlineNSView.searchMark(for: wrapper.node, isOpen: wrapper.children.isEmpty || outlineView.isItemExpanded(wrapper),
+                                               hits: searchHits, activeSection: activeSearchSection)
+        }
+
+        private func refreshSearchMarks() {
+            guard let outlineView else { return }
+            for row in 0..<outlineView.numberOfRows {
+                guard let cellView = outlineView.view(atColumn: 0, row: row, makeIfNecessary: false) as? OutlineCellView,
+                      let wrapper = outlineView.item(atRow: row) as? OutlineItemWrapper else { continue }
+                let mark = searchMark(for: wrapper, in: outlineView)
+                cellView.setSearchHits(mark.count, holdsActive: mark.holdsActive)
             }
         }
 
@@ -440,6 +496,8 @@ public struct PDFOutlineNSView: NSViewRepresentable {
                 isActive: isActive,
                 isRowSelected: isSelected
             )
+            let mark = searchMark(for: wrapper, in: outlineView)
+            cell?.setSearchHits(mark.count, holdsActive: mark.holdsActive)
             
             return cell
         }
@@ -465,10 +523,12 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 
         public func outlineViewItemDidExpand(_ notification: Notification) {
             refreshActiveIndicators()
+            refreshSearchMarks()
         }
 
         public func outlineViewItemDidCollapse(_ notification: Notification) {
             refreshActiveIndicators()
+            refreshSearchMarks()
         }
         
         @objc func onOutlineClick(_ sender: NSOutlineView) {
@@ -631,9 +691,16 @@ public struct PDFOutlineNSView: NSViewRepresentable {
 final class OutlineCellView: NSTableCellView {
     let indicatorBar = NSView()
     let backgroundPill = NSView()
+    /// How many search results the entry holds, at the row's end, as Mail counts unread mail.
+    let searchBadge = NSTextField(labelWithString: "")
 
     private(set) var isActive: Bool = false
     private(set) var isRowSelected: Bool = false
+    private(set) var searchHitCount = 0
+    /// The entry holds the current search result.
+    private(set) var holdsActiveSearchHit = false
+    private var titleToBadge: NSLayoutConstraint?
+    private var titleToEdge: NSLayoutConstraint?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -667,7 +734,26 @@ final class OutlineCellView: NSTableCellView {
         addSubview(tf)
         self.textField = tf
 
+        searchBadge.font = NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .semibold)
+        searchBadge.alignment = .center
+        searchBadge.wantsLayer = true
+        searchBadge.layer?.cornerRadius = 7
+        searchBadge.layer?.masksToBounds = true
+        searchBadge.translatesAutoresizingMaskIntoConstraints = false
+        searchBadge.setContentCompressionResistancePriority(.required, for: .horizontal)
+        searchBadge.setContentHuggingPriority(.required, for: .horizontal)
+        searchBadge.isHidden = true
+        addSubview(searchBadge)
+        titleToBadge = tf.trailingAnchor.constraint(equalTo: searchBadge.leadingAnchor, constant: -4)
+        titleToEdge = tf.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
+        titleToEdge?.isActive = true
+
         NSLayoutConstraint.activate([
+            searchBadge.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            searchBadge.centerYAnchor.constraint(equalTo: centerYAnchor),
+            searchBadge.heightAnchor.constraint(equalToConstant: 14),
+            searchBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 18),
+
             backgroundPill.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 1),
             backgroundPill.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -1),
             backgroundPill.topAnchor.constraint(equalTo: topAnchor, constant: 1),
@@ -679,7 +765,6 @@ final class OutlineCellView: NSTableCellView {
             indicatorBar.heightAnchor.constraint(equalToConstant: 14),
 
             tf.leadingAnchor.constraint(equalTo: indicatorBar.trailingAnchor, constant: 5),
-            tf.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             tf.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
 
@@ -706,6 +791,20 @@ final class OutlineCellView: NSTableCellView {
         updateAppearance()
     }
 
+    /// Shows how many search results the entry holds, or nothing for none.
+    func setSearchHits(_ count: Int, holdsActive: Bool) {
+        guard count != searchHitCount || holdsActive != holdsActiveSearchHit else { return }
+        searchHitCount = count
+        holdsActiveSearchHit = holdsActive
+        // Padded with thin spaces: a label has no insets of its own.
+        searchBadge.stringValue = count > 0 ? "\u{2009}\(count)\u{2009}" : ""
+        searchBadge.isHidden = count == 0
+        titleToEdge?.isActive = count == 0
+        titleToBadge?.isActive = count > 0
+        toolTip = count == 0 ? nil : count == 1 ? "1 search result" : "\(count) search results"
+        updateAppearance()
+    }
+
     private func updateAppearance() {
         if isActive {
             indicatorBar.isHidden = false
@@ -722,6 +821,17 @@ final class OutlineCellView: NSTableCellView {
             indicatorBar.isHidden = true
             backgroundPill.layer?.backgroundColor = NSColor.clear.cgColor
             textField?.font = NSFont.systemFont(ofSize: 12, weight: .regular)
+        }
+        // The entry with the current result stands out in the accent colour; the others are grey.
+        if isRowSelected {
+            searchBadge.layer?.backgroundColor = NSColor.white.withAlphaComponent(holdsActiveSearchHit ? 0.9 : 0.3).cgColor
+            searchBadge.textColor = holdsActiveSearchHit ? .controlAccentColor : .white
+        } else if holdsActiveSearchHit {
+            searchBadge.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+            searchBadge.textColor = .white
+        } else {
+            searchBadge.layer?.backgroundColor = NSColor.tertiaryLabelColor.withAlphaComponent(0.18).cgColor
+            searchBadge.textColor = .secondaryLabelColor
         }
     }
 }

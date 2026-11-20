@@ -187,6 +187,8 @@ public final class PDFViewerViewModel: ObservableObject {
 
     /// Whether the sidebar showed before Two-Page Mode hid it, to bring it back after.
     private(set) var sidebarVisibleBeforeTwoPage: Bool?
+    /// Whether Search showed on the right before Two-Page Mode hid it.
+    private var rightSearchShownBeforeTwoPage: Bool?
 
     /// Ends Two-Page Mode, if it's on, bringing the sidebar back as it was.
     private func leaveTwoPageMode() {
@@ -196,6 +198,10 @@ public final class PDFViewerViewModel: ObservableObject {
             isSidebarVisible = wasVisible
         }
         sidebarVisibleBeforeTwoPage = nil
+        if let wasShown = rightSearchShownBeforeTwoPage, isSearchOnRight {
+            isRightSearchShown = wasShown
+        }
+        rightSearchShownBeforeTwoPage = nil
     }
 
     public func toggleTwoPageMode() {
@@ -209,6 +215,8 @@ public final class PDFViewerViewModel: ObservableObject {
             isTwoPageMode = true
             sidebarVisibleBeforeTwoPage = isSidebarVisible
             isSidebarVisible = false
+            rightSearchShownBeforeTwoPage = isRightSearchShown
+            isRightSearchShown = false
             viewRotationDegrees = 0
         }
         recomputeEffectiveLayout()
@@ -399,8 +407,19 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var isInspectorVisible = false {
         didSet {
             if !isInspectorVisible { inspectedContent = nil }
+            // Opening the Inspector brings it to the front of the column it may share with Search.
+            if isInspectorVisible != oldValue { rightColumnPane = isInspectorVisible ? .inspector : .search }
         }
     }
+    /// Whether this document keeps Search in the column on the window's right instead of in the
+    /// sidebar, so the sidebar's outline or thumbnails can show beside it. Kept for the document
+    /// (see `moveSearch(toRight:)`).
+    @Published public internal(set) var isSearchOnRight = false
+    /// Whether Search shows on the right, while the document keeps it there: the column can be
+    /// closed, and Find opens it again.
+    @Published public var isRightSearchShown = false
+    /// Which of Search and the Inspector shows when both are in the right column.
+    @Published public var rightColumnPane: RightColumnPane = .search
     /// What the page draws where it was last clicked, while the Inspector shows.
     @Published public internal(set) var inspectedContent: PageContentInspection?
     /// The annotation selected on the page, for the Inspector.
@@ -525,6 +544,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public internal(set) var searchResultsByPage: [Int: [SearchResult]] = [:]
     @Published public var isSearching: Bool = false
     @Published public var activeSearchMatchIndex: Int = 0
+    /// What `searchHitsBySection` last worked out, and for which results and outline.
+    var searchHitsCache: (key: SearchHitsKey, hits: [UUID: Int])?
     @Published public var activeSearchMatchId: UUID? = nil
     @Published public var searchScrollRevision: Int = 0
     @Published public var activeScrollTargetId: String? = nil
@@ -973,6 +994,7 @@ public final class PDFViewerViewModel: ObservableObject {
             self.sidebarVisibleBeforeTwoPage = isReload ? keptLayout.sidebarBeforeTwoPage : nil
             self.recomputeEffectiveLayout()
             // The sidebar as the user last left it for this document, or as suits the document.
+            let savedReadingState = ReadingStateManager.shared.state(for: actualPath)
             let isShort = doc.pageCount <= Self.shortDocumentPageCount
             let opening = Self.sidebarOpening(
                 pageCount: doc.pageCount,
@@ -981,13 +1003,18 @@ public final class PDFViewerViewModel: ObservableObject {
                 // Only a short document is asked: a long one opens with the sidebar anyway.
                 hasAnnotations: isShort && (0..<doc.pageCount).contains { !doc.annotationThreads(pageIndex: $0).isEmpty },
                 hasAttachments: !self.attachments.isEmpty,
-                savedChoice: isTransientWindow ? nil : ReadingStateManager.shared.state(for: actualPath)?.sidebarVisible
+                savedChoice: isTransientWindow ? nil : savedReadingState?.sidebarVisible
             )
             if isReload {
                 self.isSidebarVisible = keptLayout.isSidebarVisible
             } else {
                 self.sidebarOpeningTab = opening.tab
                 self.isSidebarVisible = opening.isVisible
+                // A document that keeps Search on the right opens with it there.
+                let searchOnRight = !isTransientWindow && savedReadingState?.searchOnRight == true
+                self.isSearchOnRight = searchOnRight
+                self.isRightSearchShown = searchOnRight
+                self.rightSearchShownBeforeTwoPage = nil
             }
 
             // Reset Agent state for newly opened document.

@@ -36,7 +36,7 @@ When **Snap to Guides and Grid** is on in View > Rulers and Grid, the points of 
 
 ## The Inspector
 
-Choose View > Show Inspector (⌃⌘I) to show the Inspector beside the page. You can also right-click the page and choose Inspect.
+Choose View > Show Inspector (⌃⌘I) to show the Inspector beside the page. You can also right-click the page and choose Inspect. If you've [moved Search to the right](search.md#see-results-beside-the-outline), the two share that side: switch between them with the Search and Inspector buttons at the top.
 
 - **Text, images and drawings:** with the Inspector open, click the page in Select mode. The Inspector shows what's drawn there, and the page outlines it:
   - **Text:** the font, its size, the character, its color and color space, and whether the font is in the file. A font that isn't is drawn with a substitute, which may not look the same when printed.

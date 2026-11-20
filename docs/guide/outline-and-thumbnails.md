@@ -11,6 +11,7 @@ The outline is the document's table of contents, if it has one. The section you'
 - **Go to a section:** click it. Its heading is scrolled to near the top of the window, or left where it is if you can already see it.
 - **Show or hide subsections:** click the arrow next to a section.
 - **Find a section:** type in the “Search outline” field. Only matching sections are shown.
+- **See where search results are:** with Search [on the right of the window](search.md#see-results-beside-the-outline), each section shows how many results it has.
 - **Keep a section handy:** right-click it to create an [anchor](anchors.md), or to open it in a new window.
 
 ## Edit the outline

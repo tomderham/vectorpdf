@@ -1163,7 +1163,7 @@ public struct ActiveViewState: Equatable, Sendable {
         isMarkupBarVisible = viewModel.isMarkupBarVisible
         isMeasurementBarVisible = viewModel.isMeasurementBarVisible
         isRedactionBarVisible = viewModel.isRedactionBarVisible
-        isInspectorVisible = viewModel.isInspectorVisible
+        isInspectorVisible = viewModel.isInspectorOnScreen
         isTwoPageMode = viewModel.isTwoPageMode
         isHorizontalScrolling = viewModel.isHorizontalScrolling
     }

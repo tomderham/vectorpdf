@@ -36,6 +36,9 @@ public struct DocumentReadingState: Codable, Equatable, Sendable {
     /// Whether the sidebar was last shown, when the user showed or hid it themselves; nil until
     /// they do, when it's decided by the document (see PDFViewerViewModel.sidebarOpening).
     public var sidebarVisible: Bool?
+    /// Whether Search was last moved to the column on the window's right, so the sidebar can show
+    /// the contents beside it; nil until it's first moved (see PDFViewerViewModel.isSearchOnRight).
+    public var searchOnRight: Bool?
 
     public init(lastPageIndex: Int, zoomScale: CGFloat, snapshots: [SnapshotTarget], canonicalKey: String? = nil, updatedAt: Date? = nil, recentSearches: [String]? = nil) {
         self.lastPageIndex = lastPageIndex
@@ -236,6 +239,7 @@ public final class ReadingStateManager: ObservableObject {
         let searches = recentSearches ?? stored?.recentSearches
         var newState = DocumentReadingState(lastPageIndex: lastPageIndex, zoomScale: zoomScale, snapshots: snapshots, canonicalKey: canonical, updatedAt: Date(), recentSearches: searches?.isEmpty == true ? nil : searches)
         newState.sidebarVisible = stored?.sidebarVisible
+        newState.searchOnRight = stored?.searchOnRight
         store(newState, path: path, canonical: canonical)
     }
 
@@ -246,6 +250,17 @@ public final class ReadingStateManager: ObservableObject {
         var newState = states[canonical] ?? states[path] ?? DocumentReadingState(lastPageIndex: 0, zoomScale: 1, snapshots: [])
         guard newState.sidebarVisible != visible else { return }
         newState.sidebarVisible = visible
+        newState.canonicalKey = canonical
+        newState.updatedAt = Date()
+        store(newState, path: path, canonical: canonical)
+    }
+
+    /// Remembers which side the user moved Search to for a document, keeping the rest of its state.
+    public func setSearchOnRight(_ onRight: Bool, for path: String) {
+        let canonical = CloudStorageHelper.canonicalKey(for: path)
+        var newState = states[canonical] ?? states[path] ?? DocumentReadingState(lastPageIndex: 0, zoomScale: 1, snapshots: [])
+        guard newState.searchOnRight != onRight else { return }
+        newState.searchOnRight = onRight
         newState.canonicalKey = canonical
         newState.updatedAt = Date()
         store(newState, path: path, canonical: canonical)

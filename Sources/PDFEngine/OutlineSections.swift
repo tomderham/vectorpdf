@@ -91,3 +91,14 @@ public struct OutlineSections: Sendable {
         return Section(index: low - 1, nodeId: starts[low - 1].nodeId, path: starts[low - 1].path)
     }
 }
+
+/// The results and outline that search hits by section were counted for.
+struct SearchHitsKey: Equatable {
+    let document: ObjectIdentifier
+    let outlineRevision: Int
+    /// Page edits can move or drop outline entries.
+    let pagesVersion: UUID
+    let count: Int
+    let first: UUID?
+    let last: UUID?
+}

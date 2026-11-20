@@ -155,4 +155,44 @@ struct OutlineSectionTests {
         }
         #expect(checked >= 10, "Only \(checked) headings checked")
     }
+
+    /// A closed entry counts the results in the entries inside it too; an open one only its own.
+    @Test func aClosedEntryCountsTheResultsInsideIt() {
+        let design = outline[2]
+        let hits = [design.id: 1, design.children[0].id: 2, design.children[1].id: 4]
+        let open = PDFOutlineNSView.searchMark(for: design, isOpen: true, hits: hits, activeSection: design.children[1].id)
+        #expect(open.count == 1 && !open.holdsActive)
+        let closed = PDFOutlineNSView.searchMark(for: design, isOpen: false, hits: hits, activeSection: design.children[1].id)
+        #expect(closed.count == 7 && closed.holdsActive)
+        #expect(PDFOutlineNSView.searchMark(for: outline[0], isOpen: false, hits: hits, activeSection: nil).count == 0)
+    }
+
+    /// The outline's counts agree with the sections the results list is grouped by, and follow
+    /// the results as they stream in.
+    @MainActor
+    @Test func searchHitsBySectionMatchTheResultsList() async throws {
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: Fixture.url("nist-tn-2255.pdf").path)
+        let doc = try #require(vm.document)
+        try #require(!doc.outlineSections.isEmpty)
+        vm.searchResults = stride(from: 0, to: doc.pageCount, by: 3).map { result(page: $0, y: 400) }
+
+        var expected: [UUID: Int] = [:]
+        for group in vm.searchSectionGroups {
+            guard let section = group.section else { continue }
+            expected[section.nodeId, default: 0] += group.pages.reduce(0) { $0 + $1.matches.count }
+        }
+        #expect(!expected.isEmpty)
+        #expect(vm.searchHitsBySection == expected)
+
+        // More results arrive: counted again.
+        let last = try #require(vm.searchResults.last)
+        vm.searchResults.append(result(page: last.pageIndex, y: 400))
+        #expect(vm.searchHitsBySection.values.reduce(0, +) == expected.values.reduce(0, +) + 1)
+
+        vm.activeSearchMatchIndex = vm.searchResults.count - 1
+        #expect(vm.activeSearchSectionId == OutlineSections(outline: doc.outline).section(page: last.pageIndex, y: 400)?.nodeId)
+        vm.searchResults = []
+        #expect(vm.searchHitsBySection.isEmpty && vm.activeSearchSectionId == nil)
+    }
 }
