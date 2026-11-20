@@ -178,7 +178,9 @@ struct CloudStorageAndCoordinationTests {
         var later = 0
         let laterWatcher = FileChangeWatcher(path: url.path, onChange: { later += 1 })
         defer { laterWatcher.cancel() }
-        try await Task.sleep(nanoseconds: 1_000_000_000)
+        // However busy the machine: the change arrives, and nothing more after it.
+        for _ in 0..<50 where changes == 0 { try await Task.sleep(nanoseconds: 100_000_000) }
+        try await Task.sleep(nanoseconds: 1_500_000_000)
         #expect(changes == 1)
         #expect(later == 0)
 
