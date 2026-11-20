@@ -6,7 +6,7 @@ Click the Outline & Thumbnails tab at the top of the sidebar, then choose **Outl
 
 ## Outline
 
-The outline is the document's table of contents, if it has one. The section you're reading is highlighted as you scroll.
+The outline is the document's table of contents, if it has one. The section you're reading is highlighted as you scroll. After you go to a search result or follow a link, the section it's in is highlighted, until you scroll again.
 
 - **Go to a section:** click it. Its heading is scrolled to near the top of the window, or left where it is if you can already see it.
 - **Show or hide subsections:** click the arrow next to a section.

@@ -254,4 +254,50 @@ struct OutlineJumpTests {
             #expect(clip.bounds.origin == before, "two pages: \(twoPage)")
         }
     }
+
+    /// Gone to a search result, the ToC shows the section the result is in, not the one at the
+    /// top of the view, until the view is scrolled.
+    @Test(.showsWindows) @MainActor func aSearchResultsSectionIsTheReadingSection() async throws {
+        _ = NSApplication.shared
+        let vm = PDFViewerViewModel()
+        vm.isTransientWindow = true
+        await vm.loadDocument(from: Fixture.url("rfc9457.pdf").path)
+        let doc = try #require(vm.document)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 900), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: PDFVirtualizedScrollView(viewModel: vm))
+        window.makeKeyAndOrderFront(nil)
+        defer { window.orderOut(nil) }
+        try await Task.sleep(for: .milliseconds(300))
+
+        // A section starting well down its page, and a line of it a little below its heading.
+        func entries(_ nodes: [PDFOutlineNode]) -> [PDFOutlineNode] { nodes.flatMap { [$0] + entries($0.children) } }
+        let node = try #require(entries(doc.outline).first { ($0.targetPage ?? 0) > 0 && ($0.targetY ?? 0) > 400 && ($0.targetY ?? 0) < 600 })
+        let page = try #require(node.targetPage)
+        let headingY = try #require(node.targetY)
+        let stext = try #require(doc.loadStructuredPage(for: page))
+        let line = try #require(stext.blocks.flatMap(\.lines).filter { $0.bbox.minY > headingY + 30 }.min { $0.bbox.minY < $1.bbox.minY })
+        let sections = doc.outlineSections
+        #expect(sections.section(page: page, y: line.bbox.midY)?.nodeId == node.id)
+
+        // The whole page shows, its top at the top of the view: the reading line is in an earlier section.
+        vm.setZoom(0.8)
+        vm.jumpToPage(page)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(vm.readingSection != nil && vm.readingSection?.nodeId != node.id)
+
+        let match = SearchResult(pageIndex: page, matchedText: line.text, snippet: line.text, highlightQuads: [PDFQuad(rect: line.bbox)])
+        vm.searchResults = [match]
+        vm.navigateToMatch(at: 0)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(vm.readingSection == PDFViewerViewModel.ReadingSection(page: page, nodeId: node.id))
+
+        // Scrolled back up, the ToC follows the reading line again.
+        let scrollView = try #require(vm.hostScrollView)
+        let clip = scrollView.contentView
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: max(0, clip.bounds.minY - 300)))
+        scrollView.reflectScrolledClipView(clip)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(vm.readingSection?.nodeId != node.id)
+    }
 }

@@ -203,6 +203,11 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         private var isAnimatingPageTurn = false
         /// Counts page turns, so a finished animation only clears `isAnimatingPageTurn` if it was the last.
         private var pageTurnGeneration = 0
+        /// The place last gone to (a search result, a link's destination, a comment), at `y` in
+        /// page space on `page`, and where the view was left showing it. Until the view moves
+        /// from there, the ToC follows that place rather than the reading line: a result shown
+        /// mid-view can be in a later section than the line near the top.
+        private var revealedPlace: (page: Int, y: CGFloat, origin: CGPoint)?
         private var lastViewRotationDegrees: Int = 0
         private var lastSearchMatchIndex: Int = -1
         private var lastScrolledTargetId: String? = nil
@@ -430,11 +435,15 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             targetCanvasRect.size.height = max(targetCanvasRect.height, minimumSize.height)
 
             let origin = ScrollReveal.origin(toShow: targetCanvasRect, in: clipView.bounds, canvasSize: canvasView.bounds.size)
-            guard origin != clipView.bounds.origin else { return }
-            isProgrammaticScroll = true
-            clipView.scroll(to: origin)
-            scrollView.reflectScrolledClipView(clipView)
-            isProgrammaticScroll = false
+            if origin != clipView.bounds.origin {
+                isProgrammaticScroll = true
+                clipView.scroll(to: origin)
+                scrollView.reflectScrolledClipView(clipView)
+                isProgrammaticScroll = false
+            }
+            // Also when the place was on screen already, and the view didn't move.
+            revealedPlace = (pageIdx, pageRect.midY, clipView.bounds.origin)
+            updateReadingLine(onPage: pageIdx, pageY: pageRect.midY)
         }
         
         func handleMagnify(with event: NSEvent) {
@@ -588,12 +597,20 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let canvasSize = canvasView?.bounds.size ?? visible.size
             guard let group = viewModel.pageLayout.leadingGroup(in: visible, zoom: zoom, canvasSize: canvasSize) else { return }
             let activePage = viewModel.currentPage(reading: group)
-            // Also after a programmatic scroll (a ToC or search jump), which sets the page itself.
-            updateReadingLine(onPage: activePage, canvasY: max(visible.minY, PageLayout.topMargin) + 80 * zoom)
-            updateVisiblePageRect(page: activePage)
+            // Still showing the place gone to (the view resized without moving): its page and
+            // section stay current.
+            if let place = revealedPlace, place.origin != visible.origin { revealedPlace = nil }
+            if let place = revealedPlace {
+                updateReadingLine(onPage: place.page, pageY: place.y)
+                updateVisiblePageRect(page: place.page)
+            } else {
+                // Also after a programmatic scroll (a ToC or page jump), which sets the page itself.
+                updateReadingLine(onPage: activePage, canvasY: max(visible.minY, PageLayout.topMargin) + 80 * zoom)
+                updateVisiblePageRect(page: activePage)
+            }
             guard !isProgrammaticScroll, !isAnimatingPageTurn else { return }
             viewModel.currentViewportSize = clipView.bounds.size
-            if activePage != viewModel.currentPageIndex {
+            if revealedPlace == nil, activePage != viewModel.currentPageIndex {
                 lastNavigatedPage = activePage
                 viewModel.currentPageIndex = activePage
                 viewModel.pruneCaches(around: activePage)
@@ -647,13 +664,21 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         /// `canvasY` on page `page`. Outline entries point at places on an upright page, so a
         /// rotated view, or pages laid across the window, leave the ToC to follow the page alone.
         private func updateReadingLine(onPage page: Int, canvasY: CGFloat) {
-            guard viewModel.viewRotationDegrees == 0, viewModel.pageLayout.direction == .vertical,
-                  let geometry = canvasView?.pageGeometry(for: page) else {
+            guard let geometry = canvasView?.pageGeometry(for: page) else {
                 viewModel.clearReadingLine()
                 return
             }
             let point = geometry.pagePoint(forCanvasPoint: CGPoint(x: geometry.frame.midX, y: canvasY))
-            viewModel.updateReadingLine(page: page, y: point.y)
+            updateReadingLine(onPage: page, pageY: point.y)
+        }
+
+        /// Tells the view model which section holds `pageY` (page space, y down) on `page`.
+        private func updateReadingLine(onPage page: Int, pageY: CGFloat) {
+            guard viewModel.viewRotationDegrees == 0, viewModel.pageLayout.direction == .vertical else {
+                viewModel.clearReadingLine()
+                return
+            }
+            viewModel.updateReadingLine(page: page, y: pageY)
         }
     }
 }
