@@ -30,6 +30,7 @@ private let bill = "hr1968-ih.pdf"                                // line-number
 private let rfc = "rfc9457.pdf"                                   // outline, named destinations
 private let nistNote = "nist-tn-2255.pdf"                         // vector plots, Greek and subscripts
 private let ieeeDraft = "ieee-802.11-draft-layout.pdf"            // 802.11 draft layout, scrambled words
+private let tableSample = "table-sample.pdf"                      // ruled table, a block per header cell
 
 /// Page 7 of the bill: 24 numbered lines, body text from x = 178.
 private let billPage = 6
@@ -215,6 +216,31 @@ struct RealDocumentSelectionTests {
         #expect(instruction.text.contains("9-78"))
         #expect(instruction.highlightQuads.allSatisfy { $0.boundingRect.minX > 80 })
         #expect(!instruction.text.split(whereSeparator: \.isWhitespace).contains { ["16", "17", "18"].contains(String($0)) })
+    }
+
+    /// A ruled table's selection runs from the cell it starts in to the one it ends in. Each
+    /// shaded header cell is a text block of its own, and dragging in one used to select the rest.
+    @Test func tableSelectionStaysBetweenItsCells() throws {
+        let page = try page(tableSample, 0)
+        let headers = page.blocks.flatMap(\.lines).filter { $0.bbox.midY < 218 && $0.bbox.minY > 200 }
+        #expect(Set(page.blocks.filter { $0.lines.contains { headers.contains($0) } }.map(\.bbox)).count == 4,
+                "the fixture no longer puts each header cell in a block of its own")
+        for header in headers {
+            let chars = header.characters
+            let selection = selector.selectText(on: page, from: CGPoint(x: chars[1].boundingRect.minX, y: header.bbox.midY),
+                                                to: CGPoint(x: chars[3].boundingRect.maxX, y: header.bbox.midY))
+            #expect(selection.text == String(chars[1...3].map(\.char)), "dragging in \(header.text)")
+            #expect(selection.highlightQuads.count == 1)
+        }
+
+        // From the third header cell to the second row's third cell, in either direction.
+        let value = try #require(headers.first { $0.text.hasPrefix("Value") })
+        let hex = try #require(page.blocks.flatMap(\.lines).first { $0.text.hasPrefix("0x04") })
+        let start = CGPoint(x: value.bbox.minX + 0.5, y: value.bbox.midY), end = CGPoint(x: hex.bbox.maxX, y: hex.bbox.midY)
+        for (a, b) in [(start, end), (end, start)] {
+            let selection = selector.selectText(on: page, from: a, to: b)
+            #expect(collapsed(selection.text) == "Value (Hex) Description Attribute ID 1 0x04")
+        }
     }
 
     /// A bit-field figure's "Bits 1 1 1 …" rows are part of the drawing, not line numbers.

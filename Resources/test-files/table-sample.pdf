@@ -1,0 +1,66 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1111 >>
+stream
+BT /F1 10 Tf 230 604 Td (Table 1. Domain Name attribute) Tj ET
+q 0.85 g 36 574 85 18 re f Q
+BT /F2 9 Tf 41 580 Td (Field) Tj ET
+q 0.85 g 121 574 68 18 re f Q
+BT /F2 9 Tf 126 580 Td (Size \(Octets\)) Tj ET
+q 0.85 g 189 574 58 18 re f Q
+BT /F2 9 Tf 194 580 Td (Value \(Hex\)) Tj ET
+q 0.85 g 247 574 329 18 re f Q
+BT /F2 9 Tf 252 580 Td (Description) Tj ET
+BT /F1 9 Tf 41 562 Td (Attribute ID) Tj ET
+BT /F1 9 Tf 126 562 Td (1) Tj ET
+BT /F1 9 Tf 194 562 Td (0x04) Tj ET
+BT /F1 9 Tf 252 562 Td (Identifies the type of attribute.) Tj ET
+BT /F1 9 Tf 41 544 Td (Length) Tj ET
+BT /F1 9 Tf 126 544 Td (1) Tj ET
+BT /F1 9 Tf 194 544 Td (Variable) Tj ET
+BT /F1 9 Tf 252 544 Td (Length of the following fields in the attribute.) Tj ET
+BT /F1 9 Tf 41 526 Td (Domain Name) Tj ET
+BT /F1 9 Tf 126 526 Td (Variable) Tj ET
+BT /F1 9 Tf 194 526 Td (Variable) Tj ET
+BT /F1 9 Tf 252 526 Td (Domain name of the network.) Tj ET
+36 591.5 540 0.5 re f
+36 573.5 540 0.5 re f
+36 555.5 540 0.5 re f
+36 537.5 540 0.5 re f
+36 519.5 540 0.5 re f
+36 520 0.5 72 re f
+121 520 0.5 72 re f
+189 520 0.5 72 re f
+247 520 0.5 72 re f
+576 520 0.5 72 re f
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000001413 00000 n 
+0000001483 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1558
+%%EOF

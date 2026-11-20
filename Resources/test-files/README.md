@@ -12,6 +12,7 @@ originals except `ieee-802.11-draft-layout.pdf`.
 | `rfc9457.pdf` | Outline, internal links through named destinations | [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.pdf) | IETF Trust Legal Provisions (copied in full, unmodified) |
 | `nist-tn-2255.pdf` | Vector plots in colour, Greek letters and subscripts, outline | [NIST Technical Note 2255](https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.2255.pdf) | US Government work, not subject to copyright in the US |
 | `ieee-802.11-draft-layout.pdf` | IEEE 802.11 draft layout: line numbers 1–65, frame-format tables with a numeric Order column, a bit-field figure | Two pages of an 802.11 draft with every letter replaced (see below) | Words removed; layout only |
+| `table-sample.pdf` | A ruled table with shaded header cells, each a text block of its own | Made with `make_table_sample.py` | Same as VectorPDF |
 | `password-protected-sample.pdf` | Password prompt | Made with `generate_password_protected_pdf.swift` | Same as VectorPDF |
 | `url-link-sample.pdf` | A URI link | Hand-written | Same as VectorPDF |
 | `layer-configurations-sample.pdf` | Three layers and four layer configurations: a named default, one with the layers in another order, one unnamed | Made with `make_layer_configurations_sample.py` | Same as VectorPDF |

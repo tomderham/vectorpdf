@@ -431,8 +431,12 @@ public final class SpatialTextSelector: Sendable {
         // Order endpoints by page geometry (Y, then X) rather than block index.
         let line1 = textBlocks[pos1.blockIndex].lines[pos1.lineIndex]
         let line2 = textBlocks[pos2.blockIndex].lines[pos2.lineIndex]
+        let cell1 = tableCell(of: line1.bbox, in: tables), cell2 = tableCell(of: line2.bbox, in: tables)
+        func precedes(_ a: TableCell, _ b: TableCell) -> Bool { (a.row, a.column) < (b.row, b.column) }
         let pos1IsFirst: Bool
-        if abs(line1.bbox.midY - line2.bbox.midY) > 2 {
+        if let cell1, let cell2, cell1.table == cell2.table, cell1 != cell2 {
+            pos1IsFirst = precedes(cell1, cell2)   // a table reads cell by cell, whatever the lines' heights
+        } else if abs(line1.bbox.midY - line2.bbox.midY) > 2 {
             pos1IsFirst = line1.bbox.midY < line2.bbox.midY
         } else if pos1.blockIndex == pos2.blockIndex && pos1.lineIndex == pos2.lineIndex {
             pos1IsFirst = pos1.charIndex < pos2.charIndex
@@ -502,7 +506,17 @@ public final class SpatialTextSelector: Sendable {
                 }
             }
         }
-        return slices
+
+        // In a ruled table the selection runs from the cell it starts in to the one it ends in,
+        // cell by cell along the rows: a row's other cells, often blocks of their own, are only
+        // selected if they come between.
+        let (firstCell, lastCell) = pos1IsFirst ? (cell1, cell2) : (cell2, cell1)
+        return slices.filter { slice in
+            guard let cell = slice.cell else { return true }
+            if let firstCell, cell.table == firstCell.table, precedes(cell, firstCell) { return false }
+            if let lastCell, cell.table == lastCell.table, precedes(lastCell, cell) { return false }
+            return true
+        }
     }
 
     // MARK: - Rectangular Area Selection
