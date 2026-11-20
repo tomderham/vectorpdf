@@ -36,9 +36,11 @@ To sign, you need a certificate for signing with its private key. Your organizat
 4. If you like, choose under After Signing:
    - **Certify**, if no one has signed the document yet: say which changes keep it valid from now on: form filling, signing and comments; form filling and signing; or none. A certified document shows as certified to everyone who checks it, and later changes it doesn't allow make your signature invalid.
    - **Lock form fields**, for a form: all its fields, or those you choose, become read-only, so they keep the values you signed.
-5. Click **Sign**.
+5. Click **Sign**, then choose where to save the signed document. VectorPDF offers a copy beside the original, named with "(signed)" at the end, and leaves the original unsigned; the signed copy then opens in its place. To sign the original itself, choose it instead and click **Replace**.
 
-Signing saves the document, so if it has unsaved changes, VectorPDF asks to save them first. They become part of what you sign. macOS may ask you to allow VectorPDF to use your certificate's key.
+A signature is made over the document as it's saved, so signing always saves. If the document has unsaved changes, VectorPDF asks to save them first; they become part of what you sign. macOS may ask you to allow VectorPDF to use your certificate's key.
+
+A signature can't be taken back out of a signed file: it's there so that anyone can tell the document hasn't changed since. Signing a copy keeps the unsigned original, to sign again or change.
 
 Unless you lock them or certify the document for less, the signature leaves the document's other form fields as they were, so others can still fill them in, sign too, or add comments without making your signature invalid. Each later signature is added after the earlier ones in the same way.
 

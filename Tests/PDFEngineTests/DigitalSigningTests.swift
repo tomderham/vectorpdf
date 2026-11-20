@@ -316,6 +316,26 @@ struct TestSigner {
         #expect(result.signerName == "Signing Test Person")
     }
 
+    /// Signed to a copy, the original is left as it was, and the copy is what's open.
+    @Test func signingToACopyLeavesTheOriginalAlone() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let signer = try TestSigner(in: dir)
+        let url = dir.appendingPathComponent("Plain.pdf")
+        makeLabelledPDF(at: url, labels: ["One"])
+        let before = try Data(contentsOf: url)
+        #expect(PDFViewerViewModel.signedCopyName(for: url.path) == "Plain (signed).pdf")
+        let copy = dir.appendingPathComponent(PDFViewerViewModel.signedCopyName(for: url.path))
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        let placement = CertificateSignaturePlacement(page: 0, widgetIndex: nil, rect: CGRect(x: 10, y: 10, width: 200, height: 60))
+        #expect(await vm.completeCertificateSignature(placement, with: try signer.identity(), appearance: .init(), saveTo: copy.path))
+        #expect(try Data(contentsOf: url) == before)
+        #expect(vm.document?.filePath == copy.path)
+        await vm.waitForSignatureCheck()
+        #expect(vm.signatureValidations?.first?.isIntact == true)
+    }
+
     /// The signed file is opened once, and then stays open: each reload used to set off another,
     /// until the app ran out of files to open.
     @Test func signingDoesNotKeepReloading() async throws {

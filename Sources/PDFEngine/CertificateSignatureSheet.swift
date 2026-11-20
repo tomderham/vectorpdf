@@ -166,7 +166,7 @@ struct CertificateSignatureSheet: View {
                 }
                 Section {
                 } footer: {
-                    Text("Signing saves the document. Anyone can then check that it hasn't changed since, and who signed it.")
+                    Text("Signing saves the document, as a copy or in place of the original: you choose next. Anyone can then check that it hasn't changed since, and who signed it.")
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -245,6 +245,8 @@ struct CertificateSignatureSheet: View {
 
     private func sign() {
         guard let identity = chosen else { return }
+        // Cancelled, the sheet stays for another try.
+        guard let destination = viewModel.chooseSignedDocumentDestination() else { return }
         isSigning = true
         if identity.id != fileIdentity?.id { lastCertificate = identity.id.base64EncodedString() }
         let appearance = appearance()
@@ -258,6 +260,9 @@ struct CertificateSignatureSheet: View {
         let server = timestampServer.trimmingCharacters(in: .whitespacesAndNewlines)
         let timestamp = addsTimestamp ? URL(string: server).flatMap { $0.scheme?.hasPrefix("http") == true ? TimestampAuthority(url: $0) : nil } : nil
         dismiss()
-        Task { await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance, permissions: permissions, timestamp: timestamp) }
+        Task {
+            await viewModel.completeCertificateSignature(placement, with: identity, appearance: appearance, permissions: permissions,
+                                                         timestamp: timestamp, saveTo: destination)
+        }
     }
 }

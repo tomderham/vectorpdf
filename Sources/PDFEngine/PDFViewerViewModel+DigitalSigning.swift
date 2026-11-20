@@ -17,6 +17,7 @@
 
 import AppKit
 import CoreGraphics
+import UniformTypeIdentifiers
 
 /// Where a signature with a certificate goes: a signature field already in the document, or a
 /// new one at `rect` (page space).
@@ -92,18 +93,43 @@ extension PDFViewerViewModel {
         return !isDocumentEdited
     }
 
-    /// Signs where `placement` says and saves the document, which makes the signature; then opens
-    /// it again from the file. If the signature can't be made, the file is left as it was and
-    /// opened again too, without the unfinished signature. False then.
+    /// The name a signed copy of the document at `path` is offered: "Name (signed).pdf".
+    nonisolated static func signedCopyName(for path: String) -> String {
+        let base = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
+        return "\(base) (signed).pdf"
+    }
+
+    /// Asks where to save the signed document: a copy beside it, as offered, or the document
+    /// itself, chosen in the panel. Nil if cancelled.
+    public func chooseSignedDocumentDestination() -> String? {
+        guard let doc = document else { return nil }
+        let panel = NSSavePanel()
+        panel.title = "Save Signed Document"
+        panel.message = "Save the signed document as a copy, leaving the original unsigned. To sign the original instead, choose it."
+        panel.prompt = "Sign"
+        panel.allowedContentTypes = [.pdf]
+        panel.canCreateDirectories = true
+        panel.directoryURL = URL(fileURLWithPath: doc.filePath).deletingLastPathComponent()
+        panel.nameFieldStringValue = Self.signedCopyName(for: doc.filePath)
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return url.path
+    }
+
+    /// Signs where `placement` says and saves the document to `destination` (the document's own
+    /// file if nil), which makes the signature; then opens what was saved. If the signature can't
+    /// be made, the files are left as they were and the document is opened again from its file,
+    /// without the unfinished signature. False then.
     @discardableResult
     public func completeCertificateSignature(_ placement: CertificateSignaturePlacement, with identity: SigningIdentity,
                                              appearance: PDFDocumentCore.SignatureAppearance,
                                              permissions: PDFDocumentCore.SigningPermissions = .init(),
-                                             timestamp: TimestampAuthority? = nil) async -> Bool {
+                                             timestamp: TimestampAuthority? = nil,
+                                             saveTo destination: String? = nil) async -> Bool {
         certificateSignaturePlacement = nil
         guard let doc = document, canSignWithCertificate else { return false }
         flushPendingFormEdits()
-        let path = doc.filePath
+        let original = doc.filePath
+        let path = destination ?? original
         var failure: String?
         fileChangeWatcher = nil
         do {
@@ -125,7 +151,8 @@ extension PDFViewerViewModel {
         isDocumentEdited = false
         currentWindow?.isDocumentEdited = false
         cleanupWorkingCopy()
-        await loadDocument(from: path, password: currentDocumentPassword)
+        // A signed copy is opened in the document's place, as the document now being worked on.
+        await loadDocument(from: failure == nil ? path : original, password: currentDocumentPassword)
         if let failure {
             showErrorAlert(title: "The Document Couldn't Be Signed", message: failure)
             return false
