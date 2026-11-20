@@ -43,7 +43,7 @@ public final class RecentDocuments {
         defaults: UserDefaults,
         key: String = "RecentDocuments",
         importingFrom systemList: NSDocumentController? = .shared,
-        maximumCount: @escaping () -> Int = RecentDocuments.systemLimit
+        maximumCount: @escaping () -> Int = { RecentDocuments.systemLimit() }
     ) {
         self.defaults = defaults
         self.key = key
@@ -58,10 +58,17 @@ public final class RecentDocuments {
     /// and for this app to 0 (see above).
     nonisolated static let limitKey = "NSRecentDocumentsLimit"
 
-    /// The system-wide limit, read past the app's own 0. 10 when it's never been changed.
-    nonisolated static func systemLimit() -> Int {
-        let global = UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)
-        return (global?[limitKey] as? NSNumber)?.intValue ?? 10
+    /// The system-wide limit: what NSDocumentController reports with the app's own 0 out of the
+    /// way. macOS keeps the setting in its protected recent-items store, not in defaults, so
+    /// AppKit is the only way to read it.
+    static func systemLimit() -> Int {
+        let defaults = UserDefaults.standard
+        guard let own = defaults.object(forKey: limitKey) else {
+            return NSDocumentController.shared.maximumRecentDocumentCount
+        }
+        defaults.removeObject(forKey: limitKey)
+        defer { defaults.set(own, forKey: limitKey) }
+        return NSDocumentController.shared.maximumRecentDocumentCount
     }
 
     /// The files that still exist, most recent first, at most the system's limit.

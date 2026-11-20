@@ -103,7 +103,13 @@ import Testing
         _ = RecentDocuments(defaults: defaults, importingFrom: .shared, maximumCount: { 10 })
         #expect(defaults.object(forKey: RecentDocuments.limitKey) as? Int == 0)
         // Leaves this list its own size, from the system-wide setting.
-        #expect(RecentDocuments.systemLimit() == UserDefaults.standard
-            .persistentDomain(forName: UserDefaults.globalDomain)?[RecentDocuments.limitKey] as? Int ?? 10)
+        let standard = UserDefaults.standard
+        let own = standard.object(forKey: RecentDocuments.limitKey)
+        defer { standard.set(own, forKey: RecentDocuments.limitKey) }
+        standard.removeObject(forKey: RecentDocuments.limitKey)
+        let systemWide = NSDocumentController.shared.maximumRecentDocumentCount
+        standard.set(0, forKey: RecentDocuments.limitKey)
+        #expect(RecentDocuments.systemLimit() == systemWide)
+        #expect(standard.object(forKey: RecentDocuments.limitKey) as? Int == 0)
     }
 }
