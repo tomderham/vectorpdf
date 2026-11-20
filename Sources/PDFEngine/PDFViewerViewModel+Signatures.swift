@@ -59,7 +59,7 @@ extension PDFViewerViewModel {
     public func showCertificate(of signature: PDFSignatureValidation) {
         guard !Self.isRunningTests,
               let trust = SignatureValidator.makeTrust(certificates: signature.certificates,
-                                                       at: signature.timestamp ?? signature.claimedSigningTime,
+                                                       at: signature.timestamp,
                                                        extraAnchors: Self.extraSignatureAnchors) else { return }
         var error: CFError?
         _ = SecTrustEvaluateWithError(trust, &error)

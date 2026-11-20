@@ -338,7 +338,9 @@ public enum SignatureValidator {
         result.signerName = SecCertificateCopySubjectSummary(signer) as String?
         var emails: CFArray?
         if SecCertificateCopyEmailAddresses(signer, &emails) == errSecSuccess { result.signerEmail = (emails as? [String])?.first }
-        result.identity = identity(chain, at: result.timestamp ?? result.claimedSigningTime ?? Date(), extraAnchors: extraAnchors, issuer: &result.issuerName)
+        // At the time a timestamp authority vouches for, else now: the signing time the signature
+        // gives is the signer's own say-so, and would let an expired certificate pass.
+        result.identity = identity(chain, timestamp: result.timestamp, extraAnchors: extraAnchors, issuer: &result.issuerName)
         return result
     }
 
@@ -358,8 +360,8 @@ public enum SignatureValidator {
         return trust
     }
 
-    private static func identity(_ chain: [SecCertificate], at date: Date, extraAnchors: [SecCertificate], issuer: inout String?) -> PDFSignatureValidation.Identity {
-        guard let trust = makeTrust(certificates: chain.map { SecCertificateCopyData($0) as Data }, at: date, extraAnchors: extraAnchors) else {
+    private static func identity(_ chain: [SecCertificate], timestamp: Date?, extraAnchors: [SecCertificate], issuer: inout String?) -> PDFSignatureValidation.Identity {
+        guard let trust = makeTrust(certificates: chain.map { SecCertificateCopyData($0) as Data }, at: timestamp ?? Date(), extraAnchors: extraAnchors) else {
             return .notVerified("The signer's certificate can't be read.")
         }
         var error: CFError?
@@ -371,9 +373,11 @@ public enum SignatureValidator {
         let code = error.map { CFErrorGetCode($0) } ?? 0
         switch OSStatus(code) {
         case errSecCertificateExpired:
-            return .notVerified("The signer's certificate had expired when it was signed.")
+            return .notVerified(timestamp != nil ? "The signer's certificate had expired when it was signed."
+                                : "The signer's certificate has expired, and the signature has no timestamp to show it was signed before then.")
         case errSecCertificateNotValidYet:
-            return .notVerified("The signer's certificate wasn't valid yet when it was signed.")
+            return .notVerified(timestamp != nil ? "The signer's certificate wasn't valid yet when it was signed."
+                                : "The signer's certificate isn't valid yet.")
         case errSecCertificateRevoked:
             return .notVerified("The signer's certificate has been revoked.")
         default:
@@ -390,12 +394,16 @@ public enum SignatureValidator {
         return (subject as Data) == (issuer as Data)
     }
 
+    /// Whether every range is inside a file of `fileLength` bytes (checked without overflowing).
+    static func rangesAreInFile(_ ranges: [(offset: Int64, length: Int64)], fileLength: Int64) -> Bool {
+        ranges.allSatisfy { $0.offset >= 0 && $0.length >= 0 && $0.offset <= fileLength && $0.length <= fileLength - $0.offset }
+    }
+
     /// The bytes the signature covers, in order.
     static func signedBytes(_ data: PDFSignatureData, file: Data) -> Data? {
-        guard !data.byteRanges.isEmpty, !data.hasMoreRanges else { return nil }
+        guard !data.byteRanges.isEmpty, !data.hasMoreRanges, rangesAreInFile(data.byteRanges, fileLength: Int64(file.count)) else { return nil }
         var out = Data()
         for range in data.byteRanges {
-            guard range.offset >= 0, range.length >= 0, range.offset + range.length <= Int64(file.count) else { return nil }
             out.append(file.subdata(in: Int(range.offset)..<Int(range.offset + range.length)))
         }
         return out
@@ -405,11 +413,14 @@ public enum SignatureValidator {
     /// signature itself; if it ends sooner, the file was saved again after signing.
     static func changes(_ data: PDFSignatureData, fileLength: Int64, file: Data) -> PDFSignatureValidation.Changes {
         let ranges = data.byteRanges
-        guard ranges.count == 2, !data.hasMoreRanges, ranges[0].offset == 0 else { return .partialCoverage }
+        guard ranges.count == 2, !data.hasMoreRanges, ranges[0].offset == 0,
+              rangesAreInFile(ranges, fileLength: min(fileLength, Int64(file.count))) else { return .partialCoverage }
         let gapStart = ranges[0].offset + ranges[0].length, gapEnd = ranges[1].offset
-        // The one gap is the signature's hex string, < to >.
-        guard gapEnd > gapStart + 1, gapEnd <= fileLength,
-              file[Int(gapStart)] == UInt8(ascii: "<"), file[Int(gapEnd - 1)] == UInt8(ascii: ">") else { return .partialCoverage }
+        // The one gap is the signature's hex string, < to >, and nothing else: anything else in
+        // it (another object, say) wouldn't be signed.
+        guard gapEnd > gapStart + 1, isSignatureHexString(file[Int(gapStart)..<Int(gapEnd)], contents: data.contents) else {
+            return .partialCoverage
+        }
         let end = ranges[1].offset + ranges[1].length
         if end == fileLength { return .none }
         guard end < fileLength else { return .partialCoverage }
@@ -422,10 +433,38 @@ public enum SignatureValidator {
         return data.laterChangesOnlyComments ? .commentsChanged : .allowed
     }
 
+    /// Whether `gap` is a hex string (< and >, hex digits and white space between) of `contents`.
+    static func isSignatureHexString(_ gap: Data, contents: Data) -> Bool {
+        guard gap.count >= 2, gap.first == UInt8(ascii: "<"), gap.last == UInt8(ascii: ">") else { return false }
+        func value(_ c: UInt8) -> UInt8? {
+            switch c {
+            case UInt8(ascii: "0")...UInt8(ascii: "9"): return c - UInt8(ascii: "0")
+            case UInt8(ascii: "a")...UInt8(ascii: "f"): return c - UInt8(ascii: "a") + 10
+            case UInt8(ascii: "A")...UInt8(ascii: "F"): return c - UInt8(ascii: "A") + 10
+            default: return nil
+            }
+        }
+        var decoded = Data()
+        decoded.reserveCapacity(contents.count)
+        var high: UInt8?
+        for c in gap.dropFirst().dropLast() {
+            if let v = value(c) {
+                if let h = high { decoded.append(h << 4 | v); high = nil } else { high = v }
+            } else if ![0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20].contains(c) {
+                return false
+            }
+        }
+        // An odd last digit is followed by a 0.
+        if let h = high { decoded.append(h << 4) }
+        return decoded == contents
+    }
+
     /// The DER signature without the zeros padding it out to the space left for it.
     static func trimmedDER(_ contents: Data) -> Data? {
         let bytes = [UInt8](contents.prefix(8))
         guard bytes.count >= 2, bytes[0] == 0x30 else { return nil }
+        // BER, of indefinite length (as some software writes it): made DER, which ends it.
+        if bytes[1] == 0x80 { return BERToDER.convert(contents) }
         var length = 0, header = 2
         if bytes[1] < 0x80 {
             length = Int(bytes[1])
@@ -471,9 +510,7 @@ enum Timestamps {
     /// `extraAnchors`) at that time.
     static func verify(token: Data, signatureValue: Data, extraAnchors: [SecCertificate]) -> Result<Date, Problem> {
         // What it signs, its TSTInfo, is inside it; Apple's decoder wants it given as detached.
-        guard let tokenNode = DERNode.parse(token), let signedData = tokenNode.children?.dropFirst().first?.children?.first,
-              let encapsulated = signedData.children?.first(where: { $0.tag == [0x30] && $0.children?.first?.tag == [0x06] }),
-              let tstInfo = encapsulated.children?.dropFirst().first?.children?.first?.content else {
+        guard let tokenNode = DERNode.parse(token), case let (tstInfo, fields)? = Self.tstInfo(of: tokenNode) else {
             return .failure(Problem(message: "The timestamp can't be read."))
         }
         var decoderRef: CMSDecoder?
@@ -487,8 +524,7 @@ enum Timestamps {
         var code: OSStatus = 0
         CMSDecoderCopySignerStatus(decoder, 0, SecPolicyCreateBasicX509(), false, &status, nil, &code)
         guard status == .valid else { return .failure(Problem(message: "The timestamp's own signature isn't valid.")) }
-        guard let info = DERNode.parse(Data(tstInfo)), let fields = info.children, fields.count >= 5,
-              let imprint = fields[2].children, imprint.count == 2,
+        guard let imprint = fields[2].children, imprint.count == 2,
               let algorithm = imprint[0].children?.first?.content else { return .failure(Problem(message: "The timestamp can't be read.")) }
         let expected: [UInt8]
         switch algorithm {
@@ -506,6 +542,11 @@ enum Timestamps {
         var allRef: CFArray?
         CMSDecoderCopyAllCerts(decoder, &allRef)
         guard let tsa = signerRef else { return .failure(Problem(message: "The timestamp doesn't include its authority's certificate.")) }
+        // Only a certificate for timestamps may make one: any other a Mac trusts (a web site's,
+        // say) could otherwise vouch for any time.
+        guard isTimestampingCertificate(tsa) else {
+            return .failure(Problem(message: "The timestamp's certificate isn't one for making timestamps."))
+        }
         let others = ((allRef as? [SecCertificate]) ?? []).filter { SecCertificateCopyData($0) as Data != SecCertificateCopyData(tsa) as Data }
         var trustRef: SecTrust?
         guard SecTrustCreateWithCertificates(([tsa] + others) as CFArray, SecPolicyCreateBasicX509(), &trustRef) == errSecSuccess,
@@ -520,6 +561,37 @@ enum Timestamps {
             return .failure(Problem(message: "The timestamp's authority isn't trusted on this Mac."))
         }
         return .success(time)
+    }
+
+    // id-ct-TSTInfo: 1.2.840.113549.1.9.16.1.4; id-kp-timeStamping: 1.3.6.1.5.5.7.3.8;
+    // extKeyUsage: 2.5.29.37
+    static let tstInfoOID: [UInt8] = [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x01, 0x04]
+    static let timeStampingOID: [UInt8] = [0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08]
+    static let extendedKeyUsageOID: [UInt8] = [0x55, 0x1D, 0x25]
+
+    /// The TSTInfo a timestamp token (a CMS ContentInfo) carries, as DER and as its fields: at
+    /// least version, policy, messageImprint, serialNumber and genTime (a GeneralizedTime).
+    static func tstInfo(of token: DERNode) -> (der: [UInt8], fields: [DERNode])? {
+        guard let signedData = token.children?.dropFirst().first?.children?.first,
+              let encapsulated = signedData.children?.first(where: { $0.tag == [0x30] && $0.children?.first?.tag == [0x06] }),
+              encapsulated.children?.first?.content == tstInfoOID,
+              let der = encapsulated.children?.dropFirst().first?.children?.first?.content,
+              let info = DERNode.parse(Data(der)), info.tag == [0x30], let fields = info.children, fields.count >= 5,
+              fields[2].tag == [0x30], fields[4].tag == [0x18] else { return nil }
+        return (der, fields)
+    }
+
+    /// Whether a certificate is a timestamp authority's (RFC 3161 2.3): its extended key usage
+    /// marked critical and for timestamping.
+    static func isTimestampingCertificate(_ certificate: SecCertificate) -> Bool {
+        guard let cert = DERNode.parse(SecCertificateCopyData(certificate) as Data),
+              let tbs = cert.children?.first, let wrapper = tbs.children?.first(where: { $0.tag == [0xA3] }),
+              let extensions = wrapper.children?.first?.children else { return false }
+        let usages = extensions.filter { $0.children?.first?.content == extendedKeyUsageOID }
+        guard usages.count == 1, let parts = usages[0].children, parts.count == 3,
+              parts[1].tag == [0x01], parts[1].content.first.map({ $0 != 0 }) == true,
+              parts[2].tag == [0x04], let purposes = DERNode.parse(Data(parts[2].content))?.children else { return false }
+        return purposes.contains { $0.tag == [0x06] && $0.content == timeStampingOID }
     }
 
     /// A GeneralizedTime (YYYYMMDDHHMMSS[.fff]Z).

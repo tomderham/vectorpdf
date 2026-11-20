@@ -58,16 +58,27 @@ public struct SigningIdentity: @unchecked Sendable, Identifiable, Equatable {
     /// usage (if it says) allows signatures.
     public var canSign: Bool {
         if let expires, expires < Date() { return false }
-        let values = SecCertificateCopyValues(certificate, [kSecOIDKeyUsage, kSecOIDBasicConstraints] as CFArray, nil) as? [String: [String: Any]]
+        let values = SecCertificateCopyValues(certificate, [kSecOIDKeyUsage, kSecOIDX509V1ValidityNotBefore] as CFArray, nil) as? [String: [String: Any]]
+        if let seconds = values?[kSecOIDX509V1ValidityNotBefore as String]?[kSecPropertyKeyValue as String] as? NSNumber,
+           Date(timeIntervalSinceReferenceDate: seconds.doubleValue) > Date() { return false }
         if let usage = values?[kSecOIDKeyUsage as String]?[kSecPropertyKeyValue as String] as? NSNumber {
             // digitalSignature (bit 0) or nonRepudiation (bit 1), as Security numbers them.
             if usage.uint32Value & 0b11 == 0 { return false }
         }
-        if let constraints = values?[kSecOIDBasicConstraints as String]?[kSecPropertyKeyValue as String] as? [[String: Any]],
-           constraints.contains(where: { ($0[kSecPropertyKeyLabel as String] as? String) == "Certificate Authority" && ($0[kSecPropertyKeyValue as String] as? String) == "Yes" }) {
-            return false
-        }
-        return true
+        return !Self.isCertificateAuthority(certificate)
+    }
+
+    /// Whether its basic constraints say it's a certificate authority's: read from the
+    /// certificate itself, as the Security framework's labels for them are localized.
+    static func isCertificateAuthority(_ certificate: SecCertificate) -> Bool {
+        // basicConstraints: 2.5.29.19
+        guard let cert = DERNode.parse(SecCertificateCopyData(certificate) as Data),
+              let tbs = cert.children?.first, let wrapper = tbs.children?.first(where: { $0.tag == [0xA3] }),
+              let extensions = wrapper.children?.first?.children,
+              let constraints = extensions.first(where: { $0.children?.first?.content == [0x55, 0x1D, 0x13] }),
+              let value = constraints.children?.last, value.tag == [0x04],
+              let sequence = DERNode.parse(Data(value.content)), let first = sequence.children?.first else { return false }
+        return first.tag == [0x01] && first.content.first.map { $0 != 0 } == true
     }
 
     /// The identities in the Keychain that can sign, by name.
@@ -413,13 +424,20 @@ enum BERToDER {
     /// The content of a constructed element: its parts, or for a string, their contents joined.
     private static func merged(_ parts: [[UInt8]], tag: UInt8) -> [UInt8] {
         guard tag & 0xC0 == 0, stringTags.contains(tag & 0x1F) else { return parts.flatMap { $0 } }
-        return parts.flatMap { part -> [UInt8] in
+        let contents = parts.map { part -> [UInt8] in
             // Each part is itself a primitive string: skip its tag and length.
             var j = 1
             let lengthByte = part[j]
             j += 1 + (lengthByte & 0x80 != 0 ? Int(lengthByte & 0x7F) : 0)
             return Array(part[j...])
         }
+        // A BIT STRING's parts each start with a count of unused bits, which only the last can
+        // have: one count, the last's, then the bits.
+        if tag & 0x1F == 0x03 {
+            guard let last = contents.last, let unused = last.first else { return [0] }
+            return [unused] + contents.flatMap { $0.dropFirst() }
+        }
+        return contents.flatMap { $0 }
     }
 
     private static func encodedLength(_ n: Int) -> [UInt8] {

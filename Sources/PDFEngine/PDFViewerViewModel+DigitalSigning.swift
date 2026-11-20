@@ -136,15 +136,18 @@ extension PDFViewerViewModel {
             let signature = try doc.sign(page: placement.page, widgetIndex: placement.widgetIndex, rect: placement.rect,
                                          with: identity, appearance: appearance, permissions: permissions, timestamp: timestamp)
             // Saving makes the signature, which may wait on a timestamp server: off the main
-            // thread.
-            failure = await Task.detached(priority: .userInitiated) { () -> String? in
-                do {
-                    try doc.save(to: path)
-                    return nil
-                } catch {
-                    return signature.failure ?? error.localizedDescription
+            // thread, and on a queue of its own rather than Swift's thread pool, which it would
+            // hold up while it waits.
+            failure = await withCheckedContinuation { (done: CheckedContinuation<String?, Never>) in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    do {
+                        try doc.save(to: path)
+                        done.resume(returning: nil)
+                    } catch {
+                        done.resume(returning: signature.failure ?? error.localizedDescription)
+                    }
                 }
-            }.value
+            }
         } catch {
             failure = error.localizedDescription
         }

@@ -120,7 +120,16 @@ public struct TimestampAuthority: Sendable {
         }
     }
 
-    /// POSTs a request and waits for the reply, up to 20 seconds.
+    /// A session that gives up on a reply after 20 seconds in all, not just 20 seconds of quiet.
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 20
+        return URLSession(configuration: configuration)
+    }()
+
+    /// POSTs a request and waits for the reply, up to 20 seconds. Blocks: MuPDF asks for the
+    /// signature while saving, and waits for it. Not to be called on Swift's thread pool.
     static func post(_ request: Data, to url: URL) throws -> Data {
         var http = URLRequest(url: url, timeoutInterval: 20)
         http.httpMethod = "POST"
@@ -129,7 +138,7 @@ public struct TimestampAuthority: Sendable {
         http.setValue("application/timestamp-reply", forHTTPHeaderField: "Accept")
         let done = DispatchSemaphore(value: 0)
         nonisolated(unsafe) var result: Result<Data, Error> = .failure(Failure.unreachable("no reply"))
-        URLSession.shared.dataTask(with: http) { data, response, error in
+        session.dataTask(with: http) { data, response, error in
             if let error = error as? URLError, error.code == .appTransportSecurityRequiresSecureConnection {
                 // Plain HTTP is allowed only for the well-known servers (see the Info.plist).
                 result = .failure(Failure.unreachable("VectorPDF can use a server whose address starts with http:// only if it's a well-known public timestamp server or on your local network. Try its https:// address."))
@@ -156,13 +165,19 @@ public struct TimestampAuthority: Sendable {
         return Data(DERNode.sequence([.integer([1]), imprint, .integer(nonce), .trueValue]).encoded)
     }
 
-    /// The token in a TimeStampResp, if the authority granted it.
-    static func token(fromReply reply: Data) throws -> DERNode {
+    /// The token in a TimeStampResp, if the authority granted it and it's the one asked for: of
+    /// `hash` (SHA-256), with `nonce`, so a reply to some other request can't stand in for it.
+    static func token(fromReply reply: Data, hash: [UInt8], nonce: [UInt8]) throws -> DERNode {
         guard let response = DERNode.parse(reply), let parts = response.children, let statusInfo = parts.first,
-              let status = statusInfo.children?.first, status.tag == [0x02] else { throw Failure.unreadable }
+              let status = statusInfo.children?.first, status.tag == [0x02],
+              (1...4).contains(status.content.count) else { throw Failure.unreadable }
         let code = status.content.reduce(0) { $0 << 8 | Int($1) }
         guard code == 0 || code == 1 else { throw Failure.refused(code) }
-        guard parts.count >= 2 else { throw Failure.unreadable }
+        guard parts.count >= 2, case let (_, fields)? = Timestamps.tstInfo(of: parts[1]),
+              let imprint = fields[2].children, imprint.count == 2,
+              imprint[0].children?.first?.content == sha256OID, imprint[1].content == hash,
+              fields.dropFirst(5).first(where: { $0.tag == [0x02] })?.content == DERNode.integer(nonce).content
+        else { throw Failure.unreadable }
         return parts[1]
     }
 
@@ -177,7 +192,7 @@ public struct TimestampAuthority: Sendable {
         let hash = Array(SHA256.hash(data: value))
         var nonce = [UInt8](repeating: 0, count: 8)
         _ = SecRandomCopyBytes(kSecRandomDefault, nonce.count, &nonce)
-        let token = try Self.token(fromReply: send(Self.request(hash: hash, nonce: nonce)))
+        let token = try Self.token(fromReply: send(Self.request(hash: hash, nonce: nonce)), hash: hash, nonce: nonce)
         let attribute = DERNode.sequence([.oid(Self.timeStampTokenOID), .set([token])])
         // Unsigned attributes, [1] IMPLICIT, after the signature: added to, or made.
         if let index = signerInfo.children!.firstIndex(where: { $0.tag == [0xA1] }) {
