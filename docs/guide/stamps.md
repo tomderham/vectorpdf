@@ -44,7 +44,7 @@ Unless you lock them or certify the document for less, the signature leaves the 
 
 The signature is a PKCS #7 signature with SHA-256, carrying your certificate and those of the authorities that issued it. It records the time on your Mac.
 
-To have a timestamp server vouch for when you signed, turn on **Add a timestamp** and give its address (your organization may run one; free ones include DigiCert's, `http://timestamp.digicert.com`). A timestamp lets your signature be checked as it was when you signed, even after your certificate expires. The server is sent only a fingerprint of the signature, nothing of the document. If it can't be reached, nothing is signed and the document is left as it was.
+To have a timestamp server vouch for when you signed, turn on **Add a timestamp** and give its address (your organization may run one; free ones include DigiCert's, `http://timestamp.digicert.com`). A timestamp lets your signature be checked as it was when you signed, even after your certificate expires. The server is sent only a fingerprint of the signature, nothing of the document. An address starting with `http://` works for the well-known public timestamp servers (such as DigiCert's, Sectigo's, GlobalSign's, Entrust's and Apple's) and for servers on your local network; for any other server, use its `https://` address. If the server can't be reached, nothing is signed and the document is left as it was.
 
 To check the signatures in a document, see [Check digital signatures](digital-signatures.md).
 

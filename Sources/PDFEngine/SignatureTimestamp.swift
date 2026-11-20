@@ -130,7 +130,10 @@ public struct TimestampAuthority: Sendable {
         let done = DispatchSemaphore(value: 0)
         nonisolated(unsafe) var result: Result<Data, Error> = .failure(Failure.unreachable("no reply"))
         URLSession.shared.dataTask(with: http) { data, response, error in
-            if let error {
+            if let error = error as? URLError, error.code == .appTransportSecurityRequiresSecureConnection {
+                // Plain HTTP is allowed only for the well-known servers (see the Info.plist).
+                result = .failure(Failure.unreachable("VectorPDF can use a server whose address starts with http:// only if it's a well-known public timestamp server or on your local network. Try its https:// address."))
+            } else if let error {
                 result = .failure(Failure.unreachable(error.localizedDescription))
             } else if let status = (response as? HTTPURLResponse)?.statusCode, status != 200 {
                 result = .failure(Failure.unreachable("HTTP \(status)"))
