@@ -428,6 +428,8 @@ public final class GitHubUpdater: ObservableObject {
             )
             window.title = "Software Update"
             window.isReleasedWhenClosed = false
+            // Above Settings, which floats, when Check Now there starts the download.
+            window.level = .floating
             window.center()
 
             let contentView = NSView(frame: window.contentView!.bounds)

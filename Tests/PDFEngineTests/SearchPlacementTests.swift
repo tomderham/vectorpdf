@@ -166,5 +166,21 @@ struct SearchPlacementTests {
         viewModel.showRightSearch()
         try await Task.sleep(for: .milliseconds(800))
         #expect(searchFields().count == 1)
+
+        // Closed again, the sidebar's Search segment shows it on the right, not in the sidebar.
+        viewModel.closeRightColumn()
+        try await Task.sleep(for: .milliseconds(500))
+        func segmentedControls(_ view: NSView) -> [NSSegmentedControl] {
+            ((view as? NSSegmentedControl).map { [$0] } ?? []) + view.subviews.flatMap(segmentedControls)
+        }
+        let sidebarPicker = try #require(segmentedControls(content).first { $0.segmentCount > 2 && !$0.isHiddenOrHasHiddenAncestor })
+        sidebarPicker.selectedSegment = 1
+        _ = sidebarPicker.sendAction(sidebarPicker.action, to: sidebarPicker.target)
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(viewModel.isRightSearchOnScreen)
+        let reshown = try #require(searchFields().first)
+        #expect(searchFields().count == 1)
+        #expect(reshown.convert(reshown.bounds, to: nil).minX > content.bounds.midX)
+        #expect(sidebarPicker.selectedSegment == 0)
     }
 }

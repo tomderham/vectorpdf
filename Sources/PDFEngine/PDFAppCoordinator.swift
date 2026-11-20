@@ -640,6 +640,11 @@ public final class SettingsModalManager {
                     return event
                 }
 
+                // Alerts and other windows that Settings opens, such as Check Now's, sit above it.
+                if Self.passesEvents(to: evWin, over: settingsWin) {
+                    return event
+                }
+
                 // If it's a key event like Escape, Command-W, or Command-Comma, allow closing settings
                 if event.type == .keyDown {
                     if event.keyCode == 53 { // Escape
@@ -665,6 +670,12 @@ public final class SettingsModalManager {
                 return event
             }
         }
+    }
+
+    /// Whether a window other than Settings takes clicks and keys while Settings is open: a modal
+    /// alert or panel, or a window at Settings' level or above it. Document windows are below.
+    static func passesEvents(to window: NSWindow, over settingsWindow: NSWindow) -> Bool {
+        window == NSApp.modalWindow || window.level >= settingsWindow.level
     }
 
     public func cleanup() {

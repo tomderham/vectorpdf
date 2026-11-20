@@ -775,12 +775,12 @@ public struct PDFViewerMainView: View {
                             .imageScale(.medium)
                             .tag(0)
                             .help("Outline & Thumbnails")
-                        if !viewModel.isSearchOnRight {
-                            Image(systemName: "magnifyingglass")
-                                .imageScale(.medium)
-                                .tag(1)
-                                .help("Search Document (Cmd+F)")
-                        }
+                        // Kept when Search is on the right, where it shows it: the way back
+                        // after its column is closed, besides ⌘F.
+                        Image(systemName: "magnifyingglass")
+                            .imageScale(.medium)
+                            .tag(1)
+                            .help(searchSegmentTooltip)
                         if viewModel.compareSession != nil {
                             Image(systemName: "plus.forwardslash.minus")
                                 .imageScale(.medium)
@@ -816,14 +816,21 @@ public struct PDFViewerMainView: View {
                     .controlSize(.regular)
                     .segmentedControlTooltips(viewModel.compareSession != nil
                         ? ["Outline & Thumbnails of the Revised Document"]
-                          + (viewModel.isSearchOnRight ? [] : ["Search the Revised Document (Cmd+F)"]) + ["Changes"]
+                          + [viewModel.isSearchOnRight ? searchSegmentTooltip : "Search the Revised Document (Cmd+F)"] + ["Changes"]
                         : ["Outline & Thumbnails"]
-                          + (viewModel.isSearchOnRight ? [] : ["Search Document (Cmd+F)"])
+                          + [searchSegmentTooltip]
                           + ["Anchors"]
                           + (viewModel.documentSidebarSections.isEmpty ? [] : [documentTabTooltip])
                       + (viewModel.hasAnnotationThreads ? ["Comments"] : [])
                       + (appCoordinator.showAgentTab ? ["Ask About This Document"] : []))
-                    .onChange(of: selectedSidebarTab) { _, newValue in
+                    .onChange(of: selectedSidebarTab) { oldValue, newValue in
+                        if newValue == 1 && viewModel.isSearchOnRight {
+                            // Search is in the right column: show it there, and leave the
+                            // sidebar on what it showed.
+                            selectedSidebarTab = oldValue == 1 ? 0 : oldValue
+                            viewModel.showRightSearch()
+                            return
+                        }
                         if newValue == 3 {
                             viewModel.startAgentIndexingIfNeeded()
                         }
@@ -1329,6 +1336,11 @@ public struct PDFViewerMainView: View {
             viewModel.documentSidebarSection = .attachments
             selectedSidebarTab = 5
         }
+    }
+
+    /// The sidebar's Search segment's tooltip, which shows Search on the right when it's there.
+    private var searchSegmentTooltip: String {
+        viewModel.isSearchOnRight ? "Show Search on the Right (Cmd+F)" : "Search Document (Cmd+F)"
     }
 
     /// Moves Search between the sidebar and the column on the window's right. Moving it right
