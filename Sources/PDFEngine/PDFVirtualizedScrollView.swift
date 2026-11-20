@@ -207,7 +207,9 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
         /// page space on `page`, and where the view was left showing it. Until the view moves
         /// from there, the ToC follows that place rather than the reading line: a result shown
         /// mid-view can be in a later section than the line near the top.
-        private var revealedPlace: (page: Int, y: CGFloat, origin: CGPoint)?
+        /// The place last gone to, while the view still shows it: for the document and layout it
+        /// was in.
+        private var revealedPlace: (page: Int, y: CGFloat, origin: CGPoint, document: ObjectIdentifier, layout: PageLayout)?
         private var lastViewRotationDegrees: Int = 0
         private var lastSearchMatchIndex: Int = -1
         private var lastScrolledTargetId: String? = nil
@@ -442,7 +444,7 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
                 isProgrammaticScroll = false
             }
             // Also when the place was on screen already, and the view didn't move.
-            revealedPlace = (pageIdx, pageRect.midY, clipView.bounds.origin)
+            revealedPlace = (pageIdx, pageRect.midY, clipView.bounds.origin, ObjectIdentifier(doc), viewModel.pageLayout)
             updateReadingLine(onPage: pageIdx, pageY: pageRect.midY)
         }
         
@@ -599,7 +601,8 @@ public struct PDFVirtualizedScrollView: NSViewRepresentable {
             let activePage = viewModel.currentPage(reading: group)
             // Still showing the place gone to (the view resized without moving): its page and
             // section stay current.
-            if let place = revealedPlace, place.origin != visible.origin { revealedPlace = nil }
+            if let place = revealedPlace, place.origin != visible.origin || place.document != viewModel.document.map(ObjectIdentifier.init)
+                || place.layout != viewModel.pageLayout || place.page >= viewModel.pageLayout.pageCount { revealedPlace = nil }
             if let place = revealedPlace {
                 updateReadingLine(onPage: place.page, pageY: place.y)
                 updateVisiblePageRect(page: place.page)

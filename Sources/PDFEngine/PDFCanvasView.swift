@@ -219,6 +219,10 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
 
     public override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
+        if newWindow == nil {
+            stopAutoscroll()
+            hoverWorkItem?.cancel()
+        }
         linkPeek.dismiss()
         referenceSearchTask?.cancel()
         referencePeek.dismiss()
@@ -505,6 +509,7 @@ public final class PDFCanvasView: NSView, NSUserInterfaceValidations, NSTextFiel
     }
 
     private func discardInProgressDrafts() {
+        stopAutoscroll()
         currentPolyPage = nil
         currentPolyPoints = []
         currentPolyCandidate = nil

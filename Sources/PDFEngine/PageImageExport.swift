@@ -119,8 +119,17 @@ extension PDFDocumentCore {
         }
         var written: [URL] = []
         for (page, url) in zip(pageIndices, targets) {
-            let image = try renderPageImage(pageIndex: page, dpi: dpi)
-            try Self.write(image, to: url, format: format, dpi: dpi)
+            // Each page's image let go before the next is made.
+            try autoreleasepool {
+                let image = try renderPageImage(pageIndex: page, dpi: dpi)
+                // Made smaller than asked (a large page), its resolution is what it was made at.
+                var shown = dpi
+                if page < pageBounds.count {
+                    let longest = Double(max(pageBounds[page].width, pageBounds[page].height))
+                    if longest > 0 { shown = min(dpi, Double(max(image.width, image.height)) / longest * 72) }
+                }
+                try Self.write(image, to: url, format: format, dpi: shown)
+            }
             written.append(url)
             guard progress(written.count) else { break }
         }

@@ -26,8 +26,9 @@
 // Moves `iter` to `path`. With `allow_end`, the last index may be one past the last entry there
 // (or 0 under an entry with none), a place to insert at. Throws if there's nothing there.
 static void go_to(fz_context *ctx, fz_outline_iterator *iter, const int *path, int depth, int allow_end) {
-    if (depth < 1) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No outline entry given");
+    if (depth < 1 || !path) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No outline entry given");
     for (int level = 0; level < depth; level++) {
+        if (path[level] < 0) fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such outline entry");
         if (level > 0 && fz_outline_iterator_down(ctx, iter) < 0)
             fz_throw(ctx, FZ_ERROR_ARGUMENT, "No such outline entry");
         for (int i = 0; i < path[level]; i++) {
@@ -131,8 +132,10 @@ static copied_entry *copy_entry(fz_context *ctx, fz_outline_iterator *iter, int 
     copied_entry *copy = fz_malloc_struct(ctx, copied_entry);
     fz_try(ctx) {
         copy->item = *item;
-        copy->item.title = item->title ? fz_strdup(ctx, item->title) : NULL;
+        // Not the iterator's strings, which dropping the copy would free, should copying them fail.
+        copy->item.title = NULL;
         copy->item.uri = NULL;
+        copy->item.title = item->title ? fz_strdup(ctx, item->title) : NULL;
         copy->item.uri = item->uri ? fz_strdup(ctx, item->uri) : NULL;
         if (fz_outline_iterator_down(ctx, iter) == 0) {
             copied_entry **tail = &copy->children;
@@ -241,6 +244,8 @@ static void flatten_copy(copied_entry *entry, int level, vp_outline_entry *out, 
 // Builds entries from `list[*at]` on that are at `level`, with those under each.
 static copied_entry *unflatten(fz_context *ctx, const vp_outline_entry *list, int count, int *at, int level) {
     copied_entry *first = NULL, **tail = &first;
+    fz_var(first);
+    fz_var(tail);
     fz_try(ctx) {
         while (*at < count && list[*at].level == level) {
             const vp_outline_entry *e = &list[(*at)++];

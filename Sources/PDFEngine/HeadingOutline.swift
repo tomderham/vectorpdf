@@ -337,7 +337,13 @@ extension PDFDocumentCore {
             undo.append(try applyOutlineEdit(.deleteSeveral([0], count: outline.count)))
         }
         if !entries.isEmpty {
-            undo.append(try applyOutlineEdit(.insert([0], entries)))
+            do {
+                undo.append(try applyOutlineEdit(.insert([0], entries)))
+            } catch {
+                // The old outline back, rather than none and nothing to undo.
+                for edit in undo.reversed() { _ = try? applyOutlineEdit(edit) }
+                throw error
+            }
         }
         return undo.reversed()
     }

@@ -337,7 +337,7 @@ public final class PDFViewerViewModel: ObservableObject {
         isRunningTests ? "Count" : (UserDefaults.standard.string(forKey: countGroupKey) ?? "Count")
     }
     /// Count markers on a page by group, read once per page and annotation change.
-    var countCache: (revision: Int, page: Int, counts: [String: Int])?
+    var countCache: (document: ObjectIdentifier, layers: Int, revision: Int, page: Int, counts: [String: Int])?
     @Published public var selectedFontSize: CGFloat = 13.0
     @Published public var pendingSignatureData: Data? = nil
     @Published public var selectedLineEnding: PDFLineEnding = .closedArrow

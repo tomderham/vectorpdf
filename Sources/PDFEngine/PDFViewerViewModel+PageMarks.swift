@@ -57,6 +57,14 @@ extension PDFViewerViewModel {
             }
             changed = try doc.applyPageMarks(settings).union(others)
         } catch {
+            // It may have got part of the way (the old marks off, some pages marked): shown as
+            // the document now is, and to be saved or not.
+            isDocumentEdited = true
+            currentWindow?.isDocumentEdited = true
+            pageStructuredData.removeAll()
+            invalidateAgentIndex(deleteCache: false)
+            thumbnailVersion = UUID()
+            refreshRendererCopy(pages: Set(0..<doc.pageCount))
             showErrorAlert(title: "Couldn't Change the Headers and Footers", message: error.localizedDescription)
             return
         }
@@ -95,18 +103,19 @@ extension PDFViewerViewModel {
         let panel = NSPanel(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true)
         panel.contentView = NSHostingView(rootView: RecognitionProgressView(progress: progress, title: "Marking files…"))
         panel.setContentSize(panel.contentView?.fittingSize ?? NSSize(width: 380, height: 100))
-        window.beginSheet(panel, completionHandler: nil)
+        // Over the Headers & Footers sheet, which stays open: on the window, these would wait
+        // until it closed.
+        let host = window.attachedSheet ?? window
+        let cancelled = MarkingCancelFlag()
+        progress.onCancel = { cancelled.cancel() }
+        host.beginSheet(panel, completionHandler: nil)
         Task {
-            let cancelled = MarkingCancelFlag()
             let result = await Task.detached(priority: .userInitiated) {
                 PageMarksBatch.mark(urls, with: settings, into: destination, progress: { done in
-                    DispatchQueue.main.async {
-                        progress.done = done
-                        if progress.isCancelled { cancelled.cancel() }
-                    }
+                    DispatchQueue.main.async { progress.done = done }
                 }, isCancelled: { cancelled.isCancelled })
             }.value
-            window.endSheet(panel)
+            host.endSheet(panel)
             let alert = NSAlert()
             alert.messageText = result.written.count == 1 ? "1 File Marked" : "\(result.written.count) Files Marked"
             var info = "The marked copies are in “\(destination.lastPathComponent)”."
@@ -117,7 +126,7 @@ extension PDFViewerViewModel {
                 info += "\n\nNot marked:\n" + result.failed.map { "\($0.file): \($0.reason)" }.joined(separator: "\n")
             }
             alert.informativeText = info
-            alert.beginSheetModal(for: window, completionHandler: nil)
+            alert.beginSheetModal(for: host, completionHandler: nil)
         }
     }
 }

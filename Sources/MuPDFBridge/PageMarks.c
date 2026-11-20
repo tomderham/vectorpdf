@@ -285,7 +285,7 @@ int mupdf_page_add_image_watermark(fz_context *ctx, fz_document *doc, int pageno
 // MARK: Marks in any script: glyphs laid out by the app (Core Text), in fonts embedded here.
 
 int mupdf_pdf_add_mark_font(fz_context *ctx, fz_document *doc, const unsigned char *data, size_t len, const int *gids, int n_gids, int *out_objnum, const char **out_error) {
-    if (!ctx || !doc || !data || !len || !out_objnum) return -1;
+    if (!ctx || !doc || !data || !len || !out_objnum || n_gids < 0 || (n_gids > 0 && !gids)) return -1;
     fz_buffer *buf = NULL, *subset = NULL;
     fz_font *font = NULL;
     pdf_obj *ref = NULL;
@@ -326,8 +326,13 @@ int mupdf_pdf_add_mark_font(fz_context *ctx, fz_document *doc, const unsigned ch
             fz_var(packed);
             fz_try(ctx) {
                 size_t packed_len = 0;
-                unsigned char *data = fz_new_deflated_data_from_buffer(ctx, &packed_len, raw, FZ_DEFLATE_BEST);
-                packed = fz_new_buffer_from_data(ctx, data, packed_len);
+                unsigned char *deflated = fz_new_deflated_data_from_buffer(ctx, &packed_len, raw, FZ_DEFLATE_BEST);
+                fz_try(ctx)
+                    packed = fz_new_buffer_from_data(ctx, deflated, packed_len);
+                fz_catch(ctx) {
+                    fz_free(ctx, deflated);
+                    fz_rethrow(ctx);
+                }
                 pdf_update_stream(ctx, pdoc, file, packed, 1);
                 pdf_dict_put(ctx, file, PDF_NAME(Filter), PDF_NAME(FlateDecode));
             } fz_always(ctx) {
@@ -353,7 +358,7 @@ int mupdf_pdf_add_mark_font(fz_context *ctx, fz_document *doc, const unsigned ch
 // The text each glyph of a mark font stands for, as its ToUnicode map, in place of the one made
 // from the font's cmap: shaped glyphs (conjuncts, ligatures, joined forms) aren't in that.
 int mupdf_pdf_set_mark_font_text(fz_context *ctx, fz_document *doc, int font_objnum, const unsigned short *gids, const char *const *texts, int n, const char **out_error) {
-    if (!ctx || !doc || font_objnum <= 0 || n <= 0) return -1;
+    if (!ctx || !doc || font_objnum <= 0 || n <= 0 || !gids || !texts) return -1;
     fz_buffer *buf = NULL;
     pdf_obj *font = NULL;
     fz_var(buf);
@@ -416,7 +421,7 @@ static void append_utf16_hex(fz_context *ctx, fz_buffer *buf, const char *utf8) 
 }
 
 int mupdf_page_add_glyph_mark(fz_context *ctx, fz_document *doc, int pageno, const mupdf_glyph_mark *mark, const char **out_error) {
-    if (!ctx || !doc || !mark || !mark->kind || !mark->artifact) return -1;
+    if (!ctx || !doc || !mark || !mark->kind || !mark->artifact || mark->n_runs < 0 || (mark->n_runs > 0 && !mark->runs)) return -1;
     pdf_page *page = NULL;
     fz_buffer *buf = NULL, *body = NULL;
     pdf_obj *form_res = NULL, *form = NULL;
@@ -445,12 +450,12 @@ int mupdf_page_add_glyph_mark(fz_context *ctx, fz_document *doc, int pageno, con
         fz_append_string(ctx, body, "BT\n");
         for (int r = 0; r < mark->n_runs; r++) {
             const mupdf_glyph_run *run = &mark->runs[r];
-            if (run->font_objnum <= 0 || run->n <= 0) continue;
+            float size = run->size > 0 ? run->size : mark->size;
+            if (run->font_objnum <= 0 || run->n <= 0 || !run->gids || !run->xy || size <= 0) continue;
             char key[32];
             fz_snprintf(key, sizeof key, "VPMarkU%d", run->font_objnum);
             if (!pdf_dict_gets(ctx, fonts, key))
                 pdf_dict_puts_drop(ctx, fonts, key, pdf_new_indirect(ctx, pdoc, run->font_objnum, 0));
-            float size = run->size > 0 ? run->size : mark->size;
             fz_append_printf(ctx, body, "/%s %g Tf\n", key, size);
             // Stretch by stretch: one found as other text (Devanagari's vowel signs come before
             // their consonant as glyphs, after it as text) is marked so.
@@ -684,6 +689,7 @@ static int kind_in_mask(const char *kind, int mask) {
 int mupdf_pdf_page_marks(fz_context *ctx, fz_document *doc) {
     if (!ctx || !doc) return 0;
     int found = 0;
+    fz_var(found);
     fz_try(ctx) {
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         for (int p = 0, n = pdoc ? pdf_count_pages(ctx, pdoc) : 0; p < n; p++) {
@@ -741,6 +747,7 @@ int mupdf_pdf_remove_page_marks(fz_context *ctx, fz_document *doc, int mask, con
 char *mupdf_pdf_page_marks_settings(fz_context *ctx, fz_document *doc) {
     if (!ctx || !doc) return NULL;
     char *result = NULL;
+    fz_var(result);
     fz_try(ctx) {
         pdf_document *pdoc = pdf_document_from_fz_document(ctx, doc);
         if (pdoc) {
@@ -857,7 +864,10 @@ static void (*vp_orig_Do_form)(fz_context *, pdf_processor *, const char *, pdf_
 
 static void vp_foreign_push(int is) {
     vp_foreign_filter *f = vp_foreign;
+    // Nested deeper than the stack keeps: counted, but not as an artifact, as its end can't
+    // tell (and an artifact that deep isn't one of the marks).
     if (f->depth < (int)sizeof f->stack) f->stack[f->depth] = (unsigned char)is;
+    else is = 0;
     f->depth++;
     f->inside += is;
 }

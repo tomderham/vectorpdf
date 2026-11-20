@@ -271,29 +271,41 @@ static int is_added_signature(fz_context *ctx, pdf_document *doc, pdf_obj *obj, 
     return ok;
 }
 
-/* The widgets in `new` (an /Annots or /Fields array) are those in `old`, in order, with signed
-   signature fields made in save `version` added among them, if any (noted in `kinds`). */
+/* Whether `obj`, an entry of an /Annots array, is a widget as save `version` has it: an entry
+   that refers to an object is looked up in that save, not the latest. */
+static int is_widget_in(fz_context *ctx, pdf_document *doc, pdf_obj *obj, int version) {
+    if (!pdf_is_indirect(ctx, obj)) return pdf_name_eq(ctx, pdf_dict_get(ctx, obj, PDF_NAME(Subtype)), PDF_NAME(Widget));
+    pdf_obj *resolved = object_in_version(ctx, doc, pdf_to_num(ctx, obj), version);
+    int is = pdf_name_eq(ctx, pdf_dict_get(ctx, resolved, PDF_NAME(Subtype)), PDF_NAME(Widget));
+    pdf_drop_obj(ctx, resolved);
+    return is;
+}
+
+/* The widgets in `new` (an /Annots or /Fields array in save `version`) are those in `old` (the
+   one in the save before), in order, with signed signature fields made in save `version` added
+   among them, if any (noted in `kinds`). */
 static int same_widgets_or_signatures_added(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version,
                                             int widgets_only, later_change_kinds *kinds) {
     int o = 0, n_old = pdf_array_len(ctx, old);
     for (int i = 0, n = pdf_array_len(ctx, new); i < n; i++) {
         pdf_obj *item = pdf_array_get(ctx, new, i);
-        if (widgets_only && !pdf_name_eq(ctx, pdf_dict_get(ctx, item, PDF_NAME(Subtype)), PDF_NAME(Widget))) continue;
-        while (widgets_only && o < n_old && !pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, o), PDF_NAME(Subtype)), PDF_NAME(Widget))) o++;
+        if (widgets_only && !is_widget_in(ctx, doc, item, version)) continue;
+        while (widgets_only && o < n_old && !is_widget_in(ctx, doc, pdf_array_get(ctx, old, o), version + 1)) o++;
         if (o < n_old && pdf_to_num(ctx, pdf_array_get(ctx, old, o)) == pdf_to_num(ctx, item)) { o++; continue; }
         if (!is_added_signature(ctx, doc, item, version)) return 0;
         kinds->signatures = 1;
     }
-    while (widgets_only && o < n_old && !pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, o), PDF_NAME(Subtype)), PDF_NAME(Widget))) o++;
+    while (widgets_only && o < n_old && !is_widget_in(ctx, doc, pdf_array_get(ctx, old, o), version + 1)) o++;
     return o == n_old;
 }
 
-/* Whether the comments (entries other than widgets) in two /Annots arrays differ. */
-static int comments_differ(fz_context *ctx, pdf_obj *old, pdf_obj *new) {
+/* Whether the comments (entries other than widgets) in two /Annots arrays differ: `new` in save
+   `version`, `old` in the one before. */
+static int comments_differ(fz_context *ctx, pdf_document *doc, pdf_obj *old, pdf_obj *new, int version) {
     int i = 0, j = 0, n_old = pdf_array_len(ctx, old), n_new = pdf_array_len(ctx, new);
     for (;;) {
-        while (i < n_old && pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, old, i), PDF_NAME(Subtype)), PDF_NAME(Widget))) i++;
-        while (j < n_new && pdf_name_eq(ctx, pdf_dict_get(ctx, pdf_array_get(ctx, new, j), PDF_NAME(Subtype)), PDF_NAME(Widget))) j++;
+        while (i < n_old && is_widget_in(ctx, doc, pdf_array_get(ctx, old, i), version + 1)) i++;
+        while (j < n_new && is_widget_in(ctx, doc, pdf_array_get(ctx, new, j), version)) j++;
         if (i == n_old || j == n_new) return i != n_old || j != n_new;
         if (pdf_objcmp(ctx, pdf_array_get(ctx, old, i++), pdf_array_get(ctx, new, j++))) return 1;
     }
@@ -351,7 +363,7 @@ static int page_changed_only_in_comments(fz_context *ctx, pdf_document *doc, pdf
     if (!same_widgets_or_signatures_added(ctx, doc, pdf_dict_get(ctx, old, PDF_NAME(Annots)), pdf_dict_get(ctx, new, PDF_NAME(Annots)), version, 1, kinds))
         return 0;
     // Anything else changed in /Annots is comments.
-    if (comments_differ(ctx, pdf_dict_get(ctx, old, PDF_NAME(Annots)), pdf_dict_get(ctx, new, PDF_NAME(Annots)))) kinds->comments = 1;
+    if (comments_differ(ctx, doc, pdf_dict_get(ctx, old, PDF_NAME(Annots)), pdf_dict_get(ctx, new, PDF_NAME(Annots)), version)) kinds->comments = 1;
     return 1;
 }
 
@@ -416,18 +428,20 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
     pdf_obj *info = pdf_dict_get(ctx, xref->trailer, PDF_NAME(Info));
     pdf_obj *metadata = NULL;
     int ok = 1;
-    pdf_obj *old = NULL, *new = NULL;
+    pdf_obj *old = NULL, *new = NULL, *root = NULL;
     fz_var(old);
     fz_var(new);
+    fz_var(root);
     fz_var(ok);
     fz_try(ctx) {
         int root_num = pdf_to_num(ctx, pdf_dict_get(ctx, xref->trailer, PDF_NAME(Root)));
-        pdf_obj *root = object_in_version(ctx, doc, root_num, version);
+        root = object_in_version(ctx, doc, root_num, version);
         metadata = pdf_dict_get(ctx, root, PDF_NAME(Metadata));
         int metadata_num = pdf_to_num(ctx, metadata);
         pdf_obj *form_ref = pdf_dict_get(ctx, root, PDF_NAME(AcroForm));
         int form_num = pdf_is_indirect(ctx, form_ref) ? pdf_to_num(ctx, form_ref) : 0;
         pdf_drop_obj(ctx, root);
+        root = NULL;
         for (pdf_xref_subsec *sub = xref->subsec; sub && ok; sub = sub->next) {
             for (int i = 0; i < sub->len && ok; i++) {
                 pdf_xref_entry *entry = &sub->table[i];
@@ -459,7 +473,7 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
                     // the same page's.
                     ok = is_page_annots(ctx, doc, num, version) && is_page_annots(ctx, doc, num, version + 1)
                         && same_widgets_or_signatures_added(ctx, doc, old, new, version, 1, kinds);
-                    if (ok && comments_differ(ctx, old, new)) kinds->comments = 1;
+                    if (ok && comments_differ(ctx, doc, old, new, version)) kinds->comments = 1;
                 } else {
                     ok = 0;
                 }
@@ -468,6 +482,7 @@ static int version_changed_only_comments(fz_context *ctx, pdf_document *doc, int
             }
         }
     } fz_always(ctx) {
+        pdf_drop_obj(ctx, root);
         pdf_drop_obj(ctx, old);
         pdf_drop_obj(ctx, new);
     } fz_catch(ctx) {

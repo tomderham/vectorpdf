@@ -65,7 +65,9 @@ extension PDFCanvasView {
         guard hasAutoscrollableDrag, autoscrollTimer == nil, let visible = unobscuredVisibleRect else { return }
         let point = convert(event.locationInWindow, from: nil)
         guard Self.autoscrollStep(for: point, visible: visible) != .zero else { return }
-        let timer = Timer(timeInterval: Self.autoscrollInterval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: Self.autoscrollInterval, repeats: true) { [weak self] timer in
+            // Gone (its tab closed mid-drag): nothing to scroll, ever again.
+            guard self != nil else { timer.invalidate(); return }
             MainActor.assumeIsolated { self?.autoscrollTick() }
         }
         // Keeps firing during event tracking.

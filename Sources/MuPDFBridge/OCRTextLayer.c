@@ -278,7 +278,7 @@ static void append_page_contents(fz_context *ctx, pdf_document *doc, pdf_obj *pa
 }
 
 int mupdf_pdf_add_ocr_text(fz_context *ctx, fz_document *doc, int pageno, const mupdf_ocr_word *words, int count, int *font_num, const char **out_error) {
-    if (!ctx || !doc || (!words && count > 0) || !font_num) {
+    if (!ctx || !doc || count < 0 || (!words && count > 0) || !font_num) {
         if (out_error) *out_error = "Invalid parameters";
         return -1;
     }

@@ -394,7 +394,15 @@ struct PageMarksSheet: View {
     }
 
     private func insert(_ token: PageMarkSettings.Token) {
-        switch lastTextField {
+        // Into the field last edited on the tab shown, else that tab's own.
+        let field: Field
+        switch (part, lastTextField) {
+        case (.watermark, _): field = .watermark
+        case (_, .watermark): field = .slot(4)
+        default: field = lastTextField
+        }
+        lastTextField = field
+        switch field {
         case .slot(let index):
             settings.header.texts[index] += token.rawValue
         case .watermark:
@@ -403,7 +411,7 @@ struct PageMarksSheet: View {
             break
         }
         // The token's field, for typing on after it.
-        focus = part == .watermark ? .watermark : lastTextField
+        focus = field
     }
 
     private func fontPicker(_ font: Binding<PageMarkSettings.MarkFont>) -> some View {

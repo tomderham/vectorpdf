@@ -212,7 +212,9 @@ public enum AppIntentActions {
                 .appendingPathComponent(UUID().uuidString, isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let pageWord = pages.count == 1 ? "Page" : "Pages"
-            let label = PageRangeList.describe(ranges)
+            // Not so long a name the file system refuses it (a long list of pages).
+            var label = PageRangeList.describe(ranges)
+            if label.utf8.count > 60 { label = String(label.prefix(57)) + "…" }
             let destination = folder.appendingPathComponent("\(base) (\(pageWord) \(label)).pdf")
             try document.extractPages(pages.map { $0 - 1 }, to: destination)
             return destination
@@ -300,13 +302,24 @@ extension PDFViewerViewModel {
         let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw AppIntentActions.Failure.agentFailed("Ask a question.") }
 
+        guard document != nil else { throw AppIntentActions.Failure.agentFailed("There's no document to ask about.") }
         startAgentIndexingIfNeeded()
+        // The first is the state now: idle until the indexing just started begins.
+        var isFirst = true, restarted = false
         indexing: for await state in $agentIndexState.values {
             try Task.checkCancellation()
+            defer { isFirst = false }
             switch state {
             case .ready: break indexing
             case .unavailable(let reason): throw AppIntentActions.Failure.agentUnavailable(reason)
-            case .idle, .building: continue
+            case .building: restarted = false
+            case .idle where isFirst: continue
+            case .idle:
+                // Indexing stopped (the document changed, say) and nothing started it again:
+                // start it, once, rather than wait for nothing.
+                guard document != nil, !restarted else { throw AppIntentActions.Failure.agentFailed("The document couldn't be indexed.") }
+                restarted = true
+                startAgentIndexingIfNeeded()
             }
         }
         // One question at a time, as in the Agent tab.

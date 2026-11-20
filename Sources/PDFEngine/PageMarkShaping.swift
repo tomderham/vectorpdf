@@ -201,7 +201,7 @@ enum PageMarkShaping {
             let fsType = UInt16(os2[8]) << 8 | UInt16(os2[9])
             if fsType & 0x000F == 0x0002 { return nil }
         }
-        let isCFF = tables.contains { $0.tag == 0x4346_4620 }  // 'CFF '
+        let isCFF = tables.contains { $0.tag == 0x4346_4620 || $0.tag == 0x4346_4632 }  // 'CFF ', 'CFF2'
         var out = Data()
         func u16(_ v: Int) { out.append(UInt8(v >> 8 & 0xFF)); out.append(UInt8(v & 0xFF)) }
         func u32(_ v: UInt32) { for shift in [24, 16, 8, 0] { out.append(UInt8(v >> UInt32(shift) & 0xFF)) } }
@@ -242,9 +242,18 @@ enum PageMarkShaping {
         /// What each glyph of each font stands for, the first time it's met.
         private var glyphTexts: [String: [CGGlyph: String]] = [:]
         private(set) var objects: [String: Int32] = [:]
+        /// The glyphs each font was embedded with.
+        private var embeddedGlyphs: [String: Set<CGGlyph>] = [:]
 
-        /// With the fonts already embedded by an earlier attempt, to use again.
-        init(embedded: [String: Int32] = [:]) { objects = embedded }
+        init() {}
+
+        /// With the fonts an earlier attempt embedded, to use again: embedded again, with the
+        /// glyphs of both, if this one uses glyphs of theirs that one didn't.
+        init(after earlier: Fonts) {
+            objects = earlier.objects
+            embeddedGlyphs = earlier.embeddedGlyphs
+            glyphTexts = earlier.glyphTexts
+        }
 
         func add(_ line: Line) {
             for run in line.runs {
@@ -261,9 +270,10 @@ enum PageMarkShaping {
         /// can't subset them), to lay the text out again without them.
         func embed(ctx: FZContext, doc: FZDocument) -> Set<String> {
             var failed = Set<String>()
-            for (name, font) in fonts.sorted(by: { $0.key < $1.key }) where objects[name] == nil {
+            for (name, font) in fonts.sorted(by: { $0.key < $1.key }) where !(glyphs[name] ?? []).isSubset(of: embeddedGlyphs[name] ?? []) || objects[name] == nil {
                 guard let data = PageMarkShaping.fontData(font) else { failed.insert(name); continue }
-                let gids = (glyphs[name] ?? []).sorted().map { Int32($0) }
+                let used = (glyphs[name] ?? []).union(embeddedGlyphs[name] ?? [])
+                let gids = used.sorted().map { Int32($0) }
                 var objnum: Int32 = 0
                 var error: UnsafePointer<CChar>?
                 let status = data.withUnsafeBytes { bytes in
@@ -277,6 +287,7 @@ enum PageMarkShaping {
                     continue
                 }
                 objects[name] = objnum
+                embeddedGlyphs[name] = used
                 setText(ctx: ctx, doc: doc, font: name, objnum: objnum)
             }
             return failed
@@ -299,7 +310,9 @@ enum PageMarkShaping {
         }
 
         /// Whether every font used is embedded.
-        var allEmbedded: Bool { fonts.keys.allSatisfy { objects[$0] != nil } }
+        var allEmbedded: Bool {
+            fonts.keys.allSatisfy { objects[$0] != nil && (glyphs[$0] ?? []).isSubset(of: embeddedGlyphs[$0] ?? []) }
+        }
 
         func object(for font: CTFont) -> Int32 { objects[CTFontCopyPostScriptName(font) as String] ?? 0 }
     }

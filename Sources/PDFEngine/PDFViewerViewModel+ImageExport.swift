@@ -92,7 +92,10 @@ extension PDFViewerViewModel {
         // The extension follows the format, keeping any name typed.
         func update() {
             panel.allowedContentTypes = [options.format.contentType]
-            let typed = (panel.nameFieldStringValue as NSString).deletingPathExtension
+            // Only an image extension: a dot in the name itself ("report.v2") stays.
+            let name = panel.nameFieldStringValue as NSString
+            let imageExtensions = Set(PageImageFormat.allCases.map(\.fileExtension) + ["jpeg", "tif"])
+            let typed = imageExtensions.contains(name.pathExtension.lowercased()) ? name.deletingPathExtension : name as String
             panel.nameFieldStringValue = "\(typed).\(options.format.fileExtension)"
             let pageCount = options.pages == .all ? doc.pageCount : options.pages == .selected ? selection.count : 1
             panel.message = pageCount > 1 ? "The \(pageCount) pages go in a folder of this name, one image each." : ""

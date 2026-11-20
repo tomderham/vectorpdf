@@ -442,6 +442,7 @@ public final class PDFViewerAppCoordinator: ObservableObject {
             PDFViewerViewModel.active = nil
             docCancellable = nil
             selCancellable = nil
+            activeViewState = ActiveViewState()
             return
         }
         // Re-registering the same, already-active view model is a legitimate no-op call (e.g. a

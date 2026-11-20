@@ -47,7 +47,14 @@ public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Send
         }
     }
 
-    private var path: String
+    /// Where the file is: set on the presenter queue when it moves, read on the main thread and
+    /// by the file coordinator, so behind a lock.
+    private let pathLock = NSLock()
+    private var _path: String
+    private var path: String {
+        get { pathLock.withLock { _path } }
+        set { pathLock.withLock { _path = newValue } }
+    }
     /// The file as it was last reported (or as it was when watching began).
     private var stamp: Stamp?
     private let onChange: () -> Void
@@ -80,7 +87,7 @@ public final class FileChangeWatcher: NSObject, NSFilePresenter, @unchecked Send
         onChange: @escaping () -> Void,
         onMove: ((URL) -> Void)? = nil
     ) {
-        self.path = path
+        self._path = path
         self.onChange = onChange
         self.onMove = onMove
         self.stamp = Stamp(path: path)

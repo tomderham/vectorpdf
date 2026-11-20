@@ -462,14 +462,16 @@ extension PDFViewerViewModel {
     public func countMarkers(onPage page: Int, group: String) -> Int {
         guard let doc = document, page >= 0, page < doc.pageCount else { return 0 }
         let revision = annotationChange.revision
-        if let cache = countCache, cache.revision == revision, cache.page == page {
+        // Also another document, or layers shown or hidden: only markers shown count.
+        if let cache = countCache, cache.document == ObjectIdentifier(doc), cache.layers == layerGeneration,
+           cache.revision == revision, cache.page == page {
             return cache.counts[group] ?? 0
         }
         var counts: [String: Int] = [:]
         for annot in doc.measurementAnnotations(pageIndex: page, shownOnly: true) where annot.type == .measureCount {
             counts[annot.text, default: 0] += 1
         }
-        countCache = (revision, page, counts)
+        countCache = (ObjectIdentifier(doc), layerGeneration, revision, page, counts)
         return counts[group] ?? 0
     }
 

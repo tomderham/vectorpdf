@@ -215,16 +215,16 @@ extension PDFDocumentCore {
             // Text the standard fonts can't show, laid out first so its fonts can be embedded
             // once; again without any font that couldn't be.
             var avoiding = Set<String>()
-            var embedded: [String: Int32] = [:]
             var shaped = Self.shapedMarks(settings, pages: pages, bounds: bounds, pageCount: shownPageCount, date: date, fileName: fileName,
                                           fonts: PageMarkShaping.Fonts(), avoiding: avoiding)
             for _ in 0..<4 {
                 let failed = shaped.fonts.embed(ctx: ctx, doc: doc)
-                embedded = shaped.fonts.objects
                 guard !failed.isEmpty, !failed.isSubset(of: avoiding) else { break }
                 avoiding.formUnion(failed)
+                // Laid out again, the text may use glyphs of a font embedded already that it
+                // didn't before (falling back to it): `embed` adds them.
                 shaped = Self.shapedMarks(settings, pages: pages, bounds: bounds, pageCount: shownPageCount, date: date, fileName: fileName,
-                                          fonts: PageMarkShaping.Fonts(embedded: embedded), avoiding: avoiding)
+                                          fonts: PageMarkShaping.Fonts(after: shaped.fonts), avoiding: avoiding)
             }
             if !shaped.fonts.allEmbedded { _ = shaped.fonts.embed(ctx: ctx, doc: doc) }
             for (index, page) in pages.enumerated() {

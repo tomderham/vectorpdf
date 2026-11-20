@@ -151,8 +151,14 @@ static void lock_fields(fz_context *ctx, pdf_obj *fields, pdf_obj *signature, pd
         }
         if (pdf_objcmp(ctx, field, signature) == 0) continue;
         char *name = pdf_load_field_name(ctx, field);
-        int listed = name_in(ctx, names, name);
-        fz_free(ctx, name);
+        int listed = 0;
+        fz_var(listed);
+        fz_try(ctx)
+            listed = name_in(ctx, names, name);
+        fz_always(ctx)
+            fz_free(ctx, name);
+        fz_catch(ctx)
+            fz_rethrow(ctx);
         int lock = pdf_name_eq(ctx, action, PDF_NAME(All)) || (pdf_name_eq(ctx, action, PDF_NAME(Include)) && listed)
             || (pdf_name_eq(ctx, action, PDF_NAME(Exclude)) && !listed);
         if (lock) pdf_dict_put_int(ctx, field, PDF_NAME(Ff), pdf_field_flags(ctx, field) | PDF_FIELD_IS_READ_ONLY);
@@ -190,7 +196,12 @@ static int sig_break(fz_context *ctx, fz_font *font, fz_text_language lang, cons
         const char *end = strchr(p, '\n');
         if (!end) end = p + strlen(p);
         const char *a = p;
-        do {
+        if (a == end) {
+            // A blank line.
+            if (n == SIG_MAX_LINES) return -1;
+            lines[n].a = lines[n].b = a;
+            n++;
+        } else do {
             // As many words as fit from `a`.
             const char *b = a, *fits = NULL;
             while (b < end) {
@@ -460,9 +471,11 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
     pdf_page *page = NULL;
     fz_image *graphic = NULL;
     fz_buffer *buf = NULL;
+    pdf_annot *created = NULL;  // a new field's widget, which is ours to drop (others are the page's)
     fz_var(page);
     fz_var(graphic);
     fz_var(buf);
+    fz_var(created);
     fz_try(ctx) {
         pdf_document *pdf = pdf_document_from_fz_document(ctx, doc);
         if (!pdf) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Only a PDF can be signed");
@@ -489,7 +502,7 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
         } else {
             char name[32];
             unused_field_name(ctx, pdf, name, sizeof name);
-            widget = pdf_create_signature_widget(ctx, page, name);
+            widget = created = pdf_create_signature_widget(ctx, page, name);
             pdf_set_annot_rect(ctx, widget, rect);
             pdf_obj *obj = pdf_annot_obj(ctx, widget);
             // The page it's on, which readers (and the Document tab) look for.
@@ -515,6 +528,7 @@ int mupdf_pdf_sign(fz_context *ctx, fz_document *doc, int pageno, int widget_ind
         }
         sign_widget(ctx, pdf, widget, signer, graphic, reason, location, flags, certify);
     } fz_always(ctx) {
+        pdf_drop_annot(ctx, created);
         fz_drop_image(ctx, graphic);
         fz_drop_buffer(ctx, buf);
         fz_drop_page(ctx, (fz_page *)page);

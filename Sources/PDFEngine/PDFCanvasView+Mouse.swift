@@ -112,7 +112,7 @@ extension PDFCanvasView {
                 viewModel.pendingSignatureData = nil
                 currentHoverCanvasPoint = nil
                 needsDisplay = true
-                DispatchQueue.main.async { [weak self] in self?.viewModel.explainHandwrittenSignatureOnce() }
+                DispatchQueue.main.async { [weak self] in self?.liveViewModel?.explainHandwrittenSignatureOnce() }
             }
             return
         }

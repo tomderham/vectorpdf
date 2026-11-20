@@ -24,21 +24,41 @@ import Foundation
 import UniformTypeIdentifiers
 import PDFEngine
 
-/// The file a document parameter names: the file itself, or a temporary copy when Shortcuts
-/// passes only its contents. Nil for no file, meaning the front document.
-private func filePath(of file: IntentFile?) throws -> String? {
-    guard let file else { return nil }
-    if let url = file.fileURL {
-        _ = url.startAccessingSecurityScopedResource()
-        return url.path
+/// The file a document parameter names, for as long as an action reads it: the file itself, or
+/// a temporary copy when Shortcuts passes only its contents. Nil for no file, meaning the front
+/// document.
+private struct IntentDocument {
+    let path: String
+    private let scopedURL: URL?
+    private let temporaryFolder: URL?
+
+    init?(_ file: IntentFile?) throws {
+        guard let file else { return nil }
+        if let url = file.fileURL {
+            path = url.path
+            scopedURL = url.startAccessingSecurityScopedResource() ? url : nil
+            temporaryFolder = nil
+            return
+        }
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VectorPDF Shortcuts", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // Its name only: a name with a path in it would put the copy somewhere else.
+        let name = (file.filename as NSString).lastPathComponent
+        let url = folder.appendingPathComponent(name.isEmpty || name == "." || name == ".." ? "Document.pdf" : name)
+        try file.data.write(to: url)
+        path = url.path
+        scopedURL = nil
+        temporaryFolder = folder
     }
-    let folder = FileManager.default.temporaryDirectory
-        .appendingPathComponent("VectorPDF Shortcuts", isDirectory: true)
-        .appendingPathComponent(UUID().uuidString, isDirectory: true)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    let url = folder.appendingPathComponent(file.filename.isEmpty ? "Document.pdf" : file.filename)
-    try file.data.write(to: url)
-    return url.path
+
+    /// Done with it: access to the file given up, the copy deleted. Not for one left open in a
+    /// tab, which still reads it.
+    func finish() {
+        scopedURL?.stopAccessingSecurityScopedResource()
+        if let temporaryFolder { try? FileManager.default.removeItem(at: temporaryFolder) }
+    }
 }
 
 struct OpenDocumentIntent: AppIntent {
@@ -92,7 +112,9 @@ struct SearchDocumentIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<[String]> & ProvidesDialog {
-        let path = try filePath(of: document) ?? AppIntentActions.frontDocumentPath()
+        let file = try IntentDocument(document)
+        defer { file?.finish() }
+        let path = try file?.path ?? AppIntentActions.frontDocumentPath()
         let found = try await AppIntentActions.search(path: path, query: query, matchCase: matchCase, wholeWord: wholeWord)
         let name = FileManager.default.displayName(atPath: path)
         let dialog: IntentDialog
@@ -123,7 +145,8 @@ struct AskAboutDocumentIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let path = try filePath(of: document) ?? AppIntentActions.frontDocumentPath()
+        // Left as it is: the document stays open in a tab, with the question in its Agent tab.
+        let path = try IntentDocument(document)?.path ?? AppIntentActions.frontDocumentPath()
         let answer = try await AppIntentActions.ask(path: path, question: question)
         return .result(value: answer.text, dialog: "\(answer.text)")
     }
@@ -145,7 +168,9 @@ struct ExtractPagesIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
-        let path = try filePath(of: document) ?? AppIntentActions.frontDocumentPath()
+        let file = try IntentDocument(document)
+        defer { file?.finish() }
+        let path = try file?.path ?? AppIntentActions.frontDocumentPath()
         let url = try await AppIntentActions.extractPages(path: path, ranges: pages)
         return .result(value: IntentFile(fileURL: url, filename: url.lastPathComponent, type: .pdf))
     }

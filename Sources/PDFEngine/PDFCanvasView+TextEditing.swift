@@ -789,8 +789,13 @@ extension PDFCanvasView {
     func alignSelectedAnnotations(_ alignment: AnnotationAlignment) {
         let annots = selectedAnnotationsNow
         guard annots.count >= 2, let page = selectedAnnotation?.pageIndex else { return }
-        let boxes = Dictionary(uniqueKeysWithValues: annots.map { ($0.id, $0.boundingRect) })
-        let all = annots.map(\.boundingRect)
+        // A measurement by its points: its bounding box has room around them for its label.
+        func box(_ annot: PDFAnnotation) -> CGRect {
+            let isMeasurement = [.measureLength, .measurePerimeter, .measureArea, .measureAngle].contains(annot.type)
+            return isMeasurement && !annot.measurementPoints.isEmpty ? CGRect(enclosing: annot.measurementPoints) : annot.boundingRect
+        }
+        let boxes = Dictionary(uniqueKeysWithValues: annots.map { ($0.id, box($0)) })
+        let all = annots.map(box)
         var deltas: [UUID: CGSize] = [:]
         switch alignment {
         case .left: let x = all.map(\.minX).min()!; for a in annots { deltas[a.id] = CGSize(width: x - boxes[a.id]!.minX, height: 0) }

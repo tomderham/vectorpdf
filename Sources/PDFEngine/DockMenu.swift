@@ -111,7 +111,10 @@ public enum DockMenu {
     /// Other tabs' snapshot windows are left where they are.
     public static func activate(_ tab: NSWindow) {
         NSApp.activate()
-        if tab.isMiniaturized { tab.deminiaturize(nil) }
+        // A minimized window is its selected tab: another tab of it isn't itself minimized.
+        if let minimized = tab.isMiniaturized ? tab : tab.tabGroup?.windows.first(where: \.isMiniaturized) {
+            minimized.deminiaturize(nil)
+        }
         tab.tabGroup?.selectedWindow = tab
         tab.makeKeyAndOrderFront(nil)
         for child in SnapshotWindowManager.shared.windows(openedFrom: [tab]) {

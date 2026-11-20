@@ -48,10 +48,16 @@ public enum AutosaveRecovery {
     @MainActor static func pdfURL(_ id: UUID) -> URL { directory.appendingPathComponent("\(id.uuidString).pdf") }
     @MainActor static func recordURL(_ id: UUID) -> URL { directory.appendingPathComponent("\(id.uuidString).json") }
 
-    /// The copies there are, newest first; ones whose PDF is missing are dropped.
+    /// The copies there are, newest first; ones whose PDF is missing are dropped, as are PDFs
+    /// without a note an hour after they were written (a crash between the two).
     @MainActor
     public static func records() -> [Record] {
-        let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        let notes = Set(urls.filter { $0.pathExtension == "json" }.map { $0.deletingPathExtension().lastPathComponent })
+        for url in urls where url.pathExtension == "pdf" && !notes.contains(url.deletingPathExtension().lastPathComponent) {
+            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+            if modified < Date().addingTimeInterval(-3600) { try? FileManager.default.removeItem(at: url) }
+        }
         return urls.filter { $0.pathExtension == "json" }.compactMap { url -> Record? in
             guard let data = try? Data(contentsOf: url), let record = try? JSONDecoder().decode(Record.self, from: data) else {
                 try? FileManager.default.removeItem(at: url)
@@ -192,11 +198,14 @@ extension PDFViewerViewModel {
                 try JSONEncoder().encode(record).write(to: note, options: .atomic)
                 return true
             } catch {
+                // No copy without its note, which nothing would find.
+                try? FileManager.default.removeItem(at: pdf)
                 return false
             }
         }.value
-        // Saved or thrown away meanwhile: the copy isn't wanted.
-        if ok, !isDocumentEdited || document !== doc { AutosaveRecovery.discard(id) }
+        // Saved or thrown away meanwhile (its copy discarded while this one was written, at
+        // quit say): the copy isn't wanted.
+        if ok, !isDocumentEdited || document !== doc || recoveryID != id { AutosaveRecovery.discard(id) }
     }
 
     func discardRecoveryCopy() {

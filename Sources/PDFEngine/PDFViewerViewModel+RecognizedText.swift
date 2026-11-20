@@ -24,7 +24,12 @@ import UniformTypeIdentifiers
 final class RecognitionProgress: ObservableObject {
     @Published var done = 0
     let total: Int
-    @Published var isCancelled = false
+    @Published var isCancelled = false {
+        didSet { if isCancelled { onCancel?() } }
+    }
+    /// Called when Cancel is clicked, for work off the main thread to stop without waiting for
+    /// its next progress report.
+    var onCancel: (() -> Void)?
 
     init(total: Int) { self.total = total }
 }
@@ -140,7 +145,8 @@ extension PDFViewerViewModel {
     /// opens it again from there, as the edits and text are now in the file.
     private func writeRecognizedText(of doc: PDFDocumentCore, to url: URL) async {
         let results = Array(ocrResults.values)
-        let overwritesOpenFile = url.path == doc.filePath
+        let overwritesOpenFile = url.standardizedFileURL.resolvingSymlinksInPath().path
+            == URL(fileURLWithPath: doc.filePath).standardizedFileURL.resolvingSymlinksInPath().path
         if overwritesOpenFile { fileChangeWatcher = nil }
         let failure: String? = await Task.detached(priority: .userInitiated) {
             do {
@@ -151,7 +157,7 @@ extension PDFViewerViewModel {
             }
         }.value
         if let failure {
-            if overwritesOpenFile { armFileChangeWatcher(path: doc.filePath) }
+            if overwritesOpenFile, document === doc { armFileChangeWatcher(path: doc.filePath) }
             showErrorAlert(title: "Failed to Save Recognized Text", message: failure)
             return
         }
