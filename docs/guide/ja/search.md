@@ -1,11 +1,11 @@
-<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, セクション, アウトライン, 目次, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 87f66076cf3e -->
+<!-- keywords: 検索, 探す, 次を検索, 大文字と小文字を区別, 単語単位, スマート検索, 無視するパターン, 正規表現, タグ, 最近の検索, 検索履歴, セクション, アウトライン, 目次, 右側, アウトラインの横, 検索を移動, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, right side, beside the outline, move search, PDF -->
+<!-- source: 9e3d931100aa -->
 
 # 書類を検索する
 
 ## テキストを検索する
 
-1. ⌘F を押します。サイドバーに Search タブが表示されます。
+1. ⌘F を押します。サイドバーに Search タブが表示されます。[ウインドウの右側に移動](#see-results-beside-the-outline)している場合は右側に表示されます。
 2. 検索する語句を入力します。検索結果は、現在のページから順に、見つかるたびに表示されます。
 
 検索結果はページごとに前後のテキストとともに一覧表示され、一致した箇所はすべて書類内でハイライトされます。[アウトライン](outline-and-thumbnails.md)のある書類では、検索結果がそれぞれのセクションごとにもまとめられます。セクションの名前は、そのセクションの結果をスクロールしている間はリストの一番上に留まります。どの上位セクションに含まれるかを確認するには、名前の上にポインタを置きます。
@@ -20,6 +20,14 @@
 | リストを順に移動する | 検索結果をクリックしてから、矢印キーを押します |
 
 検索結果を右クリックすると、そこから[アンカーを作成](anchors.md)したり、新しいウインドウで開いたりできます。
+
+## アウトラインの横に検索結果を表示する {#see-results-beside-the-outline}
+
+検索結果とアウトラインを同時に表示するには、検索フィールドの横にあるオプションボタンをクリックして Show Search on Right を選択します。Search がウインドウの右側に移動し、サイドバーにはアウトラインが表示されます。書類にアウトラインがない場合はページのサムネールが表示されます。検索結果のあるアウトライン項目にはその件数が表示され、現在の結果を含むセクションの件数はハイライトされます。サブセクションを閉じているセクションでは、その中の結果も件数に含まれます。アウトライン項目をクリックすると、ページにはそのセクションの見出しが表示され、検索結果のリストはそのセクションの結果までスクロールします(セクション自体に結果がない場合はサブセクションの結果まで)。現在の結果は、ほかの結果をクリックするまで変わりません。
+
+Search をどちら側に置いたかは書類ごとに記憶されます。サイドバーに戻すには、もう一度 Show Search on Right を選択してオフにします。右側にあるときに隠すには、横にある閉じるボタン(×)をクリックします。もう一度表示するには、⌘F を押すか、サイドバーの上部にある Search ボタンをクリックします。
+
+Search は右側を [Inspector](rulers-and-inspector.md#the-inspector) と共有します。両方が開いているときは、上部の Search ボタンと Inspector ボタンで切り替えます。
 
 ## 以前に検索した語句をもう一度検索する
 
@@ -37,6 +45,7 @@ VectorPDF は最も近い結果に移動します。書類の検索履歴を消�
 - **Match Case:** 大文字と小文字が同じテキストだけを検索します。
 - **Whole Word:** 長い単語の一部には一致しません。
 - **Smart Search:** オフにしない限りオンになっています。スペース、ハイフン、ダッシュ、改行が互いに一致するため、“end-to-end” は、行をまたいでいても “end to end” にも一致します。ストレート引用符とカーリー引用符も互いに一致します。
+- **Show Search on Right:** Search をサイドバーからウインドウの右側に移動し、[アウトラインの横](#see-results-beside-the-outline)に表示できるようにします。
 
 ## テキスト内の不要な要素を無視する {#ignore-clutter-in-the-text}
 

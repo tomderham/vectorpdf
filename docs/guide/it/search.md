@@ -1,11 +1,11 @@
-<!-- keywords: cercare, ricerca, trova, trova successivo, maiuscole e minuscole, parola intera, ricerca intelligente, schemi ignorati, espressione regolare, tag, ricerche recenti, cronologia ricerche, sezione, struttura, indice, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 87f66076cf3e -->
+<!-- keywords: cercare, ricerca, trova, trova successivo, maiuscole e minuscole, parola intera, ricerca intelligente, schemi ignorati, espressione regolare, tag, ricerche recenti, cronologia ricerche, sezione, struttura, indice, lato destro, accanto alla struttura, spostare la ricerca, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, right side, beside the outline, move search, PDF -->
+<!-- source: 9e3d931100aa -->
 
 # Cercare in un documento
 
 ## Trovare del testo
 
-1. Premi ⌘F. VectorPDF mostra il pannello Search nella barra laterale.
+1. Premi ⌘F. VectorPDF mostra il pannello Search nella barra laterale, oppure a destra della finestra se l’hai [spostato lì](#see-results-beside-the-outline).
 2. Digita ciò che stai cercando. I risultati compaiono man mano che vengono trovati, a partire dalla pagina in cui ti trovi.
 
 I risultati sono elencati per pagina, ciascuno con il testo circostante, e ogni corrispondenza viene evidenziata nel documento. In un documento con una [struttura](outline-and-thumbnails.md), i risultati sono anche raggruppati per la sezione in cui si trovano. Il nome della sezione resta in cima all’elenco mentre scorri i suoi risultati. Per vedere di quali sezioni più ampie fa parte, tieni il puntatore sopra il nome.
@@ -20,6 +20,14 @@ I risultati sono elencati per pagina, ciascuno con il testo circostante, e ogni 
 | Scorrere l'elenco | Fai clic su un risultato, quindi premi i tasti freccia |
 
 Fai clic con il tasto destro su un risultato per [creare un ancoraggio](anchors.md) o per aprirlo in una nuova finestra.
+
+## Vedere i risultati accanto alla struttura {#see-results-beside-the-outline}
+
+Per vedere contemporaneamente i risultati e la struttura, fai clic sul pulsante delle opzioni accanto al campo di ricerca e scegli Show Search on Right. La ricerca si sposta sul lato destro della finestra e la barra laterale mostra la struttura, oppure le miniature delle pagine se il documento non ha una struttura. Ogni voce della struttura con dei risultati ne mostra il numero, e il conteggio della sezione con il risultato attuale è evidenziato. Una sezione con le sottosezioni nascoste conta anche i risultati al loro interno. Fai clic su una voce della struttura e l’elenco dei risultati scorre fino ai risultati di quella sezione (o a quelli delle sue sottosezioni, se non ne ha di propri), mentre la pagina mostra il titolo della sezione; il risultato attuale resta lo stesso finché non fai clic su uno.
+
+Ogni documento ricorda su quale lato hai messo la ricerca. Per riportarla nella barra laterale, scegli di nuovo Show Search on Right per disattivarla. Per nasconderla mentre è a destra, fai clic sul pulsante di chiusura (×) accanto. Per mostrarla di nuovo, premi ⌘F oppure fai clic sul pulsante Search in cima alla barra laterale.
+
+La ricerca condivide il lato destro con l’[Inspector](rulers-and-inspector.md#the-inspector). Quando sono aperti entrambi, passa dall’uno all’altro con i pulsanti Search e Inspector in alto.
 
 ## Cercare di nuovo qualcosa che hai già cercato
 
@@ -37,6 +45,7 @@ Fai clic sul pulsante delle opzioni accanto al campo di ricerca:
 - **Match Case:** trova solo il testo con le stesse maiuscole e minuscole.
 - **Whole Word:** non trova corrispondenze all'interno di parole più lunghe.
 - **Smart Search:** è attiva a meno che tu non la disattivi. Spazi, trattini, lineette e interruzioni di riga sono considerati equivalenti, quindi “end-to-end” trova anche “end to end”, persino tra una riga e l'altra. Anche le virgolette dritte e quelle tipografiche sono considerate equivalenti.
+- **Show Search on Right:** sposta la ricerca dalla barra laterale alla destra della finestra, così puoi vederla [accanto alla struttura](#see-results-beside-the-outline).
 
 ## Ignorare gli elementi di disturbo nel testo {#ignore-clutter-in-the-text}
 

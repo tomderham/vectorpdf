@@ -1,11 +1,11 @@
-<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, 섹션, 개요, 목차, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, PDF -->
-<!-- source: 87f66076cf3e -->
+<!-- keywords: 검색, 찾기, 다음 찾기, 대소문자 구분, 단어 단위, 스마트 검색, 무시할 패턴, 정규 표현식, 태그, 최근 검색, 검색 기록, 섹션, 개요, 목차, 오른쪽, 개요 옆, 검색 이동, search, find, find next, match case, whole word, smart search, ignored patterns, regular expression, regex, tags, recent searches, search history, section, outline, table of contents, right side, beside the outline, move search, PDF -->
+<!-- source: 9e3d931100aa -->
 
 # 문서 검색하기
 
 ## 텍스트 찾기
 
-1. ⌘F 키를 누릅니다. VectorPDF의 사이드바에 Search 탭이 표시됩니다.
+1. ⌘F 키를 누릅니다. VectorPDF의 사이드바에 Search 탭이 표시되며, [윈도우 오른쪽으로 옮긴](#see-results-beside-the-outline) 경우에는 오른쪽에 표시됩니다.
 2. 찾으려는 내용을 입력합니다. 현재 페이지부터 시작하여 찾는 대로 결과가 나타납니다.
 
 결과는 페이지별로 주변 텍스트와 함께 나열되며, 일치하는 모든 항목이 문서에서 하이라이트됩니다. [개요](outline-and-thumbnails.md)가 있는 문서에서는 결과가 속한 섹션별로도 묶입니다. 섹션 이름은 해당 섹션의 결과를 스크롤하는 동안 목록 맨 위에 고정됩니다. 어떤 상위 섹션에 속하는지 보려면 이름 위에 포인터를 올려 놓습니다.
@@ -20,6 +20,14 @@
 | 목록을 차례로 이동하기 | 결과를 클릭한 다음 화살표 키를 누릅니다. |
 
 결과를 오른쪽 클릭하면 해당 결과로 [앵커를 생성](anchors.md)하거나 새로운 윈도우에서 열 수 있습니다.
+
+## 개요 옆에서 결과 보기 {#see-results-beside-the-outline}
+
+결과와 개요를 동시에 보려면 검색 필드 옆의 옵션 버튼을 클릭하고 Show Search on Right를 선택합니다. Search가 윈도우 오른쪽으로 이동하고 사이드바에는 개요가 표시되며, 문서에 개요가 없으면 페이지 썸네일이 표시됩니다. 결과가 있는 각 개요 항목에는 결과 개수가 표시되고, 현재 결과가 있는 섹션의 개수는 하이라이트됩니다. 하위 섹션이 가려진 섹션은 그 안의 결과도 함께 셉니다. 개요 항목을 클릭하면 페이지에는 해당 섹션의 제목이 표시되고, 결과 목록은 해당 섹션의 결과로 스크롤됩니다(섹션 자체에 결과가 없으면 하위 섹션의 결과로 스크롤됨). 현재 결과는 다른 결과를 클릭할 때까지 그대로 유지됩니다.
+
+각 문서는 Search를 어느 쪽에 두었는지 기억합니다. 사이드바로 되돌리려면 Show Search on Right를 다시 선택해 끕니다. 오른쪽에 있을 때 가리려면 옆에 있는 닫기 버튼(×)을 클릭합니다. 다시 보려면 ⌘F 키를 누르거나 사이드바 상단의 Search 버튼을 클릭합니다.
+
+Search는 오른쪽 영역을 [Inspector](rulers-and-inspector.md#the-inspector)와 함께 사용합니다. 둘 다 열려 있으면 상단의 Search 및 Inspector 버튼으로 전환합니다.
 
 ## 이전에 검색한 내용 다시 검색하기
 
@@ -37,6 +45,7 @@ VectorPDF는 가장 가까운 결과로 이동합니다. 문서의 검색 기록
 - **Match Case:** 대소문자가 같은 텍스트만 찾습니다.
 - **Whole Word:** 더 긴 단어의 일부와는 일치시키지 않습니다.
 - **Smart Search:** 끄지 않는 한 켜져 있습니다. 공백, 하이픈, 대시, 줄 바꿈이 서로 일치하므로 “end-to-end”를 검색하면 줄이 바뀐 경우를 포함하여 “end to end”도 찾습니다. 곧은따옴표와 둥근따옴표도 서로 일치합니다.
+- **Show Search on Right:** Search를 사이드바에서 윈도우 오른쪽으로 옮겨 [개요 옆](#see-results-beside-the-outline)에서 볼 수 있게 합니다.
 
 ## 텍스트 속 불필요한 요소 무시하기 {#ignore-clutter-in-the-text}
 
