@@ -1,5 +1,5 @@
 <!-- keywords: handschriftliche Unterschrift, Unterschrift, unterschreiben, Stempel, Unterschriften, signieren, Initialen, stamp, stamps, signature, signatures, sign, signing, initials, PDF, handwritten signature, digital signature, sign with certificate, certificate, p12, pfx, keychain, timestamp, certify, lock fields, which signature -->
-<!-- source: b94ff6b8a43e -->
+<!-- source: 132d42959c5b -->
 
 # Ein Dokument unterschreiben
 
@@ -37,15 +37,17 @@ Zum Signieren brauchst du ein Zertifikat zum Signieren mit seinem privaten Schl�
 4. Wenn du möchtest, wähle unter „After Signing“:
    - **Certify**, wenn noch niemand das Dokument signiert hat: Lege fest, welche Änderungen es von nun an gültig lassen: Formulare ausfüllen, signieren und Anmerkungen; Formulare ausfüllen und signieren; oder keine. Ein beglaubigtes Dokument wird jedem, der es prüft, als beglaubigt angezeigt, und spätere Änderungen, die es nicht erlaubt, machen deine Signatur ungültig.
    - **Lock form fields**, bei einem Formular: Alle seine Felder oder die, die du auswählst, werden schreibgeschützt, sodass sie die Werte behalten, die du signiert hast.
-5. Klicke auf **Sign**.
+5. Klicke auf **Sign** und wähle dann, wo das signierte Dokument gesichert werden soll. VectorPDF schlägt eine Kopie neben dem Original vor, deren Name auf „(signed)“ endet, und lässt das Original unsigniert; die signierte Kopie wird dann an seiner Stelle geöffnet. Um das Original selbst zu signieren, wähle stattdessen dieses und klicke auf **Replace**.
 
-Beim Signieren wird das Dokument gesichert. Hat es ungesicherte Änderungen, fragt VectorPDF daher zuerst, ob sie gesichert werden sollen. Sie werden Teil dessen, was du signierst. macOS fragt eventuell, ob VectorPDF den Schlüssel deines Zertifikats verwenden darf.
+Eine Signatur wird über das Dokument gebildet, wie es gesichert ist, daher wird beim Signieren immer gesichert. Hat das Dokument ungesicherte Änderungen, fragt VectorPDF zuerst, ob sie gesichert werden sollen; sie werden Teil dessen, was du signierst. macOS fragt eventuell, ob VectorPDF den Schlüssel deines Zertifikats verwenden darf.
+
+Eine Signatur lässt sich nicht wieder aus einer signierten Datei entfernen: Sie ist da, damit jeder erkennen kann, dass das Dokument seitdem nicht geändert wurde. Wenn du eine Kopie signierst, bleibt das unsignierte Original erhalten, um es erneut zu signieren oder zu ändern.
 
 Sofern du sie nicht sperrst oder das Dokument für weniger beglaubigst, lässt die Signatur die anderen Formularfelder des Dokuments, wie sie sind, sodass andere sie weiterhin ausfüllen, ebenfalls signieren oder Anmerkungen hinzufügen können, ohne deine Signatur ungültig zu machen. Jede spätere Signatur wird auf dieselbe Weise nach den früheren angefügt.
 
 Die Signatur ist eine PKCS-#7-Signatur mit SHA-256 und enthält dein Zertifikat und die der Stellen, die es ausgestellt haben. Sie hält die Uhrzeit auf deinem Mac fest.
 
-Damit ein Zeitstempelserver bestätigt, wann du signiert hast, schalte **Add a timestamp** ein und gib seine Adresse an (deine Organisation betreibt vielleicht einen; kostenlose gibt es etwa von DigiCert, `http://timestamp.digicert.com`). Mit einem Zeitstempel kann deine Signatur so geprüft werden, wie sie beim Signieren war, auch nachdem dein Zertifikat abgelaufen ist. Der Server erhält nur einen Fingerabdruck der Signatur, nichts vom Dokument. Ist er nicht erreichbar, wird nichts signiert und das Dokument bleibt, wie es war.
+Damit ein Zeitstempelserver bestätigt, wann du signiert hast, schalte **Add a timestamp** ein und gib seine Adresse an (deine Organisation betreibt vielleicht einen; kostenlose gibt es etwa von DigiCert, `http://timestamp.digicert.com`). Mit einem Zeitstempel kann deine Signatur so geprüft werden, wie sie beim Signieren war, auch nachdem dein Zertifikat abgelaufen ist. Der Server erhält nur einen Fingerabdruck der Signatur, nichts vom Dokument. Eine Adresse, die mit `http://` beginnt, funktioniert bei den bekannten öffentlichen Zeitstempelservern (etwa denen von DigiCert, Sectigo, GlobalSign, Entrust und Apple) und bei Servern in deinem lokalen Netzwerk; verwende für jeden anderen Server seine `https://`-Adresse. Ist der Server nicht erreichbar, wird nichts signiert und das Dokument bleibt, wie es war.
 
 Wie du die Signaturen eines Dokuments prüfst, erfährst du unter [Digitale Signaturen prüfen](digital-signatures.md).
 

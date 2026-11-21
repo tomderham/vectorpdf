@@ -1,5 +1,5 @@
 <!-- keywords: Seitenbeschriftungen, Seitenzahlen, Blattnummern, navigieren, Navigation, scrollen, Seite, Seiten, zu Seite gehen, zurück, vorwärts, Pfeiltasten, springen, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # In einem Dokument navigieren
 
@@ -18,7 +18,7 @@ Mit der Tastatur:
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Vorherige oder nächste Seite |
 | ⌘Up Arrow, ⌘Down Arrow | Erste oder letzte Seite |
 
-Im Two-Page Mode blättern diese Tasten um eine ganze Doppelseite.
+Im Two-Page Mode blättern diese Tasten um eine ganze Doppelseite. Ist [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) eingeschaltet, bewegen Space, Page Down, ⇧Space und Page Up jeweils um eine Bildschirmbreite an Seiten weiter.
 
 ## Zu einer Seite gehen
 

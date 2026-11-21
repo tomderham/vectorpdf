@@ -1,5 +1,5 @@
 <!-- keywords: vérifier les titres, modifier le plan, ajouter un signet, plan à partir des titres, titres, créer une table des matières, renommer, mettre en retrait, plan, table des matières, sommaire, signets, vignette, vignettes, barre latérale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # Plan et vignettes
 
@@ -7,11 +7,12 @@ Cliquez sur l’onglet Outline & Thumbnails en haut de la barre latérale, puis 
 
 ## Plan
 
-Le plan est la table des matières du document, s’il en a une. La section que vous lisez est mise en évidence pendant le défilement.
+Le plan est la table des matières du document, s’il en a une. La section que vous lisez est mise en évidence pendant le défilement. Après être allé à un résultat de recherche ou avoir suivi un lien, la section qui le contient est mise en évidence, jusqu’à ce que vous fassiez de nouveau défiler.
 
 - **Accéder à une section :** cliquez dessus. Son titre défile près du haut de la fenêtre, ou reste où il est si vous le voyez déjà.
 - **Afficher ou masquer les sous-sections :** cliquez sur la flèche à côté d’une section.
 - **Trouver une section :** saisissez du texte dans le champ « Search outline ». Seules les sections correspondantes sont affichées.
+- **Voir où se trouvent les résultats de recherche :** lorsque Search est [à droite de la fenêtre](search.md#see-results-beside-the-outline), chaque section indique combien de résultats elle contient.
 - **Garder une section à portée de main :** cliquez dessus avec le bouton droit pour créer une [ancre](anchors.md) ou l’ouvrir dans une nouvelle fenêtre.
 
 ## Modifier le plan {#edit-the-outline}

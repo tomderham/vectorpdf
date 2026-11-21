@@ -1,5 +1,5 @@
 <!-- keywords: पेज लेबल, पेज नंबर, शीट नंबर, नेविगेट, नेविगेशन, स्क्रोल, पेज, पेज पर जाएँ, पीछे, आगे, तीर कुंजियाँ, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # दस्तावेज़ में इधर-उधर जाएँ
 
@@ -18,7 +18,7 @@
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | पिछला या अगला पेज |
 | ⌘Up Arrow, ⌘Down Arrow | पहला या अंतिम पेज |
 
-Two-Page Mode में ये कुंजियाँ पूरा स्प्रेड पलटती हैं।
+Two-Page Mode में ये कुंजियाँ पूरा स्प्रेड पलटती हैं। [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) चालू होने पर Space, Page Down, ⇧Space और Page Up एक बार में एक स्क्रीन भर पेज आगे या पीछे ले जाते हैं।
 
 ## किसी पेज पर जाएँ
 

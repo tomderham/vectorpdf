@@ -1,5 +1,5 @@
 <!-- keywords: barre d’état, position du pointeur, coordonnées, taille de page, format de papier, règles, repères, grille, aimantation, unités, millimètres, pouces, points, Inspector, police, taille de police, couleur, résolution d’image, navigateur, nombre de mots, nombre de caractères, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # Règles, barre d’état et Inspector
 
@@ -37,7 +37,7 @@ Lorsque **Snap to Guides and Grid** est activé dans View > Rulers and Grid, les
 
 ## L’Inspector {#the-inspector}
 
-Choisissez View > Show Inspector (⌃⌘I) pour afficher l’Inspector à côté de la page. Vous pouvez aussi cliquer avec le bouton droit sur la page et choisir Inspect.
+Choisissez View > Show Inspector (⌃⌘I) pour afficher l’Inspector à côté de la page. Vous pouvez aussi cliquer avec le bouton droit sur la page et choisir Inspect. Si vous avez [déplacé la recherche à droite](search.md#see-results-beside-the-outline), les deux partagent ce côté : passez de l’un à l’autre avec les boutons Search et Inspector en haut.
 
 - **Texte, images et dessins :** avec l’Inspector ouvert, cliquez sur la page en mode Select. L’Inspector indique ce qui y est dessiné, et la page l’entoure :
   - **Texte :** la police, sa taille, le caractère, sa couleur et son espace colorimétrique, et si la police est incluse dans le fichier. Une police qui ne l’est pas est remplacée par une autre, dont le rendu imprimé peut différer.

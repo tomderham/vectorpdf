@@ -1,5 +1,5 @@
 <!-- keywords: firma autografa, firma, firmare, timbro, timbri, firme, iniziali, stamp, stamps, signature, signatures, sign, signing, initials, PDF, handwritten signature, digital signature, sign with certificate, certificate, p12, pfx, keychain, timestamp, certify, lock fields, which signature -->
-<!-- source: b94ff6b8a43e -->
+<!-- source: 132d42959c5b -->
 
 # Firmare un documento
 
@@ -37,15 +37,17 @@ Per firmare ti serve un certificato di firma con la sua chiave privata. La tua o
 4. Se vuoi, scegli in After Signing:
    - **Certify**, se nessuno ha ancora firmato il documento: indica quali modifiche lo lasciano valido d’ora in poi: compilare moduli, firmare e aggiungere annotazioni; compilare moduli e firmare; oppure nessuna. Un documento certificato appare come tale a chiunque lo verifichi, e le modifiche successive che non consente rendono non valida la tua firma.
    - **Lock form fields**, per un modulo: tutti i suoi campi, o quelli che scegli, diventano di sola lettura e mantengono i valori che hai firmato.
-5. Fai clic su **Sign**.
+5. Fai clic su **Sign**, quindi scegli dove salvare il documento firmato. VectorPDF propone una copia accanto all’originale, con “(signed)” alla fine del nome, e lascia l’originale non firmato; la copia firmata si apre poi al suo posto. Per firmare l’originale stesso, sceglilo al posto della copia e fai clic su **Replace**.
 
-Firmare salva il documento, quindi se ci sono modifiche non salvate VectorPDF ti chiede prima di salvarle. Entrano a far parte di ciò che firmi. macOS potrebbe chiederti di consentire a VectorPDF di usare la chiave del tuo certificato.
+Una firma si applica al documento così come è salvato, quindi firmare salva sempre. Se il documento ha modifiche non salvate, VectorPDF ti chiede prima di salvarle; entrano a far parte di ciò che firmi. macOS potrebbe chiederti di consentire a VectorPDF di usare la chiave del tuo certificato.
+
+Una firma non può essere tolta da un file firmato: serve proprio a far vedere a chiunque che il documento non è cambiato da allora. Firmare una copia conserva l’originale non firmato, per firmarlo di nuovo o modificarlo.
 
 A meno che tu non li blocchi o certifichi il documento per meno, la firma lascia gli altri campi modulo del documento come erano, così altre persone possono ancora compilarli, firmare a loro volta o aggiungere annotazioni senza rendere non valida la tua firma. Ogni firma successiva viene aggiunta dopo le precedenti nello stesso modo.
 
 La firma è una firma PKCS #7 con SHA-256 che contiene il tuo certificato e quelli delle autorità che lo hanno emesso. Registra l’ora del tuo Mac.
 
-Perché un server di marcatura temporale garantisca quando hai firmato, attiva **Add a timestamp** e indica il suo indirizzo (la tua organizzazione potrebbe averne uno; ne esistono di gratuiti, come quello di DigiCert, `http://timestamp.digicert.com`). Con una marca temporale, la tua firma può essere verificata com’era al momento della firma, anche dopo la scadenza del tuo certificato. Il server riceve solo un’impronta della firma, nulla del documento. Se non è raggiungibile, non viene firmato nulla e il documento resta com’era.
+Perché un server di marcatura temporale garantisca quando hai firmato, attiva **Add a timestamp** e indica il suo indirizzo (la tua organizzazione potrebbe averne uno; ne esistono di gratuiti, come quello di DigiCert, `http://timestamp.digicert.com`). Con una marca temporale, la tua firma può essere verificata com’era al momento della firma, anche dopo la scadenza del tuo certificato. Il server riceve solo un’impronta della firma, nulla del documento. Un indirizzo che inizia con `http://` funziona con i server di marcatura temporale pubblici più noti (come quelli di DigiCert, Sectigo, GlobalSign, Entrust e Apple) e con i server della tua rete locale; per qualsiasi altro server, usa il suo indirizzo `https://`. Se il server non è raggiungibile, non viene firmato nulla e il documento resta com’era.
 
 Per verificare le firme di un documento, consulta [Verificare le firme digitali](digital-signatures.md).
 

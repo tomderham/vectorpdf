@@ -1,5 +1,5 @@
 <!-- keywords: 检查数字签名, 时间戳, 时间戳服务器, 认证, 锁定栏位, 数字签名, 签名, 使用证书签名, 证书, 钥匙串, 已签名, 签名人, 有效, 无效, 检查, 验证, 信任, 身份, 篡改, 更改, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # 检查数字签名
 
@@ -20,7 +20,7 @@
 - 它所签署的文件部分是否与签署时完全一致。
 - 文件在签署后是否再次存储过，以及这些更改是否属于签名允许的更改。填写表单栏位、添加签名以及添加或更改注释通常是允许的。认证签名可能允许较少的更改。如果签署后添加了注释，列表会注明：注释可能会遮盖已签署的内容。
 - 签名人（按其证书中的姓名）以及证书的颁发者。如果签名软件写入文稿的姓名与之不同，也会一并显示。
-- 签署时间。如果时间戳属于此签名且你的 Mac 信任其机构，来自时间戳机构的时间是有担保的；否则列表会说明它为何不计入。来自签名人自己电脑的时间则没有担保。
+- 签署时间。如果时间戳属于此签名且你的 Mac 信任其机构，来自时间戳机构的时间是有担保的；否则列表会说明它为何不计入。来自签名人自己电脑的时间则没有担保。签名人的证书按时间戳所示时间的状态检查，没有时间戳则按现在的状态检查，因此没有时间戳的签名会在其证书过期后不再被验证。
 - 签名人填写的原因和地点（如有）。
 
 点按签名可前往它在页面上的位置。若要查看其证书，请点按 **Show Certificate**，或右键点按签名并选取 Show Certificate。

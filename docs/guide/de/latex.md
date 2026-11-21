@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, Vorwärtssuche, Rückwärtssuche, Quelltext, Quelle, Editor, zur Quelle springen, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: ce9849c21b67 -->
+<!-- source: 554d3591f830 -->
 
 # LaTeX-Quelltext und PDF verbinden
 
@@ -31,7 +31,7 @@ Dein Editor bittet VectorPDF, eine Zeile anzuzeigen, indem er `displayline` ausf
 
 VectorPDF holt das PDF nach vorn, öffnet es, falls es nicht geöffnet ist, und hebt die Zeile kurz rot hervor. Es scrollt nur, wenn die Zeile nicht schon zu sehen ist. Setze `-g` vor LINE, damit VectorPDF hinter deinem Editor bleibt.
 
-`displayline` nimmt dieselben Argumente wie das von Skim. Hat dein Editor eine Einstellung für Skim, verwende dort stattdessen das `displayline` von VectorPDF.
+`displayline` nimmt dieselben Argumente wie das von Skim. Hat dein Editor eine Einstellung für Skim, verwende dort stattdessen das `displayline` von VectorPDF. Optionen wie `-g` stehen vor LINE: Danach wird ein Dateiname, der mit `-` beginnt, als Datei gelesen.
 
 ### Visual Studio Code
 

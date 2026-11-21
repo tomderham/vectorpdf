@@ -1,5 +1,5 @@
 <!-- keywords: 開く, PDF を開く, ファイルを開く, PDF, 最近使った項目, パスワード, クラウド, 再読み込み, ドラッグ, 電子書籍, コミック, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 48a137d82361 -->
+<!-- source: 4306997dd17a -->
 
 # 書類を開く
 
@@ -9,7 +9,7 @@
 - **新しいタブで開く:** File > Open PDF in New Tab を選択するか、⌥⌘O を押します。
 - **Finder から開く:** PDF を右クリックして、Open With > VectorPDF (「このアプリケーションで開く」> VectorPDF) を選択します。すべての PDF を VectorPDF で開くようにするには、PDF を選択し、Finder で File > Get Info (「ファイル」>「情報を見る」) を選択して、“Open with” (「このアプリケーションで開く」) を変更し、Change All (「すべてを変更」) をクリックします。
 - **ドラッグして開く:** PDF を Start 画面にドラッグするとそこで開き、開いている書類にドラッグすると新しいタブで開きます。
-- **リストから開く:** File > Open Recent を選択するか、[Favorites](favorites-and-tab-groups.md) メニューを使用します。Start 画面では、書類を右クリックして新しいタブやウインドウで開くことができます。
+- **リストから開く:** File > Open Recent を選択するか、Dock の VectorPDF アイコンのメニューで Open Recent を選択するか、[Favorites](favorites-and-tab-groups.md) メニューを使用します。Start 画面では、書類を右クリックして新しいタブやウインドウで開くことができます。
 
 ## 電子書籍、コミック、XPS 書類
 

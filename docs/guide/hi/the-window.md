@@ -1,5 +1,5 @@
 <!-- keywords: विंडो, टूलबार, साइडबार, टैब, स्टार्ट स्क्रीन, इंटरफ़ेस, पेज संकेतक, नियंत्रण, अटैचमेंट, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, स्टेटस बार, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # VectorPDF विंडो
 
@@ -13,6 +13,7 @@
 | Zoom | − और + बटन ज़ूम को एक-एक चरण में बदलते हैं। अपना मान टाइप करने के लिए प्रतिशत पर क्लिक करें। |
 | Rotate Left और Rotate Right | दृश्य को घुमाते हैं। इससे सहेजा गया PDF नहीं बदलता। |
 | Two-Page Mode | खुली किताब की तरह पेजों को अगल-बगल दिखाता है। |
+| Horizontal Scrolling | पेजों को बाएँ से दाएँ लगाता है, जितने विंडो में समा सकें। |
 | Markup Toolbar | [मार्कअप टूल](text-markup.md) दिखाता है। |
 | Measurement Toolbar | [माप टूल](measure.md) दिखाता है। |
 | Page | तीर एक बार में एक पेज आगे या पीछे ले जाते हैं। मनचाहा पेज टाइप करने के लिए पेज नंबर पर क्लिक करें। |
@@ -24,7 +25,7 @@
 साइडबार के ऊपर मौजूद टैब से आप इनके बीच स्विच करते हैं:
 
 - **Outline & Thumbnails:** [विषय-सूची, या हर पेज का थंबनेल](outline-and-thumbnails.md)।
-- **Search:** [मौजूदा दस्तावेज़ के परिणाम](search.md)।
+- **Search:** [मौजूदा दस्तावेज़ के परिणाम](search.md)। आप Search को विंडो की दाईं ओर ले जा सकते हैं, ताकि उसे [आउटलाइन के बगल में](search.md#see-results-beside-the-outline) देख सकें।
 - **Anchors:** [आपकी सहेजी हुई जगहें](anchors.md)।
 - **Document:** दस्तावेज़ में उसके पेजों के अलावा क्या है: उसकी [लेयर](layers.md), [अटैचमेंट](attachments.md), [डिजिटल हस्ताक्षर](digital-signatures.md), और अगर आप सेटिंग में इन्हें चालू करते हैं, तो उसके [फ़ॉर्म फ़ील्ड, लिंक और गंतव्य](document-tab.md)। टैब के ऊपर वाले मेनू से चुनें कि क्या दिखे। यह टैब तभी दिखता है जब दस्तावेज़ में इनमें से कम से कम एक चीज़ हो।
 - **Comments:** [हर ऐनोटेशन, उसके जवाबों और स्थिति के साथ](draw-and-notes.md#see-all-annotations)।

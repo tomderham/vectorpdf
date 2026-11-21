@@ -1,5 +1,5 @@
 <!-- keywords: ステータスバー, ポインタの位置, 座標, ページサイズ, 用紙サイズ, ルーラー, ガイド, グリッド, 吸着, 単位, ミリメートル, インチ, ポイント, Inspector, フォント, フォントサイズ, カラー, 画像の解像度, ナビゲータ, 単語数, 文字数, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # ルーラー、ステータスバー、Inspector
 
@@ -37,7 +37,7 @@ View > Rulers and Grid の **Snap to Guides and Grid** がオンのときは、�
 
 ## Inspector {#the-inspector}
 
-View > Show Inspector（⌃⌘I）を選択すると、ページの横に Inspector が表示されます。ページを右クリックして Inspect を選択することもできます。
+View > Show Inspector（⌃⌘I）を選択すると、ページの横に Inspector が表示されます。ページを右クリックして Inspect を選択することもできます。[Search を右側に移動](search.md#see-results-beside-the-outline)している場合は、両方が右側を共有します。上部の Search ボタンと Inspector ボタンで切り替えます。
 
 - **テキスト、画像、図形:** Inspector を開いた状態で、Select モードでページをクリックします。そこに描かれているものが Inspector に表示され、ページ上で枠で囲まれます:
   - **テキスト:** フォント、サイズ、文字、カラーとカラースペース、フォントがファイルに含まれているかどうか。含まれていないフォントは代替フォントで描かれるため、印刷すると見た目が異なる場合があります。

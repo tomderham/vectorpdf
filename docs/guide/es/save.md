@@ -1,5 +1,5 @@
 <!-- keywords: guardar, guardar como, sin guardar, compartir, mostrar en el Finder, cambios, revertir, última versión guardada, volver a cargar, descartar, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, guardado automático, recuperar, recuperación, fallo, cierre inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # Guardar los cambios
 
@@ -29,7 +29,7 @@ Mientras un documento tiene cambios sin guardar, VectorPDF conserva una copia en
 - **Decide Later** conserva las copias y vuelve a preguntar la próxima vez.
 - **Discard Changes** elimina las copias.
 
-La copia se elimina cuando guardas el documento, lo restauras o lo cierras sin guardar, y cuando sales de VectorPDF. Los documentos protegidos con contraseña no se copian, porque la copia no estaría cifrada.
+La copia se elimina cuando guardas el documento, lo restauras o lo cierras sin guardar, y cuando sales de VectorPDF. Los documentos protegidos con contraseña no se copian, porque la copia no estaría cifrada. Tampoco se copian los documentos firmados digitalmente: cada vez que se guarda un documento firmado, queda en el archivo como una revisión, así que los cambios que hicieras y luego quitaras antes de guardar permanecerían en él. Guarda tú mismo un documento firmado mientras trabajas.
 
 ## Compartir un documento
 

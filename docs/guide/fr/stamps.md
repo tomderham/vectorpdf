@@ -1,5 +1,5 @@
 <!-- keywords: signature manuscrite, signature, signer, tampon, tampons, initiales, stamp, stamps, signatures, sign, signing, initials, PDF, handwritten signature, digital signature, sign with certificate, certificate, p12, pfx, keychain, timestamp, certify, lock fields, which signature -->
-<!-- source: b94ff6b8a43e -->
+<!-- source: 132d42959c5b -->
 
 # Signer un document
 
@@ -37,15 +37,17 @@ Pour signer, il vous faut un certificat de signature avec sa clé privée. Votre
 4. Si vous le souhaitez, choisissez sous After Signing :
    - **Certify**, si personne n’a encore signé le document : indiquez quelles modifications le laissent valide désormais : remplir des formulaires, signer et ajouter des annotations ; remplir des formulaires et signer ; ou aucune. Un document certifié apparaît comme tel à quiconque le vérifie, et les modifications ultérieures qu’il n’autorise pas rendent votre signature non valide.
    - **Lock form fields**, pour un formulaire : tous ses champs, ou ceux que vous choisissez, passent en lecture seule et gardent les valeurs que vous avez signées.
-5. Cliquez sur **Sign**.
+5. Cliquez sur **Sign**, puis choisissez où enregistrer le document signé. VectorPDF propose une copie à côté de l’original, dont le nom se termine par « (signed) », et laisse l’original non signé ; la copie signée s’ouvre ensuite à sa place. Pour signer l’original lui-même, choisissez-le à la place et cliquez sur **Replace**.
 
-La signature enregistre le document : s’il contient des modifications non enregistrées, VectorPDF vous propose d’abord de les enregistrer. Elles font alors partie de ce que vous signez. macOS peut vous demander d’autoriser VectorPDF à utiliser la clé de votre certificat.
+Une signature porte sur le document tel qu’il est enregistré : signer enregistre donc toujours. Si le document contient des modifications non enregistrées, VectorPDF vous propose d’abord de les enregistrer ; elles font alors partie de ce que vous signez. macOS peut vous demander d’autoriser VectorPDF à utiliser la clé de votre certificat.
+
+Une signature ne peut pas être retirée d’un fichier signé : elle est là pour que chacun puisse constater que le document n’a pas changé depuis. Signer une copie conserve l’original non signé, pour le signer à nouveau ou le modifier.
 
 Sauf si vous les verrouillez ou certifiez le document pour moins, la signature laisse les autres champs de formulaire du document tels quels, afin que d’autres personnes puissent encore les remplir, signer à leur tour ou ajouter des annotations sans rendre votre signature non valide. Chaque signature ultérieure est ajoutée après les précédentes de la même façon.
 
 Il s’agit d’une signature PKCS #7 avec SHA-256, qui contient votre certificat et ceux des autorités qui l’ont émis. Elle enregistre l’heure de votre Mac.
 
-Pour qu’un serveur d’horodatage garantisse le moment de votre signature, activez **Add a timestamp** et indiquez son adresse (votre organisation en a peut-être un ; il en existe de gratuits, comme celui de DigiCert, `http://timestamp.digicert.com`). Grâce à l’horodatage, votre signature peut être vérifiée telle qu’elle était au moment de la signature, même après l’expiration de votre certificat. Le serveur ne reçoit qu’une empreinte de la signature, rien du document. S’il est injoignable, rien n’est signé et le document reste tel qu’il était.
+Pour qu’un serveur d’horodatage garantisse le moment de votre signature, activez **Add a timestamp** et indiquez son adresse (votre organisation en a peut-être un ; il en existe de gratuits, comme celui de DigiCert, `http://timestamp.digicert.com`). Grâce à l’horodatage, votre signature peut être vérifiée telle qu’elle était au moment de la signature, même après l’expiration de votre certificat. Le serveur ne reçoit qu’une empreinte de la signature, rien du document. Une adresse commençant par `http://` fonctionne avec les serveurs d’horodatage publics connus (comme ceux de DigiCert, Sectigo, GlobalSign, Entrust et Apple) et avec les serveurs de votre réseau local ; pour tout autre serveur, utilisez son adresse `https://`. Si le serveur est injoignable, rien n’est signé et le document reste tel qu’il était.
 
 Pour vérifier les signatures d’un document, consultez [Vérifier des signatures numériques](digital-signatures.md).
 

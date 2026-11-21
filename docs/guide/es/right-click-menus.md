@@ -1,5 +1,5 @@
 <!-- keywords: clic derecho, clic con el botón derecho, clic con la tecla Control, menú contextual, menús contextuales, menú de función rápida, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: f2298628e73c -->
+<!-- source: f9e1ad75cfd5 -->
 
 # Menús de clic derecho
 
@@ -51,5 +51,6 @@ En un documento con [capas](layers.md), el menú de una anotación también tien
 | --- | --- |
 | El título del documento, o una parte vacía de la barra de herramientas | Añadir a favoritos o quitar de favoritos, Save All Open Tabs as a Group, Update Group “nombre” with Open Tabs, Compare With (consulta [Comparar dos documentos](compare-documents.md)), y tus grupos de pestañas y favoritos |
 | Una fila de la pantalla de inicio | Open, Open in New Tab, Open in New Window, Show in Finder, y Remove o Delete |
+| El icono de VectorPDF en el Dock | Tus ventanas abiertas y sus pestañas (consulta [Encontrar una ventana abierta](tabs-and-windows.md#find-an-open-window)), New Window y Open Recent |
 
 Algunos comandos solo aparecen cuando corresponden. Por ejemplo, Save All Open Tabs as a Group requiere más de una pestaña, y los comandos de anclas no están disponibles en una ventana abierta desde un ancla.

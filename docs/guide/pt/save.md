@@ -1,5 +1,5 @@
 <!-- keywords: salvar, salvar como, não salvo, compartilhar, alterações, reverter, última versão salva, recarregar, descartar alterações, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, salvamento automático, recuperar, recuperação, falha, fechamento inesperado, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # Salvar suas alterações
 
@@ -29,7 +29,7 @@ Enquanto um documento tem alterações não salvas, o VectorPDF mantém uma cóp
 - **Decide Later** mantém as cópias e pergunta de novo na próxima vez.
 - **Discard Changes** apaga as cópias.
 
-A cópia é apagada quando você salva o documento, reverte para a versão salva ou o fecha sem salvar, e quando você encerra o VectorPDF. Documentos protegidos por senha não são copiados, porque a cópia não seria criptografada.
+A cópia é apagada quando você salva o documento, reverte para a versão salva ou o fecha sem salvar, e quando você encerra o VectorPDF. Documentos protegidos por senha não são copiados, porque a cópia não seria criptografada. Documentos assinados digitalmente também não são copiados: cada vez que um documento assinado é salvo, isso fica no arquivo como uma revisão, então alterações que você fez e depois desfez antes de salvar ficariam nele. Salve você mesmo um documento assinado enquanto trabalha.
 
 ## Compartilhar um documento
 

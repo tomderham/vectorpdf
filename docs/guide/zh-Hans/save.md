@@ -1,5 +1,5 @@
 <!-- keywords: 存储, 另存为, 未存储, 共享, 更改, 复原, 上次存储的版本, 重新载入, 放弃更改, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 自动存储, 恢复, 崩溃, 意外退出, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # 存储更改
 
@@ -29,7 +29,7 @@
 - **Decide Later** 会保留副本，并在下次再次询问。
 - **Discard Changes** 会删除副本。
 
-当你存储文稿、复原文稿或不存储就关闭文稿时，以及退出 VectorPDF 时，副本会被删除。受密码保护的文稿不会被复制，因为副本不会加密。
+当你存储文稿、复原文稿或不存储就关闭文稿时，以及退出 VectorPDF 时，副本会被删除。受密码保护的文稿不会被复制，因为副本不会加密。数字签名的文稿也不会被复制：签名文稿的每次存储都会作为一个修订版本保留在文件中，因此你在存储前做出又撤销的更改会留在其中。处理签名文稿时，请自己存储。
 
 ## 共享文稿
 

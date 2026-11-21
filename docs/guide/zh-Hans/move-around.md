@@ -1,5 +1,5 @@
 <!-- keywords: 页面标签, 页码, 图纸编号, 导航, 滚动, 页面, 前往页面, 返回, 前进, 箭头键, 跳转, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # 在文稿中移动
 
@@ -18,7 +18,7 @@
 | ⌥Up Arrow、⌥Down Arrow、⌥Left Arrow、⌥Right Arrow | 上一页或下一页 |
 | ⌘Up Arrow、⌘Down Arrow | 第一页或最后一页 |
 
-在 Two-Page Mode 下，这些按键会翻动整个跨页。
+在 Two-Page Mode 下，这些按键会翻动整个跨页。打开 [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) 后，Space、Page Down、⇧Space 和 Page Up 每次移动一屏的页面。
 
 ## 前往某一页
 

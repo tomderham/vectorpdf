@@ -1,5 +1,5 @@
 <!-- keywords: fenêtre, barre d’outils, barres d’outils, barre latérale, onglets, écran de démarrage, indicateur de page, commandes, pièces jointes, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barre d’état, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # La fenêtre de VectorPDF
 
@@ -13,6 +13,7 @@ Chaque fenêtre de VectorPDF comporte une barre d’outils, une barre latérale 
 | Zoom | Les boutons − et + modifient le zoom par paliers. Cliquez sur le pourcentage pour saisir votre propre valeur. |
 | Rotate Left et Rotate Right | Font pivoter la présentation. Le PDF enregistré n’est pas modifié. |
 | Two-Page Mode | Affiche les pages côte à côte, comme un livre ouvert. |
+| Horizontal Scrolling | Dispose les pages de gauche à droite, autant que la fenêtre peut en contenir. |
 | Markup Toolbar | Affiche les [outils d’annotation](text-markup.md). |
 | Measurement Toolbar | Affiche les [outils de mesure](measure.md). |
 | Page | Les flèches permettent d’avancer d’une page à la fois. Cliquez sur le numéro de page pour saisir la page souhaitée. |
@@ -24,7 +25,7 @@ Consultez [Zoom, rotation et disposition des pages](zoom-and-layout.md) pour en 
 Les onglets en haut de la barre latérale permettent de basculer entre :
 
 - **Outline & Thumbnails :** la [table des matières ou une vignette de chaque page](outline-and-thumbnails.md).
-- **Search :** les [résultats pour le document actif](search.md).
+- **Search :** les [résultats pour le document actif](search.md). Vous pouvez déplacer Search sur le côté droit de la fenêtre pour la voir [à côté du plan](search.md#see-results-beside-the-outline).
 - **Anchors :** [les endroits que vous avez enregistrés](anchors.md).
 - **Document :** ce que le document contient en plus de ses pages : ses [calques](layers.md), ses [pièces jointes](attachments.md), ses [signatures numériques](digital-signatures.md) et, si vous les activez dans les réglages, ses [champs de formulaire, liens et destinations](document-tab.md). Choisissez ce qui s’affiche dans le menu en haut de l’onglet. Cet onglet n’apparaît que si le document en contient au moins un.
 - **Comments :** [toutes les annotations, avec leurs réponses et leur statut](draw-and-notes.md#see-all-annotations).

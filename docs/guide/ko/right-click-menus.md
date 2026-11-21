@@ -1,5 +1,5 @@
 <!-- keywords: 오른쪽 클릭, 우클릭, Control-클릭, 컨텍스트 메뉴, 단축 메뉴, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: f2298628e73c -->
+<!-- source: f9e1ad75cfd5 -->
 
 # 오른쪽 클릭 메뉴
 
@@ -51,5 +51,6 @@ SyncTeX를 켜고 LaTeX로 만든 PDF에서는 문서 안의 모든 메뉴가 **
 | --- | --- |
 | 문서 제목 또는 도구 막대의 빈 부분 | Favorites에 추가 또는 제거, Save All Open Tabs as a Group, Update Group “이름” with Open Tabs, Compare With([두 문서 비교하기](compare-documents.md) 참조), 내 Tab Groups 및 Favorites |
 | Start 화면의 행 | Open, Open in New Tab, Open in New Window, Show in Finder, Remove 또는 Delete |
+| Dock의 VectorPDF 아이콘 | 열려 있는 윈도우와 그 탭([열려 있는 윈도우 찾기](tabs-and-windows.md#find-an-open-window) 참조), New Window 및 Open Recent |
 
 일부 명령은 해당하는 경우에만 나타납니다. 예를 들어 Save All Open Tabs as a Group을 사용하려면 탭이 두 개 이상 있어야 하며, 앵커에서 연 윈도우에서는 앵커 명령을 사용할 수 없습니다.

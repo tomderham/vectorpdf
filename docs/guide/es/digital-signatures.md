@@ -1,5 +1,5 @@
 <!-- keywords: comprobar firmas digitales, sello de tiempo, servidor de sellado de tiempo, certificar, bloquear campos, firma digital, firmas digitales, firmar, firmar con certificado, certificado, llavero, firmado, firmante, certificación, válida, no válida, comprobar, verificar, confianza, identidad, manipulado, modificado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # Comprobar firmas digitales
 
@@ -20,7 +20,7 @@ Para cada firma, la lista de la pestaña Document muestra:
 - Si las partes del archivo que firmó están exactamente como cuando se firmaron.
 - Si el archivo se volvió a guardar después de firmarse y si esos cambios son de los que la firma permite. Rellenar campos de formulario, añadir firmas y añadir o cambiar anotaciones suele estar permitido. Una firma de certificación puede permitir menos cambios. Si se añadieron anotaciones después de firmar, la lista lo indica: una anotación puede tapar lo que se firmó.
 - Quién la firmó, por el nombre de su certificado, y quién emitió el certificado. También se muestra el nombre que el software de firma escribió en el documento cuando es distinto.
-- Cuándo se firmó. Una hora de una autoridad de sellado de tiempo está garantizada si el sello es de esta firma y tu Mac confía en su autoridad; si no, la lista indica por qué no cuenta. Una hora del propio ordenador del firmante no está garantizada.
+- Cuándo se firmó. Una hora de una autoridad de sellado de tiempo está garantizada si el sello es de esta firma y tu Mac confía en su autoridad; si no, la lista indica por qué no cuenta. Una hora del propio ordenador del firmante no está garantizada. El certificado del firmante se comprueba tal como era en el momento del sello de tiempo o, si no lo hay, tal como es ahora, así que una firma sin sello de tiempo deja de estar verificada cuando caduca su certificado.
 - El motivo y el lugar que indicó el firmante, si los hay.
 
 Haz clic en una firma para ir a ella en la página. Para ver sus certificados, haz clic en **Show Certificate**, o haz clic con el botón derecho en ella y elige Show Certificate.

@@ -1,5 +1,5 @@
 <!-- keywords: Überschriften prüfen, Gliederung bearbeiten, Lesezeichen hinzufügen, Gliederung aus Überschriften, Überschriften, Inhaltsverzeichnis erstellen, umbenennen, einrücken, ausrücken, Gliederung, Inhaltsverzeichnis, Inhalt, Lesezeichen, Miniatur, Miniaturen, Seitenleiste, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # Gliederung und Miniaturen
 
@@ -7,11 +7,12 @@ Klicke oben in der Seitenleiste auf den Tab „Outline & Thumbnails“ und wähl
 
 ## Gliederung
 
-Die Gliederung ist das Inhaltsverzeichnis des Dokuments, sofern es eines hat. Beim Scrollen wird der Abschnitt hervorgehoben, den du gerade liest.
+Die Gliederung ist das Inhaltsverzeichnis des Dokuments, sofern es eines hat. Beim Scrollen wird der Abschnitt hervorgehoben, den du gerade liest. Nachdem du zu einem Suchergebnis gegangen bist oder einem Link gefolgt bist, wird der Abschnitt hervorgehoben, in dem es steht, bis du wieder scrollst.
 
 - **Zu einem Abschnitt gehen:** Klicke darauf. Seine Überschrift wird nahe an den oberen Rand des Fensters gescrollt oder bleibt, wo sie ist, wenn du sie schon sehen kannst.
 - **Unterabschnitte ein- oder ausblenden:** Klicke auf den Pfeil neben einem Abschnitt.
 - **Einen Abschnitt finden:** Tippe in das Feld „Search outline“. Es werden nur passende Abschnitte angezeigt.
+- **Sehen, wo Suchergebnisse stehen:** Ist Search [rechts im Fenster](search.md#see-results-beside-the-outline), zeigt jeder Abschnitt, wie viele Ergebnisse er hat.
 - **Einen Abschnitt griffbereit halten:** Klicke mit der rechten Maustaste darauf, um einen [Anker](anchors.md) zu erstellen oder den Abschnitt in einem neuen Fenster zu öffnen.
 
 ## Die Gliederung bearbeiten {#edit-the-outline}

@@ -1,5 +1,5 @@
 <!-- keywords: vérifier des signatures numériques, horodatage, serveur d’horodatage, certifier, verrouiller les champs, signature numérique, signatures numériques, signer, signer avec un certificat, certificat, trousseau, signé, signataire, certifié, certification, valide, non valide, vérifier, valider, confiance, identité, falsifié, modifié, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, certificate, certified, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # Vérifier des signatures numériques
 
@@ -20,7 +20,7 @@ Pour chaque signature, la liste de l’onglet Document indique :
 - Si les parties du fichier qu’elle a signées sont exactement telles qu’elles ont été signées.
 - Si le fichier a été enregistré de nouveau après la signature, et si ces modifications font partie de celles que la signature autorise. Remplir des champs de formulaire, ajouter des signatures et ajouter ou modifier des annotations sont généralement autorisés. Une signature de certification peut autoriser moins de modifications. Si des annotations ont été ajoutées après la signature, la liste l’indique : une annotation peut masquer ce qui a été signé.
 - Qui l’a signée, selon le nom figurant dans son certificat, et qui a émis le certificat. Le nom que le logiciel de signature a écrit dans le document est aussi affiché lorsqu’il est différent.
-- Quand elle a été signée. Une heure fournie par une autorité d’horodatage est garantie si l’horodatage porte sur cette signature et que votre Mac fait confiance à son autorité ; sinon, la liste indique pourquoi il n’est pas pris en compte. Une heure provenant de l’ordinateur du signataire n’est pas garantie.
+- Quand elle a été signée. Une heure fournie par une autorité d’horodatage est garantie si l’horodatage porte sur cette signature et que votre Mac fait confiance à son autorité ; sinon, la liste indique pourquoi il n’est pas pris en compte. Une heure provenant de l’ordinateur du signataire n’est pas garantie. Le certificat du signataire est vérifié tel qu’il était au moment de l’horodatage ou, sans horodatage, tel qu’il est maintenant : une signature sans horodatage n’est donc plus vérifiée dès que son certificat expire.
 - Le motif et le lieu indiqués par le signataire, le cas échéant.
 
 Cliquez sur une signature pour y accéder sur la page. Pour voir ses certificats, cliquez sur **Show Certificate**, ou cliquez dessus avec le bouton droit et choisissez Show Certificate.

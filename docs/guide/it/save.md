@@ -1,5 +1,5 @@
 <!-- keywords: salvare, salva con nome, non salvato, condividere, modifiche, ripristina, ultima versione salvata, ricaricare, annullare le modifiche, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, salvataggio automatico, recuperare, recupero, arresto anomalo, chiusura inaspettata, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # Salvare le modifiche
 
@@ -29,7 +29,7 @@ Finché un documento ha modifiche non salvate, VectorPDF ne conserva una copia s
 - **Decide Later** conserva le copie e chiede di nuovo la volta successiva.
 - **Discard Changes** elimina le copie.
 
-La copia viene eliminata quando salvi il documento, lo ripristini o lo chiudi senza salvare, e quando esci da VectorPDF. I documenti protetti da password non vengono copiati, perché la copia non sarebbe crittografata.
+La copia viene eliminata quando salvi il documento, lo ripristini o lo chiudi senza salvare, e quando esci da VectorPDF. I documenti protetti da password non vengono copiati, perché la copia non sarebbe crittografata. Nemmeno i documenti firmati digitalmente vengono copiati: ogni salvataggio di un documento firmato resta nel file come revisione, quindi le modifiche che hai fatto e poi tolto prima di salvare vi rimarrebbero. Salva tu un documento firmato mentre lavori.
 
 ## Condividere un documento
 

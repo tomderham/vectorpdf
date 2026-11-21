@@ -1,5 +1,5 @@
 <!-- keywords: 状态栏, 指针位置, 坐标, 页面大小, 纸张大小, 标尺, 参考线, 网格, 吸附, 单位, 毫米, 英寸, 点, Inspector, 字体, 字号, 颜色, 图像分辨率, 导航器, 字数, 字符数, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # 标尺、状态栏和 Inspector
 
@@ -37,7 +37,7 @@
 
 ## Inspector {#the-inspector}
 
-选取 View > Show Inspector（⌃⌘I）可在页面旁边显示 Inspector。你也可以右键点按页面，然后选取 Inspect。
+选取 View > Show Inspector（⌃⌘I）可在页面旁边显示 Inspector。你也可以右键点按页面，然后选取 Inspect。如果你已[将 Search 移到右侧](search.md#see-results-beside-the-outline)，两者会共用这一侧：使用顶部的 Search 和 Inspector 按钮在它们之间切换。
 
 - **文本、图像和图形：**打开 Inspector 后，在 Select 模式下点按页面。Inspector 会显示该处绘制的内容，页面上也会为其显示外框：
   - **文本：**字体、字号、字符、颜色和色彩空间，以及字体是否包含在文件中。未包含的字体会用替代字体绘制，打印出来可能看起来不同。

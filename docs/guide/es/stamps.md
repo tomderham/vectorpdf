@@ -1,5 +1,5 @@
 <!-- keywords: firma manuscrita, firma, firmar, sello, sellos, firmas, iniciales, stamp, stamps, signature, signatures, sign, signing, initials, PDF, handwritten signature, digital signature, sign with certificate, certificate, p12, pfx, keychain, timestamp, certify, lock fields, which signature -->
-<!-- source: b94ff6b8a43e -->
+<!-- source: 132d42959c5b -->
 
 # Firmar un documento
 
@@ -37,15 +37,17 @@ Para firmar necesitas un certificado de firma con su clave privada. Tu organizac
 4. Si quieres, elige en After Signing:
    - **Certify**, si nadie ha firmado aún el documento: indica qué cambios lo mantienen válido a partir de ahora: rellenar formularios, firmar y añadir anotaciones; rellenar formularios y firmar; o ninguno. Un documento certificado aparece como certificado para cualquiera que lo compruebe, y los cambios posteriores que no permite invalidan tu firma.
    - **Lock form fields**, en un formulario: todos sus campos, o los que elijas, pasan a ser de solo lectura y conservan los valores que firmaste.
-5. Haz clic en **Sign**.
+5. Haz clic en **Sign** y elige dónde guardar el documento firmado. VectorPDF propone una copia junto al original, con “(signed)” al final del nombre, y deja el original sin firmar; después, la copia firmada se abre en su lugar. Para firmar el propio original, elígelo en su lugar y haz clic en **Replace**.
 
-Al firmar se guarda el documento, así que si tiene cambios sin guardar, VectorPDF te pregunta primero si quieres guardarlos. Pasan a formar parte de lo que firmas. Es posible que macOS te pida permitir que VectorPDF use la clave de tu certificado.
+Una firma se hace sobre el documento tal como está guardado, así que firmar siempre guarda. Si el documento tiene cambios sin guardar, VectorPDF te pregunta primero si quieres guardarlos; pasan a formar parte de lo que firmas. Es posible que macOS te pida permitir que VectorPDF use la clave de tu certificado.
+
+Una firma no se puede quitar de un archivo firmado: está ahí para que cualquiera pueda saber que el documento no ha cambiado desde entonces. Si firmas una copia, conservas el original sin firmar para volver a firmarlo o modificarlo.
 
 Salvo que los bloquees o certifiques el documento para menos, la firma deja los demás campos de formulario del documento como estaban, para que otras personas puedan seguir rellenándolos, firmar también o añadir anotaciones sin invalidar tu firma. Cada firma posterior se añade después de las anteriores de la misma manera.
 
 La firma es una firma PKCS #7 con SHA-256 que incluye tu certificado y los de las autoridades que lo emitieron. Registra la hora de tu Mac.
 
-Para que un servidor de sellado de tiempo garantice cuándo firmaste, activa **Add a timestamp** e indica su dirección (tu organización puede tener uno; hay gratuitos, como el de DigiCert, `http://timestamp.digicert.com`). Con un sello de tiempo, tu firma puede comprobarse tal como era al firmar, incluso después de que caduque tu certificado. El servidor solo recibe una huella de la firma, nada del documento. Si no se puede contactar con él, no se firma nada y el documento queda como estaba.
+Para que un servidor de sellado de tiempo garantice cuándo firmaste, activa **Add a timestamp** e indica su dirección (tu organización puede tener uno; hay gratuitos, como el de DigiCert, `http://timestamp.digicert.com`). Con un sello de tiempo, tu firma puede comprobarse tal como era al firmar, incluso después de que caduque tu certificado. El servidor solo recibe una huella de la firma, nada del documento. Una dirección que empieza por `http://` funciona con los servidores públicos de sellado de tiempo conocidos (como los de DigiCert, Sectigo, GlobalSign, Entrust y Apple) y con los servidores de tu red local; para cualquier otro servidor, usa su dirección `https://`. Si no se puede contactar con el servidor, no se firma nada y el documento queda como estaba.
 
 Para comprobar las firmas de un documento, consulta [Comprobar firmas digitales](digital-signatures.md).
 

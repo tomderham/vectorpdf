@@ -1,5 +1,5 @@
 <!-- keywords: ページラベル, ページ番号, 図面番号, 移動, ナビゲーション, スクロール, ページ, ページへ移動, 戻る, 進む, 矢印キー, ジャンプ, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # 書類内を移動する
 
@@ -18,7 +18,7 @@
 | ⌥Up Arrow、⌥Down Arrow、⌥Left Arrow、⌥Right Arrow | 前または次のページ |
 | ⌘Up Arrow、⌘Down Arrow | 最初または最後のページ |
 
-Two-Page Mode では、これらのキーで見開き単位で移動します。
+Two-Page Mode では、これらのキーで見開き単位で移動します。[Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) がオンのときは、Space、Page Down、⇧Space、Page Up で 1 画面分のページずつ移動します。
 
 ## 指定したページに移動する
 

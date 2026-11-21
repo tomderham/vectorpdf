@@ -1,5 +1,5 @@
 <!-- keywords: sichern, speichern, sichern unter, nicht gesichert, teilen, im Finder anzeigen, Änderungen, zurücksetzen, letzte gesicherte Version, neu laden, verwerfen, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, automatisch sichern, wiederherstellen, Wiederherstellung, Absturz, unerwartet beendet, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # Änderungen sichern
 
@@ -29,7 +29,7 @@ Solange ein Dokument nicht gesicherte Änderungen hat, bewahrt VectorPDF eine Ko
 - **Decide Later** behält die Kopien und fragt beim nächsten Mal erneut.
 - **Discard Changes** löscht die Kopien.
 
-Die Kopie wird gelöscht, wenn du das Dokument sicherst, es auf die gesicherte Version zurücksetzt oder ohne Sichern schließt, und wenn du VectorPDF beendest. Passwortgeschützte Dokumente werden nicht kopiert, weil die Kopie nicht verschlüsselt wäre.
+Die Kopie wird gelöscht, wenn du das Dokument sicherst, es auf die gesicherte Version zurücksetzt oder ohne Sichern schließt, und wenn du VectorPDF beendest. Passwortgeschützte Dokumente werden nicht kopiert, weil die Kopie nicht verschlüsselt wäre. Auch digital signierte Dokumente werden nicht kopiert: Jedes Sichern eines signierten Dokuments bleibt als Revision in der Datei erhalten, sodass Änderungen, die du vorgenommen und vor dem Sichern wieder entfernt hast, darin bleiben würden. Sichere ein signiertes Dokument während der Arbeit selbst.
 
 ## Ein Dokument teilen
 

@@ -1,5 +1,5 @@
 <!-- keywords: 윈도우, 창, 도구 막대, 툴바, 사이드바, 탭, 시작 화면, 인터페이스, 페이지 표시기, 컨트롤, 첨부 파일, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 상태 막대, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # VectorPDF 윈도우
 
@@ -13,6 +13,7 @@
 | Zoom | − 및 + 버튼으로 확대/축소 비율을 단계별로 변경합니다. 퍼센트 값을 클릭하면 원하는 값을 입력할 수 있습니다. |
 | Rotate Left 및 Rotate Right | 보기를 회전합니다. 저장된 PDF는 변경되지 않습니다. |
 | Two-Page Mode | 펼친 책처럼 페이지를 나란히 표시합니다. |
+| Horizontal Scrolling | 윈도우에 들어가는 만큼 페이지를 왼쪽에서 오른쪽으로 배치합니다. |
 | Markup Toolbar | [마크업 도구](text-markup.md)를 표시합니다. |
 | Measurement Toolbar | [측정 도구](measure.md)를 표시합니다. |
 | Page | 화살표를 클릭하면 한 페이지씩 이동합니다. 페이지 번호를 클릭하면 원하는 페이지를 입력할 수 있습니다. |
@@ -24,7 +25,7 @@
 사이드바 상단의 탭으로 다음 항목 사이를 전환합니다.
 
 - **Outline & Thumbnails:** [목차 또는 각 페이지의 축소판](outline-and-thumbnails.md).
-- **Search:** [현재 문서의 검색 결과](search.md).
+- **Search:** [현재 문서의 검색 결과](search.md). Search를 윈도우 오른쪽으로 옮겨 [개요 옆](search.md#see-results-beside-the-outline)에서 볼 수도 있습니다.
 - **Anchors:** [저장한 위치](anchors.md).
 - **Document:** 문서의 페이지 외에 담긴 내용으로, [레이어](layers.md), [첨부 파일](attachments.md), [디지털 서명](digital-signatures.md) 및 설정에서 켠 경우 [양식 필드, 링크 및 대상](document-tab.md)입니다. 탭 상단의 메뉴에서 무엇을 볼지 선택합니다. 이 탭은 문서에 이 중 하나 이상이 있을 때만 나타납니다.
 - **Comments:** [모든 주석과 그 답글 및 상태](draw-and-notes.md#see-all-annotations).

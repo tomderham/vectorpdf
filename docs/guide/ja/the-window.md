@@ -1,5 +1,5 @@
 <!-- keywords: ウインドウ, ツールバー, サイドバー, タブ, 画面, インターフェイス, 添付ファイル, window, toolbar, toolbars, sidebar, tabs, start screen, interface, controls, attachments, ステータスバー, Inspector, status bar, page indicator -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # VectorPDF のウインドウ
 
@@ -13,6 +13,7 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 | Zoom | − と + のボタンで表示倍率を段階的に変更します。パーセント表示をクリックすると値を入力できます。 |
 | Rotate Left と Rotate Right | 表示を回転します。保存される PDF は変更されません。 |
 | Two-Page Mode | 開いた本のようにページを左右に並べて表示します。 |
+| Horizontal Scrolling | ウインドウに収まるだけのページを左から右に並べて表示します。 |
 | Markup Toolbar | [マークアップツール](text-markup.md)を表示します。 |
 | Measurement Toolbar | [測定ツール](measure.md)を表示します。 |
 | Page | 矢印で 1 ページずつ移動します。ページ番号をクリックすると、移動先のページを入力できます。 |
@@ -24,7 +25,7 @@ VectorPDF の各ウインドウには、ツールバー、サイドバー、書�
 サイドバー上部のタブで、次の表示を切り替えます:
 
 - **Outline & Thumbnails:** [目次、または各ページのサムネール](outline-and-thumbnails.md)。
-- **Search:** [現在の書類の検索結果](search.md)。
+- **Search:** [現在の書類の検索結果](search.md)。Search をウインドウの右側に移動して、[アウトラインの横](search.md#see-results-beside-the-outline)に表示することもできます。
 - **Anchors:** [保存した場所](anchors.md)。
 - **Document:** 書類のページ以外の内容です。[レイヤー](layers.md)、[添付ファイル](attachments.md)、[デジタル署名](digital-signatures.md)、および設定でオンにした場合は[フォームフィールド、リンク、移動先](document-tab.md)。何を表示するかはタブ上部のメニューから選択します。このタブは、書類にこれらのいずれかがある場合にのみ表示されます。
 - **Comments:** [すべての注釈と、その返信およびステータス](draw-and-notes.md#see-all-annotations)。

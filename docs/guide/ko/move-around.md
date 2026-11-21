@@ -1,5 +1,5 @@
 <!-- keywords: 페이지 레이블, 페이지 번호, 도면 번호, 탐색, 이동, 스크롤, 페이지, 페이지로 이동, 뒤로, 앞으로, 화살표 키, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # 문서 내에서 이동하기
 
@@ -18,7 +18,7 @@
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | 이전 또는 다음 페이지 |
 | ⌘Up Arrow, ⌘Down Arrow | 첫 페이지 또는 마지막 페이지 |
 
-Two-Page Mode에서는 이 키를 사용하면 두 페이지 펼침면이 통째로 넘어갑니다.
+Two-Page Mode에서는 이 키를 사용하면 두 페이지 펼침면이 통째로 넘어갑니다. [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling)이 켜져 있으면 Space, Page Down, ⇧Space, Page Up으로 한 화면 분량의 페이지씩 이동합니다.
 
 ## 특정 페이지로 이동하기
 

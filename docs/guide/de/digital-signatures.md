@@ -1,5 +1,5 @@
 <!-- keywords: digitale Signaturen prüfen, Zeitstempel, Zeitstempelserver, beglaubigen, Felder sperren, digitale Signatur, digitale Signaturen, signieren, mit Zertifikat signieren, Zertifikat, Schlüsselbund, signiert, Unterzeichner, beglaubigt, Beglaubigung, gültig, ungültig, prüfen, Vertrauen, Identität, manipuliert, geändert, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # Digitale Signaturen prüfen
 
@@ -20,7 +20,7 @@ Für jede Signatur zeigt die Liste im Tab „Document“:
 - Ob die Teile der Datei, die sie signiert hat, genau so sind, wie sie signiert wurden.
 - Ob die Datei nach dem Signieren erneut gesichert wurde und ob diese Änderungen solche sind, die die Signatur erlaubt. Formularfelder ausfüllen, Signaturen hinzufügen und Anmerkungen hinzufügen oder ändern sind meist erlaubt. Eine beglaubigende Signatur kann weniger Änderungen erlauben. Wurden nach dem Signieren Anmerkungen hinzugefügt, sagt die Liste das: Eine Anmerkung kann verdecken, was signiert wurde.
 - Wer sie signiert hat, mit dem Namen in seinem Zertifikat, und wer das Zertifikat ausgestellt hat. Der Name, den die Signatursoftware in das Dokument geschrieben hat, wird ebenfalls angezeigt, wenn er abweicht.
-- Wann sie signiert wurde. Für eine Zeit von einer Zeitstempelstelle wird gebürgt, wenn der Zeitstempel zu dieser Signatur gehört und seiner Stelle auf deinem Mac vertraut wird; andernfalls sagt die Liste, warum er nicht zählt. Für eine Zeit vom eigenen Computer des Unterzeichners wird nicht gebürgt.
+- Wann sie signiert wurde. Für eine Zeit von einer Zeitstempelstelle wird gebürgt, wenn der Zeitstempel zu dieser Signatur gehört und seiner Stelle auf deinem Mac vertraut wird; andernfalls sagt die Liste, warum er nicht zählt. Für eine Zeit vom eigenen Computer des Unterzeichners wird nicht gebürgt. Das Zertifikat des Unterzeichners wird so geprüft, wie es zum Zeitpunkt des Zeitstempels war, oder ohne Zeitstempel so, wie es jetzt ist. Eine Signatur ohne Zeitstempel gilt daher nicht mehr als verifiziert, sobald ihr Zertifikat abläuft.
 - Den Grund und den Ort, die der Unterzeichner angegeben hat, falls vorhanden.
 
 Klicke auf eine Signatur, um auf der Seite zu ihr zu gehen. Um ihre Zertifikate zu sehen, klicke auf **Show Certificate**, oder klicke mit der rechten Maustaste darauf und wähle Show Certificate.

@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, recherche directe, recherche inverse, code source, source, éditeur, aller à la source, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: ce9849c21b67 -->
+<!-- source: 554d3591f830 -->
 
 # Passer du code LaTeX au PDF
 
@@ -31,7 +31,7 @@ Votre éditeur demande à VectorPDF d’afficher une ligne en exécutant `displa
 
 VectorPDF met le PDF au premier plan, l’ouvre s’il n’est pas ouvert et surligne brièvement la ligne en rouge. Il ne fait défiler la page que si la ligne n’est pas déjà à l’écran. Ajoutez `-g` avant LINE pour laisser VectorPDF derrière votre éditeur.
 
-`displayline` accepte les mêmes arguments que celui de Skim. Si votre éditeur a un réglage pour Skim, utilisez à la place le `displayline` de VectorPDF.
+`displayline` accepte les mêmes arguments que celui de Skim. Si votre éditeur a un réglage pour Skim, utilisez à la place le `displayline` de VectorPDF. Les options comme `-g` se placent avant LINE : après, un nom de fichier qui commence par `-` est lu comme un fichier.
 
 ### Visual Studio Code
 

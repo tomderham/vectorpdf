@@ -1,5 +1,5 @@
 <!-- keywords: pestaña, pestañas, ventana, ventanas, nueva pestaña, nueva ventana, ventanas secundarias, ventanas de ancla, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # Pestañas y ventanas
 
@@ -17,9 +17,17 @@ Para guardar las pestañas abiertas como grupo, haz clic con el botón derecho e
 
 Mantener los documentos relacionados como pestañas de una misma ventana también permite a VectorPDF [seguir las referencias entre ellos](cross-document-references.md).
 
-## Encontrar una ventana abierta
+## Encontrar una ventana abierta {#find-an-open-window}
 
-El menú Window y el icono de VectorPDF en el Dock muestran tus ventanas abiertas, con las pestañas de cada una.
+El menú Window y el icono de VectorPDF en el Dock muestran tus ventanas abiertas en el orden en que las abriste, con las pestañas de cada una sangradas debajo. Una ventana con pestañas tiene una línea encima y otra debajo, y se muestra con su número de pestañas (o con el nombre del [grupo de pestañas](favorites-and-tab-groups.md) desde el que la abriste); una marca de verificación indica su pestaña actual. Elige una ventana o una pestaña para traerla al frente. Para abrir una ventana nueva, haz clic con el botón derecho en el icono de VectorPDF en el Dock y elige New Window.
+
+Junto a una ventana:
+
+- Una marca de verificación indica la ventana de delante.
+- Un rombo indica una ventana minimizada.
+- Un punto indica una ventana con cambios sin guardar en alguna de sus pestañas.
+
+Las ventanas de anclas no aparecen en la lista: pasan al frente con la pestaña desde la que se abrieron.
 
 ## Ventanas de ancla {#anchor-windows}
 

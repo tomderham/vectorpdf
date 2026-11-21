@@ -1,5 +1,5 @@
 <!-- keywords: enregistrer, enregistrer sous, non enregistré, partager, afficher dans le Finder, modifications, revenir, dernière version enregistrée, recharger, annuler les modifications, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, enregistrement automatique, récupérer, récupération, plantage, fermeture inattendue, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # Enregistrer vos modifications
 
@@ -29,7 +29,7 @@ Tant qu’un document a des modifications non enregistrées, VectorPDF en garde 
 - **Decide Later** garde les copies et redemande la prochaine fois.
 - **Discard Changes** supprime les copies.
 
-La copie est supprimée lorsque vous enregistrez le document, revenez à la version enregistrée ou le fermez sans enregistrer, ainsi que lorsque vous quittez VectorPDF. Les documents protégés par mot de passe ne sont pas copiés, car la copie ne serait pas chiffrée.
+La copie est supprimée lorsque vous enregistrez le document, revenez à la version enregistrée ou le fermez sans enregistrer, ainsi que lorsque vous quittez VectorPDF. Les documents protégés par mot de passe ne sont pas copiés, car la copie ne serait pas chiffrée. Les documents signés numériquement ne sont pas copiés non plus : chaque enregistrement d’un document signé est conservé dans le fichier sous forme de révision, si bien que des modifications faites puis retirées avant l’enregistrement y resteraient. Enregistrez vous-même un document signé au fil de votre travail.
 
 ## Partager un document
 

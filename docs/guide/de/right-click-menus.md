@@ -1,5 +1,5 @@
 <!-- keywords: Rechtsklick, Sekundärklick, ctrl-Klick, Kontextmenü, Kontextmenüs, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: f2298628e73c -->
+<!-- source: f9e1ad75cfd5 -->
 
 # Kontextmenüs
 
@@ -51,5 +51,6 @@ In einem Dokument mit [Ebenen](layers.md) enthält das Menü einer Anmerkung au�
 | --- | --- |
 | Den Titel des Dokuments oder einen leeren Bereich der Symbolleiste | Zu Favorites hinzufügen oder daraus entfernen, Save All Open Tabs as a Group, Update Group “Name” with Open Tabs, Compare With (siehe [Zwei Dokumente vergleichen](compare-documents.md)) sowie deine Tabgruppen und Favoriten |
 | Eine Zeile auf dem Start-Bildschirm | Open, Open in New Tab, Open in New Window, Show in Finder und Remove oder Delete |
+| Das VectorPDF-Symbol im Dock | Deine geöffneten Fenster und ihre Tabs (siehe [Ein geöffnetes Fenster finden](tabs-and-windows.md#find-an-open-window)), New Window und Open Recent |
 
 Manche Befehle werden nur angezeigt, wenn sie zutreffen. So erfordert „Save All Open Tabs as a Group“ mehr als einen Tab, und in einem aus einem Anker geöffneten Fenster sind keine Ankerbefehle verfügbar.

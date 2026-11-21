@@ -1,5 +1,5 @@
 <!-- keywords: खोलें, PDF खोलें, फ़ाइल खोलें, PDF, हाल के, पासवर्ड, क्लाउड, फिर से लोड करें, खींचें, ई-बुक, कॉमिक, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 48a137d82361 -->
+<!-- source: 4306997dd17a -->
 
 # दस्तावेज़ खोलें
 
@@ -9,7 +9,7 @@
 - **नए टैब में:** File > Open PDF in New Tab चुनें, या ⌥⌘O दबाएँ।
 - **Finder से:** किसी PDF पर राइट-क्लिक करें, फिर Open With > VectorPDF चुनें। सभी PDF को VectorPDF में खोलने के लिए, कोई PDF चुनें, Finder में File > Get Info चुनें, “Open with” को बदलें, फिर Change All पर क्लिक करें।
 - **ड्रैग करके:** किसी PDF को वहीं खोलने के लिए उसे Start स्क्रीन पर ड्रैग करें, या नए टैब में खोलने के लिए किसी खुले दस्तावेज़ पर ड्रैग करें।
-- **सूची से:** File > Open Recent चुनें, या [Favorites](favorites-and-tab-groups.md) मेनू का उपयोग करें। Start स्क्रीन पर किसी दस्तावेज़ को नए टैब या विंडो में खोलने के लिए उस पर राइट-क्लिक करें।
+- **सूची से:** File > Open Recent चुनें, या Dock में VectorPDF आइकॉन के मेनू में Open Recent चुनें, या [Favorites](favorites-and-tab-groups.md) मेनू का उपयोग करें। Start स्क्रीन पर किसी दस्तावेज़ को नए टैब या विंडो में खोलने के लिए उस पर राइट-क्लिक करें।
 
 ## ई-बुक, कॉमिक और XPS दस्तावेज़
 

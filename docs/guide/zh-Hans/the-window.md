@@ -1,5 +1,5 @@
 <!-- keywords: 窗口, 工具栏, 边栏, 标签页, 开始屏幕, 界面, 页面指示器, 控制项, 附件, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, 状态栏, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # VectorPDF 窗口
 
@@ -13,6 +13,7 @@
 | Zoom | − 和 + 按钮可逐级缩放。点按百分比可键入自定值。 |
 | Rotate Left 和 Rotate Right | 旋转视图。这不会更改已存储的 PDF。 |
 | Two-Page Mode | 像翻开的书一样并排显示页面。 |
+| Horizontal Scrolling | 将页面从左到右排列，窗口能容纳多少就显示多少。 |
 | Markup Toolbar | 显示[标记工具](text-markup.md)。 |
 | Measurement Toolbar | 显示[测量工具](measure.md)。 |
 | Page | 箭头每次移动一页。点按页码可键入要前往的页码。 |
@@ -24,7 +25,7 @@
 使用边栏顶部的标签页可在以下内容之间切换：
 
 - **Outline & Thumbnails：** [目录，或每一页的缩略图](outline-and-thumbnails.md)。
-- **Search：** [当前文稿的结果](search.md)。
+- **Search：** [当前文稿的结果](search.md)。你可以将 Search 移到窗口右侧，以便在[大纲旁边](search.md#see-results-beside-the-outline)查看它。
 - **Anchors：** [你保存的位置](anchors.md)。
 - **Document：**文稿除页面之外包含的内容：它的[图层](layers.md)、[附件](attachments.md)、[数字签名](digital-signatures.md)，以及（如果你在设置中打开）它的[表单栏位、链接和目标](document-tab.md)。从标签页顶部的菜单中选择要显示的内容。只有当文稿至少包含其中一种时，这个标签页才会出现。
 - **Comments：** [所有注释及其回复和状态](draw-and-notes.md#see-all-annotations)。

@@ -1,5 +1,5 @@
 <!-- keywords: janela, barra de ferramentas, barras de ferramentas, barra lateral, abas, tela inicial, interface, indicador de página, controles, anexos, window, toolbar, toolbars, sidebar, tabs, start screen, page indicator, controls, attachments, barra de status, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # A janela do VectorPDF
 
@@ -13,6 +13,7 @@ Cada janela do VectorPDF tem uma barra de ferramentas, uma barra lateral e o pr�
 | Zoom | Os botões − e + alteram o zoom em etapas. Clique na porcentagem para digitar um valor. |
 | Rotate Left e Rotate Right | Giram a visualização. Isso não altera o PDF salvo. |
 | Two-Page Mode | Mostra as páginas lado a lado, como um livro aberto. |
+| Horizontal Scrolling | Dispõe as páginas da esquerda para a direita, quantas couberem na janela. |
 | Markup Toolbar | Mostra as [ferramentas de marcação](text-markup.md). |
 | Measurement Toolbar | Mostra as [ferramentas de medição](measure.md). |
 | Página | As setas avançam ou voltam uma página por vez. Clique no número da página para digitar a página desejada. |
@@ -24,7 +25,7 @@ Consulte [Zoom, rotação e layout de página](zoom-and-layout.md) para saber ma
 As abas na parte superior da barra lateral alternam entre:
 
 - **Outline & Thumbnails:** o [índice ou uma miniatura de cada página](outline-and-thumbnails.md).
-- **Search:** os [resultados do documento atual](search.md).
+- **Search:** os [resultados do documento atual](search.md). Você pode mover Search para o lado direito da janela, para vê-la [ao lado do sumário](search.md#see-results-beside-the-outline).
 - **Anchors:** [os locais que você salvou](anchors.md).
 - **Document:** o que o documento contém além das páginas: suas [camadas](layers.md), seus [anexos](attachments.md), suas [assinaturas digitais](digital-signatures.md) e, se você os ativar nos Ajustes, seus [campos de formulário, links e destinos](document-tab.md). Escolha o que mostrar no menu na parte superior da aba. Esta aba só aparece quando o documento tem pelo menos um deles.
 - **Comments:** [todas as anotações, com as respostas e o status](draw-and-notes.md#see-all-annotations).

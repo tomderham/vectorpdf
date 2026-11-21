@@ -1,5 +1,5 @@
 <!-- keywords: revisar encabezados, editar esquema, añadir marcador, esquema a partir de encabezados, encabezados, crear índice, cambiar nombre, sangrar, esquema, tabla de contenido, índice, contenido, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # Esquema y miniaturas
 
@@ -7,11 +7,12 @@ Haz clic en la pestaña Outline & Thumbnails en la parte superior de la barra la
 
 ## Esquema
 
-El esquema es la tabla de contenido del documento, si la tiene. La sección que estás leyendo se resalta a medida que te desplazas.
+El esquema es la tabla de contenido del documento, si la tiene. La sección que estás leyendo se resalta a medida que te desplazas. Después de ir a un resultado de búsqueda o seguir un enlace, se resalta la sección en la que está, hasta que vuelvas a desplazarte.
 
 - **Ir a una sección:** haz clic en ella. Su título se desplaza cerca de la parte superior de la ventana, o se queda donde está si ya lo ves.
 - **Mostrar u ocultar subsecciones:** haz clic en la flecha que hay junto a una sección.
 - **Encontrar una sección:** escribe en el campo “Search outline”. Solo se muestran las secciones que coinciden.
+- **Ver dónde están los resultados de búsqueda:** con Search [a la derecha de la ventana](search.md#see-results-beside-the-outline), cada sección muestra cuántos resultados tiene.
 - **Tener una sección a mano:** haz clic en ella con el botón derecho para crear un [ancla](anchors.md) o abrirla en una ventana nueva.
 
 ## Editar el esquema {#edit-the-outline}

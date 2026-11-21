@@ -1,5 +1,5 @@
 <!-- keywords: 제목 확인, 개요 편집, 책갈피 추가, 제목으로 개요, 제목, 목차 만들기, 이름 변경, 들여쓰기, 내어쓰기, 개요, 목차, 책갈피, 축소판, 썸네일, 사이드바, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # 개요 및 축소판
 
@@ -7,11 +7,12 @@
 
 ## 개요
 
-개요는 문서의 목차입니다(문서에 목차가 있는 경우). 스크롤하면 읽고 있는 섹션이 하이라이트됩니다.
+개요는 문서의 목차입니다(문서에 목차가 있는 경우). 스크롤하면 읽고 있는 섹션이 하이라이트됩니다. 검색 결과로 이동하거나 링크를 따라가면, 다시 스크롤할 때까지 해당 위치가 속한 섹션이 하이라이트됩니다.
 
 - **섹션으로 이동하기:** 섹션을 클릭합니다. 제목이 윈도우 위쪽 근처로 스크롤되며, 이미 보이는 경우에는 그 자리에 그대로 있습니다.
 - **하위 섹션 표시 또는 숨기기:** 섹션 옆의 화살표를 클릭합니다.
 - **섹션 찾기:** “Search outline” 필드에 입력합니다. 일치하는 섹션만 표시됩니다.
+- **검색 결과 위치 보기:** Search가 [윈도우 오른쪽](search.md#see-results-beside-the-outline)에 있으면 각 섹션에 결과 개수가 표시됩니다.
 - **섹션을 가까이 두기:** 섹션을 오른쪽 클릭하여 [앵커](anchors.md)를 생성하거나 새로운 윈도우에서 엽니다.
 
 ## 개요 편집하기 {#edit-the-outline}

@@ -1,5 +1,5 @@
 <!-- keywords: ventana, barra de herramientas, barras de herramientas, barra lateral, pestañas, pantalla de inicio, interfaz, indicador de página, controles, adjuntos, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barra de estado, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # La ventana de VectorPDF
 
@@ -13,6 +13,7 @@ Cada ventana de VectorPDF tiene una barra de herramientas, una barra lateral y e
 | Zoom | Los botones − y + cambian el zoom por pasos. Haz clic en el porcentaje para escribir el tuyo. |
 | Rotate Left y Rotate Right | Giran la vista. Esto no modifica el PDF guardado. |
 | Two-Page Mode | Muestra las páginas una al lado de la otra, como un libro abierto. |
+| Horizontal Scrolling | Dispone las páginas de izquierda a derecha, tantas como quepan en la ventana. |
 | Markup Toolbar | Muestra las [herramientas de anotación](text-markup.md). |
 | Measurement Toolbar | Muestra las [herramientas de medición](measure.md). |
 | Page | Las flechas avanzan de página en página. Haz clic en el número de página para escribir la que quieras. |
@@ -24,7 +25,7 @@ Consulta [Zoom, rotación y disposición de página](zoom-and-layout.md) para ob
 Las pestañas de la parte superior de la barra lateral permiten pasar de una vista a otra:
 
 - **Outline & Thumbnails:** la [tabla de contenido, o una miniatura de cada página](outline-and-thumbnails.md).
-- **Search:** los [resultados del documento actual](search.md).
+- **Search:** los [resultados del documento actual](search.md). Puedes mover Search al lado derecho de la ventana para verla [junto al esquema](search.md#see-results-beside-the-outline).
 - **Anchors:** los [lugares que has guardado](anchors.md).
 - **Document:** lo que contiene el documento además de sus páginas: sus [capas](layers.md), sus [archivos adjuntos](attachments.md), sus [firmas digitales](digital-signatures.md) y, si los activas en Ajustes, sus [campos de formulario, enlaces y destinos](document-tab.md). Elige qué mostrar en el menú de la parte superior de la pestaña. Esta pestaña solo aparece cuando el documento tiene al menos uno de ellos.
 - **Comments:** [todas las anotaciones, con sus respuestas y su estado](draw-and-notes.md#see-all-annotations).

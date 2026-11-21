@@ -1,5 +1,5 @@
 <!-- keywords: 打开, 打开 PDF, 打开文件, PDF, 最近使用, 密码, 云, 重新载入, 拖移, 电子书, 漫画, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 48a137d82361 -->
+<!-- source: 4306997dd17a -->
 
 # 打开文稿
 
@@ -9,7 +9,7 @@
 - **在新标签页中打开：** 选取 File > Open PDF in New Tab，或者按下 ⌥⌘O。
 - **从访达 (Finder) 打开：** 右键点按 PDF，然后选取 Open With > VectorPDF（“打开方式”）。若要用 VectorPDF 打开所有 PDF，请选择一个 PDF，在访达中选取 File > Get Info（“文件”>“显示简介”），更改“Open with”（“打开方式”），然后点按 Change All（“全部更改”）。
 - **通过拖移打开：** 将 PDF 拖移到 Start 屏幕可在该屏幕上打开，拖移到已打开的文稿上则会在新标签页中打开。
-- **从列表打开：** 选取 File > Open Recent，或者使用 [Favorites](favorites-and-tab-groups.md) 菜单。在 Start 屏幕上，右键点按文稿可在新标签页或新窗口中打开它。
+- **从列表打开：** 选取 File > Open Recent，或者在程序坞中 VectorPDF 图标的菜单里选取 Open Recent，或者使用 [Favorites](favorites-and-tab-groups.md) 菜单。在 Start 屏幕上，右键点按文稿可在新标签页或新窗口中打开它。
 
 ## 电子书、漫画和 XPS 文稿
 

@@ -1,5 +1,5 @@
 <!-- keywords: 저장, 다른 이름으로 저장, 저장되지 않음, 공유, Finder에서 보기, 변경 사항, 마지막 저장 버전으로 복귀, 되돌리기, 다시 불러오기, 변경 사항 버리기, save, save as, unsaved, share, Show in Finder, changes, PDF, revert, revert to saved, reload, discard, undo all, 자동 저장, 복구, 충돌, 예기치 않은 종료, autosave, recover, recovery, crash, quit unexpectedly -->
-<!-- source: cdbdeb12d33f -->
+<!-- source: 9cd8a419ddbd -->
 
 # 변경 사항 저장하기
 
@@ -29,7 +29,7 @@
 - **Decide Later**는 사본을 보관하고 다음에 다시 묻습니다.
 - **Discard Changes**는 사본을 삭제합니다.
 
-문서를 저장하거나, 저장된 상태로 되돌리거나, 저장하지 않고 닫을 때, 그리고 VectorPDF를 종료할 때 사본이 삭제됩니다. 암호로 보호된 문서는 사본이 암호화되지 않으므로 복사하지 않습니다.
+문서를 저장하거나, 저장된 상태로 되돌리거나, 저장하지 않고 닫을 때, 그리고 VectorPDF를 종료할 때 사본이 삭제됩니다. 암호로 보호된 문서는 사본이 암호화되지 않으므로 복사하지 않습니다. 디지털 서명된 문서도 복사하지 않습니다. 서명된 문서는 저장할 때마다 파일 안에 개정판으로 남기 때문에, 저장하기 전에 했다가 되돌린 변경 사항도 파일에 남게 됩니다. 서명된 문서는 작업하면서 직접 저장하십시오.
 
 ## 문서 공유하기
 

@@ -1,5 +1,5 @@
-<!-- keywords: zoom, ampliar, ajustar al ancho, ajustar a la ventana, tamaño real, girar, rotar, rotación, dos páginas, doble página, libro, disposición, vista, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 6687d8396f24 -->
+<!-- keywords: zoom, ampliar, ajustar al ancho, ajustar a la ventana, tamaño real, girar, rotar, rotación, dos páginas, doble página, libro, disposición, vista, horizontal, desplazamiento horizontal, lado a lado, partituras, partitura, pantalla panorámica, pasapáginas, pedal, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view, horizontal, horizontal scrolling, side by side, sheet music, score, widescreen, page turner, pedal -->
+<!-- source: 2988071d44f3 -->
 
 # Zoom, rotación y disposición de página
 
@@ -32,4 +32,14 @@ Haz clic en Rotate Left o Rotate Right en la barra de herramientas. Esto solo ca
 
 Haz clic en Two-Page Mode en la barra de herramientas, o elige View > Two Pages (⌥⌘2). Las páginas aparecen por pares con la portada sola, como un libro abierto, y la doble página se ajusta a la ventana. Para volver, haz clic de nuevo en el botón o elige View > Single Page.
 
-> **Nota:** La selección de texto, los enlaces, la búsqueda, las herramientas de anotación y medición y los formularios funcionan también con la vista girada o en Two-Page Mode. Lo que añades se coloca en la propia página, así que se mantiene en su sitio al volver a girar la vista.
+## Horizontal Scrolling
+
+Haz clic en Horizontal Scrolling en la barra de herramientas, o elige View > Horizontal Scrolling, para disponer las páginas de izquierda a derecha en lugar de hacia abajo. El zoom cambia para que las páginas se ajusten a la altura de la ventana, y se muestran tantas páginas como quepan a lo ancho: más en una pantalla ancha o al reducir el zoom. Resulta práctico para partituras.
+
+Desliza a la izquierda o a la derecha en un trackpad para desplazarte por las páginas. La rueda del ratón también las desplaza de lado, siempre que quepan en la altura de la ventana. Right Arrow y Left Arrow llevan la página siguiente o anterior al borde izquierdo de la ventana. Space y Page Down avanzan una pantalla, de modo que la primera página que no se veía entera pasa a ser la primera. ⇧Space y Page Up retroceden una pantalla. Los pasapáginas Bluetooth y los pedales suelen enviar estas teclas, así que también funcionan.
+
+Horizontal Scrolling y Two-Page Mode se sustituyen entre sí: al activar uno se desactiva el otro. Zoom to Fit Window ajusta la altura de las páginas mientras Horizontal Scrolling está activado.
+
+Para volver, haz clic de nuevo en el botón o elige View > Vertical Scrolling. Tus anotaciones se muestran y siguen siendo editables en ambas disposiciones. Compare Documents siempre se desplaza hacia abajo.
+
+> **Nota:** La selección de texto, los enlaces, la búsqueda, las herramientas de anotación y medición y los formularios funcionan también con la vista girada, en Two-Page Mode o con desplazamiento horizontal. Lo que añades se coloca en la propia página, así que se mantiene en su sitio al volver a girar la vista.

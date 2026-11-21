@@ -1,5 +1,5 @@
 <!-- keywords: aba, abas, janela, janelas, nova aba, nova janela, Dock, janelas filhas, janelas de âncora, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # Abas e janelas
 
@@ -17,9 +17,17 @@ Para salvar as abas abertas como um grupo, clique no título do documento com o 
 
 Manter documentos relacionados como abas de uma mesma janela também permite que o VectorPDF [siga as referências entre eles](cross-document-references.md).
 
-## Encontrar uma janela aberta
+## Encontrar uma janela aberta {#find-an-open-window}
 
-O menu Window e o ícone do VectorPDF no Dock listam as janelas abertas, com as abas de cada uma.
+O menu Window e o ícone do VectorPDF no Dock listam as janelas abertas na ordem em que você as abriu, com as abas de cada uma recuadas abaixo dela. Uma janela com abas tem uma linha acima e abaixo e aparece pelo número de abas (ou pelo nome do [Grupo de Abas](favorites-and-tab-groups.md) de onde você a abriu); uma marca de seleção indica a aba atual. Escolha uma janela ou aba para trazê-la para a frente. Para abrir uma nova janela, clique com o botão direito no ícone do VectorPDF no Dock e escolha New Window.
+
+Ao lado de uma janela:
+
+- Uma marca de seleção indica a janela da frente.
+- Um losango indica uma janela minimizada.
+- Um ponto indica uma janela com alterações não salvas em uma das abas.
+
+As janelas de âncora não aparecem na lista: elas vêm para a frente com a aba de onde foram abertas.
 
 ## Janelas de âncora {#anchor-windows}
 

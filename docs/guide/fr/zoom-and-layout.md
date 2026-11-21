@@ -1,5 +1,5 @@
-<!-- keywords: agrandir, ajuster à la largeur, ajuster à la fenêtre, taille réelle, faire pivoter, deux pages, double page, livre, disposition, présentation, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 6687d8396f24 -->
+<!-- keywords: agrandir, ajuster à la largeur, ajuster à la fenêtre, taille réelle, faire pivoter, deux pages, double page, livre, disposition, présentation, horizontal, défilement horizontal, côte à côte, partitions, partition, écran large, tourne-page, pédale, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view, horizontal, horizontal scrolling, side by side, sheet music, score, widescreen, page turner, pedal -->
+<!-- source: 2988071d44f3 -->
 
 # Zoom, rotation et disposition des pages
 
@@ -32,4 +32,14 @@ Cliquez sur Rotate Left ou Rotate Right dans la barre d’outils. Cela ne change
 
 Cliquez sur Two-Page Mode dans la barre d’outils, ou choisissez View > Two Pages (⌥⌘2). Les pages s’affichent par paires, avec la couverture seule, comme dans un livre ouvert, et la double page est ajustée à la fenêtre. Pour revenir en arrière, cliquez à nouveau sur le bouton ou choisissez View > Single Page.
 
-> **Remarque :** La sélection de texte, les liens, la recherche, les outils d’annotation et de mesure et les formulaires fonctionnent aussi lorsque la présentation est pivotée ou en Two-Page Mode. Ce que vous ajoutez est placé sur la page elle-même et reste donc en place lorsque vous rétablissez l’orientation.
+## Horizontal Scrolling
+
+Cliquez sur Horizontal Scrolling dans la barre d’outils, ou choisissez View > Horizontal Scrolling, pour disposer les pages de gauche à droite au lieu de haut en bas. Le zoom s’ajuste pour que les pages tiennent dans la hauteur de la fenêtre, et autant de pages s’affichent que sa largeur le permet : davantage sur un écran large, ou lorsque vous faites un zoom arrière. C’est pratique pour les partitions.
+
+Balayez vers la gauche ou la droite sur un trackpad pour faire défiler les pages. Une molette de souris les fait aussi défiler latéralement, tant qu’elles tiennent dans la hauteur de la fenêtre. Right Arrow et Left Arrow amènent la page suivante ou précédente au bord gauche de la fenêtre. Space et Page Down avancent d’un écran, de sorte que la première page qui n’était pas entièrement visible passe en premier. ⇧Space et Page Up reculent d’un écran. Les tourne-pages Bluetooth et les pédales envoient généralement ces touches, ils fonctionnent donc aussi.
+
+Horizontal Scrolling et Two-Page Mode se remplacent l’un l’autre : activer l’un désactive l’autre. Zoom to Fit Window ajuste la hauteur des pages tant que Horizontal Scrolling est activé.
+
+Pour revenir en arrière, cliquez à nouveau sur le bouton ou choisissez View > Vertical Scrolling. Vos annotations restent affichées et modifiables dans les deux dispositions. Compare Documents défile toujours de haut en bas.
+
+> **Remarque :** La sélection de texte, les liens, la recherche, les outils d’annotation et de mesure et les formulaires fonctionnent aussi lorsque la présentation est pivotée, en Two-Page Mode ou en défilement horizontal. Ce que vous ajoutez est placé sur la page elle-même et reste donc en place lorsque vous rétablissez l’orientation.

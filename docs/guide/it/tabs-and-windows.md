@@ -1,5 +1,5 @@
 <!-- keywords: pannello, pannelli, scheda, schede, finestra, finestre, nuovo pannello, nuova finestra, Dock, finestre figlie, finestre di ancoraggio, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # Pannelli e finestre
 
@@ -17,9 +17,17 @@ Per salvare i pannelli aperti come gruppo, fai clic con il tasto destro sul tito
 
 Tenere i documenti correlati come pannelli di una stessa finestra consente inoltre a VectorPDF di [seguire i riferimenti tra di essi](cross-document-references.md).
 
-## Trovare una finestra aperta
+## Trovare una finestra aperta {#find-an-open-window}
 
-Il menu Window e l'icona di VectorPDF nel Dock elencano le finestre aperte, con i pannelli di ciascuna.
+Il menu Window e l'icona di VectorPDF nel Dock elencano le finestre aperte nell’ordine in cui le hai aperte, con i pannelli di ciascuna rientrati sotto di essa. Una finestra con pannelli ha una linea sopra e una sotto, ed è indicata dal numero dei suoi pannelli (o dal nome del [gruppo di pannelli](favorites-and-tab-groups.md) da cui l’hai aperta); un segno di spunta indica il pannello attuale. Scegli una finestra o un pannello per portarlo in primo piano. Per aprire una nuova finestra, fai clic con il tasto destro sull’icona di VectorPDF nel Dock, quindi scegli New Window.
+
+Accanto a una finestra:
+
+- Un segno di spunta indica la finestra in primo piano.
+- Un rombo indica una finestra ridotta a icona.
+- Un punto indica una finestra con modifiche non salvate in uno dei suoi pannelli.
+
+Le finestre di ancoraggio non sono elencate: vengono in primo piano con il pannello da cui sono state aperte.
 
 ## Finestre di ancoraggio {#anchor-windows}
 

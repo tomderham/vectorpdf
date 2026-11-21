@@ -1,5 +1,5 @@
 <!-- keywords: onglet, onglets, fenêtre, fenêtres, nouvel onglet, nouvelle fenêtre, fenêtres enfants, fenêtres d’ancre, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # Onglets et fenêtres
 
@@ -17,9 +17,17 @@ Pour enregistrer les onglets ouverts sous forme de groupe, cliquez avec le bouto
 
 Regrouper des documents liés dans les onglets d’une même fenêtre permet aussi à VectorPDF de [suivre les références entre eux](cross-document-references.md).
 
-## Trouver une fenêtre ouverte
+## Trouver une fenêtre ouverte {#find-an-open-window}
 
-Le menu Window et l’icône de VectorPDF dans le Dock listent vos fenêtres ouvertes, avec les onglets de chacune.
+Le menu Window et l’icône de VectorPDF dans le Dock listent vos fenêtres ouvertes dans l’ordre où vous les avez ouvertes, avec les onglets de chacune en retrait en dessous. Une fenêtre à onglets a une ligne au-dessus et en dessous d’elle, et est désignée par son nombre d’onglets (ou par le nom du [Tab Group](favorites-and-tab-groups.md) à partir duquel vous l’avez ouverte) ; une coche indique son onglet actuel. Choisissez une fenêtre ou un onglet pour l’amener au premier plan. Pour ouvrir une nouvelle fenêtre, cliquez avec le bouton droit sur l’icône de VectorPDF dans le Dock, puis choisissez New Window.
+
+À côté d’une fenêtre :
+
+- Une coche indique la fenêtre au premier plan.
+- Un losange indique une fenêtre placée dans le Dock.
+- Un point indique une fenêtre dont l’un des onglets contient des modifications non enregistrées.
+
+Les fenêtres d’ancre ne sont pas listées : elles passent au premier plan avec l’onglet à partir duquel elles ont été ouvertes.
 
 ## Fenêtres d’ancre {#anchor-windows}
 

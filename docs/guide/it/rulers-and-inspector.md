@@ -1,5 +1,5 @@
 <!-- keywords: barra di stato, posizione del puntatore, coordinate, dimensioni della pagina, formato carta, righelli, guide, griglia, aggancio, unità, millimetri, pollici, punti, Inspector, font, dimensione del font, colore, risoluzione delle immagini, navigatore, conteggio parole, conteggio caratteri, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # Righelli, barra di stato e Inspector
 
@@ -37,7 +37,7 @@ Quando **Snap to Guides and Grid** è attivo in View > Rulers and Grid, i punti 
 
 ## L’Inspector {#the-inspector}
 
-Scegli View > Show Inspector (⌃⌘I) per mostrare l’Inspector accanto alla pagina. Puoi anche fare clic con il tasto destro sulla pagina e scegliere Inspect.
+Scegli View > Show Inspector (⌃⌘I) per mostrare l’Inspector accanto alla pagina. Puoi anche fare clic con il tasto destro sulla pagina e scegliere Inspect. Se hai [spostato la ricerca a destra](search.md#see-results-beside-the-outline), i due condividono quel lato: passa dall’uno all’altro con i pulsanti Search e Inspector in alto.
 
 - **Testo, immagini e disegni:** con l’Inspector aperto, fai clic sulla pagina in modalità Select. L’Inspector mostra cosa è disegnato lì, e la pagina lo evidenzia:
   - **Testo:** il font, la sua dimensione, il carattere, il suo colore e spazio colore, e se il font è incluso nel file. Un font che non lo è viene sostituito da un altro, che in stampa può avere un aspetto diverso.

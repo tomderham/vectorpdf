@@ -1,5 +1,5 @@
-<!-- keywords: 확대, 축소, 확대/축소, 너비에 맞춤, 윈도우에 맞춤, 실제 크기, 회전, 두 페이지, 펼침면, 책, 레이아웃, 보기, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 6687d8396f24 -->
+<!-- keywords: 확대, 축소, 확대/축소, 너비에 맞춤, 윈도우에 맞춤, 실제 크기, 회전, 두 페이지, 펼침면, 책, 레이아웃, 보기, 가로, 가로 스크롤, 나란히, 악보, 총보, 와이드스크린, 페이지 넘기개, 페달, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view, horizontal, horizontal scrolling, side by side, sheet music, score, widescreen, page turner, pedal -->
+<!-- source: 2988071d44f3 -->
 
 # 확대/축소, 회전 및 페이지 레이아웃
 
@@ -32,4 +32,14 @@ View > Define 100% Scale As를 선택한 다음 하나를 선택합니다.
 
 도구 막대에서 Two-Page Mode를 클릭하거나 View > Two Pages(⌥⌘2)를 선택합니다. 펼친 책처럼 표지는 한 페이지로, 나머지 페이지는 두 페이지씩 나타나며, 펼침면이 윈도우에 맞게 확대/축소됩니다. 되돌리려면 버튼을 다시 클릭하거나 View > Single Page를 선택합니다.
 
-> **참고:** 보기가 회전되어 있거나 Two-Page Mode일 때도 텍스트 선택, 링크, 검색, 마크업 및 측정 도구, 양식 작성을 사용할 수 있습니다. 추가한 항목은 페이지 자체에 배치되므로 보기 회전을 되돌려도 제자리에 유지됩니다.
+## Horizontal Scrolling
+
+도구 막대에서 Horizontal Scrolling을 클릭하거나 View > Horizontal Scrolling을 선택하면 페이지가 아래로가 아니라 왼쪽에서 오른쪽으로 배치됩니다. 페이지가 윈도우 높이에 맞도록 확대/축소되며, 윈도우 너비에 들어가는 만큼 페이지가 표시됩니다. 넓은 디스플레이에서나 축소하면 더 많이 표시됩니다. 악보를 볼 때 유용합니다.
+
+트랙패드에서 왼쪽이나 오른쪽으로 쓸어 넘기면 페이지를 따라 스크롤됩니다. 페이지가 윈도우 높이에 맞는 동안에는 마우스 휠로도 가로로 스크롤됩니다. Right Arrow와 Left Arrow는 다음 또는 이전 페이지를 윈도우 왼쪽 끝으로 가져옵니다. Space와 Page Down은 한 화면만큼 앞으로 이동하여, 전부 보이지 않던 첫 페이지가 맨 앞에 오게 합니다. ⇧Space와 Page Up은 한 화면만큼 뒤로 이동합니다. Bluetooth 페이지 넘기개와 발 페달은 대개 이 키를 보내므로 함께 사용할 수 있습니다.
+
+Horizontal Scrolling과 Two-Page Mode는 서로를 대체합니다. 하나를 켜면 다른 하나는 꺼집니다. Horizontal Scrolling이 켜져 있으면 Zoom to Fit Window는 페이지 높이에 맞춥니다.
+
+되돌리려면 버튼을 다시 클릭하거나 View > Vertical Scrolling을 선택합니다. 주석은 두 레이아웃 모두에서 표시되고 편집할 수 있습니다. Compare Documents는 항상 아래로 스크롤됩니다.
+
+> **참고:** 보기가 회전되어 있거나, Two-Page Mode이거나, 가로로 스크롤할 때도 텍스트 선택, 링크, 검색, 마크업 및 측정 도구, 양식 작성을 사용할 수 있습니다. 추가한 항목은 페이지 자체에 배치되므로 보기 회전을 되돌려도 제자리에 유지됩니다.

@@ -1,5 +1,5 @@
 <!-- keywords: conferir títulos, editar sumário, adicionar marcador, sumário a partir dos títulos, títulos, criar índice, renomear, recuar, sumário, índice, conteúdo, marcadores, miniatura, miniaturas, barra lateral, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # Sumário e miniaturas
 
@@ -7,11 +7,12 @@ Clique na aba Outline & Thumbnails na parte superior da barra lateral e escolha 
 
 ## Sumário
 
-O sumário (Outline) é o índice do documento, se ele tiver um. A seção que você está lendo fica realçada conforme você rola.
+O sumário (Outline) é o índice do documento, se ele tiver um. A seção que você está lendo fica realçada conforme você rola. Depois de ir a um resultado de busca ou seguir um link, a seção em que ele está fica realçada até você rolar de novo.
 
 - **Ir para uma seção:** clique nela. O título dela é rolado para perto do topo da janela, ou fica onde está se você já consegue vê-lo.
 - **Mostrar ou ocultar subseções:** clique na seta ao lado de uma seção.
 - **Encontrar uma seção:** digite no campo “Search outline”. Somente as seções correspondentes são mostradas.
+- **Ver onde estão os resultados da busca:** com Search [à direita da janela](search.md#see-results-beside-the-outline), cada seção mostra quantos resultados tem.
 - **Manter uma seção à mão:** clique nela com o botão direito para criar uma [âncora](anchors.md) ou abri-la em uma nova janela.
 
 ## Editar o sumário {#edit-the-outline}

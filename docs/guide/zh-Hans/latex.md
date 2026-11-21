@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, 正向搜索, 反向搜索, 源代码, 源文件, 编辑器, 跳转到源代码, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: ce9849c21b67 -->
+<!-- source: 554d3591f830 -->
 
 # 在 LaTeX 源代码和 PDF 之间跳转
 
@@ -31,7 +31,7 @@ Settings 会在编辑器下方显示它找到的程序。如果显示找不到�
 
 VectorPDF 会将 PDF 移到最前面（如果尚未打开则打开它），并用红色短暂高亮显示该行。只有当该行不在屏幕上时才会滚动。在 LINE 前加上 `-g`，可让 VectorPDF 留在编辑器后面。
 
-`displayline` 接受的参数与 Skim 的相同。如果你的编辑器有针对 Skim 的设置，请改用 VectorPDF 的 `displayline`。
+`displayline` 接受的参数与 Skim 的相同。如果你的编辑器有针对 Skim 的设置，请改用 VectorPDF 的 `displayline`。`-g` 等选项应放在 LINE 之前：在 LINE 之后，以 `-` 开头的文件名会被当作文件读取。
 
 ### Visual Studio Code
 

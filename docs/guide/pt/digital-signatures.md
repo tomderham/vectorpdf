@@ -1,5 +1,5 @@
 <!-- keywords: verificar assinaturas digitais, carimbo de data/hora, servidor de carimbo do tempo, certificar, bloquear campos, assinatura digital, assinaturas digitais, assinar, assinar com certificado, certificado, porta-chaves, assinado, signatário, certificação, válida, inválida, verificar, validar, confiança, identidade, adulterado, alterado, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # Verificar assinaturas digitais
 
@@ -20,7 +20,7 @@ Para cada assinatura, a lista na aba Document mostra:
 - Se as partes do arquivo que ela assinou estão exatamente como foram assinadas.
 - Se o arquivo foi salvo de novo depois de assinado, e se essas alterações estão entre as que a assinatura permite. Preencher campos de formulário, adicionar assinaturas e adicionar ou alterar anotações costuma ser permitido. Uma assinatura de certificação pode permitir menos alterações. Se foram adicionadas anotações depois da assinatura, a lista avisa: uma anotação pode cobrir o que foi assinado.
 - Quem a assinou, pelo nome no certificado, e quem emitiu o certificado. O nome que o software de assinatura escreveu no documento também é mostrado quando é diferente.
-- Quando foi assinada. Uma hora vinda de uma autoridade de carimbo do tempo é garantida se o carimbo for desta assinatura e o seu Mac confiar na autoridade dele; caso contrário, a lista diz por que ele não conta. Uma hora vinda do próprio computador do signatário não é garantida.
+- Quando foi assinada. Uma hora vinda de uma autoridade de carimbo do tempo é garantida se o carimbo for desta assinatura e o seu Mac confiar na autoridade dele; caso contrário, a lista diz por que ele não conta. Uma hora vinda do próprio computador do signatário não é garantida. O certificado do signatário é verificado como era no momento do carimbo do tempo ou, sem um, como é agora; por isso, uma assinatura sem carimbo do tempo deixa de ser verificada quando o certificado expira.
 - O motivo e o lugar que o signatário informou, se houver.
 
 Clique em uma assinatura para ir até ela na página. Para ver os certificados dela, clique em **Show Certificate**, ou clique nela com o botão direito e escolha Show Certificate.

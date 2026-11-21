@@ -1,5 +1,5 @@
 <!-- keywords: 右クリック, Control キーを押しながらクリック, コンテキストメニュー, ショートカットメニュー, right-click, right click, Control-click, context menu, context menus, shortcut menu -->
-<!-- source: f2298628e73c -->
+<!-- source: f9e1ad75cfd5 -->
 
 # 右クリックメニュー
 
@@ -51,5 +51,6 @@ SyncTeX を有効にして LaTeX で作成した PDF では、書類内のすべ
 | --- | --- |
 | 書類のタイトル、またはツールバーの何もない部分 | Favorites への追加または削除、Save All Open Tabs as a Group、Update Group “名前” with Open Tabs、Compare With（[2つの書類を比較する](compare-documents.md)を参照）、および保存した Tab Groups と Favorites |
 | Start 画面の行 | Open、Open in New Tab、Open in New Window、Show in Finder、および Remove または Delete |
+| Dock の VectorPDF アイコン | 開いているウインドウとそのタブ（[開いているウインドウを探す](tabs-and-windows.md#find-an-open-window)を参照）、New Window、Open Recent |
 
 コマンドの中には、使用できる場合にのみ表示されるものがあります。たとえば、Save All Open Tabs as a Group には複数のタブが必要です。また、アンカーから開いたウインドウではアンカーのコマンドは使用できません。

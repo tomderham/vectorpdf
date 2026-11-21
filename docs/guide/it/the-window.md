@@ -1,5 +1,5 @@
 <!-- keywords: finestra, barra degli strumenti, barre degli strumenti, barra laterale, pannelli, schermata Start, interfaccia, indicatore di pagina, controlli, allegati, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, barra di stato, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # La finestra di VectorPDF
 
@@ -13,6 +13,7 @@ Ogni finestra di VectorPDF ha una barra degli strumenti, una barra laterale e il
 | Zoom | I pulsanti − e + modificano lo zoom a passi. Fai clic sulla percentuale per digitare un valore. |
 | Rotate Left e Rotate Right | Ruotano la vista. Il PDF salvato non viene modificato. |
 | Two-Page Mode | Mostra le pagine affiancate, come un libro aperto. |
+| Horizontal Scrolling | Dispone le pagine da sinistra a destra, quante ne entrano nella finestra. |
 | Markup Toolbar | Mostra gli [strumenti di annotazione](text-markup.md). |
 | Measurement Toolbar | Mostra gli [strumenti di misurazione](measure.md). |
 | Page | Le frecce spostano di una pagina alla volta. Fai clic sul numero di pagina per digitare la pagina desiderata. |
@@ -24,7 +25,7 @@ Consulta [Zoom, rotazione e layout di pagina](zoom-and-layout.md) per ulteriori 
 I pannelli nella parte superiore della barra laterale consentono di passare tra:
 
 - **Outline & Thumbnails:** l'[indice o una miniatura di ogni pagina](outline-and-thumbnails.md).
-- **Search:** i [risultati per il documento corrente](search.md).
+- **Search:** i [risultati per il documento corrente](search.md). Puoi spostare Search sul lato destro della finestra, per vederla [accanto alla struttura](search.md#see-results-beside-the-outline).
 - **Anchors:** [i punti che hai salvato](anchors.md).
 - **Document:** ciò che il documento contiene oltre alle pagine: i suoi [livelli](layers.md), i suoi [allegati](attachments.md), le sue [firme digitali](digital-signatures.md) e, se li attivi nelle Impostazioni, i suoi [campi modulo, link e destinazioni](document-tab.md). Scegli cosa mostrare dal menu in cima al pannello. Questo pannello compare solo quando il documento ne ha almeno uno.
 - **Comments:** [tutte le annotazioni, con le risposte e lo stato](draw-and-notes.md#see-all-annotations).

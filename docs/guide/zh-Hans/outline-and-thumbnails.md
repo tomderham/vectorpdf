@@ -1,5 +1,5 @@
 <!-- keywords: 检查标题, 编辑大纲, 添加书签, 根据标题创建大纲, 标题, 创建目录, 重新命名, 缩进, 取消缩进, 大纲, 目录, 内容, 书签, 缩略图, 边栏, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # 大纲和缩略图
 
@@ -7,11 +7,12 @@
 
 ## 大纲
 
-大纲就是文稿的目录（如果有的话）。滚动时，你正在阅读的章节会高亮显示。
+大纲就是文稿的目录（如果有的话）。滚动时，你正在阅读的章节会高亮显示。前往某个搜索结果或跟随链接后，它所在的章节会高亮显示，直到你再次滚动。
 
 - **前往某个章节：** 点按它。其标题会滚动到窗口顶部附近；如果你已经能看到标题，则保持原位。
 - **显示或隐藏子章节：** 点按章节旁边的箭头。
 - **查找章节：** 在“Search outline”栏中键入内容。这时只显示匹配的章节。
+- **查看搜索结果所在位置：** 当 Search 位于[窗口右侧](search.md#see-results-beside-the-outline)时，每个章节都会显示其中有多少结果。
 - **让章节随手可用：** 右键点按它以创建[锚点](anchors.md)，或者在新窗口中打开它。
 
 ## 编辑大纲 {#edit-the-outline}

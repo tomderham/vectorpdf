@@ -1,5 +1,5 @@
 <!-- keywords: 标签页, 窗口, 新标签页, 新窗口, 程序坞, 子窗口, 锚点窗口, tab, tabs, window, windows, new tab, new window, Dock, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # 标签页和窗口
 
@@ -17,9 +17,17 @@ VectorPDF 使用标准的 macOS 窗口标签页。
 
 将相关文稿作为同一窗口的标签页，还能让 VectorPDF [跟随它们之间的引用](cross-document-references.md)。
 
-## 查找打开的窗口
+## 查找打开的窗口 {#find-an-open-window}
 
-Window 菜单和程序坞中的 VectorPDF 图标会列出你打开的窗口及其中的标签页。
+Window 菜单和程序坞中的 VectorPDF 图标会按你打开的顺序列出打开的窗口，每个窗口的标签页缩进显示在其下方。带有标签页的窗口上下各有一条线，并以其标签页数量（或你打开它时所用的[标签页组](favorites-and-tab-groups.md)的名称）显示；勾号标出其当前标签页。选取窗口或标签页即可将其移到最前面。若要打开新窗口，请右键点按程序坞中的 VectorPDF 图标，然后选取 New Window。
+
+窗口旁边：
+
+- 勾号标出最前面的窗口。
+- 菱形标出已最小化的窗口。
+- 圆点标出某个标签页中有未存储更改的窗口。
+
+锚点窗口不会列出：它们会随打开它们的标签页一起移到最前面。
 
 ## 锚点窗口 {#anchor-windows}
 

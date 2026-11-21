@@ -1,5 +1,5 @@
 <!-- keywords: 탭, 윈도우, 창, 새로운 탭, 새로운 윈도우, Dock, 하위 윈도우, 앵커 윈도우, tab, tabs, window, windows, new tab, new window, child windows, anchor windows -->
-<!-- source: 44d49fcd2f34 -->
+<!-- source: f07082cac4f4 -->
 
 # 탭과 윈도우
 
@@ -17,9 +17,17 @@ VectorPDF는 macOS의 표준 윈도우 탭을 사용합니다.
 
 관련 문서를 윈도우 하나의 탭으로 열어 두면 VectorPDF가 [문서 간 참조를 따라갈 수 있습니다](cross-document-references.md).
 
-## 열려 있는 윈도우 찾기
+## 열려 있는 윈도우 찾기 {#find-an-open-window}
 
-Window 메뉴와 Dock의 VectorPDF 아이콘에 열려 있는 윈도우가 각 윈도우의 탭과 함께 나열됩니다.
+Window 메뉴와 Dock의 VectorPDF 아이콘에 열려 있는 윈도우가 연 순서대로 나열되며, 각 윈도우의 탭은 그 아래에 들여쓰기되어 표시됩니다. 탭이 있는 윈도우는 위아래에 선이 있고, 탭 개수(또는 해당 윈도우를 연 [탭 그룹](favorites-and-tab-groups.md)의 이름)로 표시됩니다. 체크 표시는 현재 탭을 나타냅니다. 윈도우나 탭을 선택하면 앞으로 가져옵니다. 새로운 윈도우를 열려면 Dock의 VectorPDF 아이콘을 오른쪽 클릭한 다음 New Window를 선택합니다.
+
+윈도우 옆의 표시:
+
+- 체크 표시는 맨 앞의 윈도우를 나타냅니다.
+- 마름모는 최소화된 윈도우를 나타냅니다.
+- 점은 탭 중 하나에 저장하지 않은 변경 사항이 있는 윈도우를 나타냅니다.
+
+앵커 윈도우는 나열되지 않으며, 해당 윈도우를 연 탭과 함께 앞으로 나옵니다.
 
 ## 앵커 윈도우 {#anchor-windows}
 

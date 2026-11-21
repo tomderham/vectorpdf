@@ -1,5 +1,5 @@
 <!-- keywords: etichette di pagina, numeri di pagina, numeri di tavola, navigare, navigazione, scorrere, pagina, pagine, vai alla pagina, indietro, avanti, tasti freccia, saltare, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # Spostarsi in un documento
 
@@ -18,7 +18,7 @@ Dalla tastiera:
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Pagina precedente o successiva |
 | ⌘Up Arrow, ⌘Down Arrow | Prima o ultima pagina |
 
-In Two-Page Mode, questi tasti sfogliano un'intera doppia pagina.
+In Two-Page Mode, questi tasti sfogliano un'intera doppia pagina. Con [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) attivo, Space, Page Down, ⇧Space e Page Up si spostano di una schermata di pagine alla volta.
 
 ## Andare a una pagina
 

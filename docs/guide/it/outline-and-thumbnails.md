@@ -1,5 +1,5 @@
 <!-- keywords: controllare i titoli, modificare la struttura, aggiungere segnalibro, struttura dai titoli, titoli, creare sommario, rinominare, rientro, struttura, indice, sommario, contenuti, segnalibri, miniatura, miniature, barra laterale, outline, table of contents, TOC, contents, bookmarks, thumbnail, thumbnails, sidebar, bookmark, add bookmark, edit outline, build outline, headings, generate table of contents, rename, indent, outdent -->
-<!-- source: 4e321771b823 -->
+<!-- source: 790ab6f4cee0 -->
 
 # Struttura e miniature
 
@@ -7,11 +7,12 @@ Fai clic sul pannello Outline & Thumbnails nella parte superiore della barra lat
 
 ## Struttura
 
-La struttura è l'indice del documento, se presente. La sezione che stai leggendo viene evidenziata mentre scorri.
+La struttura è l'indice del documento, se presente. La sezione che stai leggendo viene evidenziata mentre scorri. Dopo che vai a un risultato di ricerca o segui un link, la sezione in cui si trova viene evidenziata finché non scorri di nuovo.
 
 - **Andare a una sezione:** fai clic su di essa. Il suo titolo scorre vicino alla parte superiore della finestra, oppure resta dov'è se lo vedi già.
 - **Mostrare o nascondere le sottosezioni:** fai clic sulla freccia accanto a una sezione.
 - **Trovare una sezione:** digita nel campo “Search outline”. Vengono mostrate solo le sezioni corrispondenti.
+- **Vedere dove sono i risultati della ricerca:** con Search [a destra della finestra](search.md#see-results-beside-the-outline), ogni sezione mostra quanti risultati contiene.
 - **Tenere a portata di mano una sezione:** fai clic su di essa con il tasto destro per creare un [ancoraggio](anchors.md) o per aprirla in una nuova finestra.
 
 ## Modificare la struttura {#edit-the-outline}

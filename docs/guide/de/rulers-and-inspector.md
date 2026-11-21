@@ -1,5 +1,5 @@
 <!-- keywords: Statusleiste, Zeigerposition, Koordinaten, Seitengröße, Papierformat, Lineale, Hilfslinien, Raster, einrasten, Einheiten, Millimeter, Zoll, Punkt, Inspector, Schrift, Schriftgröße, Farbe, Bildauflösung, Navigator, Wortanzahl, Zeichenanzahl, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # Lineale, Statusleiste und Inspector
 
@@ -37,7 +37,7 @@ Wenn **Snap to Guides and Grid** unter View > Rulers and Grid eingeschaltet ist,
 
 ## Der Inspector {#the-inspector}
 
-Wähle View > Show Inspector (⌃⌘I), um den Inspector neben der Seite einzublenden. Du kannst auch mit der rechten Maustaste auf die Seite klicken und „Inspect“ wählen.
+Wähle View > Show Inspector (⌃⌘I), um den Inspector neben der Seite einzublenden. Du kannst auch mit der rechten Maustaste auf die Seite klicken und „Inspect“ wählen. Wenn du [Search nach rechts verschoben hast](search.md#see-results-beside-the-outline), teilen sich beide diese Seite: Wechsle mit den Tasten „Search“ und „Inspector“ oben zwischen ihnen.
 
 - **Text, Bilder und Zeichnungen:** Klicke bei geöffnetem Inspector im Modus „Select“ auf die Seite. Der Inspector zeigt, was dort gezeichnet ist, und die Seite umrandet es:
   - **Text:** die Schrift, ihre Größe, das Zeichen, seine Farbe und seinen Farbraum und ob die Schrift in der Datei enthalten ist. Eine Schrift, die fehlt, wird durch eine Ersatzschrift dargestellt, die gedruckt anders aussehen kann.

@@ -1,5 +1,5 @@
 <!-- keywords: Fenster, Symbolleiste, Symbolleisten, Seitenleiste, Tabs, Start-Bildschirm, Oberfläche, Seitenanzeige, Bedienelemente, Anhänge, window, toolbar, toolbars, sidebar, tabs, start screen, interface, page indicator, controls, attachments, Statusleiste, Inspector, status bar -->
-<!-- source: cce7c7e75b8e -->
+<!-- source: 52234d6db490 -->
 
 # Das VectorPDF-Fenster
 
@@ -13,6 +13,7 @@ Jedes VectorPDF-Fenster hat eine Symbolleiste, eine Seitenleiste und das Dokumen
 | Zoom | Die Tasten „−“ und „+“ ändern die Zoomstufe schrittweise. Klicke auf den Prozentwert, um einen eigenen Wert einzugeben. |
 | Rotate Left und Rotate Right | Drehen die Ansicht. Das gesicherte PDF wird dadurch nicht geändert. |
 | Two-Page Mode | Zeigt Seiten nebeneinander an, wie in einem aufgeschlagenen Buch. |
+| Horizontal Scrolling | Ordnet die Seiten von links nach rechts an, so viele, wie ins Fenster passen. |
 | Markup Toolbar | Zeigt die [Markierungswerkzeuge](text-markup.md) an. |
 | Measurement Toolbar | Zeigt die [Messwerkzeuge](measure.md) an. |
 | Page | Mit den Pfeilen wechselst du jeweils um eine Seite. Klicke auf die Seitenzahl, um die gewünschte Seite einzugeben. |
@@ -24,7 +25,7 @@ Weitere Informationen zu diesen Bedienelementen findest du unter [Zoomen, Drehen
 Mit den Tabs oben in der Seitenleiste wechselst du zwischen:
 
 - **Outline & Thumbnails:** das [Inhaltsverzeichnis oder eine Miniatur jeder Seite](outline-and-thumbnails.md).
-- **Search:** [Ergebnisse für das aktuelle Dokument](search.md).
+- **Search:** [Ergebnisse für das aktuelle Dokument](search.md). Du kannst Search an den rechten Rand des Fensters verschieben, um es [neben der Gliederung](search.md#see-results-beside-the-outline) zu sehen.
 - **Anchors:** [die Stellen, die du gespeichert hast](anchors.md).
 - **Document:** was das Dokument außer seinen Seiten enthält: seine [Ebenen](layers.md), [Anhänge](attachments.md), [digitalen Signaturen](digital-signatures.md) und, wenn du sie in den Einstellungen einschaltest, seine [Formularfelder, Links und Ziele](document-tab.md). Wähle im Menü oben im Tab, was angezeigt wird. Dieser Tab erscheint nur, wenn das Dokument mindestens eines davon hat.
 - **Comments:** [alle Anmerkungen mit ihren Antworten und ihrem Status](draw-and-notes.md#see-all-annotations).

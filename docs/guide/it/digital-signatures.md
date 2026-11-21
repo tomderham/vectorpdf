@@ -1,5 +1,5 @@
 <!-- keywords: verificare le firme digitali, marca temporale, server di marcatura temporale, certificare, bloccare i campi, firma digitale, firme digitali, firmare, firmare con certificato, certificato, portachiavi, firmato, firmatario, certificazione, valida, non valida, verificare, convalidare, attendibilità, identità, manomesso, modificato, digital signature, digital signatures, sign, signing, sign with certificate, p12, pfx, keychain, signed, signer, certificate, certified, certification, valid, invalid, verify, validate, trust, identity, timestamp, PKCS, CAdES, PAdES, tampered, changed, check signature -->
-<!-- source: 9299a883126e -->
+<!-- source: b817ac7da979 -->
 
 # Verificare le firme digitali
 
@@ -20,7 +20,7 @@ Per ogni firma, l’elenco nel pannello Document mostra:
 - Se le parti del file che ha firmato sono esattamente come quando sono state firmate.
 - Se il file è stato salvato di nuovo dopo la firma, e se quelle modifiche sono tra quelle che la firma consente. Compilare campi modulo, aggiungere firme e aggiungere o modificare annotazioni di solito è consentito. Una firma di certificazione può consentire meno modifiche. Se dopo la firma sono state aggiunte annotazioni, l’elenco lo indica: un’annotazione può coprire ciò che è stato firmato.
 - Chi l’ha firmata, con il nome nel suo certificato, e chi ha emesso il certificato. Viene mostrato anche il nome che il software di firma ha scritto nel documento, quando è diverso.
-- Quando è stata firmata. Un’ora fornita da un’autorità di marcatura temporale è garantita se la marca è di questa firma e il tuo Mac si fida della sua autorità; altrimenti l’elenco indica perché non conta. Un’ora presa dal computer del firmatario non è garantita.
+- Quando è stata firmata. Un’ora fornita da un’autorità di marcatura temporale è garantita se la marca è di questa firma e il tuo Mac si fida della sua autorità; altrimenti l’elenco indica perché non conta. Un’ora presa dal computer del firmatario non è garantita. Il certificato del firmatario viene verificato com’era al momento della marca temporale o, se manca, com’è adesso: una firma senza marca temporale smette quindi di risultare verificata quando il suo certificato scade.
 - Il motivo e il luogo indicati dal firmatario, se presenti.
 
 Fai clic su una firma per andare a essa nella pagina. Per vederne i certificati, fai clic su **Show Certificate**, oppure fai clic con il tasto destro sulla firma e scegli Show Certificate.

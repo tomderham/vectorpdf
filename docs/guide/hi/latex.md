@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, फ़ॉरवर्ड सर्च, इनवर्स सर्च, सोर्स, सोर्स कोड, एडिटर, सोर्स पर जाएँ, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: ce9849c21b67 -->
+<!-- source: 554d3591f830 -->
 
 # LaTeX सोर्स और PDF के बीच आना-जाना
 
@@ -31,7 +31,7 @@ PDF में किसी जगह पर ⇧⌘ दबाकर क्लि�
 
 VectorPDF उस PDF को सामने लाता है, अगर वह खुला न हो तो उसे खोलता है, और लाइन को कुछ पल के लिए लाल रंग में हाइलाइट करता है। वह तभी स्क्रॉल करता है जब लाइन पहले से स्क्रीन पर न हो। VectorPDF को अपने एडिटर के पीछे रहने देने के लिए LINE से पहले `-g` जोड़ें।
 
-`displayline` वही आर्ग्युमेंट लेता है जो Skim का लेता है। अगर आपके एडिटर में Skim के लिए कोई सेटिंग है, तो उसकी जगह VectorPDF का `displayline` इस्तेमाल करें।
+`displayline` वही आर्ग्युमेंट लेता है जो Skim का लेता है। अगर आपके एडिटर में Skim के लिए कोई सेटिंग है, तो उसकी जगह VectorPDF का `displayline` इस्तेमाल करें। `-g` जैसे विकल्प LINE से पहले आते हैं: उसके बाद, `-` से शुरू होने वाला फ़ाइल नाम फ़ाइल के रूप में पढ़ा जाता है।
 
 ### Visual Studio Code
 

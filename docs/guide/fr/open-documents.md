@@ -1,5 +1,5 @@
 <!-- keywords: ouvrir, ouvrir un PDF, ouvrir un fichier, PDF, récents, mot de passe, nuage, recharger, glisser, livre numérique, bande dessinée, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 48a137d82361 -->
+<!-- source: 4306997dd17a -->
 
 # Ouvrir des documents
 
@@ -9,7 +9,7 @@
 - **Dans un nouvel onglet :** choisissez File > Open PDF in New Tab, ou appuyez sur ⌥⌘O.
 - **Depuis le Finder :** cliquez avec le bouton droit sur un PDF, puis choisissez Open With > VectorPDF (Ouvrir avec dans un Finder en français). Pour ouvrir tous les PDF dans VectorPDF, sélectionnez un PDF, choisissez File > Get Info dans le Finder (Fichier > Lire les informations en français), modifiez « Open with » (Ouvrir avec), puis cliquez sur Change All (Tout modifier).
 - **Par glissement :** faites glisser un PDF sur l’écran Start pour l’y ouvrir, ou sur un document ouvert pour l’ouvrir dans un nouvel onglet.
-- **Depuis une liste :** choisissez File > Open Recent, ou utilisez le menu [Favorites](favorites-and-tab-groups.md). Dans l’écran Start, cliquez avec le bouton droit sur un document pour l’ouvrir dans un nouvel onglet ou une nouvelle fenêtre.
+- **Depuis une liste :** choisissez File > Open Recent, ou Open Recent dans le menu de l’icône de VectorPDF dans le Dock, ou utilisez le menu [Favorites](favorites-and-tab-groups.md). Dans l’écran Start, cliquez avec le bouton droit sur un document pour l’ouvrir dans un nouvel onglet ou une nouvelle fenêtre.
 
 ## Livres numériques, bandes dessinées et documents XPS
 

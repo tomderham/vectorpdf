@@ -1,5 +1,5 @@
 <!-- keywords: abrir, abrir PDF, abrir archivo, PDF, recientes, contraseña, nube, recargar, arrastrar, libro electrónico, cómic, open, open PDF, open file, PDF, recent, password, cloud, iCloud Drive, Google Drive, Dropbox, OneDrive, Box, reload, drag, EPUB, e-book, ebook, XPS, OXPS, CBZ, comic, FB2, FictionBook -->
-<!-- source: 48a137d82361 -->
+<!-- source: 4306997dd17a -->
 
 # Abrir documentos
 
@@ -9,7 +9,7 @@
 - **En una pestaña nueva:** elige File > Open PDF in New Tab o pulsa ⌥⌘O.
 - **Desde el Finder:** haz clic con el botón derecho en un PDF y elige Open With > VectorPDF. Para abrir todos los PDF en VectorPDF, selecciona un PDF, elige File > Get Info en el Finder, cambia “Open with” y haz clic en Change All.
 - **Arrastrando:** arrastra un PDF a la pantalla de inicio para abrirlo ahí, o sobre un documento abierto para abrirlo en una pestaña nueva.
-- **Desde una lista:** elige File > Open Recent o usa el menú [Favorites](favorites-and-tab-groups.md). En la pantalla de inicio, haz clic con el botón derecho en un documento para abrirlo en una pestaña o ventana nueva.
+- **Desde una lista:** elige File > Open Recent o Open Recent en el menú del icono de VectorPDF en el Dock, o usa el menú [Favorites](favorites-and-tab-groups.md). En la pantalla de inicio, haz clic con el botón derecho en un documento para abrirlo en una pestaña o ventana nueva.
 
 ## Libros electrónicos, cómics y documentos XPS
 

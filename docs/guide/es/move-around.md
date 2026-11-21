@@ -1,5 +1,5 @@
 <!-- keywords: etiquetas de página, números de página, números de plano, navegar, navegación, desplazarse, página, páginas, ir a la página, atrás, adelante, teclas de flecha, saltar, navigate, navigation, scroll, page, pages, go to page, page labels, page numbers, sheet numbers, back, forward, arrow keys, jump -->
-<!-- source: e30f4f6cb6d9 -->
+<!-- source: 40f74b0edf6c -->
 
 # Desplazarse por un documento
 
@@ -18,7 +18,7 @@ Con el teclado:
 | ⌥Up Arrow, ⌥Down Arrow, ⌥Left Arrow, ⌥Right Arrow | Página anterior o siguiente |
 | ⌘Up Arrow, ⌘Down Arrow | Primera o última página |
 
-En Two-Page Mode, estas teclas pasan una doble página completa.
+En Two-Page Mode, estas teclas pasan una doble página completa. Con [Horizontal Scrolling](zoom-and-layout.md#horizontal-scrolling) activado, Space, Page Down, ⇧Space y Page Up avanzan o retroceden una pantalla de páginas cada vez.
 
 ## Ir a una página
 

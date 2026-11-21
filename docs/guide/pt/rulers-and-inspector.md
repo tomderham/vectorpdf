@@ -1,5 +1,5 @@
 <!-- keywords: barra de status, posição do cursor, coordenadas, tamanho da página, tamanho do papel, réguas, guias, grade, encaixar, unidades, milímetros, polegadas, pontos, Inspector, fonte, tamanho da fonte, cor, resolução da imagem, navegador, contagem de palavras, contagem de caracteres, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # Réguas, barra de status e Inspector
 
@@ -37,7 +37,7 @@ Quando **Snap to Guides and Grid** está ativado em View > Rulers and Grid, os p
 
 ## O Inspector {#the-inspector}
 
-Escolha View > Show Inspector (⌃⌘I) para mostrar o Inspector ao lado da página. Você também pode clicar com o botão direito na página e escolher Inspect.
+Escolha View > Show Inspector (⌃⌘I) para mostrar o Inspector ao lado da página. Você também pode clicar com o botão direito na página e escolher Inspect. Se você [moveu a busca para a direita](search.md#see-results-beside-the-outline), os dois dividem esse lado: alterne entre eles com os botões Search e Inspector no topo.
 
 - **Texto, imagens e desenhos:** com o Inspector aberto, clique na página no modo Select. O Inspector mostra o que está desenhado ali, e a página o destaca:
   - **Texto:** a fonte, o tamanho, o caractere, sua cor e espaço de cor, e se a fonte está no arquivo. Uma fonte que não está é desenhada com uma substituta, que pode ficar diferente na impressão.

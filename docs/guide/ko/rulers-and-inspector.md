@@ -1,5 +1,5 @@
 <!-- keywords: 상태 막대, 포인터 위치, 좌표, 페이지 크기, 용지 크기, 눈금자, 안내선, 격자, 맞춤, 단위, 밀리미터, 인치, 포인트, Inspector, 서체, 서체 크기, 색상, 이미지 해상도, 탐색기, 단어 수, 문자 수, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # 눈금자, 상태 막대 및 Inspector
 
@@ -37,7 +37,7 @@ View > Rulers and Grid에서 **Snap to Guides and Grid**가 켜져 있으면 측
 
 ## Inspector {#the-inspector}
 
-View > Show Inspector(⌃⌘I)를 선택하면 페이지 옆에 Inspector가 표시됩니다. 페이지를 오른쪽 클릭하고 Inspect를 선택할 수도 있습니다.
+View > Show Inspector(⌃⌘I)를 선택하면 페이지 옆에 Inspector가 표시됩니다. 페이지를 오른쪽 클릭하고 Inspect를 선택할 수도 있습니다. [Search를 오른쪽으로 옮긴](search.md#see-results-beside-the-outline) 경우 둘이 오른쪽 영역을 함께 사용합니다. 상단의 Search 및 Inspector 버튼으로 전환합니다.
 
 - **텍스트, 이미지 및 그림:** Inspector가 열린 상태에서 Select 모드로 페이지를 클릭합니다. Inspector에 그곳에 그려진 내용이 표시되고 페이지에서는 그 부분에 테두리가 표시됩니다.
   - **텍스트:** 서체, 크기, 문자, 색상과 색 공간, 그리고 서체가 파일에 포함되어 있는지 여부. 포함되지 않은 서체는 대체 서체로 그려지므로 인쇄하면 다르게 보일 수 있습니다.

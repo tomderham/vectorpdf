@@ -1,5 +1,5 @@
 <!-- keywords: स्टेटस बार, पॉइंटर की जगह, निर्देशांक, पेज का आकार, कागज़ का आकार, रूलर, गाइड, ग्रिड, स्नैप, इकाइयाँ, मिलीमीटर, इंच, पॉइंट, Inspector, फ़ॉन्ट, फ़ॉन्ट आकार, रंग, इमेज रिज़ॉल्यूशन, नेविगेटर, शब्द गिनती, अक्षर गिनती, status bar, pointer position, coordinates, page size, paper size, A4, Letter, ARCH, rulers, guides, grid, snap, units, millimeters, inches, points, font, font size, color, image resolution, dpi, ppi, line width, navigator, pan and zoom, word count, character count -->
-<!-- source: a8ac6b2f855f -->
+<!-- source: f1f2dd215a95 -->
 
 # रूलर, स्टेटस बार और Inspector
 
@@ -37,7 +37,7 @@
 
 ## Inspector {#the-inspector}
 
-पेज के बगल में Inspector दिखाने के लिए View > Show Inspector (⌃⌘I) चुनें। आप पेज पर राइट-क्लिक करके Inspect भी चुन सकते हैं।
+पेज के बगल में Inspector दिखाने के लिए View > Show Inspector (⌃⌘I) चुनें। आप पेज पर राइट-क्लिक करके Inspect भी चुन सकते हैं। अगर आपने [Search को दाईं ओर ले जाया है](search.md#see-results-beside-the-outline), तो दोनों वह जगह साझा करते हैं: ऊपर Search और Inspector बटनों से उनके बीच स्विच करें।
 
 - **टेक्स्ट, इमेज और ड्रॉइंग:** Inspector खुला होने पर, Select मोड में पेज पर क्लिक करें। Inspector दिखाता है कि वहाँ क्या बना है, और पेज उसके चारों ओर रेखा बनाता है:
   - **टेक्स्ट:** फ़ॉन्ट, उसका आकार, अक्षर, उसका रंग और कलर स्पेस, और क्या फ़ॉन्ट फ़ाइल में शामिल है। जो फ़ॉन्ट शामिल नहीं होता, वह किसी दूसरे फ़ॉन्ट से बनाया जाता है, जो प्रिंट करने पर अलग दिख सकता है।

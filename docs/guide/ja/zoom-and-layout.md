@@ -1,5 +1,5 @@
-<!-- keywords: 拡大, 縮小, ズーム, 幅に合わせる, ウインドウに合わせる, 実際のサイズ, 回転, 2 ページ, 見開き, 本, レイアウト, 表示, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view -->
-<!-- source: 6687d8396f24 -->
+<!-- keywords: 拡大, 縮小, ズーム, 幅に合わせる, ウインドウに合わせる, 実際のサイズ, 回転, 2 ページ, 見開き, 本, レイアウト, 表示, 横, 横スクロール, 横並び, 楽譜, スコア, ワイド画面, ページめくり, ペダル, zoom, magnify, fit width, fit window, actual size, rotate, rotation, two pages, two-page, spread, book, layout, view, horizontal, horizontal scrolling, side by side, sheet music, score, widescreen, page turner, pedal -->
+<!-- source: 2988071d44f3 -->
 
 # 拡大/縮小、回転、ページレイアウト
 
@@ -32,4 +32,14 @@ View > Define 100% Scale As を選択してから、次のいずれかを選択�
 
 ツールバーの Two-Page Mode をクリックするか、View > Two Pages (⌥⌘2) を選択します。開いた本のように、表紙を単独にしてページが 2 ページずつ表示され、見開きがウインドウに合わせて拡大/縮小されます。元に戻すには、もう一度ボタンをクリックするか、View > Single Page を選択します。
 
-> **注記:** 表示を回転しているときや Two-Page Mode のときも、テキストの選択、リンク、検索、マークアップツールと測定ツール、フォームへの入力を使用できます。追加したものはページ自体に配置されるため、表示の回転を戻しても位置は変わりません。
+## Horizontal Scrolling
+
+ツールバーの Horizontal Scrolling をクリックするか、View > Horizontal Scrolling を選択すると、ページが縦ではなく左から右に並びます。ページがウインドウの高さに収まるように拡大/縮小され、ウインドウの幅に収まるだけのページが表示されます。ワイドなディスプレイや縮小表示では、より多くのページが表示されます。楽譜を見るときに便利です。
+
+トラックパッドで左右にスワイプすると、ページに沿ってスクロールします。ページがウインドウの高さに収まっていれば、マウスのホイールでも横にスクロールします。Right Arrow と Left Arrow で、次または前のページをウインドウの左端に移動します。Space と Page Down では 1 画面分進み、全体が見えていなかった最初のページが先頭に来ます。⇧Space と Page Up では 1 画面分戻ります。Bluetooth のページめくり器やフットペダルは通常これらのキーを送るため、同じように使えます。
+
+Horizontal Scrolling と Two-Page Mode は互いに切り替わります。一方をオンにすると、もう一方はオフになります。Horizontal Scrolling がオンのとき、Zoom to Fit Window ではページの高さに合わせます。
+
+元に戻すには、もう一度ボタンをクリックするか、View > Vertical Scrolling を選択します。注釈はどちらのレイアウトでも表示され、編集できます。Compare Documents は常に縦にスクロールします。
+
+> **注記:** 表示を回転しているとき、Two-Page Mode のとき、横スクロールのときも、テキストの選択、リンク、検索、マークアップツールと測定ツール、フォームへの入力を使用できます。追加したものはページ自体に配置されるため、表示の回転を戻しても位置は変わりません。

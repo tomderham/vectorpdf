@@ -1,5 +1,5 @@
 <!-- keywords: LaTeX, TeX, SyncTeX, 정방향 검색, 역방향 검색, 소스, 소스 코드, 편집기, 소스로 이동, LaTeX, TeX, SyncTeX, synctex, forward search, inverse search, backward search, source, editor, Visual Studio Code, VS Code, LaTeX Workshop, latexmk, pdflatex, displayline, Skim, jump to source, show in editor -->
-<!-- source: ce9849c21b67 -->
+<!-- source: 554d3591f830 -->
 
 # LaTeX 소스와 PDF 간에 이동하기
 
@@ -31,7 +31,7 @@ PDF의 위치를 ⇧⌘을 누른 채 클릭합니다. 편집기가 그 위치�
 
 VectorPDF는 PDF를 앞으로 가져오고(열려 있지 않으면 열고), 해당 줄을 잠시 빨간색으로 강조 표시합니다. 줄이 이미 화면에 있으면 스크롤하지 않습니다. LINE 앞에 `-g`를 추가하면 VectorPDF가 편집기 뒤에 머무릅니다.
 
-`displayline`은 Skim의 것과 같은 인수를 받습니다. 편집기에 Skim용 설정이 있으면 대신 VectorPDF의 `displayline`을 사용하십시오.
+`displayline`은 Skim의 것과 같은 인수를 받습니다. 편집기에 Skim용 설정이 있으면 대신 VectorPDF의 `displayline`을 사용하십시오. `-g` 같은 옵션은 LINE 앞에 둡니다. LINE 뒤에서는 `-`로 시작하는 파일 이름도 파일로 읽힙니다.
 
 ### Visual Studio Code
 
