@@ -550,6 +550,8 @@ public final class PDFViewerViewModel: ObservableObject {
     @Published public var searchScrollRevision: Int = 0
     @Published public var activeScrollTargetId: String? = nil
     @Published public var searchJumpToken: Int = 0
+    /// The results list's section last asked to be scrolled into view (see `revealSearchResults(in:)`).
+    @Published public internal(set) var searchReveal: SearchReveal?
     @Published public var hasNavigatedToActiveSearchMatch: Bool = false
     public var autoNavigateOnSearchResults: Bool = false
     /// This document's recent searches, most recent first (see recordRecentSearch).

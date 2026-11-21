@@ -108,6 +108,33 @@ struct OutlineSectionTests {
         #expect(Set(groups.flatMap(\.pages).map(\.id)).count == 5)
     }
 
+    /// Choosing an outline entry beside Search on the right brings its results into view, or its
+    /// subsections' when it has none of its own, without going to one.
+    @Test @MainActor func choosingAnEntryRevealsItsResultsWithoutGoingToOne() async throws {
+        let dir = try makeScratchDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("reveal.pdf")
+        makeLabelledPDF(at: url, labels: (1...10).map(String.init))
+        let vm = PDFViewerViewModel()
+        await vm.loadDocument(from: url.path)
+        try #require(vm.document).outline = outline
+        vm.searchResults = [result(page: 1, y: 100), result(page: 3, y: 500), result(page: 3, y: 700)]
+        vm.activeSearchMatchIndex = 0
+        let groups = vm.searchSectionGroups
+
+        // Design starts where Loads does, so holds none of its own: Loads' come up.
+        vm.revealSearchResults(in: outline[2])
+        #expect(vm.searchReveal?.groupId == groups[1].id)
+        vm.revealSearchResults(in: outline[2].children[1])
+        #expect(vm.searchReveal?.groupId == groups[2].id)
+        #expect(vm.activeSearchMatchIndex == 0)
+
+        // Nothing in Appendix: the list stays where it is.
+        let before = vm.searchReveal
+        vm.revealSearchResults(in: outline[1])
+        #expect(vm.searchReveal == before)
+    }
+
     @Test @MainActor func noOutlineMeansOneGroupWithoutASection() {
         let vm = PDFViewerViewModel()
         vm.searchResults = [result(page: 0, y: 10), result(page: 2, y: 10)]

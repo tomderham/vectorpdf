@@ -22,7 +22,7 @@ Right-click a result to [create an anchor](anchors.md) from it, or to open it in
 
 ## See results beside the outline
 
-To see the results and the outline at the same time, click the options button beside the search field and choose Show Search on Right. Search moves to the right side of the window and the sidebar shows the outline, or the page thumbnails if the document has no outline. Each outline entry with results shows how many it has, and the count for the section with the current result is highlighted. A section with its subsections hidden counts the results in them too.
+To see the results and the outline at the same time, click the options button beside the search field and choose Show Search on Right. Search moves to the right side of the window and the sidebar shows the outline, or the page thumbnails if the document has no outline. Each outline entry with results shows how many it has, and the count for the section with the current result is highlighted. A section with its subsections hidden counts the results in them too. Click an outline entry and the results list scrolls to that section's results (or its subsections', if it has none of its own), while the page shows the section's heading; the current result stays where it was until you click one.
 
 Each document remembers which side you put Search on. To put it back in the sidebar, choose Show Search on Right again to turn it off. To hide it while it's on the right, click the close button (×) beside it. To show it again, press ⌘F or click the Search button at the top of the sidebar.
 

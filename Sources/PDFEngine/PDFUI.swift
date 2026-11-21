@@ -951,6 +951,9 @@ public struct PDFViewerMainView: View {
                                         viewModel: viewModel
                                     ) { node in
                                         viewModel.jumpToOutlineEntry(node)
+                                        if viewModel.isRightSearchOnScreen {
+                                            viewModel.revealSearchResults(in: node)
+                                        }
                                     }
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 } else {

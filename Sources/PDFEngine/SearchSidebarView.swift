@@ -258,6 +258,7 @@ struct SearchSidebarView: View {
                             } header: {
                                 if let section = sectionGroup.section {
                                     SearchSectionHeaderView(path: section.path)
+                                        .id(Self.headerId(sectionGroup.id))
                                 }
                             }
                         }
@@ -276,6 +277,13 @@ struct SearchSidebarView: View {
                     }
                     return .handled
                 }
+                .onChange(of: viewModel.searchReveal) { _, reveal in
+                    // An outline entry chosen beside the list: its results come to the top.
+                    guard let reveal else { return }
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        proxy.scrollTo(Self.headerId(reveal.groupId), anchor: .top)
+                    }
+                }
                 .onChange(of: viewModel.searchScrollRevision) { _, _ in
                     if let targetId = viewModel.activeSearchMatchId {
                         withAnimation(.easeInOut(duration: 0.15)) {
@@ -287,6 +295,9 @@ struct SearchSidebarView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    /// A section header's scroll id, apart from its first result's, which is the group's id.
+    static func headerId(_ groupId: UUID) -> String { "section-\(groupId.uuidString)" }
 }
 
 /// The document's recent searches, shown in the Search sidebar while the field is empty.

@@ -47,6 +47,13 @@ extension PDFViewerViewModel {
         return groups
     }
 
+    /// A section of the results list to scroll to the top of the list.
+    public struct SearchReveal: Equatable, Sendable {
+        public let token: Int
+        /// The section's `SearchSectionGroup.id`.
+        public let groupId: UUID
+    }
+
     /// The results on the pages of one outline section, in order.
     public struct SearchSectionGroup: Identifiable, Sendable {
         /// The first match's: results out of reading order can bring a section back.
@@ -96,6 +103,21 @@ extension PDFViewerViewModel {
         }
         searchHitsCache = (key, hits)
         return hits
+    }
+
+    /// Scrolls the results list to the first results in an outline entry's section, or in its
+    /// subsections, when the entry is chosen beside Search on the right. It doesn't go to a
+    /// result: the page shows the entry's heading, which is what was asked for.
+    public func revealSearchResults(in node: PDFOutlineNode) {
+        guard !searchResults.isEmpty else { return }
+        var entries: Set<UUID> = []
+        func collect(_ node: PDFOutlineNode) {
+            entries.insert(node.id)
+            node.children.forEach(collect)
+        }
+        collect(node)
+        guard let group = searchSectionGroups.first(where: { $0.section.map { entries.contains($0.nodeId) } ?? false }) else { return }
+        searchReveal = SearchReveal(token: (searchReveal?.token ?? 0) &+ 1, groupId: group.id)
     }
 
     /// The outline entry whose section holds the current result.

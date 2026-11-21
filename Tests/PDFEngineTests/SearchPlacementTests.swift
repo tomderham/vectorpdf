@@ -183,4 +183,44 @@ struct SearchPlacementTests {
         #expect(reshown.convert(reshown.bounds, to: nil).minX > content.bounds.midX)
         #expect(sidebarPicker.selectedSegment == 0)
     }
+
+    /// Choosing an outline entry beside Search on the right scrolls the results list to that
+    /// section's results, and leaves the current result alone.
+    @MainActor
+    @Test(.showsWindows) func choosingAnOutlineEntryScrollsTheResultsToIt() async throws {
+        _ = NSApplication.shared
+        let window = DocumentWindowing.makeWindow(for: Fixture.url("nist-tn-2255.pdf"))
+        defer { window.close() }
+        window.makeKeyAndOrderFront(nil)
+        let viewModel = try #require((window.contentViewController as? NSHostingController<PDFViewerMainView>)?.rootView.viewModel)
+        for _ in 0..<50 where viewModel.document == nil { try await Task.sleep(for: .milliseconds(100)) }
+        viewModel.isTransientWindow = true
+        viewModel.moveSearch(toRight: true)
+        viewModel.searchQuery = "the"
+        viewModel.performSearch()
+        for _ in 0..<100 where viewModel.isSearching || viewModel.searchResults.isEmpty { try await Task.sleep(for: .milliseconds(100)) }
+        try await Task.sleep(for: .milliseconds(800))
+        let content = try #require(window.contentView)
+        func scrollViews(_ view: NSView) -> [NSScrollView] {
+            ((view as? NSScrollView).map { [$0] } ?? []) + view.subviews.flatMap(scrollViews)
+        }
+        let results = try #require(scrollViews(content).first {
+            !$0.isHiddenOrHasHiddenAncestor && $0.convert($0.bounds, to: nil).minX > content.bounds.midX
+        })
+        let startY = results.contentView.bounds.minY
+
+        let groups = viewModel.searchSectionGroups
+        let lastSection = try #require(groups.last?.section)
+        let doc = try #require(viewModel.document)
+        func find(_ nodes: [PDFOutlineNode]) -> PDFOutlineNode? {
+            for node in nodes { if node.id == lastSection.nodeId { return node }; if let n = find(node.children) { return n } }
+            return nil
+        }
+        let entry = try #require(find(doc.outline))
+        let active = viewModel.activeSearchMatchIndex
+        viewModel.revealSearchResults(in: entry)
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(results.contentView.bounds.minY > startY + 100)
+        #expect(viewModel.activeSearchMatchIndex == active)
+    }
 }
